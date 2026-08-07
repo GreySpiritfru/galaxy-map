@@ -1,0 +1,657 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Карта галактики — Феном</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #0b0b10;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .svg-widget {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      touch-action: none;
+      background: #0b0b10;
+    }
+
+    .svg-widget svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-drag: none;
+      touch-action: none;
+    }
+
+    .hotspot, .hotspot * { pointer-events: auto; }
+    .sys-hit { pointer-events: auto; cursor: pointer; }
+
+    .svg-controls {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 20;
+    }
+
+    .svg-controls button {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 8px;
+      backdrop-filter: blur(6px);
+      min-width: 44px;
+      min-height: 44px;
+      font-weight: 600;
+      font-size: 16px;
+    }
+
+    .svg-hint {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      color: rgba(255,255,255,0.7);
+      background: rgba(0,0,0,0.35);
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      z-index: 10;
+      max-width: 60vw;
+    }
+
+    .calib-panel {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      background: rgba(0,0,0,0.55);
+      color: #9f9;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: monospace;
+      z-index: 20;
+      display: none;
+      white-space: pre;
+    }
+
+    /* ===== П.1: мобильный модал для инфо-точек =====
+       Центрированное окно, ~20% свободного поля по краям — тап по фону закрывает. */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 10vh 6vw;
+      box-sizing: border-box;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    .modal-card {
+      width: 100%;
+      max-width: 480px;
+      max-height: 100%;
+      overflow-y: auto;
+      background: rgba(10,10,16,0.98);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 16px 18px;
+      color: #fff;
+      font-family: sans-serif;
+      font-size: 14px;
+      position: relative;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    }
+
+    .modal-close {
+      position: absolute;
+      right: 10px;
+      top: 8px;
+      border: none;
+      background: transparent;
+      color: #fff;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 6px;
+    }
+
+    .modal-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin: 0 26px 8px 0;
+    }
+
+    /* ===== П.3: полноэкранный просмотр системы ===== */
+    .system-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: none;
+      z-index: 200;
+    }
+    .system-overlay.open { display: block; }
+
+    .system-back {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      z-index: 210;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      backdrop-filter: blur(6px);
+    }
+
+    .system-placeholder {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #aaa;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 0 30px;
+    }
+
+    @media (max-width: 600px) {
+      .svg-controls { right: 8px; top: 8px; }
+      .svg-controls button { padding: 6px 8px; min-width: 40px; min-height: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="svg-widget" id="svgWidget">
+  <div class="svg-controls" id="controls">
+    <button id="zoomIn" aria-label="Zoom in">＋</button>
+    <button id="zoomOut" aria-label="Zoom out">－</button>
+    <button id="reset" aria-label="Reset view">⟲</button>
+    <button id="calibToggle" title="Режим калибровки координат">📍</button>
+  </div>
+  <div class="calib-panel" id="calibPanel"></div>
+  <div class="svg-hint">Перетаскивание — палец/мышь, масштаб — щипок/колёсико. Тапни по названию системы.</div>
+</div>
+
+<!-- Модал для "инфо"-точек (фракции/регионы) -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-card" id="modalCard">
+    <button class="modal-close" id="modalClose">×</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<!-- Полноэкранный вид отдельной системы -->
+<div class="system-overlay" id="systemOverlay">
+  <button class="system-back" id="systemBack">← Назад к карте</button>
+  <div id="systemContainer" style="position:absolute; inset:0;"></div>
+</div>
+
+<script>
+  if (window.Telegram && window.Telegram.WebApp) {
+    Telegram.WebApp.ready();
+    Telegram.WebApp.expand();
+  }
+</script>
+
+<script>
+/* ============================================================
+   Переиспользуемый модуль пан/зума поверх произвольного SVG.
+   Используется и для карты галактики, и для вида внутри системы —
+   именно об этом п.3: логика одна и та же, подключить второй раз
+   к любому новому SVG стоит нескольких строк.
+   ============================================================ */
+function createPanZoom(container, svg, opts) {
+  opts = opts || {};
+  const zoomOutLimit = opts.zoomOutLimit ?? 1;   // 1 = нельзя отдалить дальше исходного охвата карты
+  const zoomInLimit = opts.zoomInLimit ?? 0.02;  // насколько можно приблизить
+  const boundsPad = opts.boundsPad ?? 0.15;      // запас за краями карты при панорамировании (п.2)
+  const onClick = opts.onClick || null;          // (svgPoint, domEvent) => void, для калибровки/т.п.
+
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+  let vb = svg.getAttribute('viewBox');
+  let viewBox;
+  if (vb) {
+    const parts = vb.trim().split(/\s+/).map(Number);
+    viewBox = {x: parts[0], y: parts[1], w: parts[2], h: parts[3]};
+  } else {
+    const w = svg.getAttribute('width') || svg.clientWidth || 1000;
+    const h = svg.getAttribute('height') || svg.clientHeight || 1000;
+    viewBox = {x:0, y:0, w:Number(w), h:Number(h)};
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  }
+
+  const initialViewBox = {...viewBox};
+  let cur = {...viewBox};
+
+  const minW = initialViewBox.w * zoomInLimit;
+  const maxW = initialViewBox.w * zoomOutLimit;
+
+  // П.2: границы панорамирования — не дальше чем boundsPad за пределами исходной карты
+  const boundX0 = initialViewBox.x - initialViewBox.w * boundsPad;
+  const boundX1 = initialViewBox.x + initialViewBox.w * (1 + boundsPad);
+  const boundY0 = initialViewBox.y - initialViewBox.h * boundsPad;
+  const boundY1 = initialViewBox.y + initialViewBox.h * (1 + boundsPad);
+
+  function setViewBox(v) {
+    cur = v;
+    svg.setAttribute('viewBox', `${v.x} ${v.y} ${v.w} ${v.h}`);
+  }
+
+  function clampViewBox(v) {
+    let w = Math.max(minW, Math.min(maxW, v.w));
+    let h = v.h * (w / v.w);
+    let x = v.x, y = v.y;
+    if (x < boundX0) x = boundX0;
+    if (x + w > boundX1) x = boundX1 - w;
+    if (y < boundY0) y = boundY0;
+    if (y + h > boundY1) y = boundY1 - h;
+    return {x, y, w, h};
+  }
+
+  function clientToSvgPoint(clientX, clientY) {
+    const pt = svg.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return {x: cur.x + cur.w/2, y: cur.y + cur.h/2};
+    const sp = pt.matrixTransform(ctm.inverse());
+    return {x: sp.x, y: sp.y};
+  }
+
+  function zoomAt(cx, cy, scaleFactor) {
+    // Сначала клэмпим итоговую ширину под лимиты зума...
+    let newW = Math.max(minW, Math.min(maxW, cur.w / scaleFactor));
+    // ...и пересчитываем РЕАЛЬНО применённый коэффициент масштаба —
+    // иначе на упоре в лимит позиция "уезжает" в сторону курсора при каждом
+    // повторном скролле (баг с дрейфом камеры на макс./мин. зуме).
+    const effectiveScale = cur.w / newW;
+    const newH = cur.h / effectiveScale;
+    const newX = cx - (cx - cur.x) / effectiveScale;
+    const newY = cy - (cy - cur.y) / effectiveScale;
+    setViewBox(clampViewBox({x:newX, y:newY, w:newW, h:newH}));
+  }
+
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const zoomFactor = Math.pow(1.0015, -e.deltaY);
+    const p = clientToSvgPoint(e.clientX, e.clientY);
+    zoomAt(p.x, p.y, zoomFactor);
+  }, {passive:false});
+
+  let isPanning = false, panStart = null, panViewStart = null, moved = false, downTarget = null;
+
+  // Единая точка входа для "тапа" по интерактивному элементу (hotspot, подпись системы и т.п.).
+  // Вместо отдельных click-слушателей на каждом элементе — элемент просто помечается
+  // свойством __onTap, а здесь мы поднимаемся вверх по DOM от места клика и ищем ближайший
+  // помеченный элемент. Так клик и перетаскивание никогда не мешают друг другу: старт
+  // перетаскивания больше не блокируется на "чувствительных" точках, а решение — это был
+  // клик или свайп — принимается по факту движения, в момент отпускания.
+  function findTapHandler(el) {
+    while (el && el !== svg) {
+      if (el.__onTap) return el.__onTap;
+      el = el.parentNode;
+    }
+    return null;
+  }
+
+  svg.addEventListener('pointerdown', (e) => {
+    if (e.button && e.button !== 0) return;
+    // Запоминаем реальную цель ДО setPointerCapture — после захвата все дальнейшие
+    // события (move/up) таргетятся на сам svg, а не на элемент под пальцем,
+    // поэтому e.target в pointerup для поиска __onTap уже не годится.
+    downTarget = e.target;
+    svg.setPointerCapture(e.pointerId);
+    isPanning = true; moved = false;
+    panStart = {x: e.clientX, y: e.clientY};
+    panViewStart = {...cur};
+  });
+
+  svg.addEventListener('pointermove', (e) => {
+    if (!isPanning) return;
+    e.preventDefault();
+    const dx = e.clientX - panStart.x, dy = e.clientY - panStart.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+    const scaleX = panViewStart.w / (svg.clientWidth || 1);
+    const scaleY = panViewStart.h / (svg.clientHeight || 1);
+    setViewBox(clampViewBox({
+      x: panViewStart.x - dx * scaleX,
+      y: panViewStart.y - dy * scaleY,
+      w: panViewStart.w, h: panViewStart.h
+    }));
+  });
+
+  svg.addEventListener('pointerup', (e) => {
+    if (isPanning) {
+      svg.releasePointerCapture(e.pointerId);
+      if (!moved) {
+        const tap = findTapHandler(downTarget);
+        if (tap) tap(e);
+        else if (onClick) onClick(clientToSvgPoint(e.clientX, e.clientY), e);
+      }
+    }
+    isPanning = false;
+  });
+  svg.addEventListener('pointercancel', () => { isPanning = false; });
+
+  let pinch = {active:false, startDist:0, startView:null, center:null};
+  function dist(a,b){ return Math.hypot(b.clientX-a.clientX, b.clientY-a.clientY); }
+
+  svg.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      pinch.active = true;
+      pinch.startDist = dist(e.touches[0], e.touches[1]);
+      pinch.startView = {...cur};
+      const mx = (e.touches[0].clientX + e.touches[1].clientX)/2;
+      const my = (e.touches[0].clientY + e.touches[1].clientY)/2;
+      pinch.center = clientToSvgPoint(mx, my);
+    }
+  }, {passive:true});
+
+  svg.addEventListener('touchmove', (e) => {
+    if (!pinch.active || e.touches.length !== 2) return;
+    e.preventDefault();
+    const d = dist(e.touches[0], e.touches[1]);
+    const f = pinch.startDist / d;
+    setViewBox(clampViewBox({
+      x: pinch.center.x - (pinch.center.x - pinch.startView.x) * f,
+      y: pinch.center.y - (pinch.center.y - pinch.startView.y) * f,
+      w: pinch.startView.w * f, h: pinch.startView.h * f
+    }));
+  }, {passive:false});
+
+  svg.addEventListener('touchend', (e) => { if (e.touches.length < 2) pinch.active = false; });
+
+  return {
+    zoomIn: () => zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1.25),
+    zoomOut: () => zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1/1.25),
+    reset: () => setViewBox({...initialViewBox}),
+    centerOn: (x, y) => setViewBox(clampViewBox({x: x-cur.w/2, y: y-cur.h/2, w:cur.w, h:cur.h})),
+    getViewBox: () => ({...cur}),
+    getInitialViewBox: () => ({...initialViewBox}),
+  };
+}
+
+/* ============================================================
+   П.1: единый мобильный модал для инфо-точек
+   ============================================================ */
+const modalBackdrop = document.getElementById('modalBackdrop');
+const modalContent = document.getElementById('modalContent');
+function openModal(html) {
+  modalContent.innerHTML = html;
+  modalBackdrop.classList.add('open');
+}
+function closeModal() { modalBackdrop.classList.remove('open'); }
+document.getElementById('modalClose').addEventListener('click', closeModal);
+modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeModal(); });
+
+/* ============================================================
+   П.3: полноэкранный просмотр системы + переключатель
+   ============================================================ */
+const systemOverlay = document.getElementById('systemOverlay');
+const systemContainer = document.getElementById('systemContainer');
+document.getElementById('systemBack').addEventListener('click', closeSystem);
+
+function closeSystem() {
+  systemOverlay.classList.remove('open');
+  systemContainer.innerHTML = '';
+}
+
+// slug из названия системы -> ожидаемое имя файла systems/<slug>.svg
+function slugify(name) {
+  return name.trim().toLowerCase()
+    .replace(/['"«»]/g, '')
+    .replace(/\s+/g, '_');
+}
+
+const systemCache = {};
+
+async function openSystem(name) {
+  systemOverlay.classList.add('open');
+  systemContainer.innerHTML = '';
+
+  const slug = slugify(name);
+  let svgText = systemCache[slug];
+
+  if (!svgText) {
+    try {
+      const resp = await fetch(`systems/${encodeURIComponent(slug)}.svg`, {cache:'no-cache'});
+      if (!resp.ok) throw new Error('not found');
+      svgText = await resp.text();
+      systemCache[slug] = svgText;
+    } catch (err) {
+      systemContainer.innerHTML = `
+        <div class="system-placeholder">
+          <div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:8px;">${name}</div>
+            <div>Карта этой системы ещё не готова.<br/>Ожидаемый файл: <code>systems/${slug}.svg</code></div>
+          </div>
+        </div>`;
+      return;
+    }
+  }
+
+  systemContainer.insertAdjacentHTML('afterbegin', svgText);
+  const innerSvg = systemContainer.querySelector('svg');
+  if (innerSvg) {
+    innerSvg.style.width = '100%';
+    innerSvg.style.height = '100%';
+    innerSvg.style.display = 'block';
+    createPanZoom(systemContainer, innerSvg, { zoomOutLimit: 1, boundsPad: 0 });
+  }
+}
+
+/* ============================================================
+   Загрузка и инициализация карты галактики
+   ============================================================ */
+const SVG_PATH = 'map.svg';
+
+const SYSTEMS = [
+  { id: 'donzoleitsy', name: 'Донзолейцы', x: 715, y: 64,
+    html: '<div class="modal-title">Донзолейцы</div><div>Раса на севере карты. Ключевые системы: Оружие, Тьма, Небеса, Мощь, Война, Олимп, Сила.</div>' },
+  { id: 'terrane', name: 'Терране', x: 880, y: 410,
+    html: '<div class="modal-title">Терране</div><div>Крупная фракция на востоке карты, соседствует с Гара\'кессил и Ксерами.</div>' },
+  { id: 'groksy', name: 'Гроксы', x: 1143, y: 780,
+    html: '<div class="modal-title">Гроксы</div><div>Изолированная территория на востоке, отмечена как «Центр Галактики».</div>' },
+  { id: 'ekvestriytsy', name: 'Экветрийцы', x: 633, y: 531,
+    html: '<div class="modal-title">Экветрийцы</div><div>Фракция в центре карты, рядом с Теротеями и Гара\'кессил.</div>' },
+  { id: 'damasiytsy', name: 'Дамасийцы', x: 762, y: 866,
+    html: '<div class="modal-title">Дамасийцы</div><div>Часть красной зоны «Освобождённые территории» в южной части карты.</div>' }
+];
+
+let calibMode = false;
+const calibPanel = document.getElementById('calibPanel');
+
+(async function(){
+  const container = document.getElementById('svgWidget');
+  let svgText;
+  try {
+    const resp = await fetch(SVG_PATH, {cache:'no-cache'});
+    svgText = await resp.text();
+  } catch (err) {
+    container.innerHTML = '<div style="color:#f88;padding:12px">Ошибка загрузки SVG: ' + err.message + '</div>';
+    throw err;
+  }
+
+  container.insertAdjacentHTML('afterbegin', svgText);
+  const svg = container.querySelector('svg');
+  if (!svg) {
+    container.innerHTML = '<div style="color:#f88;padding:12px">Файл не содержит тег &lt;svg&gt;.</div>';
+    return;
+  }
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'Карта галактики');
+
+  const pz = createPanZoom(container, svg, {
+    zoomOutLimit: 1,     // нельзя отдалиться дальше исходного вида карты — П.2
+    zoomInLimit: 0.02,
+    boundsPad: 0.2,      // запас побольше, чтобы можно было докрутить камеру до самых крайних систем
+    onClick: (p) => { if (calibMode) showCalib(p.x, p.y); }
+  });
+
+  /* --- Маска: скрывает служебные звёзды StellarMaps за пределами "ядра" карты ---
+     Добавляется поверх исходного содержимого SVG (оно уже вставлено выше), но ниже
+     наших собственных hotspot'ов/точек систем, которые добавляются следующим шагом. */
+  (function addOuterMask(){
+    const core = pz.getInitialViewBox();
+
+    /* ПОДКРУТИТЬ РУКАМИ: сдвиг границы маски относительно точного края картинки,
+       в единицах SVG (та же система координат, что и у SYSTEMS/калибровки выше).
+       Положительное число — маска отступает НАРУЖУ (открывает больше настоящей карты
+       по этому краю, значит меньше отрезает). Отрицательное — маска заходит ВНУТРЬ
+       (прячет больше, если с этой стороны всё ещё вылезают "NAME_..." подписи). */
+    const MASK_ADJUST = {
+      top: -2,
+      bottom: 3,
+      left: -2,
+      right: 40,
+    };
+
+    // Небольшой нахлёст маски внутрь ядра карты — страхует от "шва":
+    // отдельные подписи выровнены не строго по своей точке (text-anchor),
+    // и край буквы иногда на пару единиц вылезает за расчётную границу.
+    const OVERLAP = 2;
+
+    const coreX0 = core.x + MASK_ADJUST.left + OVERLAP;
+    const coreX1 = core.x + core.w - MASK_ADJUST.right - OVERLAP;
+    const coreY0 = core.y + MASK_ADJUST.top + OVERLAP;
+    const coreY1 = core.y + core.h - MASK_ADJUST.bottom - OVERLAP;
+
+    const BIG = core.w * 3; // с большим запасом, чтобы гарантированно перекрыть любой уровень зума
+    const outX0 = core.x - BIG, outX1 = core.x + core.w + BIG;
+    const outY0 = core.y - BIG, outY1 = core.y + core.h + BIG;
+    const fill = '#0b0b10'; // тот же цвет, что и фон виджета — маска сливается с "пустотой" вокруг карты
+
+    // Небольшой нахлёст МЕЖДУ самими прямоугольниками маски (не путать с OVERLAP выше —
+    // тот прячет край карты, этот убирает шов между top/bottom и left/right на стыке).
+    // На сильном зуме даже субпиксельная погрешность на стыке двух фигур становится
+    // заметной линией (антиалиасинг) — нахлёст в 2 единицы с запасом это гасит.
+    const SEAM_FIX = 2;
+
+    const frames = [
+      { x: outX0, y: outY0, w: outX1 - outX0, h: coreY0 - outY0 },                              // сверху
+      { x: outX0, y: coreY1, w: outX1 - outX0, h: outY1 - coreY1 },                              // снизу
+      { x: outX0, y: coreY0 - SEAM_FIX, w: coreX0 - outX0, h: (coreY1 - coreY0) + SEAM_FIX*2 },  // слева
+      { x: coreX1, y: coreY0 - SEAM_FIX, w: outX1 - coreX1, h: (coreY1 - coreY0) + SEAM_FIX*2 }, // справа
+    ];
+    frames.forEach(f => {
+      const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      r.setAttribute('x', f.x);
+      r.setAttribute('y', f.y);
+      r.setAttribute('width', f.w);
+      r.setAttribute('height', f.h);
+      r.setAttribute('fill', fill);
+      svg.appendChild(r);
+    });
+  })();
+
+  document.getElementById('zoomIn').addEventListener('click', pz.zoomIn);
+  document.getElementById('zoomOut').addEventListener('click', pz.zoomOut);
+  document.getElementById('reset').addEventListener('click', pz.reset);
+
+  document.getElementById('calibToggle').addEventListener('click', () => {
+    calibMode = !calibMode;
+    calibPanel.style.display = calibMode ? 'block' : 'none';
+    calibPanel.textContent = calibMode ? 'Кликни по карте' : '';
+  });
+
+  function showCalib(x, y) {
+    const rx = Math.round(x), ry = Math.round(y);
+    calibPanel.textContent = `x: ${rx}\ny: ${ry}\n\n{ x: ${rx}, y: ${ry} }`;
+  }
+
+  /* --- Инфо-точки (фракции) — открывают модал, П.1 --- */
+  const ns = 'http://www.w3.org/2000/svg';
+  SYSTEMS.forEach(cfg => {
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('class', 'hotspot');
+    g.setAttribute('transform', `translate(${cfg.x} ${cfg.y})`);
+    const c = document.createElementNS(ns, 'circle');
+    c.setAttribute('r', 3.5);
+    c.setAttribute('fill', 'rgba(255,200,50,0.9)');
+    c.setAttribute('stroke', '#111');
+    c.setAttribute('stroke-width', 0.5);
+    c.style.cursor = 'pointer';
+    g.appendChild(c);
+    // __onTap на самой группе — сработает и по клику на circle, и по клику
+    // в любом другом месте внутри g (findTapHandler поднимается по родителям)
+    g.__onTap = () => {
+      if (calibMode) { showCalib(cfg.x, cfg.y); return; }
+      pz.centerOn(cfg.x, cfg.y);
+      openModal(cfg.html);
+    };
+    svg.appendChild(g);
+  });
+
+  /* --- П.3: клик по названию системы (реальные <text> из экспорта StellarMaps) ---
+     Ждём document.fonts.ready: в карте зашит кастомный шрифт (Orbitron), и если
+     измерять getBBox() до его загрузки, размеры текста считаются по запасному
+     шрифту — область клика получается смещена относительно того, что видно на экране. */
+  const setupSystemLabels = () => {
+    svg.querySelectorAll('text').forEach(textEl => {
+      const name = textEl.textContent.trim();
+      if (!name) return;
+
+      // Названия фракций/цивилизаций в экспорте StellarMaps используют другой
+      // шрифт (Impact, крупнее), чем обычные системы (Tahoma, мельче) —
+      // по этому признаку их и отсеиваем, кликабельными оставляем только системы.
+      const fontFamily = textEl.getAttribute('font-family') || '';
+      const fontSize = parseFloat(textEl.getAttribute('font-size') || '0');
+      if (fontFamily === 'Impact' || fontSize >= 4.5) return;
+
+      textEl.style.cursor = 'pointer';
+
+      // невидимая область побольше самого текста — легче попасть пальцем
+      let bbox;
+      try { bbox = textEl.getBBox(); } catch (e) { return; }
+      const hit = document.createElementNS(ns, 'rect');
+      hit.setAttribute('class', 'sys-hit');
+      hit.setAttribute('x', bbox.x - 2);
+      hit.setAttribute('y', bbox.y - 2);
+      hit.setAttribute('width', bbox.width + 4);
+      hit.setAttribute('height', bbox.height + 4);
+      hit.setAttribute('fill', 'transparent');
+      textEl.parentNode.insertBefore(hit, textEl);
+
+      const trigger = () => {
+        if (calibMode) { showCalib(bbox.x + bbox.width/2, bbox.y + bbox.height/2); return; }
+        openSystem(name);
+      };
+      // помечаем оба элемента — и невидимую область, и сам текст —
+      // чтобы клик срабатывал независимо от того, куда именно попал палец
+      hit.__onTap = trigger;
+      textEl.__onTap = trigger;
+    });
+  };
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(setupSystemLabels);
+  } else {
+    setupSystemLabels();
+  }
+
+})();
+</script>
+</body>
+</html>
