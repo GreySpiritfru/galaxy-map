@@ -1,0 +1,86 @@
+<svg id="exportSystemMap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-600 -600 1200 1200" width="2048" height="2048"><rect class="bg-rect" x="-600" y="-600" width="1200" height="1200" fill="rgb(0, 0, 0)"></rect><defs><filter id="glow" filterUnits="objectBoundingBox" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="2"></feGaussianBlur></filter><filter id="starGlow" filterUnits="objectBoundingBox" x="-500%" y="-500%" width="1100%" height="1100%"><feGaussianBlur in="SourceGraphic" stdDeviation="10"></feGaussianBlur></filter></defs><g> <circle cx="0" cy="0" r="50" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="70" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="95" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="155.705" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="194.355" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="246.755" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="211.80708" cy="-126.69141" r="12" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="211.80708" cy="-126.69141" r="17" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="211.80708" cy="-126.69141" r="22" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="303.815" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="-247.34794" cy="-176.48309" r="12" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="-247.34794" cy="-176.48309" r="17" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="-247.34794" cy="-176.48309" r="22" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="370.675" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle> <circle fill="none" stroke="rgb(156, 91, 45)" stroke-width="2" stroke-opacity="0.2" r="125"></circle><circle fill="none" stroke="rgb(156, 91, 45)" stroke-width="4" stroke-opacity="0.05" r="130"></circle><circle fill="none" stroke="rgb(156, 91, 45)" stroke-width="4" stroke-opacity="0.05" r="120"></circle><circle fill="none" stroke="rgb(156, 91, 45)" stroke-width="1" stroke-opacity="0.1" r="135"></circle><circle fill="none" stroke="rgb(156, 91, 45)" stroke-width="1" stroke-opacity="0.1" r="115"></circle><circle fill="rgb(237, 231, 116)" r="7.211102550927978" cx="0" cy="0" filter="url(#starGlow)"></circle>  <circle fill="rgb(237, 231, 116)" r="7.211102550927978" cx="0" cy="0" filter=""></circle> <circle fill="rgb(137, 237, 236)" r="4" cx="-18.9365" cy="-46.307"></circle><path d="
+			M 0 4
+			A 4 4 0 0 0 0 -4
+			A 2 4 0 0 1 0 4
+			Z
+		" transform=" translate(-18.9365 -46.307) rotate(247.75868527280198)" fill="#000000" opacity="0.5"></path><circle fill="rgb(255, 86, 0)" r="4.123105625617661" cx="66.6967" cy="21.4641"></circle><path d="
+			M 0 4.123105625617661
+			A 4.123105625617661 4.123105625617661 0 0 0 0 -4.123105625617661
+			A 2.0615528128088303 4.123105625617661 0 0 1 0 4.123105625617661
+			Z
+		" transform=" translate(66.6967 21.4641) rotate(17.839033090182298)" fill="#000000" opacity="0.5"></path><circle fill="rgb(131, 150, 156)" r="5.385164807134504" cx="-94.86035" cy="8.92525"></circle><path d="
+			M 0 5.385164807134504
+			A 5.385164807134504 5.385164807134504 0 0 0 0 -5.385164807134504
+			A 2.692582403567252 5.385164807134504 0 0 1 0 5.385164807134504
+			Z
+		" transform=" translate(-94.86035 8.92525) rotate(174.62496071783897)" fill="#000000" opacity="0.5"></path><circle fill="rgb(156, 91, 45)" r="2.23606797749979" cx="-14.0425" cy="124.54625"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(-14.0425 124.54625) rotate(96.43289051873518)" fill="#000000" opacity="0.5"></path><circle fill="rgb(156, 91, 45)" r="2.23606797749979" cx="70.36125" cy="103.3375"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(70.36125 103.3375) rotate(55.74952622055731)" fill="#000000" opacity="0.5"></path><circle fill="rgb(174, 121, 83)" r="4.898979485566356" cx="73.98323" cy="-137.05621"></circle><path d="
+			M 0 4.898979485566356
+			A 4.898979485566356 4.898979485566356 0 0 0 0 -4.898979485566356
+			A 2.449489742783178 4.898979485566356 0 0 1 0 4.898979485566356
+			Z
+		" transform=" translate(73.98323 -137.05621) rotate(-61.63973333114341)" fill="#000000" opacity="0.5"></path><circle fill="rgb(174, 121, 83)" r="4.795831523312719" cx="-115.46436" cy="156.36442"></circle><path d="
+			M 0 4.795831523312719
+			A 4.795831523312719 4.795831523312719 0 0 0 0 -4.795831523312719
+			A 2.3979157616563596 4.795831523312719 0 0 1 0 4.795831523312719
+			Z
+		" transform=" translate(-115.46436 156.36442) rotate(126.4433153926969)" fill="#000000" opacity="0.5"></path><circle fill="rgb(150, 126, 90)" r="4.242640687119285" cx="211.80708" cy="-126.69141"></circle><path d="
+			M 0 4.242640687119285
+			A 4.242640687119285 4.242640687119285 0 0 0 0 -4.242640687119285
+			A 2.1213203435596424 4.242640687119285 0 0 1 0 4.242640687119285
+			Z
+		" transform=" translate(211.80708 -126.69141) rotate(-30.885555591065245)" fill="#000000" opacity="0.5"></path><circle fill="rgb(174, 121, 83)" r="1.7320508075688772" cx="210.64728" cy="-114.71265"></circle><path d="
+			M 0 1.7320508075688772
+			A 1.7320508075688772 1.7320508075688772 0 0 0 0 -1.7320508075688772
+			A 0.8660254037844386 1.7320508075688772 0 0 1 0 1.7320508075688772
+			Z
+		" transform=" translate(210.64728 -114.71265) rotate(-28.57148213262299)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="2" cx="196.59616" cy="-134.29653"></circle><path d="
+			M 0 2
+			A 2 2 0 0 0 0 -2
+			A 1 2 0 0 1 0 2
+			Z
+		" transform=" translate(196.59616 -134.29653) rotate(-34.337319339882605)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="1.8708286933869707" cx="228.00942" cy="-111.80731"></circle><path d="
+			M 0 1.8708286933869707
+			A 1.8708286933869707 1.8708286933869707 0 0 0 0 -1.8708286933869707
+			A 0.9354143466934853 1.8708286933869707 0 0 1 0 1.8708286933869707
+			Z
+		" transform=" translate(228.00942 -111.80731) rotate(-26.121608295714445)" fill="#000000" opacity="0.5"></path><circle fill="rgb(150, 126, 90)" r="5.5677643628300215" cx="-247.34794" cy="-176.48309"></circle><path d="
+			M 0 5.5677643628300215
+			A 5.5677643628300215 5.5677643628300215 0 0 0 0 -5.5677643628300215
+			A 2.7838821814150108 5.5677643628300215 0 0 1 0 5.5677643628300215
+			Z
+		" transform=" translate(-247.34794 -176.48309) rotate(215.5079088145581)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="2.1213203435596424" cx="-258.92842" cy="-179.68181"></circle><path d="
+			M 0 2.1213203435596424
+			A 2.1213203435596424 2.1213203435596424 0 0 0 0 -2.1213203435596424
+			A 1.0606601717798212 2.1213203435596424 0 0 1 0 2.1213203435596424
+			Z
+		" transform=" translate(-258.92842 -179.68181) rotate(214.75848037683176)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="2.1213203435596424" cx="-231.05412" cy="-181.3932"></circle><path d="
+			M 0 2.1213203435596424
+			A 2.1213203435596424 2.1213203435596424 0 0 0 0 -2.1213203435596424
+			A 1.0606601717798212 2.1213203435596424 0 0 1 0 2.1213203435596424
+			Z
+		" transform=" translate(-231.05412 -181.3932) rotate(218.13432485342776)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="2.23606797749979" cx="-267.4775" cy="-185.38715"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(-267.4775 -185.38715) rotate(214.72561196712053)" fill="#000000" opacity="0.5"></path><circle fill="rgb(150, 126, 90)" r="5.196152422706632" cx="-145.3046" cy="341.22116"></circle><path d="
+			M 0 5.196152422706632
+			A 5.196152422706632 5.196152422706632 0 0 0 0 -5.196152422706632
+			A 2.598076211353316 5.196152422706632 0 0 1 0 5.196152422706632
+			Z
+		" transform=" translate(-145.3046 341.22116) rotate(113.06610010576834)" fill="#000000" opacity="0.5"></path><defs><path id="planetLabelPath1821" d="M 12.21110255092798 0 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1821" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ</textPath></text><defs><path id="planetLabelPath1822" d="M -9.936499999999999 -46.307 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1822" startOffset="0" dominant-baseline="middle" text-anchor="start">Илвуру́с</textPath></text><defs><path id="planetLabelPath1823" d="M 75.81980562561768 21.4641 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1823" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ II</textPath></text><defs><path id="planetLabelPath1824" d="M -84.4751851928655 8.92525 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1824" startOffset="0" dominant-baseline="middle" text-anchor="start">Фонса Верда</textPath></text><defs><path id="planetLabelPath1825" d="M -6.806432022500211 124.54625 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1825" startOffset="0" dominant-baseline="middle" text-anchor="start">V413-97</textPath></text><defs><path id="planetLabelPath1826" d="M 77.59731797749978 103.3375 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1826" startOffset="0" dominant-baseline="middle" text-anchor="start">VK1-956</textPath></text><defs><path id="planetLabelPath1827" d="M 83.88220948556636 -137.05621 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1827" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ IV</textPath></text><defs><path id="planetLabelPath1828" d="M -105.66852847668729 156.36442 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1828" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ V</textPath></text><defs><path id="planetLabelPath1829" d="M 221.0497206871193 -126.69141 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1829" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ VI</textPath></text><defs><path id="planetLabelPath1830" d="M 217.37933080756886 -114.71265 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1830" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ VIa</textPath></text><defs><path id="planetLabelPath1831" d="M 203.59616 -134.29653 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1831" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ VIb</textPath></text><defs><path id="planetLabelPath1832" d="M 234.880248693387 -111.80731 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1832" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ VIc</textPath></text><defs><path id="planetLabelPath1833" d="M -236.78017563716998 -176.48309 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1833" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ VII</textPath></text><defs><path id="planetLabelPath1834" d="M -251.80709965644039 -179.68181 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1834" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ VIIa</textPath></text><defs><path id="planetLabelPath1835" d="M -223.93279965644038 -181.3932 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1835" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ VIIb</textPath></text><defs><path id="planetLabelPath1836" d="M -260.24143202250025 -185.38715 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1836" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ VIIc</textPath></text><defs><path id="planetLabelPath1837" d="M -135.10844757729336 341.22116 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath1837" startOffset="0" dominant-baseline="middle" text-anchor="start">Дотиппэ VIII</textPath></text><g fill="rgb(51, 127, 91)"><path d="
+				M 57.4865713219439 396.98273780814077
+				L 116.05779493298107 383.9669103390214
+				L 91.11079228383561 409.9985652772601
+				Z
+			"></path><defs><path id="connectionLabelPath267" pathLength="1" d="M -402.4059992536072 494.05911768198945 L 573.7810609303456 277.1286598633332"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath267" startOffset="0.5" text-anchor="middle" dominant-baseline="auto">Корона Солви́рис</textPath></text></g></g><g transform="translate(-600 -600) scale(1.2)"></g></svg>

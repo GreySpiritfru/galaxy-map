@@ -1,0 +1,41 @@
+<svg id="exportSystemMap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-600 -600 1200 1200" width="2048" height="2048"><rect class="bg-rect" x="-600" y="-600" width="1200" height="1200" fill="rgb(0, 0, 0)"></rect><defs><filter id="glow" filterUnits="objectBoundingBox" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="2"></feGaussianBlur></filter><filter id="starGlow" filterUnits="objectBoundingBox" x="-500%" y="-500%" width="1100%" height="1100%"><feGaussianBlur in="SourceGraphic" stdDeviation="10"></feGaussianBlur></filter></defs><g><circle fill="none" stroke="rgb(137, 237, 236)" stroke-width="2" stroke-opacity="0.2" r="120"></circle><circle fill="none" stroke="rgb(137, 237, 236)" stroke-width="4" stroke-opacity="0.05" r="125"></circle><circle fill="none" stroke="rgb(137, 237, 236)" stroke-width="4" stroke-opacity="0.05" r="115"></circle><circle fill="none" stroke="rgb(137, 237, 236)" stroke-width="1" stroke-opacity="0.1" r="130"></circle><circle fill="none" stroke="rgb(137, 237, 236)" stroke-width="1" stroke-opacity="0.1" r="110"></circle><circle fill="rgb(224, 214, 46)" r="8.12403840463596" cx="0" cy="0" filter="url(#starGlow)"></circle>  <circle fill="rgb(224, 214, 46)" r="8.12403840463596" cx="0" cy="0" filter=""></circle> <circle fill="rgb(191, 187, 224)" r="2.23606797749979" cx="-98.5548" cy="-68.49"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(-98.5548 -68.49) rotate(214.7971106877475)" fill="#000000" opacity="0.5"></path><circle fill="rgb(191, 187, 224)" r="2.23606797749979" cx="20.9124" cy="118.4028"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(20.9124 118.4028) rotate(79.98367255426962)" fill="#000000" opacity="0.5"></path><circle fill="rgb(191, 187, 224)" r="2.23606797749979" cx="55.5324" cy="-106.4208"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(55.5324 -106.4208) rotate(-62.443589575300365)" fill="#000000" opacity="0.5"></path><circle fill="rgb(191, 187, 224)" r="2.23606797749979" cx="-26.9148" cy="117.1272"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(-26.9148 117.1272) rotate(102.94140177585913)" fill="#000000" opacity="0.5"></path><circle fill="rgb(191, 187, 224)" r="2.23606797749979" cx="116.5752" cy="-29.1408"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(116.5752 -29.1408) rotate(-14.0348557173742)" fill="#000000" opacity="0.5"></path><circle fill="rgb(191, 187, 224)" r="2.23606797749979" cx="-97.7976" cy="-69.5652"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(-97.7976 -69.5652) rotate(215.42492990537102)" fill="#000000" opacity="0.5"></path><defs><path id="planetLabelPath3346" d="M 13.12403840463596 0 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath3346" startOffset="0" dominant-baseline="middle" text-anchor="start">Тау Кита</textPath></text><defs><path id="planetLabelPath3347" d="M -91.31873202250021 -68.49 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath3347" startOffset="0" dominant-baseline="middle" text-anchor="start">VIR-426</textPath></text><defs><path id="planetLabelPath3348" d="M 28.14846797749979 118.4028 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath3348" startOffset="0" dominant-baseline="middle" text-anchor="start">HAL-GR-784</textPath></text><defs><path id="planetLabelPath3349" d="M 62.768467977499796 -106.4208 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath3349" startOffset="0" dominant-baseline="middle" text-anchor="start">BT-413</textPath></text><defs><path id="planetLabelPath3350" d="M -19.67873202250021 117.1272 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath3350" startOffset="0" dominant-baseline="middle" text-anchor="start">AKU-9-285</textPath></text><defs><path id="planetLabelPath3351" d="M 123.81126797749978 -29.1408 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath3351" startOffset="0" dominant-baseline="middle" text-anchor="start">T1-T9-3PO</textPath></text><defs><path id="planetLabelPath3352" d="M -90.56153202250022 -69.5652 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath3352" startOffset="0" dominant-baseline="middle" text-anchor="start">J3L1-OT9</textPath></text><g fill="rgb(51, 127, 91)"><path d="
+				M 400.59899281969217 20.504803140929017
+				L 399.17597907392985 -39.47831975109263
+				L 419.88186024415154 -9.961096220335897
+				Z
+			"></path><defs><path id="connectionLabelPath378" pathLength="1" d="M 383.03044449112355 -509.227531259782 L 406.7473402538282 490.49118360724543"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath378" startOffset="0.5" text-anchor="middle" dominant-baseline="hanging">Глизе</textPath></text></g><g fill="rgb(51, 127, 91)"><path d="
+				M -397.40683829289003 54.47756307002704
+				L -384.83509296903765 113.14570791467162
+				L -410.67701391251205 88.0022172669668
+				Z
+			"></path><defs><path id="connectionLabelPath568" pathLength="1" d="M -490.9964979260135 -406.1372169900098 L -281.46740919514014 571.6651970873997"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath568" startOffset="0.5" text-anchor="middle" dominant-baseline="auto">Мерак Бол. Медведицы</textPath></text></g></g><g transform="translate(-600 -600) scale(1.2)"></g></svg>

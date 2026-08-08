@@ -1,0 +1,71 @@
+<svg id="exportSystemMap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-600 -600 1200 1200" width="2048" height="2048"><rect class="bg-rect" x="-600" y="-600" width="1200" height="1200" fill="rgb(0, 0, 0)"></rect><defs><filter id="glow" filterUnits="objectBoundingBox" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="2"></feGaussianBlur></filter><filter id="starGlow" filterUnits="objectBoundingBox" x="-500%" y="-500%" width="1100%" height="1100%"><feGaussianBlur in="SourceGraphic" stdDeviation="10"></feGaussianBlur></filter></defs><g> <circle cx="0" cy="0" r="60" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="120" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="52.8516" cy="107.7852" r="18" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="52.8516" cy="107.7852" r="23" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="140" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="160" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="157.248" cy="-31.0416" r="14" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="180" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="200" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle> <circle fill="none" stroke="rgb(156, 91, 45)" stroke-width="2" stroke-opacity="0.2" r="90"></circle><circle fill="none" stroke="rgb(156, 91, 45)" stroke-width="4" stroke-opacity="0.05" r="95"></circle><circle fill="none" stroke="rgb(156, 91, 45)" stroke-width="4" stroke-opacity="0.05" r="85"></circle><circle fill="none" stroke="rgb(156, 91, 45)" stroke-width="1" stroke-opacity="0.1" r="100"></circle><circle fill="none" stroke="rgb(156, 91, 45)" stroke-width="1" stroke-opacity="0.1" r="80"></circle><circle fill="rgb(255, 255, 255)" r="8.831760866327848" cx="0" cy="0" filter="url(#starGlow)"></circle>  <circle fill="rgb(255, 255, 255)" r="8.831760866327848" cx="0" cy="0" filter=""></circle> <circle fill="rgb(255, 86, 0)" r="3.1622776601683795" cx="41.6772" cy="-43.1676"></circle><path d="
+			M 0 3.1622776601683795
+			A 3.1622776601683795 3.1622776601683795 0 0 0 0 -3.1622776601683795
+			A 1.5811388300841898 3.1622776601683795 0 0 1 0 3.1622776601683795
+			Z
+		" transform=" translate(41.6772 -43.1676) rotate(-46.006365128766866)" fill="#000000" opacity="0.5"></path><circle fill="rgb(156, 91, 45)" r="2.23606797749979" cx="80.8956" cy="-39.5235"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(80.8956 -39.5235) rotate(-26.038939565975273)" fill="#000000" opacity="0.5"></path><circle fill="rgb(156, 91, 45)" r="2.23606797749979" cx="-89.7462" cy="9.5184"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(-89.7462 9.5184) rotate(173.9458941947864)" fill="#000000" opacity="0.5"></path><circle fill="rgb(156, 91, 45)" r="2.23606797749979" cx="-9.5724" cy="-89.7399"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(-9.5724 -89.7399) rotate(263.9113809411624)" fill="#000000" opacity="0.5"></path><circle fill="rgb(150, 126, 90)" r="6.324555320336759" cx="52.8516" cy="107.7852"></circle><path d="
+			M 0 6.324555320336759
+			A 6.324555320336759 6.324555320336759 0 0 0 0 -6.324555320336759
+			A 3.1622776601683795 6.324555320336759 0 0 1 0 6.324555320336759
+			Z
+		" transform=" translate(52.8516 107.7852) rotate(63.87935137106755)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="1.5811388300841898" cx="49.72176" cy="90.02352"></circle><path d="
+			M 0 1.5811388300841898
+			A 1.5811388300841898 1.5811388300841898 0 0 0 0 -1.5811388300841898
+			A 0.7905694150420949 1.5811388300841898 0 0 1 0 1.5811388300841898
+			Z
+		" transform=" translate(49.72176 90.02352) rotate(61.08726648119286)" fill="#000000" opacity="0.5"></path><circle fill="rgb(30, 159, 220)" r="3" cx="56.82324" cy="85.08466"></circle><path d="
+			M 0 3
+			A 3 3 0 0 0 0 -3
+			A 1.5 3 0 0 1 0 3
+			Z
+		" transform=" translate(56.82324 85.08466) rotate(56.26327585461302)" fill="#000000" opacity="0.5"></path><circle fill="rgb(191, 187, 224)" r="3.1622776601683795" cx="-21.4844" cy="138.6518"></circle><path d="
+			M 0 3.1622776601683795
+			A 3.1622776601683795 3.1622776601683795 0 0 0 0 -3.1622776601683795
+			A 1.5811388300841898 3.1622776601683795 0 0 1 0 3.1622776601683795
+			Z
+		" transform=" translate(-21.4844 138.6518) rotate(98.8080579001446)" fill="#000000" opacity="0.5"></path><circle fill="rgb(150, 126, 90)" r="5.477225575051661" cx="157.248" cy="-31.0416"></circle><path d="
+			M 0 5.477225575051661
+			A 5.477225575051661 5.477225575051661 0 0 0 0 -5.477225575051661
+			A 2.7386127875258306 5.477225575051661 0 0 1 0 5.477225575051661
+			Z
+		" transform=" translate(157.248 -31.0416) rotate(-11.16691793966188)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="2" cx="170.85166" cy="-34.42876"></circle><path d="
+			M 0 2
+			A 2 2 0 0 0 0 -2
+			A 1 2 0 0 1 0 2
+			Z
+		" transform=" translate(170.85166 -34.42876) rotate(-11.393239770481483)" fill="#000000" opacity="0.5"></path><circle fill="rgb(174, 121, 83)" r="3.872983346207417" cx="124.6104" cy="-129.906"></circle><path d="
+			M 0 3.872983346207417
+			A 3.872983346207417 3.872983346207417 0 0 0 0 -3.872983346207417
+			A 1.9364916731037085 3.872983346207417 0 0 1 0 3.872983346207417
+			Z
+		" transform=" translate(124.6104 -129.906) rotate(-46.19195367122442)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="4.47213595499958" cx="-192.276" cy="55.834"></circle><path d="
+			M 0 4.47213595499958
+			A 4.47213595499958 4.47213595499958 0 0 0 0 -4.47213595499958
+			A 2.23606797749979 4.47213595499958 0 0 1 0 4.47213595499958
+			Z
+		" transform=" translate(-192.276 55.834) rotate(163.80751365090578)" fill="#000000" opacity="0.5"></path><defs><path id="planetLabelPath2272" d="M 13.831760866327848 0 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2272" startOffset="0" dominant-baseline="middle" text-anchor="start">Денеб</textPath></text><defs><path id="planetLabelPath2273" d="M 49.83947766016838 -43.1676 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2273" startOffset="0" dominant-baseline="middle" text-anchor="start">Пекло</textPath></text><defs><path id="planetLabelPath2274" d="M 88.13166797749979 -39.5235 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2274" startOffset="0" dominant-baseline="middle" text-anchor="start">DT4-298</textPath></text><defs><path id="planetLabelPath2275" d="M -82.51013202250022 9.5184 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2275" startOffset="0" dominant-baseline="middle" text-anchor="start">LR-2129</textPath></text><defs><path id="planetLabelPath2276" d="M -2.33633202250021 -89.7399 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2276" startOffset="0" dominant-baseline="middle" text-anchor="start">GR-345</textPath></text><defs><path id="planetLabelPath2277" d="M 64.17615532033676 107.7852 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2277" startOffset="0" dominant-baseline="middle" text-anchor="start">Олим</textPath></text><defs><path id="planetLabelPath2278" d="M 56.302898830084196 90.02352 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2278" startOffset="0" dominant-baseline="middle" text-anchor="start">Новая Луна</textPath></text><defs><path id="planetLabelPath2279" d="M 64.82324 85.08466 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2279" startOffset="0" dominant-baseline="middle" text-anchor="start">Единство</textPath></text><defs><path id="planetLabelPath2280" d="M -13.32212233983162 138.6518 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2280" startOffset="0" dominant-baseline="middle" text-anchor="start">Мрамор</textPath></text><defs><path id="planetLabelPath2281" d="M 167.72522557505164 -31.0416 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2281" startOffset="0" dominant-baseline="middle" text-anchor="start">Гиперион</textPath></text><defs><path id="planetLabelPath2282" d="M 177.85166 -34.42876 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2282" startOffset="0" dominant-baseline="middle" text-anchor="start">Гелиос</textPath></text><defs><path id="planetLabelPath2283" d="M 133.4833833462074 -129.906 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2283" startOffset="0" dominant-baseline="middle" text-anchor="start">Перекати-поле</textPath></text><defs><path id="planetLabelPath2284" d="M -182.80386404500044 55.834 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2284" startOffset="0" dominant-baseline="middle" text-anchor="start">NAME_Jackson's_Planet</textPath></text><g fill="rgb(51, 127, 91)"><path d="
+				M 400 30
+				L 400 -30
+				L 420 0
+				Z
+			"></path><defs><path id="connectionLabelPath193" pathLength="1" d="M 395.00000000000006 500 L 394.99999999999994 -500"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath193" startOffset="0.5" text-anchor="middle" dominant-baseline="auto">Альбедо</textPath></text></g><g fill="rgb(51, 127, 91)"><path d="
+				M -65.47180059876727 395.7441639826862
+				L -5.7097796126749785 401.0827824985444
+				L -37.37032961100718 418.33414690264607
+				Z
+			"></path><defs><path id="connectionLabelPath515" pathLength="1" d="M -533.1627467801687 348.9448171929561 L 462.8709363213695 437.9217924572591"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath515" startOffset="0.5" text-anchor="middle" dominant-baseline="auto">Думгар</textPath></text></g></g><g transform="translate(-600 -600) scale(1.2)"></g></svg>
