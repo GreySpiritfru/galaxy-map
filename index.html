@@ -333,8 +333,16 @@ function createPanZoom(container, svg, opts) {
     e.preventDefault();
     const dx = e.clientX - panStart.x, dy = e.clientY - panStart.y;
     if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
-    const scaleX = panViewStart.w / (svg.clientWidth || 1);
-    const scaleY = panViewStart.h / (svg.clientHeight || 1);
+    // preserveAspectRatio="xMidYMid meet" на не-квадратном экране оставляет пустые поля
+    // по одной из осей — масштаб пикселей должен быть ОДИНАКОВЫМ для x и y (он единый,
+    // так как aspect ratio сохраняется), а не считаться раздельно от полной ширины/высоты
+    // контейнера, иначе перетаскивание по короткой оси контейнера ощущается слабее.
+    const renderScale = Math.min(
+      (svg.clientWidth || 1) / panViewStart.w,
+      (svg.clientHeight || 1) / panViewStart.h
+    );
+    const scaleX = 1 / renderScale;
+    const scaleY = 1 / renderScale;
     setViewBox(clampViewBox({
       x: panViewStart.x - dx * scaleX,
       y: panViewStart.y - dy * scaleY,
@@ -437,7 +445,10 @@ async function openSystem(name) {
   if (!svgText) {
     try {
       const resp = await fetch(`systems/${encodeURIComponent(slug)}.svg`, {cache:'no-cache'});
-      if (!resp.ok) throw new Error('not found');
+      // Проверяем именно 404, а не resp.ok — resp.ok ложно считается false и на статусе
+      // 304 (Not Modified из кэша), из-за чего реально загрузившийся файл принимался
+      // бы за отсутствующий.
+      if (resp.status === 404) throw new Error('not found');
       svgText = await resp.text();
       systemCache[slug] = svgText;
     } catch (err) {
@@ -445,7 +456,7 @@ async function openSystem(name) {
         <div class="system-placeholder">
           <div>
             <div style="font-size:18px;font-weight:700;margin-bottom:8px;">${name}</div>
-            <div>Карта этой системы ещё не готова.<br/>Ожидаемый файл: <code>systems/${slug}.svg</code></div>
+            <div>Карта этой системы не исследована игроками, либо ещё не готова.</div>
           </div>
         </div>`;
       return;
@@ -467,18 +478,8 @@ async function openSystem(name) {
    ============================================================ */
 const SVG_PATH = 'map.svg';
 
-const SYSTEMS = [
-  { id: 'donzoleitsy', name: 'Донзолейцы', x: 715, y: 64,
-    html: '<div class="modal-title">Донзолейцы</div><div>Раса на севере карты. Ключевые системы: Оружие, Тьма, Небеса, Мощь, Война, Олимп, Сила.</div>' },
-  { id: 'terrane', name: 'Терране', x: 880, y: 410,
-    html: '<div class="modal-title">Терране</div><div>Крупная фракция на востоке карты, соседствует с Гара\'кессил и Ксерами.</div>' },
-  { id: 'groksy', name: 'Гроксы', x: 1143, y: 780,
-    html: '<div class="modal-title">Гроксы</div><div>Изолированная территория на востоке, отмечена как «Центр Галактики».</div>' },
-  { id: 'ekvestriytsy', name: 'Экветрийцы', x: 633, y: 531,
-    html: '<div class="modal-title">Экветрийцы</div><div>Фракция в центре карты, рядом с Теротеями и Гара\'кессил.</div>' },
-  { id: 'damasiytsy', name: 'Дамасийцы', x: 762, y: 866,
-    html: '<div class="modal-title">Дамасийцы</div><div>Часть красной зоны «Освобождённые территории» в южной части карты.</div>' }
-];
+/* Точки на карте (маркеры фракций/персонажей и т.п.) больше не зашиты в коде —
+   они грузятся из markers.json, лежащего рядом с этим index.html. См. renderMarkers() ниже. */
 
 let calibMode = false;
 const calibPanel = document.getElementById('calibPanel');
@@ -581,34 +582,123 @@ const calibPanel = document.getElementById('calibPanel');
     calibPanel.textContent = `x: ${rx}\ny: ${ry}\n\n{ x: ${rx}, y: ${ry} }`;
   }
 
-  /* --- Инфо-точки (фракции) — открывают модал, П.1 --- */
+  /* --- Точки на карте (фракции/персонажи/что угодно) — данные из markers.json --- */
   const ns = 'http://www.w3.org/2000/svg';
-  SYSTEMS.forEach(cfg => {
-    const g = document.createElementNS(ns, 'g');
-    g.setAttribute('class', 'hotspot');
-    g.setAttribute('transform', `translate(${cfg.x} ${cfg.y})`);
-    const c = document.createElementNS(ns, 'circle');
-    c.setAttribute('r', 3.5);
-    c.setAttribute('fill', 'rgba(255,200,50,0.9)');
-    c.setAttribute('stroke', '#111');
-    c.setAttribute('stroke-width', 0.5);
-    c.style.cursor = 'pointer';
-    g.appendChild(c);
-    // __onTap на самой группе — сработает и по клику на circle, и по клику
-    // в любом другом месте внутри g (findTapHandler поднимается по родителям)
-    g.__onTap = () => {
-      if (calibMode) { showCalib(cfg.x, cfg.y); return; }
-      pz.centerOn(cfg.x, cfg.y);
-      openModal(cfg.html);
-    };
-    svg.appendChild(g);
-  });
+  const MARKERS_PATH = 'markers.json';
+
+  async function loadMarkers() {
+    try {
+      const resp = await fetch(MARKERS_PATH, {cache:'no-cache'});
+      // Не проверяем resp.ok — оно ложно считается false и на статусе 304
+      // (файл не изменился, отдан из кэша), из-за чего реально загрузившийся
+      // файл принимался бы за ошибку. Пробуем распарсить в любом случае,
+      // а сбой парсинга поймает внешний catch.
+      const data = await resp.json();
+      return Array.isArray(data) ? data : [];
+    } catch (e) {
+      return []; // файла нет или он битый — просто не рисуем точки, не ошибка
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  function renderMarkers(markers) {
+    const MARKER_SIZE = 8; // размер картинки-маркера в единицах SVG
+
+    markers.forEach(m => {
+      if (typeof m.x !== 'number' || typeof m.y !== 'number') return;
+
+      const g = document.createElementNS(ns, 'g');
+      g.setAttribute('class', 'hotspot');
+      g.setAttribute('transform', `translate(${m.x} ${m.y})`);
+
+      function addDefaultDot() {
+        const c = document.createElementNS(ns, 'circle');
+        c.setAttribute('r', 3.5);
+        c.setAttribute('fill', 'rgba(255,200,50,0.9)');
+        c.setAttribute('stroke', '#111');
+        c.setAttribute('stroke-width', 0.5);
+        c.style.cursor = 'pointer';
+        g.appendChild(c);
+      }
+
+      if (m.image) {
+        // круглая картинка-аватар вместо обычной точки, с тонкой обводкой
+        const clipId = 'clip-' + Math.random().toString(36).slice(2, 9);
+        const clip = document.createElementNS(ns, 'clipPath');
+        clip.setAttribute('id', clipId);
+        const clipCircle = document.createElementNS(ns, 'circle');
+        clipCircle.setAttribute('r', MARKER_SIZE/2);
+        clip.appendChild(clipCircle);
+        g.appendChild(clip);
+
+        const img = document.createElementNS(ns, 'image');
+        img.setAttribute('href', m.image);
+        img.setAttribute('x', -MARKER_SIZE/2);
+        img.setAttribute('y', -MARKER_SIZE/2);
+        img.setAttribute('width', MARKER_SIZE);
+        img.setAttribute('height', MARKER_SIZE);
+        img.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+        img.setAttribute('clip-path', `url(#${clipId})`);
+        img.style.cursor = 'pointer';
+
+        const ring = document.createElementNS(ns, 'circle');
+        ring.setAttribute('r', MARKER_SIZE/2);
+        ring.setAttribute('fill', 'none');
+        ring.setAttribute('stroke', '#fff');
+        ring.setAttribute('stroke-width', 0.4);
+
+        // Путь на картинку битый/недоступен — тихо откатываемся на обычную точку,
+        // а не оставляем дыру на карте
+        img.addEventListener('error', () => {
+          img.remove(); ring.remove(); clip.remove();
+          addDefaultDot();
+        });
+
+        g.appendChild(img);
+        g.appendChild(ring);
+      } else {
+        addDefaultDot();
+      }
+
+      g.__onTap = () => {
+        if (calibMode) { showCalib(m.x, m.y); return; }
+        pz.centerOn(m.x, m.y);
+        const titleHtml = m.title ? `<div class="modal-title">${escapeHtml(m.title)}</div>` : '';
+        const textHtml = m.text ? `<div>${escapeHtml(m.text).replace(/\n/g, '<br>')}</div>` : '';
+        openModal(titleHtml + textHtml);
+      };
+
+      svg.appendChild(g);
+    });
+  }
+
+  loadMarkers().then(renderMarkers);
 
   /* --- П.3: клик по названию системы (реальные <text> из экспорта StellarMaps) ---
      Ждём document.fonts.ready: в карте зашит кастомный шрифт (Orbitron), и если
      измерять getBBox() до его загрузки, размеры текста считаются по запасному
      шрифту — область клика получается смещена относительно того, что видно на экране. */
-  const setupSystemLabels = () => {
+  const MANIFEST_PATH = 'systems/manifest.json';
+  // Список слагов уже готовых систем — один лёгкий запрос вместо 1644 проверок
+  // по отдельности. Файла может не быть вообще (пока ни одной системы не готово) —
+  // тогда просто ничего не подсвечиваем, это не ошибка.
+  async function loadReadySystems() {
+    try {
+      const resp = await fetch(MANIFEST_PATH, {cache:'no-cache'});
+      // Та же история: не полагаемся на resp.ok из-за ложного срабатывания на 304
+      const list = await resp.json();
+      return new Set(list);
+    } catch (e) {
+      return new Set();
+    }
+  }
+
+  const setupSystemLabels = (readySlugs) => {
     svg.querySelectorAll('text').forEach(textEl => {
       const name = textEl.textContent.trim();
       if (!name) return;
@@ -634,6 +724,13 @@ const calibPanel = document.getElementById('calibPanel');
       hit.setAttribute('fill', 'transparent');
       textEl.parentNode.insertBefore(hit, textEl);
 
+      // Подсветка систем, для которых уже есть готовая карта — просто перекрашиваем
+      // сам текст, никаких новых DOM-элементов не добавляем, ноль лишней нагрузки.
+      const slug = slugify(name);
+      if (readySlugs.has(slug)) {
+        textEl.setAttribute('fill', '#AFEEEE');
+      }
+
       const trigger = () => {
         if (calibMode) { showCalib(bbox.x + bbox.width/2, bbox.y + bbox.height/2); return; }
         openSystem(name);
@@ -645,11 +742,10 @@ const calibPanel = document.getElementById('calibPanel');
     });
   };
 
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(setupSystemLabels);
-  } else {
-    setupSystemLabels();
-  }
+  const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+  Promise.all([fontsReady, loadReadySystems()]).then(([, readySlugs]) => {
+    setupSystemLabels(readySlugs);
+  });
 
 })();
 </script>
