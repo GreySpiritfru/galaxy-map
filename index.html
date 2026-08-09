@@ -89,26 +89,37 @@
     }
 
     /* ===== П.1: мобильный модал для инфо-точек =====
-       Центрированное окно, ~20% свободного поля по краям — тап по фону закрывает. */
+       Центрированное окно, ~20% свободного поля по краям — тап по фону закрывает.
+       Фон вокруг больше не затемняется, только сама карточка полупрозрачная,
+       с плавным появлением (fade + лёгкое всплытие). */
     .modal-backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.55);
-      display: none;
+      background: transparent;
+      display: flex;
       align-items: center;
       justify-content: center;
       z-index: 100;
       padding: 10vh 6vw;
       box-sizing: border-box;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
     }
-    .modal-backdrop.open { display: flex; }
+    .modal-backdrop.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
 
     .modal-card {
       width: 100%;
       max-width: 480px;
       max-height: 100%;
       overflow-y: auto;
-      background: rgba(10,10,16,0.98);
+      background: rgba(10,10,16,0.82);
+      backdrop-filter: blur(6px);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 14px;
       padding: 16px 18px;
@@ -117,6 +128,11 @@
       font-size: 14px;
       position: relative;
       box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      transform: scale(0.94) translateY(8px);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-backdrop.open .modal-card {
+      transform: scale(1) translateY(0);
     }
 
     .modal-close {
@@ -667,7 +683,6 @@ const calibPanel = document.getElementById('calibPanel');
 
       g.__onTap = () => {
         if (calibMode) { showCalib(m.x, m.y); return; }
-        pz.centerOn(m.x, m.y);
         const titleHtml = m.title ? `<div class="modal-title">${escapeHtml(m.title)}</div>` : '';
         const textHtml = m.text ? `<div>${escapeHtml(m.text).replace(/\n/g, '<br>')}</div>` : '';
         openModal(titleHtml + textHtml);
