@@ -99,7 +99,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      z-index: 100;
+      z-index: 300;
       padding: 10vh 6vw;
       box-sizing: border-box;
       opacity: 0;
@@ -164,11 +164,18 @@
     }
     .system-overlay.open { display: block; }
 
-    .system-back {
+    .system-toolbar {
       position: absolute;
       left: 12px;
       top: 12px;
       z-index: 210;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      max-width: calc(100vw - 24px);
+    }
+
+    .system-back, .system-lore {
       background: rgba(255,255,255,0.1);
       color: #fff;
       border: none;
@@ -177,6 +184,31 @@
       font-size: 14px;
       font-weight: 600;
       backdrop-filter: blur(6px);
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .system-lore { display: none; }
+    .system-lore.visible { display: inline-block; }
+
+    /* Модал со статьёй Teletype поверх карты системы — та же карточка,
+       что и у обычных маркеров, просто внутри iframe вместо текста. */
+    .modal-card.modal-card--iframe {
+      max-width: 100%;
+      width: 92vw;
+      height: 78vh;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+    }
+    .modal-card--iframe iframe {
+      flex: 1;
+      width: 100%;
+      height: 330%;
+      border: 0;
+      border-radius: 8px;
+      background: #fff;
+      margin-top: 6px;
     }
 
     .system-placeholder {
@@ -220,7 +252,10 @@
 
 <!-- Полноэкранный вид отдельной системы -->
 <div class="system-overlay" id="systemOverlay">
-  <button class="system-back" id="systemBack">← Назад к карте</button>
+  <div class="system-toolbar">
+    <button class="system-back" id="systemBack">← Назад к карте</button>
+    <button class="system-lore" id="systemLore"></button>
+  </div>
   <div id="systemContainer" style="position:absolute; inset:0; touch-action:none;"></div>
 </div>
 
@@ -426,7 +461,14 @@ function createPanZoom(container, svg, opts) {
 /* ============================================================
    П.1: единый мобильный модал для инфо-точек
    ============================================================ */
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
 const modalBackdrop = document.getElementById('modalBackdrop');
+const modalCard = document.getElementById('modalCard');
 const modalContent = document.getElementById('modalContent');
 // На тач-устройствах после pointerup браузер иногда досылает синтетический click —
 // а модал к этому моменту уже открыт и перекрывает место тапа, поэтому клик "мимо"
@@ -435,11 +477,23 @@ const modalContent = document.getElementById('modalContent');
 // пропустить призрачный клик, но не помешать реальному следующему тапу пользователя.
 let modalArmed = false;
 function openModal(html) {
+  modalCard.classList.remove('modal-card--iframe');
   modalContent.innerHTML = html;
   modalBackdrop.classList.add('open');
   modalArmed = false;
   setTimeout(() => { modalArmed = true; }, 300);
 }
+
+// Тот же модал, но с iframe вместо текста — для лора системы (например, статья Teletype).
+function openIframeModal(title, url) {
+  modalCard.classList.add('modal-card--iframe');
+  const titleHtml = title ? `<div class="modal-title">${escapeHtml(title)}</div>` : '';
+  modalContent.innerHTML = `${titleHtml}<iframe src="${escapeHtml(url)}" loading="lazy"></iframe>`;
+  modalBackdrop.classList.add('open');
+  modalArmed = false;
+  setTimeout(() => { modalArmed = true; }, 300);
+}
+
 function closeModal() { modalBackdrop.classList.remove('open'); }
 document.getElementById('modalClose').addEventListener('click', closeModal);
 modalBackdrop.addEventListener('click', (e) => {
@@ -452,11 +506,29 @@ modalBackdrop.addEventListener('click', (e) => {
    ============================================================ */
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
+const systemLoreBtn = document.getElementById('systemLore');
 document.getElementById('systemBack').addEventListener('click', closeSystem);
+
+// systems/lore.json — соответствие слаг системы -> ссылка на статью (например, Teletype),
+// которая откроется по кнопке рядом с "Назад к карте". Формат:
+// { "имя_слага": { "label": "Контролирующая раса", "url": "https://teletype.in/..." } }
+// Грузится один раз при старте страницы, параллельно со всем остальным.
+const LORE_PATH = 'systems/lore.json';
+const loreDataPromise = (async () => {
+  try {
+    const resp = await fetch(LORE_PATH, {cache:'no-cache'});
+    const data = await resp.json();
+    return (data && typeof data === 'object') ? data : {};
+  } catch (e) {
+    return {}; // файла нет или он битый — просто не показываем кнопку лора, не ошибка
+  }
+})();
 
 function closeSystem() {
   systemOverlay.classList.remove('open');
   systemContainer.innerHTML = '';
+  systemLoreBtn.classList.remove('visible');
+  systemLoreBtn.onclick = null;
 }
 
 // slug из названия системы -> ожидаемое имя файла systems/<slug>.svg
@@ -473,6 +545,21 @@ async function openSystem(name) {
   systemContainer.innerHTML = '';
 
   const slug = slugify(name);
+
+  // Кнопка "Контролирующая раса" (или как её назовут в lore.json) — показываем,
+  // только если для этой системы есть запись. Настраиваем её независимо от того,
+  // готова ли сама карта системы (пусть работает даже пока карта в разработке).
+  const loreData = await loreDataPromise;
+  const lore = loreData[slug];
+  if (lore && lore.url) {
+    systemLoreBtn.textContent = lore.label || 'Контролирующая раса';
+    systemLoreBtn.classList.add('visible');
+    systemLoreBtn.onclick = () => openIframeModal(systemLoreBtn.textContent, lore.url);
+  } else {
+    systemLoreBtn.classList.remove('visible');
+    systemLoreBtn.onclick = null;
+  }
+
   let svgText = systemCache[slug];
 
   if (!svgText) {
@@ -638,11 +725,7 @@ const calibPanel = document.getElementById('calibPanel');
     }
   }
 
-  function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str == null ? '' : String(str);
-    return div.innerHTML;
-  }
+  // escapeHtml объявлена выше, на верхнем уровне — используется и тут, и в openIframeModal
 
   function renderMarkers(markers) {
     const MARKER_SIZE = 8; // размер картинки-маркера в единицах SVG
