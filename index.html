@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Карта галактики — Феном</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Карта Феном — огромная растровая иллюстрация (21284x9902px), порезана офлайн
+       на тайлы (Deep Zoom Image, см. phenom-tiles/) и рендерится через OpenSeadragon:
+       грузятся только видимые тайлы нужного уровня приближения, а не вся картинка
+       разом (та же проблема, что уже возникала с 4096px-текстурой в map.svg, только
+       на порядок крупнее — тайлы решают её в принципе, а не переносом лимита). -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/5.0.1/openseadragon.min.js"></script>
 
   <style>
     html, body {
@@ -43,6 +49,7 @@
       top: 12px;
       display: flex;
       flex-direction: column;
+      align-items: flex-end;
       gap: 8px;
       z-index: 20;
     }
@@ -58,7 +65,38 @@
       min-height: 44px;
       font-weight: 600;
       font-size: 16px;
+      cursor: pointer;
     }
+
+    /* Верхний ряд: кнопка "Феном" + сворачиваемое меню инструментов (zoom/reset/калибровка) */
+    .controls-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .phenom-goto-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: auto;
+      min-width: auto;
+      padding: 8px 14px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .tools-toggle.open {
+      background: rgba(255,255,255,0.24);
+    }
+
+    /* Инструменты карты (zoom/reset/калибровка) скрыты, пока не открыт tools-toggle,
+       чтобы не загромождать угол карты рядом с новой кнопкой "Феном". */
+    .controls-tools {
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .controls-tools.open { display: flex; }
 
     .svg-hint {
       position: absolute;
@@ -186,29 +224,104 @@
       backdrop-filter: blur(6px);
       white-space: nowrap;
       cursor: pointer;
+      transition: padding 0.2s ease, font-size 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
     }
 
     .system-lore { display: none; }
     .system-lore.visible { display: inline-block; }
 
+    /* "Нажатое" состояние кнопки, открывшей статью (лор системы / описание Феном). */
+    .system-lore.active, .phenom-desc.active {
+      background: rgba(175,238,238,0.28);
+      box-shadow: inset 0 0 0 1.5px #AFEEEE;
+    }
+
+    /* Пока открыта статья (лор системы ИЛИ описание Феном), соответствующий
+       тулбар (.system-toolbar или .phenom-toolbar — оба помечены общим классом
+       .lore-toolbar, см. openIframeModal в JS) временно переносится внутрь
+       #modalCard и превращается в компактную "шторку" — узкую полупрозрачную
+       панель на всю ширину, наезжающую поверх статьи сверху. При закрытии
+       переносится обратно туда, откуда был взят. */
+    .lore-toolbar.compact {
+      position: fixed;
+      inset: 0 0 auto 0;
+      max-width: 100%;
+      margin: 0;
+      padding: 10px 60px 10px 10px;
+      background: rgba(12,12,18,0.62);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      border-radius: 0 0 16px 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      box-sizing: border-box;
+      z-index: 2;
+      animation: loreBarIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .system-toolbar.compact .system-back,
+    .system-toolbar.compact .system-lore {
+      padding: 6px 10px;
+      font-size: 12.5px;
+    }
+    @keyframes loreBarIn {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
     /* Модал со статьёй Teletype поверх карты системы — та же карточка,
-       что и у обычных маркеров, просто внутри iframe вместо текста. */
+       что и у обычных маркеров, но развёрнута на весь экран без рамки:
+       Teletype оформляет себя сам. Статья идёт от самого верха экрана,
+       крестик и перенесённая "шторка" (.system-toolbar.compact) лежат
+       поверх неё как плавающие элементы (position: fixed). */
+    .modal-backdrop.backdrop--iframe {
+      padding: 0;
+      align-items: stretch;
+      justify-content: stretch;
+    }
     .modal-card.modal-card--iframe {
       max-width: 100%;
-      width: 92vw;
-      height: 78vh;
-      display: flex;
-      flex-direction: column;
-      padding: 12px;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      backdrop-filter: none;
+      /* Базовый .modal-card скроллится сам (overflow-y:auto) — для текстовых
+         карточек маркеров это нужно, но для iframe со статьёй нельзя: вложенный
+         <iframe> внутри скроллящегося контейнера "перетягивает" на себя тач/колесо
+         с мобильных браузеров, из-за чего статья внутри переставала скроллиться
+         и реагировать на тапы. Весь скролл должен быть только внутри iframe. */
+      overflow: hidden;
+    }
+    .modal-card--iframe .modal-close {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: 42px;
+      height: 42px;
+      min-width: 42px;
+      min-height: 42px;
+      margin: 0;
+      font-size: 24px;
+      background: rgba(12,12,18,0.62);
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+      z-index: 3;
+    }
+    .modal-card--iframe #modalContent {
+      width: 100%;
+      height: 100%;
     }
     .modal-card--iframe iframe {
-      flex: 1;
+      display: block;
       width: 100%;
-      height: 330%;
+      height: 100%;
       border: 0;
-      border-radius: 8px;
       background: #fff;
-      margin-top: 6px;
     }
 
     .system-placeholder {
@@ -223,9 +336,100 @@
       padding: 0 30px;
     }
 
+    /* ===== Всплывающее окно "Корабль-город Феном" =====
+       В отличие от .system-overlay (полноэкранный, закрывает карту галактики),
+       это окно-вкладыш поверх карты: карта остаётся под ним, видна и затемнена
+       по краям за пределами карточки (~90% экрана). */
+    .phenom-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5vh 5vw;
+      box-sizing: border-box;
+      z-index: 250;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    .phenom-overlay.open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+    .phenom-card {
+      width: 100%;
+      height: 100%;
+      background: #0e0e14;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform-origin: center center;
+    }
+    /* Камера сначала "наводится" на маркер Феном (см. focusAndOpenPhenom в JS),
+       и только когда она долетает — окно раскрывается будто вырастая из той же
+       точки в центре экрана, где только что оказался маркер: от маленькой кляксы
+       до полноразмерной карточки. */
+    .phenom-overlay.open .phenom-card {
+      animation: phenomCardMorph 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes phenomCardMorph {
+      from { transform: scale(0.05); border-radius: 50%; opacity: 0.3; }
+      60%  { border-radius: 30%; opacity: 1; }
+      to   { transform: scale(1); border-radius: 18px; opacity: 1; }
+    }
+    .phenom-toolbar {
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: flex-end;
+      padding: 10px;
+      background: rgba(255,255,255,0.03);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .phenom-close, .phenom-desc {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .phenom-content {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      position: relative;
+      background: #0e0e14;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .phenom-viewer {
+      position: absolute;
+      inset: 0;
+    }
+
     @media (max-width: 600px) {
       .svg-controls { right: 8px; top: 8px; }
       .svg-controls button { padding: 6px 8px; min-width: 40px; min-height: 40px; }
+      .phenom-overlay { padding: 3vh 3vw; }
+    }
+
+    @media (max-width: 420px) {
+      .phenom-goto-label { display: none; }
+      .phenom-goto-btn { padding: 8px 10px; }
     }
   </style>
 </head>
@@ -233,10 +437,18 @@
 
 <div class="svg-widget" id="svgWidget">
   <div class="svg-controls" id="controls">
-    <button id="zoomIn" aria-label="Zoom in">＋</button>
-    <button id="zoomOut" aria-label="Zoom out">－</button>
-    <button id="reset" aria-label="Reset view">⟲</button>
-    <button id="calibToggle" title="Режим калибровки координат">📍</button>
+    <div class="controls-row">
+      <button id="gotoPhenom" class="phenom-goto-btn" title="Корабль-город Феном">
+        <span aria-hidden="true">🚀</span><span class="phenom-goto-label">Феном</span>
+      </button>
+      <button id="toolsToggle" class="tools-toggle" aria-label="Инструменты карты" aria-expanded="false">⋯</button>
+    </div>
+    <div class="controls-tools" id="controlsTools">
+      <button id="zoomIn" aria-label="Zoom in">＋</button>
+      <button id="zoomOut" aria-label="Zoom out">－</button>
+      <button id="reset" aria-label="Reset view">⟲</button>
+      <button id="calibToggle" title="Режим калибровки координат">📍</button>
+    </div>
   </div>
   <div class="calib-panel" id="calibPanel"></div>
   <div class="svg-hint">Перетаскивание — палец/мышь, масштаб — щипок/колёсико. Тапни по названию системы.</div>
@@ -252,11 +464,26 @@
 
 <!-- Полноэкранный вид отдельной системы -->
 <div class="system-overlay" id="systemOverlay">
-  <div class="system-toolbar">
+  <div class="system-toolbar lore-toolbar">
     <button class="system-back" id="systemBack">← Назад к карте</button>
     <button class="system-lore" id="systemLore"></button>
   </div>
   <div id="systemContainer" style="position:absolute; inset:0; touch-action:none;"></div>
+</div>
+
+<!-- Окно-вкладыш "Корабль-город Феном" — открывается поверх карты галактики,
+     сама карта карта остаётся видна (затемнена) по краям. Внутри — карта Феном
+     (тайлы + OpenSeadragon, см. ensurePhenomViewer в JS). -->
+<div class="phenom-overlay" id="phenomOverlay">
+  <div class="phenom-card" id="phenomCard">
+    <div class="phenom-toolbar lore-toolbar">
+      <button class="phenom-desc" id="phenomDesc">Описание Фенома</button>
+      <button class="phenom-close" id="phenomClose">✕ К карте галактики</button>
+    </div>
+    <div class="phenom-content" id="phenomContent">
+      <div class="phenom-viewer" id="phenomViewer"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -350,8 +577,42 @@ function createPanZoom(container, svg, opts) {
     setViewBox(clampViewBox({x:newX, y:newY, w:newW, h:newH}));
   }
 
+  // Плавный анимированный перелёт камеры (например, "наведение" на маркер
+  // Феном перед открытием его окна) — обычный setViewBox() меняет viewBox
+  // мгновенно, тут вместо этого интерполируем текущий вид к целевому кадр
+  // за кадром через requestAnimationFrame. Отменяется, если пользователь
+  // начинает своё собственное перетаскивание/зум поверх анимации.
+  let animFrameId = null;
+  function cancelAnim() {
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+  }
+  function easeInOutCubic(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2; }
+  function animateViewBox(target, duration, onDone) {
+    cancelAnim();
+    const start = {...cur};
+    const t0 = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      const e = easeInOutCubic(t);
+      setViewBox({
+        x: start.x + (target.x - start.x) * e,
+        y: start.y + (target.y - start.y) * e,
+        w: start.w + (target.w - start.w) * e,
+        h: start.h + (target.h - start.h) * e,
+      });
+      if (t < 1) {
+        animFrameId = requestAnimationFrame(step);
+      } else {
+        animFrameId = null;
+        if (onDone) onDone();
+      }
+    }
+    animFrameId = requestAnimationFrame(step);
+  }
+
   svg.addEventListener('wheel', (e) => {
     e.preventDefault();
+    cancelAnim();
     const zoomFactor = Math.pow(1.0015, -e.deltaY);
     const p = clientToSvgPoint(e.clientX, e.clientY);
     zoomAt(p.x, p.y, zoomFactor);
@@ -375,6 +636,7 @@ function createPanZoom(container, svg, opts) {
 
   svg.addEventListener('pointerdown', (e) => {
     if (e.button && e.button !== 0) return;
+    cancelAnim();
     // Запоминаем реальную цель ДО setPointerCapture — после захвата все дальнейшие
     // события (move/up) таргетятся на сам svg, а не на элемент под пальцем,
     // поэтому e.target в pointerup для поиска __onTap уже не годится.
@@ -425,6 +687,7 @@ function createPanZoom(container, svg, opts) {
 
   svg.addEventListener('touchstart', (e) => {
     if (e.touches.length === 2) {
+      cancelAnim();
       pinch.active = true;
       pinch.startDist = dist(e.touches[0], e.touches[1]);
       pinch.startView = {...cur};
@@ -449,10 +712,23 @@ function createPanZoom(container, svg, opts) {
   svg.addEventListener('touchend', (e) => { if (e.touches.length < 2) pinch.active = false; });
 
   return {
-    zoomIn: () => zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1.25),
-    zoomOut: () => zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1/1.25),
-    reset: () => setViewBox({...initialViewBox}),
+    zoomIn: () => { cancelAnim(); zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1.25); },
+    zoomOut: () => { cancelAnim(); zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1/1.25); },
+    reset: () => { cancelAnim(); setViewBox({...initialViewBox}); },
     centerOn: (x, y) => setViewBox(clampViewBox({x: x-cur.w/2, y: y-cur.h/2, w:cur.w, h:cur.h})),
+    // Центрирует на (x,y) на ФИКСИРОВАННОМ уровне приближения targetWidth (в единицах
+    // viewBox, не зависит от того, насколько был зумлен пользователь до этого — в
+    // отличие от zoomAt/zoomIn, где новый масштаб считается относительно текущего).
+    // Без duration — мгновенно (как centerOn); с duration — плавный анимированный
+    // перелёт камеры, по завершении которого вызывается onDone.
+    focusOn: (x, y, targetWidth, duration, onDone) => {
+      const aspect = initialViewBox.h / initialViewBox.w;
+      const newW = Math.max(minW, Math.min(maxW, targetWidth));
+      const newH = newW * aspect;
+      const target = clampViewBox({x: x - newW/2, y: y - newH/2, w: newW, h: newH});
+      if (duration) animateViewBox(target, duration, onDone);
+      else { setViewBox(target); if (onDone) onDone(); }
+    },
     getViewBox: () => ({...cur}),
     getInitialViewBox: () => ({...initialViewBox}),
   };
@@ -478,23 +754,51 @@ const modalContent = document.getElementById('modalContent');
 let modalArmed = false;
 function openModal(html) {
   modalCard.classList.remove('modal-card--iframe');
+  modalBackdrop.classList.remove('backdrop--iframe');
+  resetLoreToolbarState();
   modalContent.innerHTML = html;
   modalBackdrop.classList.add('open');
   modalArmed = false;
   setTimeout(() => { modalArmed = true; }, 300);
 }
 
-// Тот же модал, но с iframe вместо текста — для лора системы (например, статья Teletype).
-function openIframeModal(title, url) {
+// Тот же модал, но с iframe вместо текста, развёрнутый на весь экран — для
+// статей Teletype (лор системы, описание Феном и т.п.). Статья идёт от
+// самого верха экрана; toolbarEl (любая панель с классом .lore-toolbar —
+// .system-toolbar внутри системы, .phenom-toolbar внутри окна Феном) на
+// время статьи переносится внутрь #modalCard и через .compact превращается
+// в узкую "шторку", наезжающую поверх статьи — так и панель, и крестик
+// закрытия остаются на одном уровне поверх текста, а не отъедают от него
+// место сверху. activeBtn (необязательно) подсвечивается, пока статья открыта.
+let dockedToolbar = null; // {el, parent, next, activeBtn} — куда вернуть панель при закрытии
+
+function openIframeModal(url, toolbarEl, activeBtn) {
   modalCard.classList.add('modal-card--iframe');
-  const titleHtml = title ? `<div class="modal-title">${escapeHtml(title)}</div>` : '';
-  modalContent.innerHTML = `${titleHtml}<iframe src="${escapeHtml(url)}" loading="lazy"></iframe>`;
+  modalBackdrop.classList.add('backdrop--iframe');
+  modalContent.innerHTML = `<iframe src="${escapeHtml(url)}" loading="lazy"></iframe>`;
+  if (toolbarEl) {
+    dockedToolbar = { el: toolbarEl, parent: toolbarEl.parentElement, next: toolbarEl.nextSibling, activeBtn: activeBtn || null };
+    modalCard.insertBefore(toolbarEl, modalCard.firstChild);
+    toolbarEl.classList.add('compact');
+    if (activeBtn) activeBtn.classList.add('active');
+  }
   modalBackdrop.classList.add('open');
   modalArmed = false;
   setTimeout(() => { modalArmed = true; }, 300);
 }
 
-function closeModal() { modalBackdrop.classList.remove('open'); }
+function resetLoreToolbarState() {
+  if (!dockedToolbar) return;
+  dockedToolbar.el.classList.remove('compact');
+  if (dockedToolbar.activeBtn) dockedToolbar.activeBtn.classList.remove('active');
+  dockedToolbar.parent.insertBefore(dockedToolbar.el, dockedToolbar.next);
+  dockedToolbar = null;
+}
+
+function closeModal() {
+  modalBackdrop.classList.remove('open');
+  if (modalCard.classList.contains('modal-card--iframe')) resetLoreToolbarState();
+}
 document.getElementById('modalClose').addEventListener('click', closeModal);
 modalBackdrop.addEventListener('click', (e) => {
   if (!modalArmed) return;
@@ -502,11 +806,64 @@ modalBackdrop.addEventListener('click', (e) => {
 });
 
 /* ============================================================
+   Окно-вкладыш "Корабль-город Феном" — в отличие от .system-overlay,
+   карта галактики под ним не закрывается, только затемняется по краям
+   (см. .phenom-overlay). Внутри — карта Феном на тайлах через OpenSeadragon
+   (см. ensurePhenomViewer): огромную картинку (21284x9902px) грузить целиком
+   нельзя — тот же класс бага, что уже был с 4096px-текстурой в map.svg, тут
+   тайлы решают его в принципе, подгружая только видимые кусочки.
+   ============================================================ */
+const phenomOverlay = document.getElementById('phenomOverlay');
+const PHENOM_DZI_PATH = 'phenom-tiles/phenom.dzi';
+let phenomViewer = null;
+
+function ensurePhenomViewer() {
+  if (phenomViewer) return;
+  phenomViewer = OpenSeadragon({
+    id: 'phenomViewer',
+    tileSources: PHENOM_DZI_PATH,
+    showNavigationControl: false,
+    // Тап без перетаскивания не должен зумить — как и на карте галактики,
+    // где клик срабатывает только по конкретным точкам/подписям, а не по фону.
+    gestureSettingsMouse: { clickToZoom: false },
+    gestureSettingsTouch: { clickToZoom: false },
+    visibilityRatio: 1,
+    constrainDuringPan: true,
+  });
+}
+
+let phenomArmed = false;
+function openPhenom() {
+  phenomOverlay.classList.add('open');
+  ensurePhenomViewer();
+  phenomArmed = false;
+  setTimeout(() => { phenomArmed = true; }, 300);
+}
+function closePhenom() {
+  closeModal(); // если поверх открыто "Описание Феном" — не оставлять его висеть над картой
+  phenomOverlay.classList.remove('open');
+}
+document.getElementById('phenomClose').addEventListener('click', closePhenom);
+phenomOverlay.addEventListener('click', (e) => {
+  if (!phenomArmed) return;
+  if (e.target === phenomOverlay) closePhenom();
+});
+
+// "Описание Феном" — статья Teletype поверх окна Феном, тот же полноэкранный
+// модал, что и у лора систем. Ссылка пока заглушка — заменить на настоящую
+// статью с полным описанием корабля/артами, когда будет готова.
+const PHENOM_DESC_URL = 'https://teletype.in/@greyspirit/SEOWfJxAewY#LVpS';
+const phenomToolbarEl = document.querySelector('.phenom-toolbar');
+const phenomDescBtn = document.getElementById('phenomDesc');
+phenomDescBtn.addEventListener('click', () => openIframeModal(PHENOM_DESC_URL, phenomToolbarEl, phenomDescBtn));
+
+/* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
 const systemLoreBtn = document.getElementById('systemLore');
+const systemToolbarEl = document.querySelector('.system-toolbar');
 document.getElementById('systemBack').addEventListener('click', closeSystem);
 
 // systems/lore.json — соответствие слаг системы -> ссылка на статью (например, Teletype),
@@ -525,6 +882,7 @@ const loreDataPromise = (async () => {
 })();
 
 function closeSystem() {
+  closeModal(); // на случай, если открыт лор поверх системы — не оставлять его висеть над картой
   systemOverlay.classList.remove('open');
   systemContainer.innerHTML = '';
   systemLoreBtn.classList.remove('visible');
@@ -554,7 +912,7 @@ async function openSystem(name) {
   if (lore && lore.url) {
     systemLoreBtn.textContent = lore.label || 'Контролирующая раса';
     systemLoreBtn.classList.add('visible');
-    systemLoreBtn.onclick = () => openIframeModal(systemLoreBtn.textContent, lore.url);
+    systemLoreBtn.onclick = () => openIframeModal(lore.url, systemToolbarEl, systemLoreBtn);
   } else {
     systemLoreBtn.classList.remove('visible');
     systemLoreBtn.onclick = null;
@@ -702,6 +1060,16 @@ const calibPanel = document.getElementById('calibPanel');
     calibPanel.textContent = calibMode ? 'Кликни по карте' : '';
   });
 
+  // Сворачиваемое меню инструментов (zoom/reset/калибровка) — скрыто по умолчанию,
+  // разворачивается по кнопке "⋯" рядом с кнопкой "Феном".
+  const toolsToggle = document.getElementById('toolsToggle');
+  const controlsTools = document.getElementById('controlsTools');
+  toolsToggle.addEventListener('click', () => {
+    const open = controlsTools.classList.toggle('open');
+    toolsToggle.classList.toggle('open', open);
+    toolsToggle.setAttribute('aria-expanded', String(open));
+  });
+
   function showCalib(x, y) {
     const rx = Math.round(x), ry = Math.round(y);
     calibPanel.textContent = `x: ${rx}\ny: ${ry}\n\n{ x: ${rx}, y: ${ry} }`;
@@ -788,6 +1156,7 @@ const calibPanel = document.getElementById('calibPanel');
 
       g.__onTap = () => {
         if (calibMode) { showCalib(m.x, m.y); return; }
+        if (m.id === 'phenome') { focusAndOpenPhenom(m.x, m.y); return; }
         const titleHtml = m.title ? `<div class="modal-title">${escapeHtml(m.title)}</div>` : '';
         const textHtml = m.text ? `<div>${escapeHtml(m.text).replace(/\n/g, '<br>')}</div>` : '';
         openModal(titleHtml + textHtml);
@@ -797,7 +1166,35 @@ const calibPanel = document.getElementById('calibPanel');
     });
   }
 
-  loadMarkers().then(renderMarkers);
+  const markersPromise = loadMarkers();
+  markersPromise.then(renderMarkers);
+
+  // Открытие окна "Феном" — что с самого маркера на карте, что с кнопки в
+  // верхней панели: сначала камера плавно "наводится" на маркер на одном и том
+  // же фиксированном уровне приближения (не зависит от того, насколько был
+  // зумлен пользователь до этого), и только когда перелёт долетит — открывается
+  // окно (см. анимацию .phenomCardMorph), как будто сам маркер в неё раскрывается.
+  const PHENOM_FOCUS_WIDTH = 80; // ширина viewBox в единицах карты — подобрано по месту
+  const PHENOM_PAN_DURATION = 650;
+  function focusAndOpenPhenom(x, y) {
+    // Открытие окна навешено на onDone анимации перелёта камеры — если она по
+    // какой-то причине (троттлинг requestAnimationFrame и т.п.) не долетит до
+    // конца, окно не должно оставаться "мёртвым". Подстраховываемся таймером:
+    // кто добежит первым, тот и открывает, повторный вызов openPhenom безвреден.
+    let opened = false;
+    const openOnce = () => { if (!opened) { opened = true; openPhenom(); } };
+    pz.focusOn(x, y, PHENOM_FOCUS_WIDTH, PHENOM_PAN_DURATION, openOnce);
+    setTimeout(openOnce, PHENOM_PAN_DURATION + 250);
+  }
+
+  // Кнопка "Феном" в верхней панели: координаты маркера берём из markers.json
+  // (id "phenome"), а не хардкодим — чтобы не разъезжались при переносе маркера.
+  document.getElementById('gotoPhenom').addEventListener('click', async () => {
+    const markers = await markersPromise;
+    const phenomMarker = markers.find(m => m.id === 'phenome');
+    if (phenomMarker) focusAndOpenPhenom(phenomMarker.x, phenomMarker.y);
+    else openPhenom();
+  });
 
   /* --- П.3: клик по названию системы (реальные <text> из экспорта StellarMaps) ---
      Ждём document.fonts.ready: в карте зашит кастомный шрифт (Orbitron), и если
