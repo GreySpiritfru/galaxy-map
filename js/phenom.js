@@ -8,7 +8,7 @@
    OpenSeadragon грузится отдельным классическим <script> в index.html
    (глобальная UMD-сборка) — этот модуль просто использует window.OpenSeadragon.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=15';
+import { closeModal, isArticleOpen } from './modal.js?v=19';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const PHENOM_DZI_PATH = 'phenom-tiles/phenom.dzi';

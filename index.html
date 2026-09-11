@@ -11,11 +11,12 @@
        разом (та же проблема, что уже возникала с 4096px-текстурой в map.svg, только
        на порядок крупнее — тайлы решают её в принципе, а не переносом лимита). -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/5.0.1/openseadragon.min.js"></script>
-  <!-- Самый тяжёлый файл на странице (9+ МБ) — без preload браузер начинает
-       качать его только после разбора HTML и выполнения JS до строки с fetch()
-       в map.js; так эта загрузка стартует параллельно с остальным. -->
+  <!-- Самый тяжёлый файл на странице (~2.7 МБ после пережатия подложки в WebP,
+       см. tools/optimize-map-svg.py) — без preload браузер начинает качать его
+       только после разбора HTML и выполнения JS до строки с fetch() в map.js;
+       так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=15" />
+  <link rel="stylesheet" href="css/styles.css?v=19" />
 </head>
 <body>
 
@@ -28,7 +29,6 @@
          🚀 стоит слева от неё и ведёт не в статью, а в само место — карту
          корабля-города (это навигация, а не справка, поэтому отдельной кнопкой). -->
     <div class="controls-row">
-      <button id="helpBtn" class="tools-toggle" title="Как пользоваться картой">?</button>
       <button id="gotoPhenom" class="corner-btn" title="Корабль-город Феном">
         <span aria-hidden="true">🚀</span><span class="corner-btn-label">Феном</span>
       </button>
@@ -43,6 +43,10 @@
       <button id="reset" aria-label="Reset view">⟲</button>
       <button id="calibToggle" title="Режим калибровки координат">📍</button>
     </div>
+    <!-- "?" вынесен из общего ряда отдельной строкой: .svg-controls —
+         колонка с align-items:flex-end, поэтому кнопка сама встаёт под "⋯"
+         (крайний правый элемент ряда) на любой ширине экрана. -->
+    <button id="helpBtn" class="tools-toggle" title="Как пользоваться картой">?</button>
   </div>
   <div class="calib-panel" id="calibPanel"></div>
   <div class="svg-hint">Перетаскивание — палец/мышь, масштаб — щипок/колёсико. Тапни по названию системы.</div>
@@ -135,6 +139,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=15"></script>
+<script type="module" src="js/main.js?v=19"></script>
 </body>
 </html>
