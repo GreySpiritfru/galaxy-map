@@ -1,11 +1,11 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=23';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=23';
-import { openSystem, slugify } from './system-view.js?v=23';
-import { openPhenom } from './phenom.js?v=23';
-import { openStory } from './stories.js?v=23';
+import { createPanZoom } from './panzoom.js?v=26';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=26';
+import { openSystem, slugify } from './system-view.js?v=26';
+import { openPhenom } from './phenom.js?v=26';
+import { openStory } from './stories.js?v=26';
 
 const SVG_PATH = 'map.svg';
 
@@ -51,12 +51,12 @@ const calibPanel = document.getElementById('calibPanel');
      сами точки маленькие и однородные). Туман — НАОБОРОТ, без тайлинга:
      несколько (см. NEBULA_COLORS) больших уникальных мягких пятен разных
      цветов, раскиданных по всей реально видимой области — тайл с туманом
-     выглядел как повторяющиеся кляксы. Каждое пятно — обычный круг с
-     feGaussianBlur (не radialGradient — тот же самый градиент, растянутый
-     по ВСЕМ прямоугольникам маски отдельными заливками, давал заметные швы
-     на стыках между ними). Все пятна — в одной group с clip-path по тем же
-     прямоугольникам маски, чтобы не наезжать на настоящую карту, но при
-     этом рисуются как единые фигуры без стыков. */
+     выглядел как повторяющиеся кляксы. Каждое пятно — круг, залитый СВОИМ
+     радиальным градиентом (от цвета в центре к прозрачному по краю); почему
+     именно так, а не через feGaussianBlur и не одним общим градиентом на всю
+     маску — подробно расписано ниже, у самого кода пятен. Все пятна лежат в
+     одной group с clip-path по прямоугольникам маски, чтобы не наезжать на
+     настоящую карту. */
   function buildCosmosDecoration(svgEl, frames, core) {
     const NS = 'http://www.w3.org/2000/svg';
     let defs = svgEl.querySelector('defs');
@@ -106,17 +106,22 @@ const calibPanel = document.getElementById('calibPanel');
     });
     defs.appendChild(clipPath);
 
-    // Размытие — без него круг тумана выглядит чёткой плоской "монетой".
-    const blurFilter = document.createElementNS(NS, 'filter');
-    blurFilter.setAttribute('id', 'cosmosBlur');
-    blurFilter.setAttribute('x', '-60%');
-    blurFilter.setAttribute('y', '-60%');
-    blurFilter.setAttribute('width', '220%');
-    blurFilter.setAttribute('height', '220%');
-    const feBlur = document.createElementNS(NS, 'feGaussianBlur');
-    feBlur.setAttribute('stdDeviation', (core.w * 0.02).toFixed(1));
-    blurFilter.appendChild(feBlur);
-    defs.appendChild(blurFilter);
+    /* Мягкость пятна даёт радиальный градиент в самой заливке, а НЕ
+       feGaussianBlur, как было раньше.
+
+       Почему убрали фильтр: SVG-фильтр заставляет браузер завести отдельную
+       офскрин-поверхность размером с область фильтра. У группы тумана bbox
+       ~1100 единиц, при filter region 220% это 2432 единицы — на приближении
+       до 80 единиц в кадре выходит ~25 000 пикселей, а на максимальном зуме
+       больше миллиона, при типичном лимите текстуры 4096. Поверхность не
+       выделяется, и движок рисует вместо неё чёрные прямоугольники поверх
+       всей карты (воспроизводилось в Telegram Mini App при зуме).
+
+       Градиент такой проблемы не имеет в принципе: это обычная заливка,
+       никаких офскрин-буферов. Это НЕ тот градиент, что давал швы раньше —
+       тогда один градиент с userSpaceOnUse растягивался по четырём отдельным
+       прямоугольникам маски; здесь у каждого пятна свой градиент в границах
+       собственного круга, стыковать нечего. */
 
     const NEBULA_COLORS = ['#000000', '#050507', '#0d0d12', '#020204']; // оттенки чёрного — едва заметные пятна чуть темнее/светлее фона
     // Область, где реально может оказаться пятно на экране — вокруг ядра карты
@@ -132,15 +137,30 @@ const calibPanel = document.getElementById('calibPanel');
 
     const nebulaGroup = document.createElementNS(NS, 'g');
     nebulaGroup.setAttribute('clip-path', 'url(#cosmosMaskClip)');
-    nebulaGroup.setAttribute('filter', 'url(#cosmosBlur)');
-    NEBULA_COLORS.forEach((color) => {
+    NEBULA_COLORS.forEach((color, i) => {
+      // Свой градиент на каждое пятно, в долях собственной рамки круга
+      // (objectBoundingBox по умолчанию): в центре — цвет, к краю — прозрачно.
+      const gradId = 'cosmosNebula' + i;
+      const grad = document.createElementNS(NS, 'radialGradient');
+      grad.setAttribute('id', gradId);
+      const inner = document.createElementNS(NS, 'stop');
+      inner.setAttribute('offset', '0%');
+      inner.setAttribute('stop-color', color);
+      inner.setAttribute('stop-opacity', (0.12 + Math.random() * 0.06).toFixed(2));
+      const outer = document.createElementNS(NS, 'stop');
+      outer.setAttribute('offset', '100%');
+      outer.setAttribute('stop-color', color);
+      outer.setAttribute('stop-opacity', '0');
+      grad.appendChild(inner);
+      grad.appendChild(outer);
+      defs.appendChild(grad);
+
       const blob = document.createElementNS(NS, 'circle');
       blob.setAttribute('cx', (reach.x0 + Math.random() * (reach.x1 - reach.x0)).toFixed(1));
       blob.setAttribute('cy', (reach.y0 + Math.random() * (reach.y1 - reach.y0)).toFixed(1));
       // "Растянуть раза в 2 больше" по сравнению с первой версией — большие пятна на весь фон.
       blob.setAttribute('r', (reachMinSide * (0.18 + Math.random() * 0.12)).toFixed(1));
-      blob.setAttribute('fill', color);
-      blob.setAttribute('opacity', (0.10 + Math.random() * 0.06).toFixed(2));
+      blob.setAttribute('fill', `url(#${gradId})`);
       nebulaGroup.appendChild(blob);
     });
 
@@ -191,7 +211,17 @@ const calibPanel = document.getElementById('calibPanel');
     const coreY0 = core.y + MASK_ADJUST.top + OVERLAP;
     const coreY1 = core.y + core.h - MASK_ADJUST.bottom - OVERLAP;
 
-    const BIG = core.w * 3; // с большим запасом, чтобы гарантированно перекрыть любой уровень зума
+    /* Насколько прямоугольники маски вылезают за край карты. Раньше тут было
+       core.w * 3 "с запасом на любой зум" — запас оказался бессмысленным и
+       вредным: отдалиться дальше исходного вида нельзя (zoomOutLimit: 1), а
+       увести камеру за край можно максимум на boundsPad = 0.2 ширины. То есть
+       видимая область НИКОГДА не выходит за core ± 20%, и перекрывать больше
+       просто нечего.
+       Зато при приближении эти прямоугольники раздувались до десятков тысяч
+       пикселей (4118 единиц -> ~42 000 px в кадре шириной 80 единиц, при
+       лимите текстуры 4096) — вместе с фильтром тумана это и давало чёрные
+       артефакты в Telegram. 0.5 ширины — всё ещё вдвое больше нужного. */
+    const BIG = core.w * 0.5;
     const outX0 = core.x - BIG, outX1 = core.x + core.w + BIG;
     const outY0 = core.y - BIG, outY1 = core.y + core.h + BIG;
 
@@ -244,10 +274,35 @@ const calibPanel = document.getElementById('calibPanel');
   document.getElementById('zoomOut').addEventListener('click', pz.zoomOut);
   document.getElementById('reset').addEventListener('click', pz.reset);
 
-  document.getElementById('calibToggle').addEventListener('click', () => {
+  document.getElementById('calibToggle').addEventListener('click', (e) => {
     calibMode = !calibMode;
+    e.currentTarget.classList.toggle('active', calibMode);
     calibPanel.style.display = calibMode ? 'block' : 'none';
     calibPanel.textContent = calibMode ? 'Кликни по карте' : '';
+  });
+
+  /* Кнопка 🏷️ — оставить на карте только готовые системы и названия фракций,
+     спрятав остальные ~1600 подписей насовсем (не только на время жеста, как
+     .panning). Подписи — самая дорогая часть кадра (см. грабли №15), так что
+     это заодно и аварийный тумблер производительности.
+
+     Зачем: в Firefox на телефоне SVG-текст рендерится заметно медленнее, чем
+     в Chromium, и карта подлагивает — при том что в Telegram Mini App и в
+     Chrome та же самая карта едет плавно. Автоопределения браузера тут
+     сознательно нет: вместо угадывания даём игроку явный переключатель.
+
+     Выбор запоминается в localStorage (он живёт в браузере конкретного
+     игрока и к репозиторию отношения не имеет, как и флаг обучения). */
+  const LABELS_MINIMAL_KEY = 'galaxyMapLabelsMinimal';
+  const labelsToggle = document.getElementById('labelsToggle');
+  function applyLabelsMinimal(on) {
+    svg.classList.toggle('labels-minimal', on);
+    labelsToggle.classList.toggle('active', on);
+  }
+  labelsToggle.addEventListener('click', () => {
+    const on = !svg.classList.contains('labels-minimal');
+    applyLabelsMinimal(on);
+    try { localStorage.setItem(LABELS_MINIMAL_KEY, on ? '1' : '0'); } catch (e) {}
   });
 
   // Сворачиваемое меню инструментов (zoom/reset/калибровка) — скрыто по умолчанию,
@@ -518,6 +573,13 @@ const calibPanel = document.getElementById('calibPanel');
   const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
   Promise.all([fontsReady, loadReadySystems()]).then(([, readySlugs]) => {
     setupSystemLabels(readySlugs);
+    // Сохранённый выбор режима подписей применяем именно ЗДЕСЬ, а не раньше:
+    // класс .map-label-major проставляется внутри setupSystemLabels, и до
+    // этого момента "важных" подписей ещё нет — включив режим раньше, мы бы
+    // на секунду спрятали вообще всё, включая названия фракций.
+    try {
+      if (localStorage.getItem(LABELS_MINIMAL_KEY) === '1') applyLabelsMinimal(true);
+    } catch (e) {}
   });
 
 })();

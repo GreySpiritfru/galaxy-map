@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=23" />
+  <link rel="stylesheet" href="css/styles.css?v=26" />
 </head>
 <body>
 
@@ -41,6 +41,7 @@
       <button id="zoomIn" aria-label="Zoom in">＋</button>
       <button id="zoomOut" aria-label="Zoom out">－</button>
       <button id="reset" aria-label="Reset view">⟲</button>
+      <button id="labelsToggle" title="Показывать только готовые системы (быстрее на слабых устройствах)">🏷️</button>
       <button id="calibToggle" title="Режим калибровки координат">📍</button>
     </div>
     <!-- "?" вынесен из общего ряда отдельной строкой: .svg-controls —
@@ -139,6 +140,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=23"></script>
+<script type="module" src="js/main.js?v=26"></script>
 </body>
 </html>
