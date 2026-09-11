@@ -1,0 +1,673 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #0b0b10;
+  height: 100%;
+  overflow: hidden;
+}
+
+.svg-widget {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  touch-action: none;
+  background: #0b0b10;
+}
+
+.svg-widget svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-drag: none;
+  touch-action: none;
+}
+
+.hotspot, .hotspot * { pointer-events: auto; }
+.sys-hit { pointer-events: auto; cursor: pointer; }
+
+.svg-controls {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  z-index: 20;
+}
+
+.svg-controls button {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  backdrop-filter: blur(6px);
+  min-width: 44px;
+  min-height: 44px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Верхний ряд угла карты: "?" + 🚀 Феном + 📖 Справочник + "⋯" (инструменты) */
+.controls-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* Кнопки-таблетки в углу карты (🚀 Феном и 📖 Справочник) — в отличие от
+   квадратных .tools-toggle ("?" и "⋯") у них есть текстовая подпись, которая
+   прячется на узких экранах (см. медиазапрос в конце файла). */
+.corner-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  min-width: auto;
+  padding: 8px 14px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.tools-toggle.open {
+  background: rgba(255,255,255,0.24);
+}
+
+#helpBtn {
+  color: #000;
+}
+
+/* Мягкое "дыхание" вокруг кнопки подсказки — для новых игроков, пока они
+   сами не нажали и не посмотрели обучение хотя бы раз (см. onboarding.js).
+   Не мигание (резкая смена видимости), а плавно расширяющееся/тающее
+   кольцо — заметно, но не раздражает. */
+@keyframes helpPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(175,238,238,0.55); }
+  50%      { box-shadow: 0 0 0 9px rgba(175,238,238,0); }
+}
+#helpBtn.pulse {
+  animation: helpPulse 2.4s ease-in-out infinite;
+}
+
+/* Инструменты карты (zoom/reset/калибровка) скрыты, пока не открыт tools-toggle,
+   чтобы не загромождать угол карты рядом с новой кнопкой "Феном". */
+.controls-tools {
+  display: none;
+  flex-direction: column;
+  gap: 8px;
+}
+.controls-tools.open { display: flex; }
+
+.svg-hint {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  color: rgba(255,255,255,0.7);
+  background: rgba(0,0,0,0.35);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  z-index: 10;
+  max-width: 60vw;
+}
+
+.calib-panel {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  background: rgba(0,0,0,0.55);
+  color: #9f9;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: monospace;
+  z-index: 20;
+  display: none;
+  white-space: pre;
+}
+
+/* ===== П.1: мобильный модал для инфо-точек =====
+   Центрированное окно, ~20% свободного поля по краям — тап по фону закрывает.
+   Фон вокруг больше не затемняется, только сама карточка полупрозрачная,
+   с плавным появлением (fade + лёгкое всплытие). */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 10vh 6vw;
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+.modal-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 480px;
+  max-height: 100%;
+  overflow-y: auto;
+  background: rgba(10,10,16,0.82);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 16px 18px;
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 14px;
+  position: relative;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  transform: scale(0.94) translateY(8px);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-backdrop.open .modal-card {
+  transform: scale(1) translateY(0);
+}
+
+.modal-close {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 6px;
+}
+
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 26px 8px 0;
+}
+
+/* ===== П.3: полноэкранный просмотр системы ===== */
+.system-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: none;
+  z-index: 200;
+}
+.system-overlay.open { display: block; }
+
+/* Сама "менюшка" — единая скруглённая панель со своим фоном (как у Telegram
+   нижнего таб-бара), кнопки внутри — без собственного фона/рамки, см.
+   .tabbar-btn ниже. В пристыкованном виде (.compact, статья открыта) фон/
+   скругления берёт на себя .lore-toolbar.compact (та же панель становится
+   полноширинной "шторкой" сверху) — тут это только для обычного состояния
+   поверх карты системы.
+   left+right (а не left+max-width) — так у панели есть ОПРЕДЕЛЁННАЯ ширина,
+   а не "по содержимому": кнопкам внутри нужен flex:1 1 0, чтобы поровну
+   делить ширину и не обрезаться многоточием — без явной ширины контейнера
+   flex-basis:0 у детей не даёт браузеру толком посчитать ширину "по
+   содержимому" (родитель схлопывался у'же, чем требовалось для полных
+   подписей). Заодно так панель выглядит как настоящий таб-бар Telegram, а не
+   как плотный кластер кнопок в углу. */
+.system-toolbar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 12px;
+  z-index: 210;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  background: rgba(12,12,18,0.62);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  padding: 6px 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+
+/* Кнопка "Контролирующая раса" показывается только если для системы есть
+   запись в systems/lore.json (см. openSystem() в system-view.js) — иначе
+   в меню остаются только ✕ и "Карта системы". */
+#systemLore { display: none; }
+#systemLore.visible { display: flex; }
+
+/* Кнопка закрытия — везде просто крестик, без текста "Назад к карте"/
+   "К карте галактики": она либо закрывает текущий слой (систему/Феном/
+   сюжет) целиком, либо (если поверх открыта статья, см. isArticleOpen() в
+   system-view.js/phenom.js/stories.js) только статью. Всегда обычный флекс-
+   элемент ПЕРВЫМ в ряду тулбара (а не отдельная фиксированная кнопка поверх
+   ряда) — так она едет вместе с рядом при горизонтальном свайпе, а не
+   "плавает" отдельно над ним не пристыкованной к остальным кнопкам (так и
+   было раньше с #modalClose — выглядело нестыкуемо, особенно при скролле).
+   Общий класс — одна и та же квадратная кнопка-иконка везде: у системы,
+   Феном, сюжета и у самой панели статей-справочников (#refToolbarClose). */
+.toolbar-close-btn {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  line-height: 1;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+
+/* "Нажатое" состояние кнопки "Описание Феном" внутри окна Феном — единственное
+   место, где остался старый пилюльный стиль активной кнопки; у .tabbar-btn
+   (система, #refToolbar) теперь свой, см. .tabbar-btn.active ниже. */
+.phenom-desc.active {
+  background: rgba(175,238,238,0.28);
+  box-shadow: inset 0 0 0 1.5px #AFEEEE;
+}
+
+/* Пока открыта статья (лор системы ИЛИ описание Феном), соответствующий
+   тулбар (.system-toolbar или .phenom-toolbar — оба помечены общим классом
+   .lore-toolbar, см. openIframeModal в JS) временно переносится внутрь
+   #modalCard и превращается в компактную "шторку" — узкую полупрозрачную
+   панель на всю ширину, наезжающую поверх статьи сверху. При закрытии
+   переносится обратно туда, откуда был взят. Свой крестик (.toolbar-close-btn,
+   первый элемент ряда) едет вместе с панелью — отдельный фиксированный
+   #modalClose в этом состоянии скрывается через JS (см. openIframeModal в
+   modal.js), чтобы не дублировать его и не плавать поверх ряда отдельным
+   несостыкованным элементом. */
+.lore-toolbar.compact {
+  position: fixed;
+  inset: 0 0 auto 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 10px;
+  background: rgba(12,12,18,0.62);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  box-sizing: border-box;
+  z-index: 2;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 8px;
+  animation: loreBarIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lore-toolbar.compact::-webkit-scrollbar { display: none; }
+
+/* #refToolbar — панель перекрёстной навигации между статьями-справочниками.
+   Сама по себе никогда не отображается: существует только чтобы её
+   пристыковать в #modalCard (см. openRefArticle в JS), как и .system-toolbar/
+   .phenom-toolbar — тем же общим механизмом (.lore-toolbar.compact).
+
+   .tabbar — общий стиль таб-бара Telegram (скрин-референс от пользователя),
+   используется и здесь, и в .system-toolbar (вид системы): кнопки НЕ
+   обособлены каждая своим фоном/рамкой/скруглением, а стоят вплотную друг к
+   другу, как единое целое — просто иконка + мелкая подпись под ней,
+   выделяется только цветом активная (.tabbar-btn.active). Кнопки
+   распределены поровну на всю ширину (flex:1 1 0) — этого достаточно, чтобы
+   любой набор кнопок (2 у системы, 5 у статей) помещался на телефоне без
+   горизонтального скролла, поэтому overflow-x у .lore-toolbar.compact тут
+   просто не срабатывает (safety net на случай, если кнопок станет ощутимо
+   больше). */
+.ref-toolbar { display: none; }
+.tabbar .toolbar-close-btn {
+  background: none;
+  backdrop-filter: none;
+  border-radius: 0;
+  width: 30px;
+}
+.tabbar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1 1 0;
+  min-width: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 4px 2px;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+}
+.tabbar-btn-icon {
+  font-size: 19px;
+  line-height: 1;
+}
+.tabbar-btn-label {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.tabbar-btn.active {
+  color: #AFEEEE;
+}
+
+/* Двойная вкладка: две половинки в одной ячейке двойной ширины, разделённые
+   тонкой чертой — читается как одна тема ("Феном"), но с двумя действиями
+   (статья про него / переход на его карту). */
+.tabbar-split {
+  display: flex;
+  flex: 1.8 1 0;
+  min-width: 0;
+}
+.tabbar-split .tabbar-btn + .tabbar-btn {
+  border-left: 1px solid rgba(255,255,255,0.15);
+}
+@keyframes loreBarIn {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Модал со статьёй Teletype поверх карты системы — та же карточка,
+   что и у обычных маркеров, но развёрнута на весь экран без рамки:
+   Teletype оформляет себя сам. Статья идёт от самого верха экрана,
+   перенесённая "шторка" (.lore-toolbar.compact, со своим крестиком
+   первым элементом ряда) лежит поверх неё как плавающий элемент
+   (position: fixed). */
+.modal-backdrop.backdrop--iframe {
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+}
+.modal-card.modal-card--iframe {
+  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  /* Базовый .modal-card скроллится сам (overflow-y:auto) — для текстовых
+     карточек маркеров это нужно, но для iframe со статьёй нельзя: вложенный
+     <iframe> внутри скроллящегося контейнера "перетягивает" на себя тач/колесо
+     с мобильных браузеров, из-за чего статья внутри переставала скроллиться
+     и реагировать на тапы. Весь скролл должен быть только внутри iframe. */
+  overflow: hidden;
+}
+.modal-card--iframe .modal-close {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  margin: 0;
+  font-size: 24px;
+  background: rgba(12,12,18,0.62);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  z-index: 3;
+}
+.modal-card--iframe #modalContent {
+  width: 100%;
+  height: 100%;
+}
+.modal-card--iframe iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.system-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  font-family: sans-serif;
+  text-align: center;
+  padding: 0 30px;
+}
+
+/* ===== Всплывающее окно "Корабль-город Феном" =====
+   В отличие от .system-overlay (полноэкранный, закрывает карту галактики),
+   это окно-вкладыш поверх карты: карта остаётся под ним, видна и затемнена
+   по краям за пределами карточки (~90% экрана). */
+.phenom-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5vh 5vw;
+  box-sizing: border-box;
+  z-index: 250;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.phenom-overlay.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.phenom-card {
+  width: 100%;
+  height: 100%;
+  background: #0e0e14;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform-origin: center center;
+}
+/* Камера сначала "наводится" на маркер Феном (см. focusAndOpenPhenom в JS),
+   и только когда она долетает — окно раскрывается будто вырастая из той же
+   точки в центре экрана, где только что оказался маркер: от маленькой кляксы
+   до полноразмерной карточки. */
+.phenom-overlay.open .phenom-card {
+  animation: phenomCardMorph 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes phenomCardMorph {
+  from { transform: scale(0.05); border-radius: 50%; opacity: 0.3; }
+  60%  { border-radius: 30%; opacity: 1; }
+  to   { transform: scale(1); border-radius: 18px; opacity: 1; }
+}
+/* Ряд не переносится на новую строку, а скроллится по горизонтали —
+   см. подробное обоснование у .lore-toolbar.compact выше; тот же приём
+   тут нужен и без пристыковки статьи, у самого окна Феном/сюжета. */
+.phenom-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.phenom-toolbar::-webkit-scrollbar { display: none; }
+.phenom-desc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.phenom-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  background: #0e0e14;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.phenom-viewer {
+  position: absolute;
+  inset: 0;
+}
+
+/* ===== Окно-вкладыш сюжетного маркера =====
+   Использует ту же карточку/анимацию, что и .phenom-overlay/.phenom-card
+   (см. index.html — оба класса навешаны на один элемент), здесь только то,
+   что отличается: текст вместо карты, а значит обычный вертикальный скролл
+   внутри карточки, а не туда, зафиксированное под OpenSeadragon. */
+.story-content {
+  overflow-y: auto;
+  padding: 18px 20px 28px;
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: pan-y;
+}
+.story-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* object-fit:contain (не cover) — картинка вписывается целиком, без обрезки,
+   какая бы у неё ни была пропорция; max-width/max-height — по факту "процент
+   от окна", ограничивающий слишком большую картинку, но никогда не растягивающий
+   маленькую сверх исходного размера (max-width сам по себе этого не даёт). */
+.story-banner-img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 45vh;
+  object-fit: contain;
+  border-radius: 12px;
+  margin: 0 auto 14px;
+  background: rgba(255,255,255,0.03);
+}
+
+@media (max-width: 600px) {
+  .story-banner-img { max-height: 32vh; }
+}
+
+.story-code {
+  display: inline-block;
+  background: rgba(255,215,106,0.16);
+  color: #ffd76a;
+  border: 1px solid rgba(255,215,106,0.4);
+  border-radius: 6px;
+  padding: 1px 7px;
+  font-size: 13px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.story-title {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+
+/* Сворачиваемый блок описания — нативный <details>/<summary>, оформлен под
+   цитату-"шторку" в духе Telegram (полоска слева + треугольник-стрелка,
+   разворачивающаяся при открытии). См. openStory() в js/stories.js. */
+.story-accordion {
+  border-left: 3px solid rgba(175,238,238,0.55);
+  background: rgba(255,255,255,0.04);
+  border-radius: 0 8px 8px 0;
+  padding: 0 12px;
+  margin: 0 0 14px;
+}
+.story-accordion summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 600;
+  color: #AFEEEE;
+  list-style: none;
+}
+.story-accordion summary::-webkit-details-marker { display: none; }
+.story-accordion summary::before {
+  content: '▸';
+  display: inline-block;
+  width: 1em;
+  margin-right: 4px;
+  transition: transform 0.2s ease;
+}
+.story-accordion[open] summary::before {
+  transform: rotate(90deg);
+}
+.story-accordion-body {
+  padding: 0 0 12px;
+  white-space: normal;
+}
+
+@media (max-width: 600px) {
+  .svg-controls { right: 8px; top: 8px; }
+  .svg-controls button { padding: 6px 8px; min-width: 40px; min-height: 40px; }
+  .phenom-overlay { padding: 3vh 3vw; }
+  /* Чуть компактнее на узком экране — сам ряд теперь и так скроллится
+     (см. .phenom-toolbar/.lore-toolbar.compact), это просто чтобы за один
+     свайп помещалось больше кнопок, а не чтобы влезло всё разом. */
+  .phenom-desc, .story-action-btn {
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+  /* Вкладок в таб-баре статей шесть (у Фенома двойная ячейка), и самая
+     длинная подпись — "Галактика" — на 375px упирается в свою ячейку и
+     обрезается многоточием. Поджимаем зазоры и боковые отступы: этого
+     хватает, чтобы влезли все подписи целиком, не уменьшая шрифт. */
+  .tabbar.compact { gap: 4px; }
+  .tabbar-btn { padding: 4px 1px; }
+}
+
+@media (max-width: 460px) {
+  /* На узком экране у 🚀/📖 остаются только иконки — иначе ряд из четырёх
+     кнопок с подписями упирается в левый край карты. */
+  .corner-btn-label { display: none; }
+  .corner-btn { padding: 8px 10px; }
+}

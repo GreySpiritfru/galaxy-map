@@ -1,0 +1,233 @@
+/* ============================================================
+   Переиспользуемый модуль пан/зума поверх произвольного SVG.
+   Используется и для карты галактики, и для вида внутри системы —
+   логика одна и та же, подключить второй раз к любому новому SVG
+   стоит нескольких строк (см. map.js и system-view.js).
+   ============================================================ */
+export function createPanZoom(svg, opts) {
+  opts = opts || {};
+  const zoomOutLimit = opts.zoomOutLimit ?? 1;   // 1 = нельзя отдалить дальше исходного охвата карты
+  const zoomInLimit = opts.zoomInLimit ?? 0.02;  // насколько можно приблизить
+  const boundsPad = opts.boundsPad ?? 0.15;      // запас за краями карты при панорамировании (п.2)
+  const onClick = opts.onClick || null;          // (svgPoint, domEvent) => void, для калибровки/т.п.
+
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+
+  let vb = svg.getAttribute('viewBox');
+  let viewBox;
+  if (vb) {
+    const parts = vb.trim().split(/\s+/).map(Number);
+    viewBox = {x: parts[0], y: parts[1], w: parts[2], h: parts[3]};
+  } else {
+    const w = svg.getAttribute('width') || svg.clientWidth || 1000;
+    const h = svg.getAttribute('height') || svg.clientHeight || 1000;
+    viewBox = {x:0, y:0, w:Number(w), h:Number(h)};
+    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  }
+
+  const initialViewBox = {...viewBox};
+  let cur = {...viewBox};
+
+  const minW = initialViewBox.w * zoomInLimit;
+  const maxW = initialViewBox.w * zoomOutLimit;
+
+  // П.2: границы панорамирования — не дальше чем boundsPad за пределами исходной карты
+  const boundX0 = initialViewBox.x - initialViewBox.w * boundsPad;
+  const boundX1 = initialViewBox.x + initialViewBox.w * (1 + boundsPad);
+  const boundY0 = initialViewBox.y - initialViewBox.h * boundsPad;
+  const boundY1 = initialViewBox.y + initialViewBox.h * (1 + boundsPad);
+
+  function setViewBox(v) {
+    cur = v;
+    svg.setAttribute('viewBox', `${v.x} ${v.y} ${v.w} ${v.h}`);
+  }
+
+  function clampViewBox(v) {
+    let w = Math.max(minW, Math.min(maxW, v.w));
+    let h = v.h * (w / v.w);
+    let x = v.x, y = v.y;
+    if (x < boundX0) x = boundX0;
+    if (x + w > boundX1) x = boundX1 - w;
+    if (y < boundY0) y = boundY0;
+    if (y + h > boundY1) y = boundY1 - h;
+    return {x, y, w, h};
+  }
+
+  function clientToSvgPoint(clientX, clientY) {
+    const pt = svg.createSVGPoint();
+    pt.x = clientX; pt.y = clientY;
+    const ctm = svg.getScreenCTM();
+    if (!ctm) return {x: cur.x + cur.w/2, y: cur.y + cur.h/2};
+    const sp = pt.matrixTransform(ctm.inverse());
+    return {x: sp.x, y: sp.y};
+  }
+
+  function zoomAt(cx, cy, scaleFactor) {
+    // Сначала клэмпим итоговую ширину под лимиты зума...
+    let newW = Math.max(minW, Math.min(maxW, cur.w / scaleFactor));
+    // ...и пересчитываем РЕАЛЬНО применённый коэффициент масштаба —
+    // иначе на упоре в лимит позиция "уезжает" в сторону курсора при каждом
+    // повторном скролле (баг с дрейфом камеры на макс./мин. зуме).
+    const effectiveScale = cur.w / newW;
+    const newH = cur.h / effectiveScale;
+    const newX = cx - (cx - cur.x) / effectiveScale;
+    const newY = cy - (cy - cur.y) / effectiveScale;
+    setViewBox(clampViewBox({x:newX, y:newY, w:newW, h:newH}));
+  }
+
+  // Плавный анимированный перелёт камеры (например, "наведение" на маркер
+  // Феном перед открытием его окна) — обычный setViewBox() меняет viewBox
+  // мгновенно, тут вместо этого интерполируем текущий вид к целевому кадр
+  // за кадром через requestAnimationFrame. Отменяется, если пользователь
+  // начинает своё собственное перетаскивание/зум поверх анимации.
+  let animFrameId = null;
+  function cancelAnim() {
+    if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+  }
+  function easeInOutCubic(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2; }
+  function animateViewBox(target, duration, onDone) {
+    cancelAnim();
+    const start = {...cur};
+    const t0 = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      const e = easeInOutCubic(t);
+      setViewBox({
+        x: start.x + (target.x - start.x) * e,
+        y: start.y + (target.y - start.y) * e,
+        w: start.w + (target.w - start.w) * e,
+        h: start.h + (target.h - start.h) * e,
+      });
+      if (t < 1) {
+        animFrameId = requestAnimationFrame(step);
+      } else {
+        animFrameId = null;
+        if (onDone) onDone();
+      }
+    }
+    animFrameId = requestAnimationFrame(step);
+  }
+
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    cancelAnim();
+    const zoomFactor = Math.pow(1.0015, -e.deltaY);
+    const p = clientToSvgPoint(e.clientX, e.clientY);
+    zoomAt(p.x, p.y, zoomFactor);
+  }, {passive:false});
+
+  let isPanning = false, panStart = null, panViewStart = null, moved = false, downTarget = null;
+
+  // Единая точка входа для "тапа" по интерактивному элементу (hotspot, подпись системы и т.п.).
+  // Вместо отдельных click-слушателей на каждом элементе — элемент просто помечается
+  // свойством __onTap, а здесь мы поднимаемся вверх по DOM от места клика и ищем ближайший
+  // помеченный элемент. Так клик и перетаскивание никогда не мешают друг другу: старт
+  // перетаскивания больше не блокируется на "чувствительных" точках, а решение — это был
+  // клик или свайп — принимается по факту движения, в момент отпускания.
+  function findTapHandler(el) {
+    while (el && el !== svg) {
+      if (el.__onTap) return el.__onTap;
+      el = el.parentNode;
+    }
+    return null;
+  }
+
+  svg.addEventListener('pointerdown', (e) => {
+    if (e.button && e.button !== 0) return;
+    cancelAnim();
+    // Запоминаем реальную цель ДО setPointerCapture — после захвата все дальнейшие
+    // события (move/up) таргетятся на сам svg, а не на элемент под пальцем,
+    // поэтому e.target в pointerup для поиска __onTap уже не годится.
+    downTarget = e.target;
+    svg.setPointerCapture(e.pointerId);
+    isPanning = true; moved = false;
+    panStart = {x: e.clientX, y: e.clientY};
+    panViewStart = {...cur};
+  });
+
+  svg.addEventListener('pointermove', (e) => {
+    if (!isPanning) return;
+    e.preventDefault();
+    const dx = e.clientX - panStart.x, dy = e.clientY - panStart.y;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+    // preserveAspectRatio="xMidYMid meet" на не-квадратном экране оставляет пустые поля
+    // по одной из осей — масштаб пикселей должен быть ОДИНАКОВЫМ для x и y (он единый,
+    // так как aspect ratio сохраняется), а не считаться раздельно от полной ширины/высоты
+    // контейнера, иначе перетаскивание по короткой оси контейнера ощущается слабее.
+    const renderScale = Math.min(
+      (svg.clientWidth || 1) / panViewStart.w,
+      (svg.clientHeight || 1) / panViewStart.h
+    );
+    const scaleX = 1 / renderScale;
+    const scaleY = 1 / renderScale;
+    setViewBox(clampViewBox({
+      x: panViewStart.x - dx * scaleX,
+      y: panViewStart.y - dy * scaleY,
+      w: panViewStart.w, h: panViewStart.h
+    }));
+  });
+
+  svg.addEventListener('pointerup', (e) => {
+    if (isPanning) {
+      svg.releasePointerCapture(e.pointerId);
+      if (!moved) {
+        const tap = findTapHandler(downTarget);
+        if (tap) tap(e);
+        else if (onClick) onClick(clientToSvgPoint(e.clientX, e.clientY), e);
+      }
+    }
+    isPanning = false;
+  });
+  svg.addEventListener('pointercancel', () => { isPanning = false; });
+
+  let pinch = {active:false, startDist:0, startView:null, center:null};
+  function dist(a,b){ return Math.hypot(b.clientX-a.clientX, b.clientY-a.clientY); }
+
+  svg.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      cancelAnim();
+      pinch.active = true;
+      pinch.startDist = dist(e.touches[0], e.touches[1]);
+      pinch.startView = {...cur};
+      const mx = (e.touches[0].clientX + e.touches[1].clientX)/2;
+      const my = (e.touches[0].clientY + e.touches[1].clientY)/2;
+      pinch.center = clientToSvgPoint(mx, my);
+    }
+  }, {passive:true});
+
+  svg.addEventListener('touchmove', (e) => {
+    if (!pinch.active || e.touches.length !== 2) return;
+    e.preventDefault();
+    const d = dist(e.touches[0], e.touches[1]);
+    const f = pinch.startDist / d;
+    setViewBox(clampViewBox({
+      x: pinch.center.x - (pinch.center.x - pinch.startView.x) * f,
+      y: pinch.center.y - (pinch.center.y - pinch.startView.y) * f,
+      w: pinch.startView.w * f, h: pinch.startView.h * f
+    }));
+  }, {passive:false});
+
+  svg.addEventListener('touchend', (e) => { if (e.touches.length < 2) pinch.active = false; });
+
+  return {
+    zoomIn: () => { cancelAnim(); zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1.25); },
+    zoomOut: () => { cancelAnim(); zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1/1.25); },
+    reset: () => { cancelAnim(); setViewBox({...initialViewBox}); },
+    centerOn: (x, y) => setViewBox(clampViewBox({x: x-cur.w/2, y: y-cur.h/2, w:cur.w, h:cur.h})),
+    // Центрирует на (x,y) на ФИКСИРОВАННОМ уровне приближения targetWidth (в единицах
+    // viewBox, не зависит от того, насколько был зумлен пользователь до этого — в
+    // отличие от zoomAt/zoomIn, где новый масштаб считается относительно текущего).
+    // Без duration — мгновенно (как centerOn); с duration — плавный анимированный
+    // перелёт камеры, по завершении которого вызывается onDone.
+    focusOn: (x, y, targetWidth, duration, onDone) => {
+      const aspect = initialViewBox.h / initialViewBox.w;
+      const newW = Math.max(minW, Math.min(maxW, targetWidth));
+      const newH = newW * aspect;
+      const target = clampViewBox({x: x - newW/2, y: y - newH/2, w: newW, h: newH});
+      if (duration) animateViewBox(target, duration, onDone);
+      else { setViewBox(target); if (onDone) onDone(); }
+    },
+    getViewBox: () => ({...cur}),
+    getInitialViewBox: () => ({...initialViewBox}),
+  };
+}
