@@ -42,6 +42,22 @@ export function createPanZoom(svg, opts) {
     svg.setAttribute('viewBox', `${v.x} ${v.y} ${v.w} ${v.h}`);
   }
 
+  /* Пока viewBox меняется каждый кадр (перетаскивание, щипок, перелёт камеры),
+     на SVG висит класс .panning — чтобы CSS мог на это время спрятать самое
+     дорогое в отрисовке. На карте галактики это подписи систем: их ~1600, и
+     каждая перерисовывается на КАЖДОМ кадре, съедая почти половину его
+     стоимости (замер: 28 мс на кадр всего, 14.4 мс без подписей). См.
+     `.svg-widget svg.panning text` в css/styles.css — там же оговорено, какие
+     подписи остаются видимыми, чтобы не терять ориентацию при перетаскивании.
+
+     Три независимых источника (мышь/палец, щипок, анимация), поэтому не
+     булев флаг, а три — иначе окончание одного гасило бы класс, когда другой
+     ещё активен (например, палец отпустил один из двух при щипке). */
+  let busyDrag = false, busyPinch = false, busyAnim = false;
+  function refreshBusy() {
+    svg.classList.toggle('panning', busyDrag || busyPinch || busyAnim);
+  }
+
   function clampViewBox(v) {
     let w = Math.max(minW, Math.min(maxW, v.w));
     let h = v.h * (w / v.w);
@@ -83,10 +99,12 @@ export function createPanZoom(svg, opts) {
   let animFrameId = null;
   function cancelAnim() {
     if (animFrameId) { cancelAnimationFrame(animFrameId); animFrameId = null; }
+    if (busyAnim) { busyAnim = false; refreshBusy(); }
   }
   function easeInOutCubic(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2; }
   function animateViewBox(target, duration, onDone) {
     cancelAnim();
+    busyAnim = true; refreshBusy();
     const start = {...cur};
     const t0 = performance.now();
     function step(now) {
@@ -102,6 +120,7 @@ export function createPanZoom(svg, opts) {
         animFrameId = requestAnimationFrame(step);
       } else {
         animFrameId = null;
+        busyAnim = false; refreshBusy();
         if (onDone) onDone();
       }
     }
@@ -149,7 +168,12 @@ export function createPanZoom(svg, opts) {
     if (!isPanning) return;
     e.preventDefault();
     const dx = e.clientX - panStart.x, dy = e.clientY - panStart.y;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+    // Класс вешаем не на pointerdown, а только когда палец реально поехал —
+    // иначе подписи моргали бы на каждом обычном тапе по системе/маркеру.
+    if (!moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+      moved = true;
+      busyDrag = true; refreshBusy();
+    }
     // preserveAspectRatio="xMidYMid meet" на не-квадратном экране оставляет пустые поля
     // по одной из осей — масштаб пикселей должен быть ОДИНАКОВЫМ для x и y (он единый,
     // так как aspect ratio сохраняется), а не считаться раздельно от полной ширины/высоты
@@ -177,8 +201,12 @@ export function createPanZoom(svg, opts) {
       }
     }
     isPanning = false;
+    busyDrag = false; refreshBusy();
   });
-  svg.addEventListener('pointercancel', () => { isPanning = false; });
+  svg.addEventListener('pointercancel', () => {
+    isPanning = false;
+    busyDrag = false; refreshBusy();
+  });
 
   let pinch = {active:false, startDist:0, startView:null, center:null};
   function dist(a,b){ return Math.hypot(b.clientX-a.clientX, b.clientY-a.clientY); }
@@ -187,6 +215,7 @@ export function createPanZoom(svg, opts) {
     if (e.touches.length === 2) {
       cancelAnim();
       pinch.active = true;
+      busyPinch = true; refreshBusy();
       pinch.startDist = dist(e.touches[0], e.touches[1]);
       pinch.startView = {...cur};
       const mx = (e.touches[0].clientX + e.touches[1].clientX)/2;
@@ -207,7 +236,12 @@ export function createPanZoom(svg, opts) {
     }));
   }, {passive:false});
 
-  svg.addEventListener('touchend', (e) => { if (e.touches.length < 2) pinch.active = false; });
+  svg.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) {
+      pinch.active = false;
+      busyPinch = false; refreshBusy();
+    }
+  });
 
   return {
     zoomIn: () => { cancelAnim(); zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1.25); },
