@@ -22,7 +22,7 @@
    когда-нибудь потребуется открывать ДВА таких окна одновременно — вот тут
    придётся заводить второй экземпляр overlay/viewer, сейчас это не нужно
    (как и везде в проекте, одновременно открыто максимум одно окно-вкладыш). */
-import { closeModal, isArticleOpen, escapeHtml } from './modal.js?v=48';
+import { closeModal, isArticleOpen, escapeHtml } from './modal.js?v=50';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 let phenomViewer = null;
@@ -236,7 +236,13 @@ export function openSubmap(config) {
   setTimeout(() => { phenomArmed = true; }, 300);
 }
 
-function closePhenom() {
+// Открыто ли окно-вкладыш сейчас — нужно снаружи (js/navigation.js) для
+// единого "шага назад" (ESC/Telegram BackButton/history браузера).
+export function isPhenomOpen() {
+  return phenomOverlay.classList.contains('open');
+}
+
+export function closePhenom() {
   closeModal(); // если поверх открыто "Описание Феном" — не оставлять его висеть над картой
   phenomOverlay.classList.remove('open');
 }

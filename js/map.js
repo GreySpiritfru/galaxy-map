@@ -1,13 +1,13 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=48';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=48';
-import { openSystem, slugify } from './system-view.js?v=48';
-import { openSubmap, setPhenomChildren, setSubmapCharacters } from './phenom.js?v=48';
-import { openStory, setCharacterNavigator } from './stories.js?v=48';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=48';
-import { buildNodes, layoutNodes, siblingLinks } from './graph.js?v=48';
+import { createPanZoom } from './panzoom.js?v=50';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=50';
+import { openSystem, slugify } from './system-view.js?v=50';
+import { openSubmap, setPhenomChildren, setSubmapCharacters } from './phenom.js?v=50';
+import { openStory, setCharacterNavigator } from './stories.js?v=50';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=50';
+import { buildNodes, layoutNodes, siblingLinks } from './graph.js?v=50';
 
 const SVG_PATH = 'map.svg';
 

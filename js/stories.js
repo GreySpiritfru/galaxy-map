@@ -8,7 +8,7 @@
    (полный состав ведущих/персонажей сознательно НЕ дублируется на карте —
    он уже есть в архиве). Данные — см. stories.json и openStory() в map.js.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=48';
+import { escapeHtml } from './modal.js?v=50';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любого
 // открытого сюжета, поэтому не в stories.json, а константой здесь.
@@ -26,10 +26,10 @@ storyTelegramBtn.addEventListener('click', () => {
 
 // Переход "сюжет -> персонаж" (обратная сторона кнопки "Сюжет" в окне
 // персонажа, см. js/characters.js): map.js регистрирует сюда колбэк, который
-// закрывает текущую позицию карты, наводит камеру на персонажа и открывает
-// его окно — тот же общий механизм focusAndOpen, что и у всех остальных
-// переходов между маркерами. Тут просто дырка для этого колбэка, чтобы
-// stories.js не пришлось знать про camera/openCharacter напрямую.
+// наводит камеру на персонажа и открывает его окно — тот же общий механизм
+// focusAndOpen, что и у всех остальных переходов между маркерами. Тут просто
+// дырка для этого колбэка, чтобы stories.js не пришлось знать про
+// camera/openCharacter напрямую.
 let goToCharacter = null;
 export function setCharacterNavigator(fn) { goToCharacter = fn; }
 
@@ -104,7 +104,11 @@ export function openStory(s) {
 
   storyContent.querySelectorAll('.story-character-chip').forEach(btn => {
     btn.addEventListener('click', () => {
-      closeStory();
+      // Окно сюжета НЕ закрываем — окно персонажа открывается поверх него
+      // (модал персонажа выше в z-index, см. грабли №7), а само окно
+      // сюжета остаётся открытым позади. Так закрытие анкеты персонажа
+      // (крестик/фон) сразу возвращает к тому же сюжету без повторного
+      // перехода через карту.
       if (goToCharacter) goToCharacter(btn.dataset.charId);
     });
   });
@@ -122,7 +126,13 @@ export function openStory(s) {
   setTimeout(() => { storyArmed = true; }, 300);
 }
 
-function closeStory() {
+// Открыто ли окно сюжета сейчас — нужно снаружи (js/navigation.js) для
+// единого "шага назад" (ESC/Telegram BackButton/history браузера).
+export function isStoryOpen() {
+  return storyOverlay.classList.contains('open');
+}
+
+export function closeStory() {
   storyOverlay.classList.remove('open');
 }
 

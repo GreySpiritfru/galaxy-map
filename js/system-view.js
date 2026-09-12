@@ -1,8 +1,8 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=48';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith } from './modal.js?v=48';
+import { createPanZoom } from './panzoom.js?v=50';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith } from './modal.js?v=50';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -49,7 +49,15 @@ const loreDataPromise = (async () => {
   }
 })();
 
-function closeSystem() {
+// Открыт ли вид системы сейчас — нужно снаружи (js/navigation.js), чтобы
+// единый "шаг назад" (ESC/Telegram BackButton/history браузера) знал, что
+// именно сейчас закрывать. Работает и когда поверх системы открыта статья —
+// depth() в navigation.js считает оба слоя отдельно.
+export function isSystemOpen() {
+  return systemOverlay.classList.contains('open');
+}
+
+export function closeSystem() {
   closeModal(); // на случай, если открыт лор поверх системы — не оставлять его висеть над картой
   systemOverlay.classList.remove('open');
   systemContainer.innerHTML = '';
