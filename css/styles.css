@@ -52,6 +52,61 @@ html, body {
   display: none;
 }
 
+/* Второй тяжёлый слой — свечения/заливки территорий из самого экспорта
+   StellarMaps: 82 элемента с `filter="url(#fade)"` и подобными, внутри
+   каждого feGaussianBlur. Область фильтра задана в процентах от размера
+   фигуры (`width="200%"`), то есть растёт вместе с приближением — ровно та
+   же болезнь, что была у нашего тумана (см. грабли №17). Отсюда и эффект
+   "чем ближе, тем хуже": на сильном зуме кадр стоит ~10-13 мс против пола
+   в 6.1, и это ПОСЛЕ отключения подписей.
+   Совсем убрать нельзя — вместе со свечением пропадает мягкая заливка
+   территорий, и они превращаются в пустые контуры. Поэтому гасим только на
+   время жеста, как и подписи.
+
+   ⚠️ Два важных уточнения, оба получены на граблях:
+
+   1. Именно `display: none`, а НЕ `filter: none`. filter:none не убирает
+      элемент, а показывает его БЕЗ размытия — мягкое свечение превращается
+      в жирную сплошную плашку поверх и без того толстой границы, то есть на
+      время жеста граница становилась ещё заметнее.
+
+   2. Целимся строго в `[filter*="fade"]`, а не во все `[filter]`. В экспорте
+      StellarMaps атрибут `filter` висит на 82 элементах, но это две разные
+      вещи: 29 штук с `url(#fade)` — те самые широкие мягкие полосы вдоль
+      границ (stroke-width 11.25 + размытие 11.25), дорогие и лишние при
+      перетаскивании; и 53 штуки с ПУСТЫМ `filter=""` — пунктирные границы и
+      заливки территорий, которые ничего не стоят. Пряча всё подряд, мы
+      убирали вместе со свечением и саму границу — на скриншоте от
+      пользователя территория оставалась без контура. */
+.svg-widget svg.panning [filter*="fade"] {
+  display: none;
+}
+
+/* Вкладка-заглушка в окне персонажа ("Заметки"/"Броски") — показывается на
+   месте iframe с анкетой, поэтому должна сама занять всю карточку и покрасить
+   фон: у .modal-card--iframe фон прозрачный, его задаёт содержимое. */
+.char-stub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 80px 24px 24px;
+  background: #0e0e14;
+  color: rgba(255,255,255,0.65);
+  font-family: sans-serif;
+  font-size: 14px;
+  text-align: center;
+}
+.char-stub-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
 /* Включённый тумблер в меню инструментов (🏷️, 📍) — тот же "нажатый" вид,
    что и у активной статьи в таб-баре. */
 .svg-controls button.active {
@@ -627,6 +682,46 @@ html, body {
 
 @media (max-width: 600px) {
   .story-banner-img { max-height: 32vh; }
+}
+
+/* Ряд персонажей, закреплённых за сюжетом (storyId в characters.json) —
+   первое, что видно после верхней шторки, до баннера и заголовка. Тот же
+   "квадрат со скруглёнными углами", что и у маркера персонажа на самой
+   карте (см. .hotspot/makeIconShape в js/map.js), только это уже обычный
+   HTML внутри статьи, а не SVG. Тап уводит прямо к персонажу — обратная
+   связь к кнопке "Сюжет" в его собственном окне. */
+.story-characters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.story-character-chip {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1.5px solid #AFEEEE;
+  border-radius: 13px;
+  background: rgba(175,238,238,0.12);
+  overflow: hidden;
+  cursor: pointer;
+}
+.story-character-chip img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.story-character-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #AFEEEE;
+  font-weight: 700;
+  font-size: 18px;
 }
 
 .story-code {

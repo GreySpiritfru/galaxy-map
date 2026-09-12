@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=26" />
+  <link rel="stylesheet" href="css/styles.css?v=36" />
 </head>
 <body>
 
@@ -86,6 +86,27 @@
   </button>
 </div>
 
+<!-- Панель персонажа. Механизм тот же, что у #refToolbar: сама по себе нигде
+     не показывается, а пристыковывается внутрь #modalCard через
+     openIframeModal. Отличие в наполнении — это не переход между статьями, а
+     вкладки одного персонажа: анкета (Teletype), связанный сюжет, заметки и
+     броски. Логика — js/characters.js, данные — characters.json. -->
+<div class="ref-toolbar lore-toolbar tabbar" id="charToolbar">
+  <button class="toolbar-close-btn" id="charToolbarClose" aria-label="Закрыть">✕</button>
+  <button class="tabbar-btn" id="charSheet">
+    <span class="tabbar-btn-icon" aria-hidden="true">📋</span><span class="tabbar-btn-label">Анкета</span>
+  </button>
+  <button class="tabbar-btn" id="charStory">
+    <span class="tabbar-btn-icon" aria-hidden="true">🎬</span><span class="tabbar-btn-label">Сюжет</span>
+  </button>
+  <button class="tabbar-btn" id="charNotes">
+    <span class="tabbar-btn-icon" aria-hidden="true">📝</span><span class="tabbar-btn-label">Заметки</span>
+  </button>
+  <button class="tabbar-btn" id="charRolls">
+    <span class="tabbar-btn-icon" aria-hidden="true">🎲</span><span class="tabbar-btn-label">Броски</span>
+  </button>
+</div>
+
 <!-- Модал для "инфо"-точек (фракции/регионы) -->
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal-card" id="modalCard">
@@ -140,6 +161,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=26"></script>
+<script type="module" src="js/main.js?v=36"></script>
 </body>
 </html>

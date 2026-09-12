@@ -1,11 +1,12 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=26';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=26';
-import { openSystem, slugify } from './system-view.js?v=26';
-import { openPhenom } from './phenom.js?v=26';
-import { openStory } from './stories.js?v=26';
+import { createPanZoom } from './panzoom.js?v=36';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=36';
+import { openSystem, slugify } from './system-view.js?v=36';
+import { openPhenom } from './phenom.js?v=36';
+import { openStory, setCharacterNavigator } from './stories.js?v=36';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=36';
 
 const SVG_PATH = 'map.svg';
 
@@ -37,7 +38,15 @@ const calibPanel = document.getElementById('calibPanel');
 
   const pz = createPanZoom(svg, {
     zoomOutLimit: 1,     // нельзя отдалиться дальше исходного вида карты — П.2
-    zoomInLimit: 0.02,
+    /* Доля исходной ширины, ближе которой не подпускаем. Было 0.02 — это ~12
+       единиц в кадре, при которых одна звезда занимала весь экран: смотреть
+       там нечего (растр давно превратился в кашу), а поверхности отрисовки
+       раздуваются до десятков тысяч пикселей, см. грабли №17-18.
+       0.07 — это ~41 единица, то есть вдвое ближе, чем FOCUS_WIDTH (80), на
+       который камера встаёт сама при клике по маркеру. Ближе этого уже
+       незачем, а предел ОБЯЗАН оставаться меньше FOCUS_WIDTH — иначе
+       focusOn() начнёт упираться в него и перестанет долетать куда надо. */
+    zoomInLimit: 0.07,
     boundsPad: 0.2,      // запас побольше, чтобы можно было докрутить камеру до самых крайних систем
     onClick: (p) => { if (calibMode) showCalib(p.x, p.y); }
   });
@@ -327,6 +336,7 @@ const calibPanel = document.getElementById('calibPanel');
   const ns = 'http://www.w3.org/2000/svg';
   const MARKERS_PATH = 'markers.json';
   const STORIES_PATH = 'stories.json';
+  const CHARACTERS_PATH = 'characters.json';
   const MARKER_SIZE = 8; // размер картинки-маркера в единицах SVG
 
   async function loadJsonList(path) {
@@ -367,14 +377,33 @@ const calibPanel = document.getElementById('calibPanel');
   // dotStroke/ringColor — визуальное отличие категорий точек друг от друга
   // (см. вызовы ниже: у сюжетов золотое кольцо/фиолетовая заглушка, у обычных
   // маркеров — как было раньше, белое кольцо/жёлтая заглушка).
-  function createMapIcon({x, y, image, dotFill, dotStroke, ringColor, onTap}) {
+  /* shape: 'circle' (по умолчанию — фракции/персонажи в markers.json и сюжеты)
+     или 'square' — квадрат со скруглёнными углами, им отличаются маркеры
+     персонажей из characters.json. Форма задаётся в одном месте и одинаково
+     влияет и на обрезку картинки-аватара, и на обводку, и на заглушку. */
+  function makeIconShape(shape, size) {
+    if (shape === 'square') {
+      const r = document.createElementNS(ns, 'rect');
+      r.setAttribute('x', -size/2);
+      r.setAttribute('y', -size/2);
+      r.setAttribute('width', size);
+      r.setAttribute('height', size);
+      r.setAttribute('rx', size * 0.45); // скругление углов
+      return r;
+    }
+    const c = document.createElementNS(ns, 'circle');
+    c.setAttribute('r', size/2);
+    return c;
+  }
+
+  function createMapIcon({x, y, image, dotFill, dotStroke, ringColor, shape, size, onTap}) {
+    const iconSize = size || MARKER_SIZE;
     const g = document.createElementNS(ns, 'g');
     g.setAttribute('class', 'hotspot');
     g.setAttribute('transform', `translate(${x} ${y})`);
 
     function addDefaultDot() {
-      const c = document.createElementNS(ns, 'circle');
-      c.setAttribute('r', 3.5);
+      const c = makeIconShape(shape, iconSize * 0.875); // та же пропорция, что была у фиксированных 7/8
       c.setAttribute('fill', dotFill);
       c.setAttribute('stroke', dotStroke);
       c.setAttribute('stroke-width', 0.5);
@@ -383,27 +412,24 @@ const calibPanel = document.getElementById('calibPanel');
     }
 
     if (image) {
-      // круглая картинка-аватар вместо обычной точки, с тонкой обводкой
+      // картинка-аватар вместо обычной точки, обрезанная по форме, с тонкой обводкой
       const clipId = 'clip-' + Math.random().toString(36).slice(2, 9);
       const clip = document.createElementNS(ns, 'clipPath');
       clip.setAttribute('id', clipId);
-      const clipCircle = document.createElementNS(ns, 'circle');
-      clipCircle.setAttribute('r', MARKER_SIZE/2);
-      clip.appendChild(clipCircle);
+      clip.appendChild(makeIconShape(shape, iconSize));
       g.appendChild(clip);
 
       const img = document.createElementNS(ns, 'image');
       img.setAttribute('href', image);
-      img.setAttribute('x', -MARKER_SIZE/2);
-      img.setAttribute('y', -MARKER_SIZE/2);
-      img.setAttribute('width', MARKER_SIZE);
-      img.setAttribute('height', MARKER_SIZE);
+      img.setAttribute('x', -iconSize/2);
+      img.setAttribute('y', -iconSize/2);
+      img.setAttribute('width', iconSize);
+      img.setAttribute('height', iconSize);
       img.setAttribute('preserveAspectRatio', 'xMidYMid slice');
       img.setAttribute('clip-path', `url(#${clipId})`);
       img.style.cursor = 'pointer';
 
-      const ring = document.createElementNS(ns, 'circle');
-      ring.setAttribute('r', MARKER_SIZE/2);
+      const ring = makeIconShape(shape, iconSize);
       ring.setAttribute('fill', 'none');
       ring.setAttribute('stroke', ringColor);
       ring.setAttribute('stroke-width', 0.4);
@@ -442,9 +468,14 @@ const calibPanel = document.getElementById('calibPanel');
     });
   }
 
-  function renderStories(stories) {
+  function renderStories(stories, charsByStory) {
     stories.forEach(s => {
       if (typeof s.x !== 'number' || typeof s.y !== 'number') return;
+      // Персонажи, закреплённые за этим сюжетом — показываются внутри его
+      // окна кружком-переходом (см. openStory() в js/stories.js), а не на
+      // самой карте: на карте они уже нарисованы отдельными маркерами по
+      // орбите вокруг этой же точки (см. renderCharacters ниже).
+      s.__characters = charsByStory.get(s.id) || [];
       // s.color — необязательный цвет из stories.json, переопределяет цвет
       // кольца (если есть картинка маркера) или заглушки-кружка (если нет).
       // По умолчанию — золотое кольцо/фиолетовая заглушка, отличает сюжетные
@@ -461,9 +492,148 @@ const calibPanel = document.getElementById('calibPanel');
     });
   }
 
+  /* Персонаж, у которого заполнен storyId существующего сюжета, рисуется НЕ
+     по своим x/y из characters.json, а на "орбите" вокруг маркера сюжета —
+     сюжет как планета, персонаж как её спутник: меньше размером
+     (CHAR_ORBIT_SIZE против обычных MARKER_SIZE) и на фиксированном
+     расстоянии от центра. Несколько персонажей одного сюжета распределяются
+     по кругу поровну.
+
+     Начинаем сверху (угол -90°) и увеличиваем угол — в SVG y растёт вниз,
+     поэтому обычная параметризация окружности (cos, sin) с растущим углом
+     на экране выглядит как движение ПО ЧАСОВОЙ стрелке (в обычных, "y вверх"
+     координатах то же самое было бы против часовой).
+
+     x/y в JSON у таких персонажей не отбрасываются — они остаются как
+     запасной вариант на случай, если storyId опустеет или сюжет удалят
+     (тогда персонаж просто вернётся на них, а не пропадёт с карты).
+
+     Радиус АДАПТИВНЫЙ, а не фиксированный: с ростом числа персонажей на
+     одном сюжете кольцо расширяется настолько, чтобы расстояние МЕЖДУ
+     СОСЕДНИМИ маркерами оставалось комфортным (CHAR_ORBIT_STEP), а не
+     схлопывалось в сплошную кашу (так и было при фиксированном радиусе —
+     11 персонажей на одном кольце перекрывали друг друга). Ниже
+     CHAR_ORBIT_BASE_RADIUS кольцо не сжимается — при 1-2 персонажах не
+     нужно ни притискивать их вплотную к сюжету, ни разводить по огромному
+     кругу ради "красивого" шага.
+
+     До CHAR_ORBIT_RING1_MAX персонажей помещается на первом кольце — дальше
+     включается ВТОРОЕ, той же логики (адаптивный радиус, тот же комфортный
+     шаг), просто дальше от сюжета. Маркеры на нём такого же размера, как на
+     первом — отличается только расстояние до центра. У второго кольца
+     жёсткого потолка нет: сколько бы персонажей ни осталось после первого,
+     формула просто раздвинет его чуть шире, ничего не теряя (раньше вместо
+     этого был один маркер-бейдж "+N" — убрали, полный список всё равно есть
+     внутри самого окна сюжета, openStory() в js/stories.js). */
+  const CHAR_ORBIT_SIZE = 2;        // спутник заметно меньше "планеты" (MARKER_SIZE = 8)
+  const CHAR_ORBIT_BASE_RADIUS = 0;   // минимальный радиус первого кольца
+  const CHAR_ORBIT_STEP = 2.2;          // желаемое расстояние между центрами соседних маркеров
+  const CHAR_ORBIT_RING1_MAX = 12;    // после скольки персонажей включается второе кольцо
+  const CHAR_ORBIT_RING_GAP = 0;      // насколько второе кольцо дальше первого
+
+  // Радиус, при котором `count` маркеров на кольце стоят на расстоянии
+  // CHAR_ORBIT_STEP друг от друга — общая формула для обоих колец.
+  function orbitRadiusFor(count) {
+    return Math.max(CHAR_ORBIT_BASE_RADIUS, count * CHAR_ORBIT_STEP / (2*Math.PI));
+  }
+
+  function computeCharacterOrbits(stories, chars) {
+    const storyById = new Map(stories.map(s => [s.id, s]));
+    const byStory = new Map();    // storyId -> [персонаж, ...]
+    const positions = new Map();  // char.id -> {x, y}
+    chars.forEach(c => {
+      if (!c.storyId || !storyById.has(c.storyId)) return;
+      if (!byStory.has(c.storyId)) byStory.set(c.storyId, []);
+      byStory.get(c.storyId).push(c);
+    });
+    byStory.forEach((list, storyId) => {
+      const story = storyById.get(storyId);
+      const ring1 = list.slice(0, CHAR_ORBIT_RING1_MAX);
+      const ring2 = list.slice(CHAR_ORBIT_RING1_MAX);
+      const ring1Radius = orbitRadiusFor(ring1.length);
+      const place = (arr, radius) => arr.forEach((c, i) => {
+        const angle = -Math.PI/2 + i * (2*Math.PI / arr.length);
+        positions.set(c.id, {
+          x: story.x + radius * Math.cos(angle),
+          y: story.y + radius * Math.sin(angle),
+        });
+      });
+      place(ring1, ring1Radius);
+      if (ring2.length) {
+        const ring2Radius = Math.max(ring1Radius + CHAR_ORBIT_RING_GAP, orbitRadiusFor(ring2.length));
+        place(ring2, ring2Radius);
+      }
+    });
+    return {byStory, positions};
+  }
+
+  /* Маркеры персонажей. Отличаются формой — квадрат со скруглёнными углами
+     против кругов у фракций и сюжетов, чтобы на карте было видно, что это
+     другая сущность, ещё до тапа. Цвет по умолчанию бирюзовый, тот же
+     акцентный, что у готовых систем и активных вкладок. */
+  function renderCharacters(chars, positions) {
+    chars.forEach(c => {
+      const orbit = positions.get(c.id);
+      const x = orbit ? orbit.x : c.x;
+      const y = orbit ? orbit.y : c.y;
+      if (typeof x !== 'number' || typeof y !== 'number') return;
+      createMapIcon({
+        x, y, image: c.image, shape: 'square',
+        size: orbit ? CHAR_ORBIT_SIZE : MARKER_SIZE,
+        dotFill: c.color || 'rgba(175,238,238,0.92)', dotStroke: '#0b2b2b',
+        ringColor: c.color || '#AFEEEE',
+        onTap: () => {
+          if (calibMode) { showCalib(x, y); return; }
+          focusAndOpen(x, y, () => {
+            updateStoryButton(Boolean(c.storyId));
+            openCharacter(c);
+          });
+        },
+      });
+    });
+  }
+
   const markersPromise = loadJsonList(MARKERS_PATH);
   markersPromise.then(renderMarkers);
-  loadJsonList(STORIES_PATH).then(renderStories);
+  const storiesPromise = loadJsonList(STORIES_PATH);
+  const charactersPromise = loadJsonList(CHARACTERS_PATH);
+  // charPositions — те же координаты, что достались персонажам-спутникам при
+  // отрисовке; нужны ещё раз ниже, для перехода "сюжет -> персонаж" (камере
+  // нужно куда наводиться, а координаты в характере.json для орбитальных
+  // персонажей — только запасной вариант, реальная точка вычислена тут).
+  let charPositions = new Map();
+  Promise.all([storiesPromise, charactersPromise]).then(([stories, chars]) => {
+    const {byStory, positions} = computeCharacterOrbits(stories, chars);
+    charPositions = positions;
+    renderStories(stories, byStory);
+    renderCharacters(chars, positions);
+  });
+
+  /* Кнопка "Сюжет" в панели персонажа: уводит из его анкеты к сюжету, за
+     которым он сейчас закреплён. Обработчик живёт здесь, а не в
+     characters.js, потому что тут есть и список сюжетов, и камера — ровно
+     так же сделан переход "Карта" у Фенома (#refPhenomMap выше). */
+  document.getElementById('charStory').addEventListener('click', async () => {
+    const char = getOpenCharacter();
+    if (!char || !char.storyId) return;
+    const stories = await storiesPromise;
+    const story = stories.find(s => s.id === char.storyId);
+    if (!story) return; // сюжет удалили/переименовали — молча ничего не делаем
+    closeModal(); // иначе анкета останется висеть поверх окна сюжета
+    focusAndOpen(story.x, story.y, () => openStory(story));
+  });
+
+  // Обратный переход "сюжет -> персонаж" (тап по кружку персонажа внутри
+  // окна сюжета, см. openStory() в js/stories.js) — тот же общий механизм
+  // focusAndOpen, что и везде: наводим камеру на реальную (орбитальную)
+  // позицию персонажа и открываем его окно.
+  setCharacterNavigator((char) => {
+    const pos = charPositions.get(char.id) || {x: char.x, y: char.y};
+    focusAndOpen(pos.x, pos.y, () => {
+      updateStoryButton(Boolean(char.storyId));
+      openCharacter(char);
+    });
+  });
 
   // Все входы в Феном ведут через один и тот же перелёт камеры (focusAndOpen
   // выше), что и клик по маркеру "phenome" на карте: кнопка 🚀 в углу карты и
