@@ -8,7 +8,7 @@
    (маркеры персонажей квадратные со скруглением, чтобы отличались от круглых
    маркеров фракций и сюжетов).
    ============================================================ */
-import { openIframeModal, closeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=36';
+import { openIframeModal, closeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=48';
 
 const charToolbar = document.getElementById('charToolbar');
 const sheetBtn = document.getElementById('charSheet');

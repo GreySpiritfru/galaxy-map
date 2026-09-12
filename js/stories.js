@@ -8,7 +8,7 @@
    (полный состав ведущих/персонажей сознательно НЕ дублируется на карте —
    он уже есть в архиве). Данные — см. stories.json и openStory() в map.js.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=36';
+import { escapeHtml } from './modal.js?v=48';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любого
 // открытого сюжета, поэтому не в stories.json, а константой здесь.
@@ -33,6 +33,34 @@ storyTelegramBtn.addEventListener('click', () => {
 let goToCharacter = null;
 export function setCharacterNavigator(fn) { goToCharacter = fn; }
 
+/* Разбивает персонажей сюжета на группы связанных между собой (по их
+   links) — связные компоненты. Один персонаж без союзников — группа из
+   одного. Порядок внутри группы и между группами сохраняет исходный
+   порядок из characters.json, чтобы список не прыгал между открытиями. */
+function groupByLinks(chars) {
+  const byId = new Map(chars.map(c => [c.id, c]));
+  const visited = new Set();
+  const groups = [];
+  chars.forEach(c => {
+    if (visited.has(c.id)) return;
+    const group = [];
+    const stack = [c];
+    visited.add(c.id);
+    while (stack.length) {
+      const cur = stack.pop();
+      group.push(cur);
+      (cur.links || []).forEach(id => {
+        const other = byId.get(id);
+        if (!other || visited.has(id)) return;
+        visited.add(id);
+        stack.push(other);
+      });
+    }
+    groups.push(group);
+  });
+  return groups;
+}
+
 export function openStory(s) {
   const codeHtml = s.code ? `<span class="story-code">${escapeHtml(s.code)}</span> ` : '';
   const imagesHtml = (Array.isArray(s.images) ? s.images : [])
@@ -40,20 +68,28 @@ export function openStory(s) {
     .join('');
   const descHtml = s.description ? escapeHtml(s.description).replace(/\n/g, '<br>') : '';
 
-  // s.__characters — персонажи, закреплённые за этим сюжетом (storyId в
-  // characters.json), проставляется в map.js перед вызовом openStory(). Тот
-  // же маркер-квадрат, что и на карте (см. .story-character-chip в
-  // css/styles.css) — тап уводит прямо к персонажу, обратная связь к кнопке
-  // "Сюжет" в его собственном окне.
+  /* s.__characters — персонажи, привязанные к этому сюжету ("parent" в
+     characters.json), проставляется в map.js перед вызовом openStory().
+     Каждый — {id, name, image, links}, где links это союзники ВНУТРИ этого
+     же сюжета. Тот же маркер-квадрат, что и на карте (см.
+     .story-character-chip в css/styles.css), тап уводит прямо к персонажу —
+     обратная связь к кнопке "Сюжет" в его собственном окне.
+
+     Связанные персонажи собираются в одну группу (.story-character-group) и
+     стоят вместе под общей чертой — тот же смысл, что у нити между ними на
+     карте, только здесь это HTML, а не SVG. */
   const chars = Array.isArray(s.__characters) ? s.__characters : [];
+  const chipHtml = (c) => `
+    <button class="story-character-chip" data-char-id="${escapeHtml(c.id)}" title="${escapeHtml(c.name || '')}">
+      ${c.image
+        ? `<img src="${escapeHtml(c.image)}" alt="">`
+        : `<span class="story-character-fallback">${escapeHtml((c.name || '?').trim().charAt(0))}</span>`}
+    </button>`;
   const charsHtml = chars.length ? `
     <div class="story-characters">
-      ${chars.map(c => `
-        <button class="story-character-chip" data-char-id="${escapeHtml(c.id)}" title="${escapeHtml(c.name || '')}">
-          ${c.image
-            ? `<img src="${escapeHtml(c.image)}" alt="">`
-            : `<span class="story-character-fallback">${escapeHtml((c.name || '?').trim().charAt(0))}</span>`}
-        </button>`).join('')}
+      ${groupByLinks(chars).map(group => group.length > 1
+        ? `<div class="story-character-group">${group.map(chipHtml).join('')}</div>`
+        : chipHtml(group[0])).join('')}
     </div>` : '';
 
   storyContent.innerHTML = `
@@ -68,10 +104,8 @@ export function openStory(s) {
 
   storyContent.querySelectorAll('.story-character-chip').forEach(btn => {
     btn.addEventListener('click', () => {
-      const char = chars.find(c => c.id === btn.dataset.charId);
-      if (!char) return;
       closeStory();
-      if (goToCharacter) goToCharacter(char);
+      if (goToCharacter) goToCharacter(btn.dataset.charId);
     });
   });
 

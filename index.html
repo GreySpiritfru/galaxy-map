@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=36" />
+  <link rel="stylesheet" href="css/styles.css?v=48" />
 </head>
 <body>
 
@@ -137,11 +137,29 @@
      (тайлы + OpenSeadragon, см. js/phenom.js). -->
 <div class="phenom-overlay" id="phenomOverlay">
   <div class="phenom-card" id="phenomCard">
-    <div class="phenom-toolbar lore-toolbar">
+    <!-- Меню окна Феном — тот же таб-бар, что у статей-справочников и вида
+         системы (.tabbar, см. грабли №12). В разметке только крестик и
+         "Описание Фенома"; вкладки привязанных сюжетов дописываются СЮДА ЖЕ
+         из графа связей (setPhenomChildren в js/phenom.js) — руками их
+         добавлять не надо, привязка живёт в stories.json. -->
+    <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
       <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть">✕</button>
-      <button class="phenom-desc" data-ref="phenom">Описание Фенома</button>
+      <button class="tabbar-btn" data-ref="phenom">
+        <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Описание Фенома</span>
+      </button>
     </div>
     <div class="phenom-content" id="phenomContent">
+      <!-- Персонажи, привязанные прямо к самой карте Феном (submapX/submapY в
+           characters.json) — кнопка слева сверху над картой открывает их
+           список, тап по пункту наводит вид OpenSeadragon на маркер. Список
+           наполняется из графа связей при каждом открытии окна, см.
+           openSubmapNode в js/map.js и setSubmapCharacters в js/phenom.js —
+           руками сюда ничего не добавляется. Кнопка прячется сама, если
+           таких персонажей пока нет. -->
+      <div class="phenom-char-nav" id="phenomCharNav" hidden>
+        <button class="phenom-char-nav-btn" id="phenomCharNavBtn" title="Персонажи на карте Феном">👥</button>
+        <div class="phenom-char-nav-list" id="phenomCharNavList" hidden></div>
+      </div>
       <div class="phenom-viewer" id="phenomViewer"></div>
     </div>
   </div>
@@ -161,6 +179,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=36"></script>
+<script type="module" src="js/main.js?v=48"></script>
 </body>
 </html>

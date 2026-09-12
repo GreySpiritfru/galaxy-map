@@ -357,14 +357,6 @@ html, body {
   cursor: pointer;
 }
 
-/* "Нажатое" состояние кнопки "Описание Феном" внутри окна Феном — единственное
-   место, где остался старый пилюльный стиль активной кнопки; у .tabbar-btn
-   (система, #refToolbar) теперь свой, см. .tabbar-btn.active ниже. */
-.phenom-desc.active {
-  background: rgba(175,238,238,0.28);
-  box-shadow: inset 0 0 0 1.5px #AFEEEE;
-}
-
 /* Пока открыта статья (лор системы ИЛИ описание Феном), соответствующий
    тулбар (.system-toolbar или .phenom-toolbar — оба помечены общим классом
    .lore-toolbar, см. openIframeModal в JS) временно переносится внутрь
@@ -602,21 +594,11 @@ html, body {
   border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .phenom-toolbar::-webkit-scrollbar { display: none; }
-.phenom-desc {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  background: rgba(255,255,255,0.1);
-  color: #fff;
-  border: none;
-  padding: 8px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-}
+/* Меню окна Феном переведено на .tabbar (как статьи и вид системы, см.
+   грабли №12): кнопки делят ширину поровну через flex:1 1 0, поэтому зазор
+   между ними не нужен — он только отъедал бы место у подписей, которых тут
+   до четырёх в ряд. */
+.phenom-toolbar.tabbar { gap: 0; }
 .phenom-content {
   flex: 1;
   min-height: 0;
@@ -630,6 +612,73 @@ html, body {
 .phenom-viewer {
   position: absolute;
   inset: 0;
+}
+
+/* Кнопка "персонажи на карте Феном" (слева сверху над самой картой, а не в
+   общем таб-баре — это навигация ВНУТРИ карты, а не смена вкладки окна) и её
+   выпадающий список. z-index выше .phenom-viewer, но ниже общего тулбара
+   сверху, чтобы не перекрывать крестик закрытия при узком экране. */
+.phenom-char-nav {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 5;
+  touch-action: auto; /* .phenom-content целиком touch-action:none — кнопке и списку нужны обычные тапы/скролл */
+}
+.phenom-char-nav-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(175,238,238,0.45);
+  background: rgba(14,14,20,0.75);
+  backdrop-filter: blur(6px);
+  color: #AFEEEE;
+  font-size: 16px;
+  cursor: pointer;
+}
+/* Ряд-портретов (не текстовый список) — карточки .story-character-chip
+   переиспользованы отсюда же (см. .phenom-char-nav-item ниже), тот же
+   визуальный язык, что у персонажей внутри окна сюжета. В один ряд помещается
+   2-3 карточки, остальные — горизонтальным скроллом вбок, а не вниз: ширина
+   контейнера ФИКСИРОВАННАЯ (168px ≈ 3 чипа по 46px + зазоры), лишнее уходит
+   за край и скроллится по X. */
+.phenom-char-nav-list {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  width: 168px;
+  background: rgba(14,14,20,0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(175,238,238,0.35);
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+/* [hidden] — атрибут, не класс; UA-стиль display:none у него ниже по
+   специфичности, чем display:flex выше, и без этого правила список остаётся
+   видимым, даже когда JS выставляет .hidden = true (грабля, отловленная на
+   этом же компоненте — см. аналогичный список выпадающего меню Феном). */
+.phenom-char-nav-list[hidden] { display: none; }
+
+/* Маркер персонажа ПРЯМО НА карте Феном (оверлей OpenSeadragon, координаты —
+   submapX/submapY в characters.json, см. js/phenom.js). Квадрат со
+   скруглением — тот же язык, что у персонажей на карте галактики
+   (см. .hotspot/makeIconShape в js/map.js), только это обычный HTML/CSS
+   элемент, а не SVG: OpenSeadragon кладёт оверлеи в DOM поверх канваса. */
+.phenom-char-marker {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: rgba(175,238,238,0.92);
+  border: 2px solid #0b2b2b;
+  box-shadow: 0 0 0 1px rgba(175,238,238,0.6);
+  cursor: pointer;
+  touch-action: auto;
 }
 
 /* ===== Окно-вкладыш сюжетного маркера =====
@@ -684,7 +733,7 @@ html, body {
   .story-banner-img { max-height: 32vh; }
 }
 
-/* Ряд персонажей, закреплённых за сюжетом (storyId в characters.json) —
+/* Ряд персонажей, привязанных к сюжету ("parent" в characters.json) —
    первое, что видно после верхней шторки, до баннера и заголовка. Тот же
    "квадрат со скруглёнными углами", что и у маркера персонажа на самой
    карте (см. .hotspot/makeIconShape в js/map.js), только это уже обычный
@@ -724,6 +773,33 @@ html, body {
   font-size: 18px;
 }
 
+/* Нити графа связей (см. renderThreads в js/map.js) — тонкие статичные
+   линии, никакой анимации/физики. Сплошная — "родитель", то есть к чему
+   точка привязана; пунктирная — "союз", связь равных. Разница должна
+   читаться на глаз, иначе непонятно, где иерархия, а где просто дружба. */
+.map-thread {
+  stroke: rgba(175,238,238,0.35);
+  stroke-width: 0.25;
+  pointer-events: none;
+}
+.map-thread.link {
+  stroke: rgba(255,215,106,0.45);
+  stroke-dasharray: 0.7 0.7;
+}
+
+/* Группа связанных между собой персонажей внутри окна сюжета — визуальный
+   аналог нити между ними на карте (см. groupByLinks в js/stories.js). */
+.story-character-group {
+  display: flex;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px dashed rgba(255,215,106,0.45);
+  border-radius: 16px;
+}
+
+/* Ряд кнопок "привязанные сюжеты" внутри окна Феном (см. setPhenomChildren
+   в js/phenom.js). Наполняется из графа связей, поэтому кнопок может быть
+   сколько угодно — ряд переносится по строкам, а не уезжает за экран. */
 .story-code {
   display: inline-block;
   background: rgba(255,215,106,0.16);
@@ -782,7 +858,7 @@ html, body {
   /* Чуть компактнее на узком экране — сам ряд теперь и так скроллится
      (см. .phenom-toolbar/.lore-toolbar.compact), это просто чтобы за один
      свайп помещалось больше кнопок, а не чтобы влезло всё разом. */
-  .phenom-desc, .story-action-btn {
+  .story-action-btn {
     padding: 7px 10px;
     font-size: 12px;
   }

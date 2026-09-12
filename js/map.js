@@ -1,12 +1,13 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=36';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=36';
-import { openSystem, slugify } from './system-view.js?v=36';
-import { openPhenom } from './phenom.js?v=36';
-import { openStory, setCharacterNavigator } from './stories.js?v=36';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=36';
+import { createPanZoom } from './panzoom.js?v=48';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=48';
+import { openSystem, slugify } from './system-view.js?v=48';
+import { openSubmap, setPhenomChildren, setSubmapCharacters } from './phenom.js?v=48';
+import { openStory, setCharacterNavigator } from './stories.js?v=48';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=48';
+import { buildNodes, layoutNodes, siblingLinks } from './graph.js?v=48';
 
 const SVG_PATH = 'map.svg';
 
@@ -365,7 +366,17 @@ const calibPanel = document.getElementById('calibPanel');
   // безвреден (все openFn ниже идемпотентны сами по себе).
   const FOCUS_WIDTH = 80; // ширина viewBox в единицах карты — подобрано по месту
   const FOCUS_PAN_DURATION = 650;
-  function focusAndOpen(x, y, openFn) {
+  /* instant=true — камера ставится на место МГНОВЕННО (duration 0 у
+     pz.focusOn), без анимированного перелёта. Нужно для переходов МЕЖДУ
+     уже открытыми окнами (вкладка сюжета внутри Фенома, кнопка "Сюжет" в
+     окне персонажа, кружок персонажа внутри окна сюжета и т.п.) — камера в
+     эти моменты и так не видна (её закрывает предыдущее/следующее окно),
+     а долгий перелёт по невидимой галактике только тормозит переключение
+     без всякой пользы. Обычный тап по маркеру НА ВИДИМОЙ карте (галактика
+     открыта, ничего поверх неё нет) — единственный случай, где перелёт
+     нужен взаправду, и там instant не передаётся (см. вызовы ниже). */
+  function focusAndOpen(x, y, openFn, instant) {
+    if (instant) { pz.focusOn(x, y, FOCUS_WIDTH, 0); openFn(); return; }
     let opened = false;
     const openOnce = () => { if (!opened) { opened = true; openFn(); } };
     pz.focusOn(x, y, FOCUS_WIDTH, FOCUS_PAN_DURATION, openOnce);
@@ -406,7 +417,10 @@ const calibPanel = document.getElementById('calibPanel');
       const c = makeIconShape(shape, iconSize * 0.875); // та же пропорция, что была у фиксированных 7/8
       c.setAttribute('fill', dotFill);
       c.setAttribute('stroke', dotStroke);
-      c.setAttribute('stroke-width', 0.5);
+      // Толщина обводки — не фиксированная, а доля от размера самой иконки:
+      // у мелких узлов в глубине графа она и должна быть тоньше, а не той же
+      // ширины, что у корневого маркера в 4 раза крупнее.
+      c.setAttribute('stroke-width', iconSize * 0.0625);
       c.style.cursor = 'pointer';
       g.appendChild(c);
     }
@@ -432,7 +446,10 @@ const calibPanel = document.getElementById('calibPanel');
       const ring = makeIconShape(shape, iconSize);
       ring.setAttribute('fill', 'none');
       ring.setAttribute('stroke', ringColor);
-      ring.setAttribute('stroke-width', 0.4);
+      // Та же логика, что у заглушки выше: обводка — доля от размера иконки,
+      // а не фиксированное число, иначе на мелких узлах в глубине графа
+      // кольцо выглядит непропорционально толстым.
+      ring.setAttribute('stroke-width', iconSize * 0.05);
 
       // Путь на картинку битый/недоступен — тихо откатываемся на обычную точку,
       // а не оставляем дыру на карте
@@ -451,210 +468,234 @@ const calibPanel = document.getElementById('calibPanel');
     svg.appendChild(g);
   }
 
-  function renderMarkers(markers) {
-    markers.forEach(m => {
-      if (typeof m.x !== 'number' || typeof m.y !== 'number') return;
+  /* Внешний вид точки зависит ТОЛЬКО от её типа, а раскладка — только от её
+     места в дереве связей (этим занимается js/graph.js). Раньше это было
+     перемешано: у каждого типа была своя функция отрисовки со своими же
+     правилами расположения, и добавить связь между разными типами было
+     некуда. Цвета оставлены прежние: у фракций белое кольцо и жёлтая
+     заглушка, у сюжетов золотое кольцо и фиолетовая, у персонажей бирюза и
+     квадрат со скруглением — чтобы другую сущность было видно ещё до тапа.
+     Поле color в JSON, если заполнено, переопределяет цвет разом. */
+  const NODE_STYLE = {
+    marker:    {shape: 'circle', dotFill: 'rgba(255,200,50,0.9)',   dotStroke: '#111',    ringColor: '#fff'},
+    story:     {shape: 'circle', dotFill: 'rgba(196,148,255,0.95)', dotStroke: '#1a0f2e', ringColor: '#ffd76a'},
+    character: {shape: 'square', dotFill: 'rgba(175,238,238,0.92)', dotStroke: '#0b2b2b', ringColor: '#AFEEEE'},
+  };
+
+  // Картинка маркера исторически лежит в разных полях у разных файлов
+  // (markerImage у сюжета, image у остальных) — сводим в одном месте, чтобы
+  // отрисовка про это больше не знала.
+  function nodeImage(node) {
+    return node.data.markerImage || node.data.image || '';
+  }
+
+  function nodeTitle(node) {
+    const d = node.data;
+    if (node.kind === 'story') return [d.code, d.title].filter(Boolean).join('. ');
+    return d.title || d.name || node.id;
+  }
+
+  /* Что открыть по узлу — зависит только от его типа (а для маркеров ещё и
+     от наличия поля submap). Это единственная точка входа на ВСЕ переходы:
+     тап по карте, кнопка "Сюжет" в окне персонажа, переход из окна сюжета к
+     персонажу, кнопки сюжетов внутри Фенома. Отсюда же и одинаковый перелёт
+     камеры везде (goToNode ниже). */
+  function openNode(node) {
+    if (node.kind === 'story') { openStory(node.data); return; }
+    if (node.kind === 'character') {
+      updateStoryButton(Boolean(node.parent));
+      openCharacter(node.data);
+      return;
+    }
+    // Маркер с полем submap ("Феном" сейчас единственный, но не единственно
+    // возможный — см. openSubmapNode) — не карточка с текстом, а
+    // окно-вкладыш со своей тайловой картой/картинкой.
+    if (node.kind === 'marker' && node.data.submap) { openSubmapNode(node); return; }
+    const titleHtml = node.data.title ? `<div class="modal-title">${escapeHtml(node.data.title)}</div>` : '';
+    const textHtml = node.data.text ? `<div>${escapeHtml(node.data.text).replace(/\n/g, '<br>')}</div>` : '';
+    openModal(titleHtml + textHtml);
+  }
+
+  /* Открывает submap-окно ЛЮБОГО маркера с полем "submap" в markers.json
+     (сейчас физически это одно и то же окно-вкладыш из js/phenom.js — оно
+     переоткрывает свой OpenSeadragon-вид на нужный source, см. openSubmap).
+     Персонажи ВНУТРИ этой карты — дети узла в графе с заполненными
+     submapX/submapY (см. characters.json): они одновременно рисуются
+     орбитой вокруг САМОГО маркера на карте галактики (обычный механизм
+     graph.js, ничего специально делать не пришлось) И как отдельные точки
+     внутри самого submap-окна — это ДВЕ РАЗНЫЕ вещи сразу, координаты никак
+     друг с другом не связаны. Список пересчитывается заново при КАЖДОМ
+     открытии — раз он берётся прямо из node.children, никакой отдельной
+     регистрации на старте страницы не нужно, и это же автоматически
+     работает для любого будущего маркера с submap, не только для Фенома. */
+  function openSubmapNode(node) {
+    const mapChars = node.children.filter(child =>
+      child.kind === 'character' &&
+      typeof child.data.submapX === 'number' &&
+      typeof child.data.submapY === 'number'
+    );
+    const byId = new Map(mapChars.map(c => [c.id, c]));
+    setSubmapCharacters(
+      mapChars.map(c => ({id: c.id, name: nodeTitle(c), image: c.data.image || '', x: c.data.submapX, y: c.data.submapY})),
+      (id) => { const c = byId.get(id); if (c) openNode(c); }
+    );
+    openSubmap(node.data.submap);
+  }
+
+  // Точке без маркера на карте (onMap: false, см. js/graph.js) лететь некуда —
+  // позиции у неё нет вообще, открываем её окно сразу. instant — см.
+  // focusAndOpen выше: передаётся дальше без изменений.
+  function goToNode(node, instant) {
+    if (!node.onMap) { openNode(node); return; }
+    focusAndOpen(node.x, node.y, () => openNode(node), instant);
+  }
+
+  /* Нити между узлами: сплошная к родителю, пунктирная к союзнику (см.
+     .map-thread в css/styles.css). Обычные статичные <line> — по цене это
+     то же самое, что любая другая векторная линия на карте, дорог тут текст
+     и SVG-фильтры, а не линии (грабли №15/18). Рисуются ДО маркеров, чтобы
+     лежать под ними. */
+  function renderThreads(threads) {
+    threads.forEach(t => {
+      const line = document.createElementNS(ns, 'line');
+      line.setAttribute('x1', t.x1);
+      line.setAttribute('y1', t.y1);
+      line.setAttribute('x2', t.x2);
+      line.setAttribute('y2', t.y2);
+      line.setAttribute('class', t.kind === 'link' ? 'map-thread link' : 'map-thread');
+      svg.appendChild(line);
+    });
+  }
+
+  function renderNodes(nodes) {
+    nodes.forEach(node => {
+      if (!node.onMap) return; // живёт только внутри окна родителя, маркера на карте нет
+      const style = NODE_STYLE[node.kind] || NODE_STYLE.marker;
       createMapIcon({
-        x: m.x, y: m.y, image: m.image,
-        dotFill: 'rgba(255,200,50,0.9)', dotStroke: '#111', ringColor: '#fff',
+        x: node.x, y: node.y, size: node.size,
+        image: nodeImage(node), shape: style.shape,
+        dotFill: node.data.color || style.dotFill,
+        dotStroke: style.dotStroke,
+        ringColor: node.data.color || style.ringColor,
         onTap: () => {
-          if (calibMode) { showCalib(m.x, m.y); return; }
-          if (m.id === 'phenome') { focusAndOpen(m.x, m.y, openPhenom); return; }
-          const titleHtml = m.title ? `<div class="modal-title">${escapeHtml(m.title)}</div>` : '';
-          const textHtml = m.text ? `<div>${escapeHtml(m.text).replace(/\n/g, '<br>')}</div>` : '';
-          focusAndOpen(m.x, m.y, () => openModal(titleHtml + textHtml));
+          if (calibMode) { showCalib(node.x, node.y); return; }
+          goToNode(node);
         },
       });
     });
   }
 
-  function renderStories(stories, charsByStory) {
-    stories.forEach(s => {
-      if (typeof s.x !== 'number' || typeof s.y !== 'number') return;
-      // Персонажи, закреплённые за этим сюжетом — показываются внутри его
-      // окна кружком-переходом (см. openStory() в js/stories.js), а не на
-      // самой карте: на карте они уже нарисованы отдельными маркерами по
-      // орбите вокруг этой же точки (см. renderCharacters ниже).
-      s.__characters = charsByStory.get(s.id) || [];
-      // s.color — необязательный цвет из stories.json, переопределяет цвет
-      // кольца (если есть картинка маркера) или заглушки-кружка (если нет).
-      // По умолчанию — золотое кольцо/фиолетовая заглушка, отличает сюжетные
-      // маркеры от обычных (белое кольцо/жёлтая заглушка, см. renderMarkers).
-      createMapIcon({
-        x: s.x, y: s.y, image: s.markerImage,
-        dotFill: s.color || 'rgba(196,148,255,0.95)', dotStroke: '#1a0f2e',
-        ringColor: s.color || '#ffd76a',
-        onTap: () => {
-          if (calibMode) { showCalib(s.x, s.y); return; }
-          focusAndOpen(s.x, s.y, () => openStory(s));
-        },
-      });
+  /* Окно сюжета показывает своих персонажей рядом маркеров-квадратов (см.
+     openStory в js/stories.js). Прокидываем туда не сами объекты из JSON, а
+     короткую выжимку — включая то, кто с кем в союзе, чтобы связи были видны
+     не только на карте. siblingLinks даёт союзников ВНУТРИ этого же сюжета:
+     союз с персонажем из другого сюжета в этом окне показывать незачем. */
+  function wireStoryWindows(graph) {
+    graph.forEach(node => {
+      if (node.kind !== 'story') return;
+      node.data.__characters = node.children
+        .filter(child => child.kind === 'character')
+        .map(child => ({
+          id: child.id,
+          name: child.data.name || '',
+          image: child.data.image || '',
+          links: siblingLinks(child).map(other => other.id),
+        }));
+    });
+    // instant: true — переход из уже открытого окна сюжета (тап по кружку
+    // персонажа), карта позади него не видна, долгий перелёт ни к чему.
+    setCharacterNavigator(id => {
+      const node = graph.get(id);
+      if (node) goToNode(node, true);
     });
   }
 
-  /* Персонаж, у которого заполнен storyId существующего сюжета, рисуется НЕ
-     по своим x/y из characters.json, а на "орбите" вокруг маркера сюжета —
-     сюжет как планета, персонаж как её спутник: меньше размером
-     (CHAR_ORBIT_SIZE против обычных MARKER_SIZE) и на фиксированном
-     расстоянии от центра. Несколько персонажей одного сюжета распределяются
-     по кругу поровну.
-
-     Начинаем сверху (угол -90°) и увеличиваем угол — в SVG y растёт вниз,
-     поэтому обычная параметризация окружности (cos, sin) с растущим углом
-     на экране выглядит как движение ПО ЧАСОВОЙ стрелке (в обычных, "y вверх"
-     координатах то же самое было бы против часовой).
-
-     x/y в JSON у таких персонажей не отбрасываются — они остаются как
-     запасной вариант на случай, если storyId опустеет или сюжет удалят
-     (тогда персонаж просто вернётся на них, а не пропадёт с карты).
-
-     Радиус АДАПТИВНЫЙ, а не фиксированный: с ростом числа персонажей на
-     одном сюжете кольцо расширяется настолько, чтобы расстояние МЕЖДУ
-     СОСЕДНИМИ маркерами оставалось комфортным (CHAR_ORBIT_STEP), а не
-     схлопывалось в сплошную кашу (так и было при фиксированном радиусе —
-     11 персонажей на одном кольце перекрывали друг друга). Ниже
-     CHAR_ORBIT_BASE_RADIUS кольцо не сжимается — при 1-2 персонажах не
-     нужно ни притискивать их вплотную к сюжету, ни разводить по огромному
-     кругу ради "красивого" шага.
-
-     До CHAR_ORBIT_RING1_MAX персонажей помещается на первом кольце — дальше
-     включается ВТОРОЕ, той же логики (адаптивный радиус, тот же комфортный
-     шаг), просто дальше от сюжета. Маркеры на нём такого же размера, как на
-     первом — отличается только расстояние до центра. У второго кольца
-     жёсткого потолка нет: сколько бы персонажей ни осталось после первого,
-     формула просто раздвинет его чуть шире, ничего не теряя (раньше вместо
-     этого был один маркер-бейдж "+N" — убрали, полный список всё равно есть
-     внутри самого окна сюжета, openStory() в js/stories.js). */
-  const CHAR_ORBIT_SIZE = 2;        // спутник заметно меньше "планеты" (MARKER_SIZE = 8)
-  const CHAR_ORBIT_BASE_RADIUS = 0;   // минимальный радиус первого кольца
-  const CHAR_ORBIT_STEP = 2.2;          // желаемое расстояние между центрами соседних маркеров
-  const CHAR_ORBIT_RING1_MAX = 12;    // после скольки персонажей включается второе кольцо
-  const CHAR_ORBIT_RING_GAP = 0;      // насколько второе кольцо дальше первого
-
-  // Радиус, при котором `count` маркеров на кольце стоят на расстоянии
-  // CHAR_ORBIT_STEP друг от друга — общая формула для обоих колец.
-  function orbitRadiusFor(count) {
-    return Math.max(CHAR_ORBIT_BASE_RADIUS, count * CHAR_ORBIT_STEP / (2*Math.PI));
-  }
-
-  function computeCharacterOrbits(stories, chars) {
-    const storyById = new Map(stories.map(s => [s.id, s]));
-    const byStory = new Map();    // storyId -> [персонаж, ...]
-    const positions = new Map();  // char.id -> {x, y}
-    chars.forEach(c => {
-      if (!c.storyId || !storyById.has(c.storyId)) return;
-      if (!byStory.has(c.storyId)) byStory.set(c.storyId, []);
-      byStory.get(c.storyId).push(c);
-    });
-    byStory.forEach((list, storyId) => {
-      const story = storyById.get(storyId);
-      const ring1 = list.slice(0, CHAR_ORBIT_RING1_MAX);
-      const ring2 = list.slice(CHAR_ORBIT_RING1_MAX);
-      const ring1Radius = orbitRadiusFor(ring1.length);
-      const place = (arr, radius) => arr.forEach((c, i) => {
-        const angle = -Math.PI/2 + i * (2*Math.PI / arr.length);
-        positions.set(c.id, {
-          x: story.x + radius * Math.cos(angle),
-          y: story.y + radius * Math.sin(angle),
-        });
-      });
-      place(ring1, ring1Radius);
-      if (ring2.length) {
-        const ring2Radius = Math.max(ring1Radius + CHAR_ORBIT_RING_GAP, orbitRadiusFor(ring2.length));
-        place(ring2, ring2Radius);
-      }
-    });
-    return {byStory, positions};
-  }
-
-  /* Маркеры персонажей. Отличаются формой — квадрат со скруглёнными углами
-     против кругов у фракций и сюжетов, чтобы на карте было видно, что это
-     другая сущность, ещё до тапа. Цвет по умолчанию бирюзовый, тот же
-     акцентный, что у готовых систем и активных вкладок. */
-  function renderCharacters(chars, positions) {
-    chars.forEach(c => {
-      const orbit = positions.get(c.id);
-      const x = orbit ? orbit.x : c.x;
-      const y = orbit ? orbit.y : c.y;
-      if (typeof x !== 'number' || typeof y !== 'number') return;
-      createMapIcon({
-        x, y, image: c.image, shape: 'square',
-        size: orbit ? CHAR_ORBIT_SIZE : MARKER_SIZE,
-        dotFill: c.color || 'rgba(175,238,238,0.92)', dotStroke: '#0b2b2b',
-        ringColor: c.color || '#AFEEEE',
-        onTap: () => {
-          if (calibMode) { showCalib(x, y); return; }
-          focusAndOpen(x, y, () => {
-            updateStoryButton(Boolean(c.storyId));
-            openCharacter(c);
-          });
-        },
-      });
+  /* Вкладки внутри окна Феном — это его дети-СЮЖЕТЫ в графе, то есть все
+     точки с "parent": "phenome" и kind === 'story' (персонажи, привязанные
+     напрямую к Феному, сюда не входят — у них своё место внутри самого
+     submap-окна, см. openSubmapNode ниже). Список собирается из графа, а не
+     перечисляется руками: привязали в JSON ещё один сюжет — вкладка появится
+     сама. Подпись берём из shortTitle, потому что в таб-баре помещается лишь
+     пара слов (см. грабли №12), а не полное название. */
+  function wirePhenomWindow(graph) {
+    const phenom = graph.get('phenome');
+    if (!phenom) return;
+    const tabs = phenom.children
+      .filter(child => child.kind === 'story')
+      .map(child => ({
+        id: child.id,
+        label: child.data.shortTitle || nodeTitle(child),
+        icon: '🎬',
+      }));
+    // instant: true — уходим из уже закрытого (см. closePhenom в goTo
+    // js/phenom.js) окна Феном, перелёт по невидимой карте тут не нужен.
+    setPhenomChildren(tabs, (id) => {
+      const node = graph.get(id);
+      if (node) goToNode(node, true);
     });
   }
 
-  const markersPromise = loadJsonList(MARKERS_PATH);
-  markersPromise.then(renderMarkers);
-  const storiesPromise = loadJsonList(STORIES_PATH);
-  const charactersPromise = loadJsonList(CHARACTERS_PATH);
-  // charPositions — те же координаты, что достались персонажам-спутникам при
-  // отрисовке; нужны ещё раз ниже, для перехода "сюжет -> персонаж" (камере
-  // нужно куда наводиться, а координаты в характере.json для орбитальных
-  // персонажей — только запасной вариант, реальная точка вычислена тут).
-  let charPositions = new Map();
-  Promise.all([storiesPromise, charactersPromise]).then(([stories, chars]) => {
-    const {byStory, positions} = computeCharacterOrbits(stories, chars);
-    charPositions = positions;
-    renderStories(stories, byStory);
-    renderCharacters(chars, positions);
+  /* Три файла грузятся параллельно, но раскладка считается, только когда
+     приехали все: связи ходят МЕЖДУ файлами (персонаж -> сюжет -> Феном), и
+     по части графа позиции посчитать нельзя. Раньше маркеры фракций
+     рисовались сразу, не дожидаясь остальных — теперь так нельзя. */
+  const graphReady = Promise.all([
+    loadJsonList(MARKERS_PATH),
+    loadJsonList(STORIES_PATH),
+    loadJsonList(CHARACTERS_PATH),
+  ]).then(([markers, stories, characters]) => {
+    const graph = buildNodes([
+      {kind: 'marker', items: markers},
+      {kind: 'story', items: stories},
+      {kind: 'character', items: characters},
+    ]);
+    renderThreads(layoutNodes(graph));
+    renderNodes([...graph.values()]);
+    wireStoryWindows(graph);
+    wirePhenomWindow(graph);
+    return graph;
   });
 
-  /* Кнопка "Сюжет" в панели персонажа: уводит из его анкеты к сюжету, за
-     которым он сейчас закреплён. Обработчик живёт здесь, а не в
-     characters.js, потому что тут есть и список сюжетов, и камера — ровно
-     так же сделан переход "Карта" у Фенома (#refPhenomMap выше). */
+  /* Кнопка "Сюжет" в панели персонажа: уводит к его родителю в графе (у
+     персонажа это сюжет). Обработчик живёт здесь, а не в characters.js,
+     потому что тут есть и граф, и камера — ровно так же сделан переход
+     "Карта" у Фенома (#refPhenomMap ниже). */
   document.getElementById('charStory').addEventListener('click', async () => {
     const char = getOpenCharacter();
-    if (!char || !char.storyId) return;
-    const stories = await storiesPromise;
-    const story = stories.find(s => s.id === char.storyId);
-    if (!story) return; // сюжет удалили/переименовали — молча ничего не делаем
-    closeModal(); // иначе анкета останется висеть поверх окна сюжета
-    focusAndOpen(story.x, story.y, () => openStory(story));
-  });
-
-  // Обратный переход "сюжет -> персонаж" (тап по кружку персонажа внутри
-  // окна сюжета, см. openStory() в js/stories.js) — тот же общий механизм
-  // focusAndOpen, что и везде: наводим камеру на реальную (орбитальную)
-  // позицию персонажа и открываем его окно.
-  setCharacterNavigator((char) => {
-    const pos = charPositions.get(char.id) || {x: char.x, y: char.y};
-    focusAndOpen(pos.x, pos.y, () => {
-      updateStoryButton(Boolean(char.storyId));
-      openCharacter(char);
-    });
+    if (!char) return;
+    const graph = await graphReady;
+    const node = graph.get(char.id);
+    if (!node || !node.parent) return; // родителя нет/удалили — молча ничего не делаем
+    closeModal(); // иначе анкета останется висеть поверх окна родителя
+    goToNode(node.parent, true); // уходим из уже закрытого окна персонажа, карта не видна — без перелёта
   });
 
   // Все входы в Феном ведут через один и тот же перелёт камеры (focusAndOpen
   // выше), что и клик по маркеру "phenome" на карте: кнопка 🚀 в углу карты и
   // правая половина двойной вкладки "Феном" внутри статьи. Координаты маркера
-  // берём из markers.json (id "phenome"), а не хардкодим — чтобы не
-  // разъезжались при переносе маркера.
-  async function gotoPhenomOnMap() {
-    const markers = await markersPromise;
-    const phenomMarker = markers.find(m => m.id === 'phenome');
-    if (phenomMarker) focusAndOpen(phenomMarker.x, phenomMarker.y, openPhenom);
-    else openPhenom();
+  // берём из графа (узел "phenome"), а не хардкодим — чтобы не разъезжались
+  // при переносе маркера. instant пробрасывается снаружи: кнопка в углу карты
+  // видит саму карту (перелёт нужен), а переход из уже открытой статьи —
+  // нет (см. #refPhenomMap ниже).
+  async function gotoPhenomOnMap(instant) {
+    const graph = await graphReady;
+    const phenom = graph.get('phenome');
+    // Маркера "phenome" нет в markers.json — тот же рассинхрон, что и с
+    // манифестом систем: молча ничего не делаем, ловится глазами.
+    if (phenom) goToNode(phenom, instant);
   }
 
-  document.getElementById('gotoPhenom').addEventListener('click', gotoPhenomOnMap);
+  // Кнопка в углу карты — тут камера ДЕЙСТВИТЕЛЬНО видна (обычная галактика,
+  // ничего поверх неё не открыто), перелёт нужен взаправду.
+  document.getElementById('gotoPhenom').addEventListener('click', () => gotoPhenomOnMap(false));
 
   // Правая половина вкладки "Феном" в таб-баре статей: уводит из статьи в само
   // место. Статью перед этим закрываем — иначе она так и осталась бы висеть
   // поверх окна Феном (модал статей выше него по z-index, см. грабли №7).
+  // instant: true — уходим из уже открытой статьи, карта позади неё не видна.
   document.getElementById('refPhenomMap').addEventListener('click', () => {
     closeModal();
-    gotoPhenomOnMap();
+    gotoPhenomOnMap(true);
   });
 
   /* --- П.3: клик по названию системы (реальные <text> из экспорта StellarMaps) ---
