@@ -1,13 +1,13 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=60';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=60';
-import { openSystem, slugify } from './system-view.js?v=60';
-import { openSubmap, setPhenomChildren, setSubmapCharacters } from './phenom.js?v=60';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=60';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=60';
-import { buildNodes, layoutNodes, siblingLinks } from './graph.js?v=60';
+import { createPanZoom } from './panzoom.js?v=66';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=66';
+import { openSystem, slugify } from './system-view.js?v=66';
+import { openSubmap, setPhenomChildren, setSubmapCharacters } from './phenom.js?v=66';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=66';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=66';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks } from './graph.js?v=66';
 
 const SVG_PATH = 'map.svg';
 
@@ -280,13 +280,54 @@ const calibPanel = document.getElementById('calibPanel');
     });
   })();
 
+  /* --- Слой графа: все наши точки и нити между ними, одной группой ---
+     Раньше и то, и другое сыпалось прямо в корень <svg>, вперемешку с
+     содержимым экспорта StellarMaps и прямоугольниками маски. Отдельная
+     группа понадобилась режиму "Ноды" (15.09.2026): там база карты (растр,
+     ~1600 подписей, территории, маска) уходит из отрисовки целиком, а
+     остаться должны ровно эти элементы — одним селектором
+     (`svg.nodes-mode > *:not(#graphLayer)` в css/styles.css) вместо
+     перечисления того, что прятать.
+
+     ⚠️ Создаётся ЗДЕСЬ, то есть после маски и до setupSystemLabels — порядок
+     в DOM это и порядок отрисовки: маркеры обязаны лежать поверх маски (иначе
+     крайние из них ею закрасятся), а невидимые мишени подписей systemLabels
+     вставляются не сюда, а рядом со своим <text>, так что с ними конфликта
+     нет в любом случае. */
+  const graphLayer = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  graphLayer.setAttribute('id', 'graphLayer');
+  svg.appendChild(graphLayer);
+
+  /* Звёздный фон под графом — тот же тайлящийся паттерн, что и у маски по
+     краям карты (см. buildCosmosDecoration): в режиме нод от карты не
+     остаётся ничего, и без него узлы висели бы в плоской чёрной пустоте.
+     Один <rect> с заливкой-паттерном, никаких фильтров (грабли №17) —
+     по цене это ровно те же четыре прямоугольника маски, которые и так
+     рисуются на карте постоянно.
+     Показывается только в режиме нод (см. .graph-backdrop в css/styles.css) —
+     на самой карте он был бы лишним слоем поверх настоящего фона. */
+  (function addGraphBackdrop(){
+    const core = pz.getInitialViewBox();
+    const PAD = 0.35; // с запасом больше boundsPad (0.2), чтобы край не ловился при панорамировании
+    const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    r.setAttribute('class', 'graph-backdrop');
+    r.setAttribute('x', core.x - core.w * PAD);
+    r.setAttribute('y', core.y - core.h * PAD);
+    r.setAttribute('width', core.w * (1 + PAD * 2));
+    r.setAttribute('height', core.h * (1 + PAD * 2));
+    r.setAttribute('fill', 'url(#cosmosStars)');
+    graphLayer.appendChild(r);
+  })();
+  const graphBackdrop = graphLayer.querySelector('.graph-backdrop');
+
   document.getElementById('zoomIn').addEventListener('click', pz.zoomIn);
   document.getElementById('zoomOut').addEventListener('click', pz.zoomOut);
   document.getElementById('reset').addEventListener('click', pz.reset);
 
-  document.getElementById('calibToggle').addEventListener('click', (e) => {
+  const calibToggle = document.getElementById('calibToggle');
+  calibToggle.addEventListener('click', () => {
     calibMode = !calibMode;
-    e.currentTarget.classList.toggle('active', calibMode);
+    calibToggle.classList.toggle('active', calibMode);
     calibPanel.style.display = calibMode ? 'block' : 'none';
     calibPanel.textContent = calibMode ? 'Кликни по карте' : '';
   });
@@ -499,7 +540,8 @@ const calibPanel = document.getElementById('calibPanel');
     }
 
     g.__onTap = onTap;
-    svg.appendChild(g);
+    graphLayer.appendChild(g);
+    return g;
   }
 
   /* Внешний вид точки зависит ТОЛЬКО от её типа, а раскладка — только от её
@@ -653,6 +695,11 @@ const calibPanel = document.getElementById('calibPanel');
   // focusAndOpen выше: передаётся дальше без изменений.
   function goToNode(node, instant) {
     if (!node.onMap) { openNode(node); return; }
+    /* В режиме "Ноды" весь граф помещается в кадр целиком (камера наведена на
+       кластер), так что лететь некуда — перелёт только сдвинул бы кластер под
+       уже открывшимся окном, а после его закрытия игрок обнаружил бы граф не
+       там, где оставил. Открываем сразу. */
+    if (viewMode === 'nodes') { openNode(node); return; }
     focusAndOpen(node.x, node.y, () => openNode(node), instant);
   }
 
@@ -664,12 +711,13 @@ const calibPanel = document.getElementById('calibPanel');
   function renderThreads(threads) {
     threads.forEach(t => {
       const line = document.createElementNS(ns, 'line');
-      line.setAttribute('x1', t.x1);
-      line.setAttribute('y1', t.y1);
-      line.setAttribute('x2', t.x2);
-      line.setAttribute('y2', t.y2);
       line.setAttribute('class', t.kind === 'link' ? 'map-thread link' : 'map-thread');
-      svg.appendChild(line);
+      // Координаты не проставляем здесь: нить знает только СВОИ УЗЛЫ (t.a/t.b,
+      // см. buildThreads в graph.js), а конкретные числа ставит
+      // applyGraphPositions() — и при первой отрисовке, и в каждом кадре
+      // перелёта между режимами.
+      t.__el = line;
+      graphLayer.appendChild(line);
     });
   }
 
@@ -696,7 +744,12 @@ const calibPanel = document.getElementById('calibPanel');
         const border = LOCATION_BORDER[node.data.border];
         if (border) { shape = border.shape; aspect = border.aspect; }
       }
-      createMapIcon({
+      // Иконка всегда рисуется в КАРТОЧНОМ размере (node.size); укрупнение в
+      // режиме нод делается масштабом самой группы в applyGraphPositions —
+      // так один и тот же <g> годится для обоих режимов, и его не нужно
+      // перерисовывать на переключении (а заодно маркер плавно растёт прямо
+      // во время перелёта, что и просил игрок).
+      node.__el = createMapIcon({
         x: node.x, y: node.y, size: node.size,
         image: nodeImage(node), shape, aspect,
         dotFill: node.data.color || style.dotFill,
@@ -735,6 +788,254 @@ const calibPanel = document.getElementById('calibPanel');
     });
   }
 
+  /* ============================================================
+     Режимы просмотра: "Карта" и "Ноды" (15.09.2026)
+
+     У каждого узла ДВЕ посчитанные позиции — карточная (mapX/mapY, корни на
+     своих координатах из JSON) и графовая (graphX/graphY, всё собрано
+     компактным кластером в центре, см. layoutGraphView в js/graph.js).
+     Обе считаются один раз при загрузке и заморожены; x/y узла — это "где он
+     сейчас", то есть текущий режим либо промежуточный кадр перелёта между
+     ними. Благодаря этому весь остальной код (goToNode, focusAndOpen, клики
+     по маркерам) продолжает читать x/y и про режимы вообще не знает.
+
+     Третий раздел переключателя ("Графика") — заглушка, кнопка disabled.
+     ============================================================ */
+  const VIEW_MODE_KEY = 'galaxyMapViewMode';
+  // Полная длительность переключения режима: столько едут узлы, и в это же
+  // время укладываются оба остальных такта (см. setViewMode ниже).
+  const VIEW_TWEEN_DURATION = 750;
+  // Запас вокруг кластера, чтобы крайние маркеры не упирались в край экрана.
+  // Вторая (после просветов в graph.js) ручка "крупности" маркеров в режиме
+  // нод: меньше запас — теснее кадр — крупнее всё на экране.
+  const GRAPH_VIEW_PADDING = 1.06;
+
+  const viewSwitch = document.getElementById('viewSwitch');
+  const viewSwitchBtns = [...viewSwitch.querySelectorAll('.view-switch-btn')];
+
+  let viewMode = 'map';
+  let graphNodes = [], graphThreads = [];
+  let graphViewBox = {width: 0, height: 0}, graphViewCenter = {x: 0, y: 0};
+
+  /* Ширина кадра, при которой кластер целиком помещается на ЭТОМ экране.
+
+     Тонкость в том, что viewBox карты квадратный, а preserveAspectRatio у нас
+     "xMidYMid meet" (см. panzoom.js) — то есть квадрат вписывается в экран
+     целиком, и на вытянутом телефоне по длинной стороне остаётся ЛИШНЕЕ
+     видимое место. Считать кадр просто по большей стороне кластера (так было
+     в первой версии) на телефоне 375x812 означало взять 88 единиц вместо
+     нужных 71 — кластер занимал 2/3 ширины, а сверху и снизу зияла пустота.
+
+     Поэтому: по ширине нужен сам кластер, а по высоте — его высота, пересчитанная
+     в "ширины кадра" через пропорции экрана. Считается при КАЖДОМ переключении,
+     а не один раз при загрузке: экран можно повернуть. */
+  function graphViewWidth() {
+    const w = svg.clientWidth || 1, h = svg.clientHeight || 1;
+    return Math.max(graphViewBox.width, graphViewBox.height * (w / h)) * GRAPH_VIEW_PADDING;
+  }
+  let savedMapView = null;   // куда вернуть камеру при возврате на карту
+  let viewTweenId = null;
+  let viewTransition = 0;    // токен текущего перехода, см. setViewMode
+
+  /* Единственное место, которое пишет позиции в DOM. Вызывается и при первой
+     отрисовке, и в каждом кадре перелёта между режимами. Маркер — это <g> с
+     transform, нить — <line> с четырьмя координатами, взятыми прямо из её
+     узлов (см. buildThreads в graph.js). */
+  function applyGraphPositions() {
+    graphNodes.forEach(n => {
+      if (!n.__el) return;
+      n.__el.setAttribute('transform', n.viewScale === 1
+        ? `translate(${n.x} ${n.y})`
+        : `translate(${n.x} ${n.y}) scale(${n.viewScale})`);
+    });
+    graphThreads.forEach(t => {
+      if (!t.__el) return;
+      t.__el.setAttribute('x1', t.a.x);
+      t.__el.setAttribute('y1', t.a.y);
+      t.__el.setAttribute('x2', t.b.x);
+      t.__el.setAttribute('y2', t.b.y);
+    });
+  }
+
+  // Та же кривая, что у перелёта камеры в js/panzoom.js — узлы и камера
+  // должны двигаться синхронно, иначе кластер "плывёт" относительно кадра.
+  function easeInOutCubic(t) { return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2; }
+
+  /* Проявление/растворение карты (15.09.2026, по просьбе игрока — до этого
+     она возникала и пропадала мгновенно, целым кадром сразу).
+
+     Анимируется НЕ прозрачность самой карты, а прозрачность звёздного фона,
+     который и так лежит ровно между картой и узлами (см. addGraphBackdrop
+     выше). Так задумано специально:
+     - прозрачность у группы с картой заставила бы движок завести офскрин-
+       поверхность размером со всю карту, а она растёт вместе с зумом — ровно
+       та же болезнь, что в граблях №17 (чёрные прямоугольники в Telegram).
+       Фон же обычный <rect> с заливкой-паттерном, буфера не требует;
+     - фон непрозрачен (в паттерне звёзд есть подложка #0b0b10), поэтому
+       "наплыл фон" == "карта скрылась", отдельная шторка не нужна;
+     - и он же остаётся фоном самого режима нод, то есть это один и тот же
+       элемент в обеих ролях, а не служебный слой ради анимации.
+
+     ⚠️ Оба перехода делаются при НЕПОДВИЖНОЙ камере — сначала растворяем,
+     потом летим (и наоборот). Совмещать нельзя: пока карта видна, каждый
+     кадр смены viewBox стоит те самые ~18 мс (грабли №15), и плавного
+     затухания не вышло бы. */
+  const MAP_FADE_DURATION = 280;
+  // Камера работает только ту часть перехода, в которой карта уже скрыта —
+  // остаток после такта затухания. Почему не весь переход — см. setViewMode.
+  const CAMERA_DURATION = VIEW_TWEEN_DURATION - MAP_FADE_DURATION;
+  function fadeBackdrop(toVisible) {
+    return new Promise(resolve => {
+      graphBackdrop.style.display = 'block';
+      graphBackdrop.style.transition = 'none';
+      graphBackdrop.style.opacity = toVisible ? '0' : '1';
+      /* Форсируем применение стартового значения до того, как повесим
+         transition — иначе браузер схлопнет оба присваивания в одно и
+         анимации не будет вовсе. ⚠️ Именно чтение стиля самого фона, а НЕ
+         getBoundingClientRect() у <svg>, как было сначала: тот заставляет
+         пересчитать геометрию всей сцены (~4700 элементов) и давал выброс
+         в ~70 мс ровно на первом кадре затухания. */
+      void getComputedStyle(graphBackdrop).opacity;
+      graphBackdrop.style.transition = `opacity ${MAP_FADE_DURATION}ms linear`;
+      graphBackdrop.style.opacity = toVisible ? '1' : '0';
+      setTimeout(() => { graphBackdrop.style.transition = ''; resolve(); }, MAP_FADE_DURATION);
+    });
+  }
+
+  /* Перелёт узлов между двумя ГОТОВЫМИ раскладками — интерполяция, а не
+     физика: никакого пересчёта сил в кадре тут нет (см. предупреждение в
+     шапке js/graph.js и грабли №15/18). За кадр меняется ~30 transform'ов и
+     ~35 линий по практически пустому SVG — база карты на это время скрыта. */
+  function tweenToTargets(duration, onDone) {
+    if (viewTweenId) cancelAnimationFrame(viewTweenId);
+    const from = graphNodes.map(n => ({x: n.x, y: n.y, s: n.viewScale}));
+    const t0 = performance.now();
+    function step(now) {
+      const t = Math.min(1, (now - t0) / duration);
+      const e = easeInOutCubic(t);
+      graphNodes.forEach((n, i) => {
+        n.x = from[i].x + (n.targetX - from[i].x) * e;
+        n.y = from[i].y + (n.targetY - from[i].y) * e;
+        n.viewScale = from[i].s + (n.targetScale - from[i].s) * e;
+      });
+      applyGraphPositions();
+      if (t < 1) { viewTweenId = requestAnimationFrame(step); }
+      else { viewTweenId = null; if (onDone) onDone(); }
+    }
+    viewTweenId = requestAnimationFrame(step);
+  }
+
+  function updateViewModeUi() {
+    viewSwitchBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewMode));
+    /* 📍 калибровка и 🏷️ подписи — инструменты САМОЙ карты, в режиме нод они
+       бессмысленны и даже опасны: подписей там нет вообще, а координаты —
+       компактной раскладки, а НЕ те, что идут в markers.json. Оставить
+       калибровку доступной значило бы предложить игроку списать оттуда числа
+       и испортить ими файл. */
+    const onMapView = viewMode === 'map';
+    calibToggle.disabled = !onMapView;
+    labelsToggle.disabled = !onMapView;
+    if (!onMapView && calibMode) {
+      calibMode = false;
+      calibToggle.classList.remove('active');
+      calibPanel.style.display = 'none';
+      calibPanel.textContent = '';
+    }
+  }
+
+  async function setViewMode(mode, instant) {
+    if (mode === viewMode || !viewSwitchBtns.some(b => b.dataset.view === mode)) return;
+    /* ⚠️ Ждём граф ТОЛЬКО если он ещё не приехал. Просто `await graphReady`
+       здесь был бы дедлоком: эта же функция вызывается ИЗНУТРИ graphReady.then
+       (применение сохранённого режима при загрузке), а сам промис в этот
+       момент ещё не разрешён — его колбэк как раз выполняется. К моменту того
+       вызова graphNodes уже заполнен, так что до await дело не доходит. */
+    if (!graphNodes.length) await graphReady;
+    if (!graphNodes.length) return;
+
+    const toNodes = (mode === 'nodes');
+    if (toNodes) savedMapView = pz.getViewBox(); // вернёмся ровно туда, откуда ушли
+    viewMode = mode;
+    updateViewModeUi();
+    try { localStorage.setItem(VIEW_MODE_KEY, mode); } catch (e) {}
+
+    graphNodes.forEach(n => {
+      n.targetX = toNodes ? n.graphX : n.mapX;
+      n.targetY = toNodes ? n.graphY : n.mapY;
+      // Укрупнение мелких узлов в режиме нод — масштабом группы, а не
+      // перерисовкой иконки (см. renderNodes). У локаций выходит ровно 1.
+      n.targetScale = toNodes ? n.graphSize / n.size : 1;
+    });
+
+    const target = toNodes
+      ? {x: graphViewCenter.x, y: graphViewCenter.y, w: graphViewWidth()}
+      : {x: savedMapView.x + savedMapView.w / 2, y: savedMapView.y + savedMapView.h / 2, w: savedMapView.w};
+
+    if (instant) {
+      graphNodes.forEach(n => { n.x = n.targetX; n.y = n.targetY; n.viewScale = n.targetScale; });
+      applyGraphPositions();
+      svg.classList.toggle('nodes-mode', toNodes);
+      graphBackdrop.style.display = toNodes ? 'block' : 'none';
+      graphBackdrop.style.opacity = toNodes ? '1' : '0';
+      pz.focusOn(target.x, target.y, target.w, 0);
+      return;
+    }
+
+    /* Переход в три такта, симметричных в обе стороны. Порядок "спрятать
+       карту / показать карту" относительно перелёта НЕ симметричен, и это
+       важно для производительности (грабли №15): весь перелёт обязан идти по
+       ПУСТОМУ SVG. Покажи мы карту в начале возврата — все ~1600 подписей и
+       заливки территорий перерисовывались бы каждый кадр все 750 мс, то есть
+       ровно тот кадр в ~18 мс, от которого мы вообще-то убегаем.
+
+       Повторный клик по переключателю во время перехода просто перебивает
+       предыдущий: токен делает брошенную последовательность немой, иначе её
+       отложенные шаги досрабатывали бы поверх новой. */
+    const token = ++viewTransition;
+    const alive = () => token === viewTransition;
+
+    /* Узлы едут ВЕСЬ переход целиком, а камера — только вторую его половину,
+       ту, где карта уже скрыта. Это и даёт совмещение: затухание карты идёт
+       не ДО перелёта, а ОДНОВРЕМЕННО с началом движения узлов, и весь переход
+       укладывается в VIEW_TWEEN_DURATION вместо суммы двух этапов.
+
+       ⚠️ Совмещать затухание именно с ДВИЖЕНИЕМ УЗЛОВ можно, а с движением
+       КАМЕРЫ — нет, и это не одно и то же. Пока viewBox не меняется, движок
+       держит растр карты готовым и перерисовывает только те места, где
+       реально проехали маркеры. А смена viewBox заставляет растеризовать всю
+       сцену заново: замер на этом переходе — 30 мс на кадр даже с классом
+       .panning (зум дороже панорамирования, там пересчитывается ещё и растр
+       подложки), то есть на 280 мс затухания пришлось бы ~9 кадров вместо
+       ~45, и плавного растворения не вышло бы. Поэтому камера и ждёт, пока
+       карта не уйдёт из отрисовки совсем. */
+    const nodesDone = new Promise(res => tweenToTargets(VIEW_TWEEN_DURATION, res));
+
+    if (toNodes) {
+      // Такт 1: звёзды наплывают поверх ещё живой карты, узлы уже поехали,
+      // камера стоит.
+      await fadeBackdrop(true);
+      if (!alive()) return;
+      // Такт 2: карта уходит из отрисовки, камера догоняет узлы по пустому SVG.
+      svg.classList.add('nodes-mode');
+      pz.focusOn(target.x, target.y, target.w, CAMERA_DURATION);
+      await nodesDone;
+    } else {
+      // Обратный порядок: сначала камера по пустому SVG...
+      pz.focusOn(target.x, target.y, target.w, CAMERA_DURATION);
+      await new Promise(res => setTimeout(res, CAMERA_DURATION));
+      if (!alive()) return;
+      // ...потом карта проявляется, пока узлы доезжают последние кадры.
+      svg.classList.remove('nodes-mode');
+      await Promise.all([fadeBackdrop(false), nodesDone]);
+      if (!alive()) return;
+      graphBackdrop.style.display = 'none';
+    }
+  }
+
+  viewSwitchBtns.forEach(btn => {
+    btn.addEventListener('click', () => setViewMode(btn.dataset.view, false));
+  });
+
   /* Три файла грузятся параллельно, но раскладка считается, только когда
      приехали все: связи ходят МЕЖДУ файлами (персонаж -> сюжет -> Феном), и
      по части графа позиции посчитать нельзя. Раньше маркеры фракций
@@ -749,9 +1050,39 @@ const calibPanel = document.getElementById('calibPanel');
       {kind: 'story', items: stories},
       {kind: 'character', items: characters},
     ]);
-    renderThreads(layoutNodes(graph));
+
+    /* Обе раскладки считаются тут же, одна за другой, и обе замораживаются.
+       Порядок важен только тем, что вторая перезаписывает x/y — поэтому
+       карточные координаты снимаем в mapX/mapY ДО неё, а в конце возвращаем
+       x/y на карточные (стартовый режим по умолчанию — "Карта"). */
+    const threads = layoutNodes(graph);
+    graph.forEach(n => { n.mapX = n.x; n.mapY = n.y; });
+
+    const core = pz.getInitialViewBox();
+    graphViewCenter = {x: core.x + core.w / 2, y: core.y + core.h / 2};
+    // Форма экрана передаётся в раскладку: кластер вытягивается под неё,
+    // чтобы не упираться одной стороной в кадр, пока другая пустует
+    // (см. packRoots в graph.js).
+    graphViewBox = layoutGraphView(graph, graphViewCenter.x, graphViewCenter.y,
+      (svg.clientWidth || 1) / (svg.clientHeight || 1));
+    graph.forEach(n => { n.graphX = n.x; n.graphY = n.y; });
+
+    graph.forEach(n => { n.x = n.mapX; n.y = n.mapY; n.viewScale = 1; });
+
+    graphThreads = threads;
+    renderThreads(threads);
     renderNodes([...graph.values()]);
+    graphNodes = [...graph.values()].filter(n => n.onMap && n.__el);
+    applyGraphPositions();
     wireStoryWindows(graph);
+
+    // Сохранённый режим применяем без анимации: страница только что
+    // открылась, перелетать не от чего.
+    let saved = null;
+    try { saved = localStorage.getItem(VIEW_MODE_KEY); } catch (e) {}
+    if (saved && saved !== 'map') setViewMode(saved, true);
+    else updateViewModeUi();
+
     return graph;
   });
 
