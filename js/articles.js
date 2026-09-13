@@ -7,7 +7,7 @@
    "Магический лор" пока заглушка — заменить на настоящую статью, когда
    будет готова.
    ============================================================ */
-import { openIframeModal, closeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=50';
+import { openIframeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=60';
 
 export const REF_ARTICLES = {
   phenom: 'https://teletype.in/@greyspirit/4tRzyNaVfEQ#fvQz',
@@ -15,6 +15,9 @@ export const REF_ARTICLES = {
   magic:  'https://teletype.in/@greyspirit/SEOWfJxAewY#LVpS',
   tech:   'https://teletype.in/@greyspirit/gf7sBYkW_di#TkgH',
   galaxy: 'https://teletype.in/@greyspirit/toTVpow7sb1#MgZX',
+  // Тот же документ, что и magic (SEOWfJxAewY), другой якорь-раздел —
+  // "Описание Авалона" внутри окна локации "Кольцо Авалона" (14.09.2026).
+  avalon: 'https://teletype.in/@greyspirit/SEOWfJxAewY#e5M4',
 };
 
 const refToolbarEl = document.getElementById('refToolbar');
@@ -49,8 +52,6 @@ document.querySelectorAll('[data-ref]').forEach(btn => {
   btn.addEventListener('click', () => openRefArticle(btn.dataset.ref));
 });
 
-// Крестик закрытия — первый элемент самой панели #refToolbar (см. index.html),
-// а не отдельная фиксированная кнопка поверх неё. Панель докуется только
-// внутри уже открытой статьи, так что "закрыть" тут всегда значит закрыть
-// именно статью — то же самое действие, что у общего #modalClose.
-document.getElementById('refToolbarClose').addEventListener('click', closeModal);
+// ✕ (#refToolbarClose) больше не вешается тут — js/navigation.js сам вешает
+// на него closeTop() (единая точка входа для всех "закрывающих" кнопок
+// сразу, см. комментарий там).

@@ -1,8 +1,8 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=50';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith } from './modal.js?v=50';
+import { createPanZoom } from './panzoom.js?v=60';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith } from './modal.js?v=60';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -18,7 +18,17 @@ const systemToolbarEl = document.querySelector('.system-toolbar');
 // карту с тем же положением/масштабом, что была до открытия статьи — это не
 // отдельная функциональность, а прямое следствие того, что openIframeModal
 // работает поверх системы, а не вместо неё.
-function showSystemMap() {
+// Экспортирована ради js/navigation.js: система — единственный тулбар,
+// который НЕ участвует в общем closeTop()/морфинге ✕↔↩ (13.09.2026, по
+// замечанию игрока — тут переключение между двумя равноправными вкладками
+// в одном ряду, а не drill-down, отдельная стрелка "назад" там не нужна).
+// Но ESC/BackButton/history браузера всё равно должны уметь закрыть именно
+// открытый лор расы, а не всю систему целиком — и должны сделать это ТЕМИ
+// ЖЕ действиями, что и клик по вкладке "Карта системы" (иначе класс .active
+// у вкладок не обновится, и "Контролирующая раса" останется подсвеченной
+// поверх уже закрытой статьи). Поэтому navigation.js импортирует именно эту
+// функцию, а не голый closeModal().
+export function showSystemMap() {
   if (isDockedWith(systemToolbarEl)) closeModal();
   systemMapTab.classList.add('active');
   systemLoreBtn.classList.remove('active');

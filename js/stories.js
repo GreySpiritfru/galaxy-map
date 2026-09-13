@@ -7,8 +7,16 @@
    постов сюжета" в шторке сверху, ведущая на полный текст сюжета вовне
    (полный состав ведущих/персонажей сознательно НЕ дублируется на карте —
    он уже есть в архиве). Данные — см. stories.json и openStory() в map.js.
+
+   ⚠️ Если сюжет привязан к маркеру-локации (напр. "Переворот" к Феному,
+   parent: "phenome") и открыт вкладкой ИЗ ЕЁ окна — это окно (.story-overlay)
+   открывается ПОВЕРХ окна локации, а не вместо него (13.09.2026, см.
+   setPhenomChildren в js/phenom.js) — locationOverlay остаётся .open позади.
+   Свой ✕/кнопка-родитель (#storyParent) закрывают только этот слой, открытая
+   локация снова становится видна сама. См. #storyParent ниже и общий
+   принцип "родитель узла определяет кнопку" в map.js (PARENT_KIND_META).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=50';
+import { escapeHtml } from './modal.js?v=60';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любого
 // открытого сюжета, поэтому не в stories.json, а константой здесь.
@@ -18,7 +26,27 @@ const storyOverlay = document.getElementById('storyOverlay');
 const storyContent = document.getElementById('storyContent');
 const storyArchiveBtn = document.getElementById('storyArchive');
 const storyTelegramBtn = document.getElementById('storyTelegram');
+const storyParentBtn = document.getElementById('storyParent');
 let storyArmed = false;
+
+// Сюжет, чьё окно открыто сейчас (сырые данные из stories.json, с
+// проставленным __characters). Нужен map.js — оттуда вешается переход к
+// родителю (см. #storyParent в map.js, тот же приём, что и getOpenCharacter
+// в characters.js для кнопки "Сюжет"/"Локация" в окне персонажа).
+let currentStory = null;
+export function getOpenStory() { return currentStory; }
+
+// Кнопка перехода к родителю узла в графе (для сюжета, привязанного к
+// маркеру-локации вроде Фенома, — "Локация"; для сюжета, привязанного к
+// другому сюжету, — "Сюжет"). Иконка/подпись ставятся снаружи (map.js,
+// PARENT_KIND_META) — этот файл не знает о графе вообще, только показывает
+// то, что ему передали. Кнопка скрывается целиком, если родителя нет.
+export function setStoryParentButton(meta) {
+  storyParentBtn.style.display = meta ? '' : 'none';
+  if (!meta) return;
+  storyParentBtn.querySelector('.tabbar-btn-icon').textContent = meta.icon;
+  storyParentBtn.querySelector('.tabbar-btn-label').textContent = meta.label;
+}
 
 storyTelegramBtn.addEventListener('click', () => {
   window.open(STORIES_INDEX_URL, '_blank', 'noopener');
@@ -62,6 +90,7 @@ function groupByLinks(chars) {
 }
 
 export function openStory(s) {
+  currentStory = s;
   const codeHtml = s.code ? `<span class="story-code">${escapeHtml(s.code)}</span> ` : '';
   const imagesHtml = (Array.isArray(s.images) ? s.images : [])
     .map(src => `<img class="story-banner-img" src="${escapeHtml(src)}" alt="" loading="lazy">`)
@@ -136,7 +165,12 @@ export function closeStory() {
   storyOverlay.classList.remove('open');
 }
 
-document.getElementById('storyClose').addEventListener('click', closeStory);
+// ✕ (# storyClose) больше не вешается тут — js/navigation.js сам вешает на
+// него closeTop() (единая точка входа для всех "закрывающих" кнопок сразу,
+// см. комментарий там), а не только closeStory: если сверху открыта анкета
+// персонажа, клик по этому же крестику должен закрыть сначала её, а не
+// сюжет позади — closeTop() это уже учитывает, дублировать проверку тут
+// незачем.
 storyOverlay.addEventListener('click', (e) => {
   if (!storyArmed) return;
   if (e.target === storyOverlay) closeStory();

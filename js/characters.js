@@ -8,7 +8,7 @@
    (маркеры персонажей квадратные со скруглением, чтобы отличались от круглых
    маркеров фракций и сюжетов).
    ============================================================ */
-import { openIframeModal, closeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=50';
+import { openIframeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=60';
 
 const charToolbar = document.getElementById('charToolbar');
 const sheetBtn = document.getElementById('charSheet');
@@ -68,11 +68,19 @@ rollsBtn.addEventListener('click', () => {
   showStub(rollsBtn, 'Броски', 'Раздел в разработке: тут будет история бросков кубов.');
 });
 
-document.getElementById('charToolbarClose').addEventListener('click', closeModal);
+// ✕ (#charToolbarClose) больше не вешается тут — js/navigation.js сам вешает
+// на него closeTop() (единая точка входа для всех "закрывающих" кнопок
+// сразу, см. комментарий там).
 
-// Кнопка "Сюжет" видима только если персонаж к сюжету привязан, а её
-// обработчик живёт в map.js — там есть и загруженный список сюжетов, и
-// камера для перелёта к маркеру.
-export function updateStoryButton(hasStory) {
-  storyBtn.style.display = hasStory ? '' : 'none';
+// Кнопка "Сюжет"/"Локация" видима только если у персонажа вообще есть
+// родитель в графе, а подпись/иконка зависят от ЕГО типа (marker="Локация",
+// story="Сюжет", см. PARENT_KIND_META в map.js) — Ледо/Текила привязаны
+// напрямую к Феному (маркеру), а не к сюжету, и кнопка должна называться
+// соответственно. Сам обработчик клика живёт в map.js — там есть и граф, и
+// камера для перелёта к маркеру родителя.
+export function updateStoryButton(meta) {
+  storyBtn.style.display = meta ? '' : 'none';
+  if (!meta) return;
+  storyBtn.querySelector('.tabbar-btn-icon').textContent = meta.icon;
+  storyBtn.querySelector('.tabbar-btn-label').textContent = meta.label;
 }

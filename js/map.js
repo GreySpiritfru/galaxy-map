@@ -1,13 +1,13 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=50';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=50';
-import { openSystem, slugify } from './system-view.js?v=50';
-import { openSubmap, setPhenomChildren, setSubmapCharacters } from './phenom.js?v=50';
-import { openStory, setCharacterNavigator } from './stories.js?v=50';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=50';
-import { buildNodes, layoutNodes, siblingLinks } from './graph.js?v=50';
+import { createPanZoom } from './panzoom.js?v=60';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=60';
+import { openSystem, slugify } from './system-view.js?v=60';
+import { openSubmap, setPhenomChildren, setSubmapCharacters } from './phenom.js?v=60';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=60';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=60';
+import { buildNodes, layoutNodes, siblingLinks } from './graph.js?v=60';
 
 const SVG_PATH = 'map.svg';
 
@@ -388,33 +388,66 @@ const calibPanel = document.getElementById('calibPanel');
   // dotStroke/ringColor — визуальное отличие категорий точек друг от друга
   // (см. вызовы ниже: у сюжетов золотое кольцо/фиолетовая заглушка, у обычных
   // маркеров — как было раньше, белое кольцо/жёлтая заглушка).
-  /* shape: 'circle' (по умолчанию — фракции/персонажи в markers.json и сюжеты)
-     или 'square' — квадрат со скруглёнными углами, им отличаются маркеры
-     персонажей из characters.json. Форма задаётся в одном месте и одинаково
-     влияет и на обрезку картинки-аватара, и на обводку, и на заглушку. */
-  function makeIconShape(shape, size) {
+  /* shape: 'circle' (по умолчанию — фракции/персонажи в markers.json и сюжеты),
+     'square' — квадрат со скруглёнными углами (персонажи из characters.json,
+     и "широкий квадрат" у локаций, см. LOCATION_BORDER ниже), 'diamond' — ромб
+     (локации с "role": "event" в markers.json, см. graph.js/EVENT_LOCATION_SIZE
+     — старые/второстепенные точки), или 'hexagon' — шестиугольник (15.09.2026,
+     локации с "border": "hexagon", сейчас только Феном). Форма задаётся в
+     одном месте и одинаково влияет и на обрезку картинки-аватара, и на
+     обводку, и на заглушку.
+
+     aspect — ширина к высоте (по умолчанию 1, то есть квадрат/круг/ромб/
+     шестиугольник обычных пропорций). Нужен только для "широкого квадрата"
+     — единственного места в проекте, где маркер не квадратный/не круглый по
+     соотношению сторон, а вытянут в ширину, чтобы внутри аккуратно
+     помещался широкий арт (напр. "Кольцо Авалона"). Высота (`size`) при
+     этом остаётся тем же "размером узла", что и у остальных маркеров —
+     меняется только ширина. */
+  function makeIconShape(shape, size, aspect = 1) {
     if (shape === 'square') {
+      const w = size * aspect, h = size;
       const r = document.createElementNS(ns, 'rect');
-      r.setAttribute('x', -size/2);
-      r.setAttribute('y', -size/2);
-      r.setAttribute('width', size);
-      r.setAttribute('height', size);
-      r.setAttribute('rx', size * 0.45); // скругление углов
+      r.setAttribute('x', -w/2);
+      r.setAttribute('y', -h/2);
+      r.setAttribute('width', w);
+      r.setAttribute('height', h);
+      r.setAttribute('rx', h * 0.45); // скругление — от высоты, не от ширины, иначе широкий квадрат выглядел бы как таблетка
       return r;
+    }
+    if (shape === 'diamond') {
+      const p = document.createElementNS(ns, 'polygon');
+      const h = size/2;
+      p.setAttribute('points', `0,${-h} ${h},0 0,${h} ${-h},0`);
+      return p;
+    }
+    if (shape === 'hexagon') {
+      const r = size/2;
+      // "Плоский верх" (flat-top): первая вершина справа (0°), а не сверху —
+      // так шестиугольник читается как "щит"/панель, а не как ромб с двумя
+      // лишними гранями.
+      const pts = Array.from({length: 6}, (_, i) => {
+        const a = (Math.PI / 3) * i;
+        return `${(r * Math.cos(a)).toFixed(3)},${(r * Math.sin(a)).toFixed(3)}`;
+      });
+      const p = document.createElementNS(ns, 'polygon');
+      p.setAttribute('points', pts.join(' '));
+      return p;
     }
     const c = document.createElementNS(ns, 'circle');
     c.setAttribute('r', size/2);
     return c;
   }
 
-  function createMapIcon({x, y, image, dotFill, dotStroke, ringColor, shape, size, onTap}) {
+  function createMapIcon({x, y, image, dotFill, dotStroke, ringColor, shape, size, aspect, onTap}) {
     const iconSize = size || MARKER_SIZE;
+    const iconAspect = aspect || 1;
     const g = document.createElementNS(ns, 'g');
     g.setAttribute('class', 'hotspot');
     g.setAttribute('transform', `translate(${x} ${y})`);
 
     function addDefaultDot() {
-      const c = makeIconShape(shape, iconSize * 0.875); // та же пропорция, что была у фиксированных 7/8
+      const c = makeIconShape(shape, iconSize * 0.875, iconAspect); // та же пропорция, что была у фиксированных 7/8
       c.setAttribute('fill', dotFill);
       c.setAttribute('stroke', dotStroke);
       // Толщина обводки — не фиксированная, а доля от размера самой иконки:
@@ -430,20 +463,21 @@ const calibPanel = document.getElementById('calibPanel');
       const clipId = 'clip-' + Math.random().toString(36).slice(2, 9);
       const clip = document.createElementNS(ns, 'clipPath');
       clip.setAttribute('id', clipId);
-      clip.appendChild(makeIconShape(shape, iconSize));
+      clip.appendChild(makeIconShape(shape, iconSize, iconAspect));
       g.appendChild(clip);
 
+      const imgW = iconSize * iconAspect;
       const img = document.createElementNS(ns, 'image');
       img.setAttribute('href', image);
-      img.setAttribute('x', -iconSize/2);
+      img.setAttribute('x', -imgW/2);
       img.setAttribute('y', -iconSize/2);
-      img.setAttribute('width', iconSize);
+      img.setAttribute('width', imgW);
       img.setAttribute('height', iconSize);
       img.setAttribute('preserveAspectRatio', 'xMidYMid slice');
       img.setAttribute('clip-path', `url(#${clipId})`);
       img.style.cursor = 'pointer';
 
-      const ring = makeIconShape(shape, iconSize);
+      const ring = makeIconShape(shape, iconSize, iconAspect);
       ring.setAttribute('fill', 'none');
       ring.setAttribute('stroke', ringColor);
       // Та же логика, что у заглушки выше: обводка — доля от размера иконки,
@@ -477,9 +511,24 @@ const calibPanel = document.getElementById('calibPanel');
      квадрат со скруглением — чтобы другую сущность было видно ещё до тапа.
      Поле color в JSON, если заполнено, переопределяет цвет разом. */
   const NODE_STYLE = {
-    marker:    {shape: 'circle', dotFill: 'rgba(255,200,50,0.9)',   dotStroke: '#111',    ringColor: '#fff'},
+    location:  {shape: 'circle', dotFill: 'rgba(255,200,50,0.9)',   dotStroke: '#111',    ringColor: '#fff'},
     story:     {shape: 'circle', dotFill: 'rgba(196,148,255,0.95)', dotStroke: '#1a0f2e', ringColor: '#ffd76a'},
     character: {shape: 'square', dotFill: 'rgba(175,238,238,0.92)', dotStroke: '#0b2b2b', ringColor: '#AFEEEE'},
+  };
+
+  /* "border" у локации (markers.json, 15.09.2026) — какую ФОРМУ (не цвет, не
+     размер) взять вместо обычного круга: "circle" (по умолчанию, можно не
+     писать явно), "wide-square" (широкий квадрат — Кольцо Авалона, аспект
+     задан тут одной ручкой на все такие локации), "hexagon" (Феном). Не
+     путать с "role": "event" — тот про совсем другую категорию точек
+     (второстепенные фракции-остатки) и всегда даёт ромб, приоритет выше
+     border (см. renderNodes ниже: event проверяется первым). Один источник
+     правды вместо разбросанных по коду проверок конкретных id — привяжут
+     новую локацию с этим полем, форма подхватится сама. */
+  const LOCATION_BORDER = {
+    circle:       {shape: 'circle', aspect: 1},
+    'wide-square': {shape: 'square', aspect: 1.6},
+    hexagon:      {shape: 'hexagon', aspect: 1},
   };
 
   // Картинка маркера исторически лежит в разных полях у разных файлов
@@ -495,22 +544,46 @@ const calibPanel = document.getElementById('calibPanel');
     return d.title || d.name || node.id;
   }
 
+  /* Подпись/иконка кнопки "перейти к родителю" (см. #charStory в
+     characters.js и #storyParent в stories.js) — зависят от ТИПА родителя в
+     графе, а не от того, кто их вызывает: маркер — это локация (Феном
+     сейчас единственный пример, но задуман как общий случай — "маркер
+     локации", см. раздел про submap в CLAUDE.md), сюжет — это сюжет. Ледо/
+     Текила привязаны НАПРЯМУЮ к Феному (маркеру, а не сюжету — своей
+     истории у них нет), и кнопка в их окне персонажа поэтому называется
+     "Локация", а не "Сюжет". Один источник правды на оба места вместо двух
+     захардкоженных подписей — привяжут в будущем персонажа или сюжет к
+     новому типу узла, кнопка сама подхватит правильный текст. */
+  const PARENT_KIND_META = {
+    location: {icon: '📍', label: 'Локация'},
+    story: {icon: '🎬', label: 'Сюжет'},
+    character: {icon: '👤', label: 'Персонаж'},
+  };
+  function parentButtonMeta(node) {
+    if (!node.parent) return null;
+    return PARENT_KIND_META[node.parent.kind] || PARENT_KIND_META.location;
+  }
+
   /* Что открыть по узлу — зависит только от его типа (а для маркеров ещё и
      от наличия поля submap). Это единственная точка входа на ВСЕ переходы:
-     тап по карте, кнопка "Сюжет" в окне персонажа, переход из окна сюжета к
-     персонажу, кнопки сюжетов внутри Фенома. Отсюда же и одинаковый перелёт
-     камеры везде (goToNode ниже). */
+     тап по карте, кнопка "Сюжет"/"Локация" в окне персонажа и сюжета,
+     переход из окна сюжета к персонажу, кнопки сюжетов внутри Фенома.
+     Отсюда же и одинаковый перелёт камеры везде (goToNode ниже). */
   function openNode(node) {
-    if (node.kind === 'story') { openStory(node.data); return; }
+    if (node.kind === 'story') {
+      setStoryParentButton(parentButtonMeta(node));
+      openStory(node.data);
+      return;
+    }
     if (node.kind === 'character') {
-      updateStoryButton(Boolean(node.parent));
+      updateStoryButton(parentButtonMeta(node));
       openCharacter(node.data);
       return;
     }
     // Маркер с полем submap ("Феном" сейчас единственный, но не единственно
     // возможный — см. openSubmapNode) — не карточка с текстом, а
     // окно-вкладыш со своей тайловой картой/картинкой.
-    if (node.kind === 'marker' && node.data.submap) { openSubmapNode(node); return; }
+    if (node.kind === 'location' && node.data.submap) { openSubmapNode(node); return; }
     const titleHtml = node.data.title ? `<div class="modal-title">${escapeHtml(node.data.title)}</div>` : '';
     const textHtml = node.data.text ? `<div>${escapeHtml(node.data.text).replace(/\n/g, '<br>')}</div>` : '';
     openModal(titleHtml + textHtml);
@@ -525,19 +598,52 @@ const calibPanel = document.getElementById('calibPanel');
      graph.js, ничего специально делать не пришлось) И как отдельные точки
      внутри самого submap-окна — это ДВЕ РАЗНЫЕ вещи сразу, координаты никак
      друг с другом не связаны. Список пересчитывается заново при КАЖДОМ
-     открытии — раз он берётся прямо из node.children, никакой отдельной
-     регистрации на старте страницы не нужно, и это же автоматически
-     работает для любого будущего маркера с submap, не только для Фенома. */
+     открытии — раз он берётся из всего поддерева узла (см.
+     collectSubmapCharacters ниже), никакой отдельной регистрации на старте
+     страницы не нужно, и это же автоматически работает для любого будущего
+     маркера с submap, не только для Фенома. */
+  // Персонажи с submapX/submapY ГДЕ УГОДНО в поддереве локации — не только
+  // её прямые дети (как Ледо/Текила у Фенома), но и дети её сюжетов
+  // (14.09.2026, по просьбе игрока: персонаж сюжета, привязанного к
+  // локации, должен быть виден и на карте самой локации — выпадающий
+  // список и маркер поверх тайлов). Рекурсивно, а не только на 1 уровень
+  // вниз — сюжет тоже может быть чьим-то ребёнком глубже.
+  function collectSubmapCharacters(node) {
+    const result = [];
+    node.children.forEach(child => {
+      if (child.kind === 'character' && typeof child.data.submapX === 'number' && typeof child.data.submapY === 'number') {
+        result.push(child);
+      }
+      result.push(...collectSubmapCharacters(child));
+    });
+    return result;
+  }
+
   function openSubmapNode(node) {
-    const mapChars = node.children.filter(child =>
-      child.kind === 'character' &&
-      typeof child.data.submapX === 'number' &&
-      typeof child.data.submapY === 'number'
-    );
+    const mapChars = collectSubmapCharacters(node);
     const byId = new Map(mapChars.map(c => [c.id, c]));
     setSubmapCharacters(
       mapChars.map(c => ({id: c.id, name: nodeTitle(c), image: c.data.image || '', x: c.data.submapX, y: c.data.submapY})),
       (id) => { const c = byId.get(id); if (c) openNode(c); }
+    );
+    // Вкладки сюжетов, привязанных ИМЕННО к ЭТОЙ локации (её прямые
+    // дети-сюжеты) — пересчитываются заново при КАЖДОМ открытии, а не один
+    // раз для Фенома при загрузке страницы (баг, найденный игроком
+    // 14.09.2026): #phenomToolbar общий на ВСЕ локации с submap, и старый
+    // код (wirePhenomWindow, звал setPhenomChildren только один раз для
+    // "phenome") оставлял вкладки Фенома висеть в окне любой другой
+    // локации, например "Кольца Авалона". Тот же принцип, что и у
+    // персонажей чуть выше — берём из node.children при каждом open, а не
+    // регистрируем один раз на старте.
+    const storyChildren = node.children.filter(child => child.kind === 'story');
+    const storyById = new Map(storyChildren.map(c => [c.id, c]));
+    setPhenomChildren(
+      storyChildren.map(child => ({
+        id: child.id,
+        label: child.data.shortTitle || nodeTitle(child),
+        icon: '🎬',
+      })),
+      (id) => { const target = storyById.get(id); if (target) goToNode(target, true); }
     );
     openSubmap(node.data.submap);
   }
@@ -570,10 +676,29 @@ const calibPanel = document.getElementById('calibPanel');
   function renderNodes(nodes) {
     nodes.forEach(node => {
       if (!node.onMap) return; // живёт только внутри окна родителя, маркера на карте нет
-      const style = NODE_STYLE[node.kind] || NODE_STYLE.marker;
+      const style = NODE_STYLE[node.kind] || NODE_STYLE.location;
+      // "role": "event" в markers.json — старые/второстепенные локации
+      // (остались от версии карты до Феном/сюжетов/персонажей): ромб вместо
+      // круга, размер уже уменьшен в graph.js (EVENT_LOCATION_SIZE). Цвета
+      // пока те же, что у обычной локации — задача была только про форму
+      // и размер, не про цвет.
+      const isEventLocation = node.kind === 'location' && node.data.role === 'event';
+      // "border" в markers.json (необязательное, только для локаций) —
+      // явная форма конкретной локации вместо обычного круга: "wide-square"
+      // у "Кольца Авалона", "hexagon" у Фенома (см. LOCATION_BORDER выше).
+      // "role": "event" проверяется ПЕРВЫМ и даёт ромб независимо от border —
+      // это другая категория (второстепенные фракции), а не альтернативная
+      // форма локации.
+      let shape = style.shape, aspect = 1;
+      if (isEventLocation) {
+        shape = 'diamond';
+      } else if (node.kind === 'location' && node.data.border) {
+        const border = LOCATION_BORDER[node.data.border];
+        if (border) { shape = border.shape; aspect = border.aspect; }
+      }
       createMapIcon({
         x: node.x, y: node.y, size: node.size,
-        image: nodeImage(node), shape: style.shape,
+        image: nodeImage(node), shape, aspect,
         dotFill: node.data.color || style.dotFill,
         dotStroke: style.dotStroke,
         ringColor: node.data.color || style.ringColor,
@@ -610,31 +735,6 @@ const calibPanel = document.getElementById('calibPanel');
     });
   }
 
-  /* Вкладки внутри окна Феном — это его дети-СЮЖЕТЫ в графе, то есть все
-     точки с "parent": "phenome" и kind === 'story' (персонажи, привязанные
-     напрямую к Феному, сюда не входят — у них своё место внутри самого
-     submap-окна, см. openSubmapNode ниже). Список собирается из графа, а не
-     перечисляется руками: привязали в JSON ещё один сюжет — вкладка появится
-     сама. Подпись берём из shortTitle, потому что в таб-баре помещается лишь
-     пара слов (см. грабли №12), а не полное название. */
-  function wirePhenomWindow(graph) {
-    const phenom = graph.get('phenome');
-    if (!phenom) return;
-    const tabs = phenom.children
-      .filter(child => child.kind === 'story')
-      .map(child => ({
-        id: child.id,
-        label: child.data.shortTitle || nodeTitle(child),
-        icon: '🎬',
-      }));
-    // instant: true — уходим из уже закрытого (см. closePhenom в goTo
-    // js/phenom.js) окна Феном, перелёт по невидимой карте тут не нужен.
-    setPhenomChildren(tabs, (id) => {
-      const node = graph.get(id);
-      if (node) goToNode(node, true);
-    });
-  }
-
   /* Три файла грузятся параллельно, но раскладка считается, только когда
      приехали все: связи ходят МЕЖДУ файлами (персонаж -> сюжет -> Феном), и
      по части графа позиции посчитать нельзя. Раньше маркеры фракций
@@ -645,21 +745,21 @@ const calibPanel = document.getElementById('calibPanel');
     loadJsonList(CHARACTERS_PATH),
   ]).then(([markers, stories, characters]) => {
     const graph = buildNodes([
-      {kind: 'marker', items: markers},
+      {kind: 'location', items: markers},
       {kind: 'story', items: stories},
       {kind: 'character', items: characters},
     ]);
     renderThreads(layoutNodes(graph));
     renderNodes([...graph.values()]);
     wireStoryWindows(graph);
-    wirePhenomWindow(graph);
     return graph;
   });
 
-  /* Кнопка "Сюжет" в панели персонажа: уводит к его родителю в графе (у
-     персонажа это сюжет). Обработчик живёт здесь, а не в characters.js,
+  /* Кнопка "Сюжет"/"Локация" в панели персонажа: уводит к его родителю в
+     графе (сюжет либо, как у Ледо/Текила, сам Феном-маркер напрямую — см.
+     parentButtonMeta выше). Обработчик живёт здесь, а не в characters.js,
      потому что тут есть и граф, и камера — ровно так же сделан переход
-     "Карта" у Фенома (#refPhenomMap ниже). */
+     "Карта" у Фенома (#refPhenomMap ниже) и #storyParent чуть ниже. */
   document.getElementById('charStory').addEventListener('click', async () => {
     const char = getOpenCharacter();
     if (!char) return;
@@ -667,7 +767,29 @@ const calibPanel = document.getElementById('calibPanel');
     const node = graph.get(char.id);
     if (!node || !node.parent) return; // родителя нет/удалили — молча ничего не делаем
     closeModal(); // иначе анкета останется висеть поверх окна родителя
-    goToNode(node.parent, true); // уходим из уже закрытого окна персонажа, карта не видна — без перелёта
+    // instant: true — родитель либо уже открыт под нами (тогда это просто
+    // переоткроет тот же самый экран, идемпотентно), либо карта позади не
+    // видна в любом случае (мы были внутри окна персонажа) — перелёт ни к
+    // чему в обоих случаях.
+    goToNode(node.parent, true);
+  });
+
+  /* Кнопка "Сюжет"/"Локация" в панели сюжета — зеркало #charStory выше, для
+     сюжета, привязанного к своему родителю (обычно маркер-локация вроде
+     Фенома, но общий случай — см. parentButtonMeta). closeStory() тут НЕ
+     закрывает родителя — если сюжет был открыт вкладкой ИЗ окна локации
+     (см. setPhenomChildren в js/phenom.js), локация всё это время оставалась
+     открытой позади и просто снова становится видна; если сюжет открыт сам
+     по себе (клик по его собственному маркеру на карте), goToNode ниже
+     откроет локацию заново. */
+  document.getElementById('storyParent').addEventListener('click', async () => {
+    const story = getOpenStory();
+    if (!story) return;
+    const graph = await graphReady;
+    const node = graph.get(story.id);
+    if (!node || !node.parent) return;
+    closeStory();
+    goToNode(node.parent, true);
   });
 
   // Все входы в Феном ведут через один и тот же перелёт камеры (focusAndOpen

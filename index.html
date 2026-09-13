@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=50" />
+  <link rel="stylesheet" href="css/styles.css?v=60" />
 </head>
 <body>
 
@@ -96,8 +96,12 @@
   <button class="tabbar-btn" id="charSheet">
     <span class="tabbar-btn-icon" aria-hidden="true">📋</span><span class="tabbar-btn-label">Анкета</span>
   </button>
+  <!-- Иконка/подпись НЕ зашиты — ставятся в map.js по типу родителя узла в
+       графе (PARENT_KIND_META): "Локация" для маркера (например, Ледо/Текила
+       привязаны прямо к Феному), "Сюжет" для сюжета. Кнопка целиком прячется,
+       если родителя нет вообще. -->
   <button class="tabbar-btn" id="charStory">
-    <span class="tabbar-btn-icon" aria-hidden="true">🎬</span><span class="tabbar-btn-label">Сюжет</span>
+    <span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>
   </button>
   <button class="tabbar-btn" id="charNotes">
     <span class="tabbar-btn-icon" aria-hidden="true">📝</span><span class="tabbar-btn-label">Заметки</span>
@@ -118,7 +122,14 @@
 <!-- Полноэкранный вид отдельной системы. Меню — тот же таб-бар, что и у
      #refToolbar (см. ниже): "Карта системы" — всегда активна, пока статья не
      открыта, переключение никогда не пересоздаёт саму карту (#systemContainer
-     не трогается) — просто закрывает/открывает статью поверх. -->
+     не трогается) — просто закрывает/открывает статью поверх.
+
+     ⚠️ Без ↩ рядом с ✕ — сознательно (12.09.2026, по замечанию игрока): тут
+     это буквально переключение между двумя равноправными вкладками в одном
+     ряду ("Карта системы"/"Контролирующая раса"), а не "чтение статьи, из
+     которой нужно куда-то выбираться" — вкладка сама по себе уже и есть
+     самый явный и понятный "путь назад", отдельная стрелка тут только
+     дублировала бы то, что видно и так. -->
 <div class="system-overlay" id="systemOverlay">
   <div class="system-toolbar lore-toolbar tabbar">
     <button class="toolbar-close-btn" id="systemBack" aria-label="Закрыть">✕</button>
@@ -137,14 +148,17 @@
      (тайлы + OpenSeadragon, см. js/phenom.js). -->
 <div class="phenom-overlay" id="phenomOverlay">
   <div class="phenom-card" id="phenomCard">
-    <!-- Меню окна Феном — тот же таб-бар, что у статей-справочников и вида
+    <!-- Меню окна локации — тот же таб-бар, что у статей-справочников и вида
          системы (.tabbar, см. грабли №12). В разметке только крестик и
-         "Описание Фенома"; вкладки привязанных сюжетов дописываются СЮДА ЖЕ
-         из графа связей (setPhenomChildren в js/phenom.js) — руками их
-         добавлять не надо, привязка живёт в stories.json. -->
+         кнопка "Описание <локации>" (#phenomDescriptionTab — data-ref и
+         подпись подставляются под КОНКРЕТНУЮ локацию при каждом открытии,
+         см. setPhenomDescriptionTab в js/phenom.js, дефолт — Феном); вкладки
+         привязанных сюжетов дописываются СЮДА ЖЕ из графа связей
+         (setPhenomChildren в js/phenom.js) — руками их добавлять не надо,
+         привязка живёт в stories.json. -->
     <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
       <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть">✕</button>
-      <button class="tabbar-btn" data-ref="phenom">
+      <button class="tabbar-btn" id="phenomDescriptionTab" data-ref="phenom">
         <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Описание Фенома</span>
       </button>
     </div>
@@ -161,24 +175,46 @@
         <div class="phenom-char-nav-list" id="phenomCharNavList" hidden></div>
       </div>
       <div class="phenom-viewer" id="phenomViewer"></div>
+      <!-- Содержимое для локаций без карты ("submap.type": "info", см.
+           markers.json/CLAUDE.md) — баннер(ы) + заголовок + сворачиваемое
+           описание, тот же визуальный язык, что у окна сюжета (переиспользует
+           .story-banner-img/.story-title/.story-accordion), только тут это не
+           сюжет, а локация без тайловой карты внутри (напр. "Кольцо Авалона").
+           Показывается ВМЕСТО #phenomViewer/#phenomCharNav, а не рядом — см.
+           openSubmap в js/phenom.js. -->
+      <div class="story-content phenom-info-content" id="phenomInfoContent" hidden></div>
     </div>
   </div>
 </div>
 
 <!-- Окно-вкладыш сюжетного маркера — тот же слой, что и "Феном" (карта под
      ним видна, затемнена по краям), но содержимое текстовое, а не карта на
-     тайлах. Данные — из stories.json, см. js/stories.js. -->
+     тайлах. Данные — из stories.json, см. js/stories.js. Меню переведено на
+     общий .tabbar (как у статей/системы/Феном/персонажа, см. грабли №12) —
+     раньше тут были широкие текстовые кнопки-пилюли (.story-action-btn),
+     единственное место в проекте, которое ещё не было на общем стиле. -->
 <div class="phenom-overlay story-overlay" id="storyOverlay">
   <div class="phenom-card" id="storyCard">
-    <div class="phenom-toolbar lore-toolbar">
+    <div class="phenom-toolbar lore-toolbar tabbar" id="storyToolbar">
       <button class="toolbar-close-btn" id="storyClose" aria-label="Закрыть">✕</button>
-      <button class="story-action-btn" id="storyArchive">Архив постов сюжета</button>
-      <button class="story-action-btn" id="storyTelegram">Раздел сюжетов в Telegram</button>
+      <!-- Иконка/подпись НЕ зашиты — как и #charStory, ставятся в map.js по
+           типу родителя узла в графе (PARENT_KIND_META): "Локация" для
+           Феном/маркера, "Сюжет" для другого сюжета. Прячется, если
+           родителя нет. -->
+      <button class="tabbar-btn" id="storyParent">
+        <span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>
+      </button>
+      <button class="tabbar-btn" id="storyArchive">
+        <span class="tabbar-btn-icon" aria-hidden="true">🗂️</span><span class="tabbar-btn-label">Архив</span>
+      </button>
+      <button class="tabbar-btn" id="storyTelegram">
+        <span class="tabbar-btn-icon" aria-hidden="true">📜</span><span class="tabbar-btn-label">Сюжеты</span>
+      </button>
     </div>
     <div class="phenom-content story-content" id="storyContent"></div>
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=50"></script>
+<script type="module" src="js/main.js?v=60"></script>
 </body>
 </html>

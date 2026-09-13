@@ -10,6 +10,8 @@
     "links": ["foks", "ket-uollen"],
     "image": "images/naito.jpg",
     "color": "",
+    "submapX": 3500,
+    "submapY": 2000,
     "x": -200,
     "y": -90
   },
@@ -24,6 +26,8 @@
     "links": [],
     "image": "images/fox.jpg",
     "color": "",
+    "submapX": 9000,
+    "submapY": 1800,
     "x": -200,
     "y": -90
   },
@@ -38,6 +42,8 @@
     "links": [],
     "image": "images/cat.jpg",
     "color": "",
+    "submapX": 12500,
+    "submapY": 4200,
     "x": -200,
     "y": -90
   },
@@ -52,6 +58,8 @@
     "links": ["stil"],
     "image": "images/soren.jpg",
     "color": "",
+    "submapX": 5200,
+    "submapY": 6000,
     "x": -200,
     "y": -90
   },
@@ -66,6 +74,8 @@
     "links": [],
     "image": "images/stil.jpg",
     "color": "",
+    "submapX": 8000,
+    "submapY": 7500,
     "x": -200,
     "y": -90
   },
@@ -80,6 +90,8 @@
     "links": ["teodor-dreiser"],
     "image": "images/paul.jpg",
     "color": "",
+    "submapX": 17000,
+    "submapY": 3000,
     "x": -200,
     "y": -90
   },
@@ -94,6 +106,8 @@
     "links": [],
     "image": "",
     "color": "",
+    "submapX": 19000,
+    "submapY": 5500,
     "x": -200,
     "y": -90
   },
@@ -108,6 +122,8 @@
     "links": [],
     "image": "images/rain.jpg",
     "color": "",
+    "submapX": 2500,
+    "submapY": 8000,
     "x": -200,
     "y": -90
   },
@@ -122,6 +138,8 @@
     "links": [],
     "image": "images/shell.jpg",
     "color": "",
+    "submapX": 14000,
+    "submapY": 8500,
     "x": -200,
     "y": -90
   },
