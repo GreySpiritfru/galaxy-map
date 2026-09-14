@@ -26,7 +26,7 @@
    потребуется открывать ДВА таких окна одновременно — вот тут придётся
    заводить второй экземпляр overlay/viewer, сейчас это не нужно (как и
    везде в проекте, одновременно открыто максимум одно окно-вкладыш). */
-import { closeModal, escapeHtml } from './modal.js?v=76';
+import { closeModal, escapeHtml } from './modal.js?v=90';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже

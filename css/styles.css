@@ -945,6 +945,17 @@ html, body {
 .svg-widget svg #graphicsBackdrop { display: none; }
 .svg-widget svg.graphics-mode #graphicsBackdrop { display: block; }
 .svg-widget svg.graphics-mode.graphics-ready .map-base-backdrop { display: none; }
+/* Точки систем StellarMaps в «Графике» спрятаны совсем: вместо них в фон
+   запечены значки звёзд из игры (tools/build-graphics-background.py
+   --star-icons). Сначала пробовали притушить до 15% — игрок: точки лежат
+   поверх звёзд и замыливают их, лучше убрать. Кликабельности это не лишает:
+   клик висит на названии системы, а не на точке.
+   #icon-circle — обычные системы (729), #icon-square (42) и #icon-diamond
+   (37) — заселённые, цветом владельца. Значки гиперврат/червоточин
+   (#icon-l-gate, #icon-wormhole) не трогаем — под ними нет запечённого. */
+.svg-widget svg.graphics-mode.graphics-ready use[href="#icon-circle"],
+.svg-widget svg.graphics-mode.graphics-ready use[href="#icon-square"],
+.svg-widget svg.graphics-mode.graphics-ready use[href="#icon-diamond"] { display: none; }
 
 .map-thread {
   stroke: rgba(175,238,238,0.35);

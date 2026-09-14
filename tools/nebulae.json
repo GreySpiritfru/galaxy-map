@@ -1,0 +1,47 @@
+{
+  "_help": "Кастомные туманности для фона «Графики». Формат — в tools/build-graphics-background.py рядом с CUSTOM_NEBULAE. После правки: пересобрать фон и поднять GRAPHICS_VER в js/map.js.",
+  "nebulae": [
+    {
+      "system": "Туманность-Гнездо",
+      "replace": true,
+      "layers": [
+        { "texture": "ig_astronomical_objects_nebula_09_27", "at": "ring", "count": 4, "distance": 0.9, "size": 0.9, "alpha": 0.6, "rotation": "random" },
+        { "texture": "ig_astronomical_objects_nebula_09_19", "at": "center", "size": 0.9, "alpha": 0.7, "rotation": 0 }
+      ]
+    },
+    {
+      "_note": "Туманность Перепутья из сейва (Crossroads_Nebula), центр — система Туманность-Перепутье-G",
+      "nebula": "Crossroads_Nebula",
+      "at_system": "Туманность-Перепутье-G",
+      "replace": true,
+      "layers": [
+        { "texture": "ig_astronomical_objects_nebula_09_43", "at": "ring", "count": 4, "distance": 0.9, "size": 0.9, "alpha": 0.6, "rotation": "random" },
+        { "texture": "ig_astronomical_objects_nebula_09_13", "at": "center", "size": 0.9, "alpha": 0.8, "rotation": 0 }
+      ]
+    },
+    {
+      "_note": "Своя туманность, в сейве её нет",
+      "at_system": "Нелегальный-Предел",
+      "radius": 30,
+      "layers": [
+        { "texture": "ig_astronomical_objects_nebula_09_33", "at": "center", "size": 1.4, "alpha": 0.8, "rotation": 0 }
+      ]
+    },
+    {
+      "_note": "Своя туманность, в сейве её нет",
+      "at_system": "Скорпир",
+      "radius": 30,
+      "layers": [
+        { "texture": "ig_astronomical_objects_nebula_06", "at": "center", "size": 0.6, "alpha": 0.7, "rotation": 0 }
+      ]
+    },
+    {
+      "_note": "Своя туманность, в сейве её нет. texture4 лежит в gfx/particles как png (с прозрачностью), не dds",
+      "at_system": "Бездна",
+      "radius": 30,
+      "layers": [
+        { "texture": "texture7.png", "at": "center", "size": 0.6, "alpha": 0.8, "rotation": 0 }
+      ]
+    }
+  ]
+}

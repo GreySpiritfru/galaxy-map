@@ -1,13 +1,13 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=76';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=76';
-import { openSystem, slugify } from './system-view.js?v=76';
-import { openSubmap, setPhenomChildren, setSubmapCharacters } from './phenom.js?v=76';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=76';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=76';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks } from './graph.js?v=76';
+import { createPanZoom } from './panzoom.js?v=90';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=90';
+import { openSystem, slugify } from './system-view.js?v=90';
+import { openSubmap, setPhenomChildren, setSubmapCharacters } from './phenom.js?v=90';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=90';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=90';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks } from './graph.js?v=90';
 
 const SVG_PATH = 'map.svg';
 
@@ -355,7 +355,7 @@ const calibPanel = document.getElementById('calibPanel');
      (tile-0-0.webp и т.д.), так что после пересборки другим набором галактики
      (tools/build-graphics-background.py --set ...) браузер продолжил бы
      отдавать старые из кэша. Поднимать при КАЖДОЙ пересборке фона. */
-  const GRAPHICS_VER = '10';
+  const GRAPHICS_VER = '23';
   // Микронахлёст между тайлами: без него на стыке видна волосяная щель —
   // браузер интерполирует крайний тексель в пустоту. Доля единицы карты.
   const GRAPHICS_BLEED = 0.06;
