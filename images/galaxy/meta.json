@@ -1,0 +1,13 @@
+{
+  "set": "ibs",
+  "grid": 3,
+  "tile": 2048,
+  "parallaxLayers": false,
+  "sceneToMap": 8.0,
+  "viewBox": [
+    -524.1176470588235,
+    -370.11764705882354,
+    588.2352941176471
+  ],
+  "note": "РЎРѕР±СЂР°РЅРѕ tools/build-graphics-background.py"
+}

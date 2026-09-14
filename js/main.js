@@ -1,10 +1,10 @@
 // Точка входа: подключает все модули страницы. Порядок между articles.js/
 // onboarding.js/map.js значения не имеет — каждый сам вешает свои обработчики
 // на уже существующую в HTML разметку (модули выполняются после её разбора).
-import './articles.js?v=66';
-import './onboarding.js?v=66';
-import './map.js?v=66';
-import './navigation.js?v=66';
+import './articles.js?v=76';
+import './onboarding.js?v=76';
+import './map.js?v=76';
+import './navigation.js?v=76';
 
 if (window.Telegram && window.Telegram.WebApp) {
   Telegram.WebApp.ready();

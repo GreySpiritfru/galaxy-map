@@ -38,10 +38,10 @@
    вложенность считается по ТИПАМ слоёв (модал/сюжет/локация/система), а не
    по конкретным id узлов, этого достаточно для всех текущих сценариев.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=66';
-import { closeSystem, isSystemOpen, showSystemMap } from './system-view.js?v=66';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=66';
-import { closeStory, isStoryOpen } from './stories.js?v=66';
+import { closeModal, isArticleOpen } from './modal.js?v=76';
+import { closeSystem, isSystemOpen, showSystemMap } from './system-view.js?v=76';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=76';
+import { closeStory, isStoryOpen } from './stories.js?v=76';
 
 function depth() {
   let d = 0;

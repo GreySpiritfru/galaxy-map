@@ -1,13 +1,13 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=66';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=66';
-import { openSystem, slugify } from './system-view.js?v=66';
-import { openSubmap, setPhenomChildren, setSubmapCharacters } from './phenom.js?v=66';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=66';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=66';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks } from './graph.js?v=66';
+import { createPanZoom } from './panzoom.js?v=76';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=76';
+import { openSystem, slugify } from './system-view.js?v=76';
+import { openSubmap, setPhenomChildren, setSubmapCharacters } from './phenom.js?v=76';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=76';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=76';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks } from './graph.js?v=76';
 
 const SVG_PATH = 'map.svg';
 
@@ -36,6 +36,52 @@ const calibPanel = document.getElementById('calibPanel');
   }
   svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', 'Карта галактики');
+
+  /* Режим "Графика" (15.09.2026) — та же карта, что и "Карта", только со
+     скрытой политической раскраской StellarMaps (заливка территорий фракций,
+     их светящийся контур, пунктирные линии секторов внутри, названия фракций
+     крупным шрифтом) — оставлены звёздный/туманный фон, гиперлейны (тонкие
+     белые линии между системами) и обычные названия систем. Идея игрока: тот
+     же экспорт карты, но "как декоративная картинка", без политической
+     раскраски поверх.
+
+     Помечаем элементы ОДИН РАЗ здесь, классом `.map-political` — дальше это
+     просто display:none по классу в CSS при переключении режима (см.
+     `.graphics-mode` в css/styles.css), как и `.labels-minimal`/`.panning`.
+     Экспорт StellarMaps каждый раз даёт РАЗНЫЙ набор фракций/территорий —
+     метить нужно по СТРУКТУРЕ SVG, а не по конкретным id/цветам.
+
+     Как отличить "территорию" от прочей графики — по факту проверено на
+     реальном экспорте (см. историю сессии): у каждой территории в файле
+     ровно ОДИН И ТОТ ЖЕ набор из 2-3 <path>, повторяющий её цвет:
+       - заливка территории — `fill="<цвет>"`, filter пуст или отсутствует;
+       - светящийся контур — тот же цвет в `stroke`, `fill="none"`,
+         `filter="url(#fade)"` (те самые 82 blur-фильтра, грабли №18);
+       - пунктирные линии секторов ВНУТРИ территории — `stroke-dasharray="3 3"`.
+     Гиперлейны (тонкая белая линия, `filter=""`, но `fill="none"` — сплошной
+     штрих без цвета) под эти условия не попадают и остаются нетронутыми, как
+     и подписи систем (Tahoma) — эта функция трогает только `<path>`.
+
+     ⚠️ Проверено на реальных данных: ровно 29 подписей шрифтом Impact
+     (названия фракций) и ровно 29 территорий с этим набором path — числа
+     совпали один в один, это и есть подтверждение, что признак верный, а не
+     захватывает что-то postороннее. Точечные цветные иконки-"метки
+     принадлежности" поверх отдельных звёзд (мелкие `<use>` с цветом фракции)
+     этой функцией НЕ трогаются — игрок просил убрать границы и названия,
+     про эти точки речи не было; если понадобится — расширить набор классов
+     тут же. */
+  function classifyPoliticalOverlay() {
+    svg.querySelectorAll('path').forEach(p => {
+      const filter = p.getAttribute('filter');
+      const fill = p.getAttribute('fill');
+      const isBorderGlow = (filter || '').includes('fade');
+      const isSectorDash = p.getAttribute('stroke-dasharray') === '3 3';
+      const isSolidFill = (filter === '' || filter === null)
+        && fill && fill !== 'none' && fill !== 'rgba(0,0,0,0.5)';
+      if (isBorderGlow || isSectorDash || isSolidFill) p.classList.add('map-political');
+    });
+  }
+  classifyPoliticalOverlay();
 
   const pz = createPanZoom(svg, {
     zoomOutLimit: 1,     // нельзя отдалиться дальше исходного вида карты — П.2
@@ -279,6 +325,104 @@ const calibPanel = document.getElementById('calibPanel');
       if (x < coreX0 || x > coreX1 || y < coreY0 || y > coreY1) t.style.display = 'none';
     });
   })();
+
+  /* --- Фон режима "Графика": карта галактики из ассетов модпака Stellaris ---
+
+     Вместо растра StellarMaps (2048x2048 на весь наш участок, вшит прямо в
+     map.svg как base64) в режиме "Графика" показывается сетка тайлов,
+     нарезанная из HD-карты галактики модпака — 4096px по стороне, то есть
+     вдвое резче. Собирается офлайн через tools/build-graphics-background.py,
+     там же расписано, откуда берётся геометрия и почему не скриншоты.
+
+     ⚠️ Тайлы НЕ ГРУЗЯТСЯ, пока игрок не зайдёт в режим — элементы создаются
+     без href, браузер за них не качает ничего. Это специально: у части
+     игроков тормозит даже на обычном SVG (грабли №16), и платить трафиком за
+     режим, в который они не заходят, им незачем. Сначала подставляется
+     превью на 1024px (64 КБ) — чтобы переключение не выглядело как пустой
+     экран, — и уже следом настоящие тайлы поверх него.
+
+     ⚠️ Тайл 2048px, а не один большой файл: на 4096px у проекта уже ломался
+     рендер на части устройств (грабли №1, лимит текстуры GPU). Сетку можно
+     поднять до 3x3/4x4 пересборкой (--grid), но это кратно растит память под
+     текстуры на телефоне — сначала проверять на живом устройстве.
+
+     Вставляется СРАЗУ ПОСЛЕ базового растра: так поверх него по-прежнему
+     рисуются и маска, и подписи систем, и наш graphLayer — порядок слоёв
+     остаётся ровно тем же, что и с обычным фоном. */
+  const GRAPHICS_DIR = 'images/galaxy/';
+  const GRAPHICS_GRID = 3;
+  /* Версия тайлов — отдельная от ?v= у кода. Имена файлов фиксированные
+     (tile-0-0.webp и т.д.), так что после пересборки другим набором галактики
+     (tools/build-graphics-background.py --set ...) браузер продолжил бы
+     отдавать старые из кэша. Поднимать при КАЖДОЙ пересборке фона. */
+  const GRAPHICS_VER = '10';
+  // Микронахлёст между тайлами: без него на стыке видна волосяная щель —
+  // браузер интерполирует крайний тексель в пустоту. Доля единицы карты.
+  const GRAPHICS_BLEED = 0.06;
+  let graphicsTiles = [];
+  let graphicsPreview = null;
+  let graphicsRequested = false;
+
+  (function buildGraphicsBackdrop(){
+    const core = pz.getInitialViewBox();
+    // Базовый растр StellarMaps — единственный <image> шириной во весь кадр.
+    const baseBackdrop = [...svg.querySelectorAll('image')].find(im => {
+      const w = parseFloat(im.getAttribute('width'));
+      return isFinite(w) && Math.abs(w - core.w) < 1;
+    });
+    if (!baseBackdrop) return; // экспорт без растра — режим просто останется на нём
+    baseBackdrop.classList.add('map-base-backdrop');
+
+    const NS = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('id', 'graphicsBackdrop');
+
+    graphicsPreview = document.createElementNS(NS, 'image');
+    graphicsPreview.setAttribute('x', core.x);
+    graphicsPreview.setAttribute('y', core.y);
+    graphicsPreview.setAttribute('width', core.w);
+    graphicsPreview.setAttribute('height', core.h);
+    graphicsPreview.setAttribute('preserveAspectRatio', 'none');
+    g.appendChild(graphicsPreview);
+
+    const step = core.w / GRAPHICS_GRID;
+    for (let r = 0; r < GRAPHICS_GRID; r++) {
+      for (let c = 0; c < GRAPHICS_GRID; c++) {
+        const t = document.createElementNS(NS, 'image');
+        t.setAttribute('x', core.x + c * step);
+        t.setAttribute('y', core.y + r * step);
+        t.setAttribute('width', step + GRAPHICS_BLEED);
+        t.setAttribute('height', step + GRAPHICS_BLEED);
+        t.setAttribute('preserveAspectRatio', 'none');
+        t.dataset.src = `${GRAPHICS_DIR}tile-${r}-${c}.webp?v=${GRAPHICS_VER}`;
+        graphicsTiles.push(t);
+        g.appendChild(t);
+      }
+    }
+    baseBackdrop.parentNode.insertBefore(g, baseBackdrop.nextSibling);
+  })();
+
+  /* Подставляет href тайлам — ровно один раз, при первом входе в "Графику".
+
+     Базовый растр прячется не сразу, а только когда превью реально
+     загрузилось (класс `graphics-ready`): если файлов тайлов нет вообще
+     (репозиторий без прогона build-graphics-background.py), режим тихо
+     останется на обычном фоне вместо чёрного экрана. Тот же принцип, что у
+     битых картинок маркеров в createMapIcon. */
+  function requestGraphicsTiles() {
+    if (graphicsRequested || !graphicsPreview) return;
+    graphicsRequested = true;
+    graphicsPreview.addEventListener('load', () => svg.classList.add('graphics-ready'), {once: true});
+    graphicsPreview.addEventListener('error', () => {
+      graphicsTiles.forEach(t => t.remove());
+      graphicsPreview.remove();
+    }, {once: true});
+    graphicsPreview.setAttribute('href', `${GRAPHICS_DIR}preview.webp?v=${GRAPHICS_VER}`);
+    graphicsTiles.forEach(t => {
+      t.addEventListener('error', () => t.remove(), {once: true});
+      t.setAttribute('href', t.dataset.src);
+    });
+  }
 
   /* --- Слой графа: все наши точки и нити между ними, одной группой ---
      Раньше и то, и другое сыпалось прямо в корень <svg>, вперемешку с
@@ -927,12 +1071,22 @@ const calibPanel = document.getElementById('calibPanel');
 
   function updateViewModeUi() {
     viewSwitchBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewMode));
+    // Гасит политическую раскраску StellarMaps (границы/заливки территорий,
+    // названия фракций) — см. classifyPoliticalOverlay/`.map-political` выше
+    // и `.graphics-mode` в css/styles.css. Камера/позиции узлов при этом не
+    // меняются — это тот же вид, что "Карта", только с другим CSS.
+    svg.classList.toggle('graphics-mode', viewMode === 'graphics');
+    // Качаем тайлы фона только когда в режим реально зашли (см.
+    // requestGraphicsTiles выше) — до этого момента ноль байт.
+    if (viewMode === 'graphics') requestGraphicsTiles();
     /* 📍 калибровка и 🏷️ подписи — инструменты САМОЙ карты, в режиме нод они
        бессмысленны и даже опасны: подписей там нет вообще, а координаты —
        компактной раскладки, а НЕ те, что идут в markers.json. Оставить
        калибровку доступной значило бы предложить игроку списать оттуда числа
-       и испортить ими файл. */
-    const onMapView = viewMode === 'map';
+       и испортить ими файл. "Графика" в этом смысле — та же карта (те же
+       координаты, те же подписи систем), калибровка и подписи там работают
+       так же, как и в "Карте". */
+    const onMapView = viewMode !== 'nodes';
     calibToggle.disabled = !onMapView;
     labelsToggle.disabled = !onMapView;
     if (!onMapView && calibMode) {
@@ -953,7 +1107,22 @@ const calibPanel = document.getElementById('calibPanel');
     if (!graphNodes.length) await graphReady;
     if (!graphNodes.length) return;
 
+    const wasNodes = (viewMode === 'nodes');
     const toNodes = (mode === 'nodes');
+
+    /* "Карта" <-> "Графика" напрямую (минуя "Ноды") — это ВООБЩЕ не смена
+       камеры/позиций, только CSS-класс: оба режима показывают тот же вид на
+       тех же координатах, разница только в том, гашена ли политическая
+       раскраска (см. updateViewModeUi). Без этого раннего выхода код ниже
+       попытался бы вернуть камеру к `savedMapView` — а он заполняется ТОЛЬКО
+       при уходе В "Ноды" и остался бы `null`, если игрок ни разу там не был. */
+    if (!wasNodes && !toNodes) {
+      viewMode = mode;
+      updateViewModeUi();
+      try { localStorage.setItem(VIEW_MODE_KEY, mode); } catch (e) {}
+      return;
+    }
+
     if (toNodes) savedMapView = pz.getViewBox(); // вернёмся ровно туда, откуда ушли
     viewMode = mode;
     updateViewModeUi();
@@ -1185,8 +1354,13 @@ const calibPanel = document.getElementById('calibPanel');
       if (fontFamily === 'Impact' || fontSize >= 4.5) {
         // Названия фракций остаются на экране во время перетаскивания — их
         // всего пара десятков, на кадр они не влияют, зато по ним видно, куда
-        // ты едешь (см. .map-label-major в css/styles.css).
-        textEl.classList.add('map-label-major');
+        // ты едешь (см. .map-label-major в css/styles.css). Тот же класс, что
+        // и у территорий (classifyPoliticalOverlay выше) — режим "Графика"
+        // гасит оба одним CSS-правилом, `.map-label-major` при этом отдельно
+        // отвечает за видимость во время панорамирования и не пересекается по
+        // смыслу: подпись готовой системы (см. ветку ниже) тоже major, но не
+        // political — её "Графика" не трогает, это не название империи.
+        textEl.classList.add('map-label-major', 'map-political');
         return;
       }
 

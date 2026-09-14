@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=66" />
+  <link rel="stylesheet" href="css/styles.css?v=76" />
 </head>
 <body>
 
@@ -38,14 +38,17 @@
       <button id="toolsToggle" class="tools-toggle" aria-label="Инструменты карты" aria-expanded="false">⋯</button>
     </div>
     <!-- Переключатель режима просмотра (как слои на обычных картах), см.
-         setViewMode в js/map.js. "Карта" — обычная карта галактики, "Ноды" —
-         тот же граф связей, собранный компактным кластером без самой карты.
-         "Графика" пока заглушка (disabled), поэтому и без data-view: он
-         сознательно не входит в список режимов, которые умеет setViewMode. -->
+         setViewMode в js/map.js. "Карта" — обычная карта галактики (с
+         политической раскраской StellarMaps), "Ноды" — тот же граф связей,
+         собранный компактным кластером без самой карты. "Графика" (15.09.2026)
+         — та же карта и камера, что и "Карта", но со скрытой политической
+         раскраской (границы/заливка территорий, названия фракций) — см.
+         classifyPoliticalOverlay в js/map.js и .graphics-mode в
+         css/styles.css. -->
     <div class="view-switch" id="viewSwitch" role="group" aria-label="Режим просмотра карты">
       <button class="view-switch-btn" data-view="nodes" title="Граф связей: все точки и их связи, без самой карты">Ноды</button>
       <button class="view-switch-btn active" data-view="map" title="Карта галактики">Карта</button>
-      <button class="view-switch-btn" disabled title="В разработке">Графика</button>
+      <button class="view-switch-btn" data-view="graphics" title="Карта без политической раскраски — только фон, гиперлейны и названия систем">Графика</button>
     </div>
     <div class="controls-tools" id="controlsTools">
       <button id="zoomIn" aria-label="Zoom in">＋</button>
@@ -225,6 +228,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=66"></script>
+<script type="module" src="js/main.js?v=76"></script>
 </body>
 </html>

@@ -228,11 +228,28 @@ export function createPanZoom(svg, opts) {
     if (!pinch.active || e.touches.length !== 2) return;
     e.preventDefault();
     const d = dist(e.touches[0], e.touches[1]);
-    const f = pinch.startDist / d;
+    const rawF = pinch.startDist / d;
+    /* Тот же приём, что и в zoomAt() (грабли №3 — "дрейф камеры на упоре
+       зума"): сначала клэмпим ширину под лимиты, ЗАТЕМ пересчитываем РЕАЛЬНО
+       применённый коэффициент по клэмпнутой ширине — и уже им двигаем x/y.
+
+       Раньше тут x/y считались по НЕклэмпнутому rawF, а w/h — тоже по
+       rawF, но их потом урезал clampViewBox() ПОСЛЕ. На упоре зума (палец
+       продолжает щипок, а ширина уже не может ни расти, ни падать дальше
+       лимита) получалось: позиция посчитана для одной ширины (rawF), а
+       реально применяется другая (клэмпнутая) — с каждым кадром щипка
+       camera съезжала в сторону пальцев при зуме до упора и в обратную при
+       отдалении до упора. На компьютере не воспроизводилось — там тот же
+       баг был бы у колёсика, но zoomAt() его чинит с 12.09.2026; сюда,
+       второй путь изменения зума, чинить тогда не догадались (баг
+       воспроизводится только жестом двух пальцев, playwright/автотесты
+       мышью и колёсиком его не ловят). */
+    const newW = Math.max(minW, Math.min(maxW, pinch.startView.w * rawF));
+    const f = newW / pinch.startView.w;
     setViewBox(clampViewBox({
       x: pinch.center.x - (pinch.center.x - pinch.startView.x) * f,
       y: pinch.center.y - (pinch.center.y - pinch.startView.y) * f,
-      w: pinch.startView.w * f, h: pinch.startView.h * f
+      w: newW, h: pinch.startView.h * f
     }));
   }, {passive:false});
 
