@@ -1,14 +1,14 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=104';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=104';
-import { openSystem, slugify } from './system-view.js?v=104';
-import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=104';
-import { initEditor } from './editor.js?v=104';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=104';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=104';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks } from './graph.js?v=104';
+import { createPanZoom } from './panzoom.js?v=108';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=108';
+import { openSystem, slugify } from './system-view.js?v=108';
+import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=108';
+import { initEditor, canEditNodes, showNodeEditor } from './editor.js?v=108';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=108';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=108';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks } from './graph.js?v=108';
 
 const SVG_PATH = 'map.svg';
 
@@ -89,6 +89,10 @@ function finishMapPick(p) {
       const isSolidFill = (filter === '' || filter === null)
         && fill && fill !== 'none' && fill !== 'rgba(0,0,0,0.5)';
       if (isBorderGlow || isSectorDash || isSolidFill) p.classList.add('map-political');
+      // Заливка территории (5% цвета) и размытое свечение границы — то, что
+      // запекается в картинки (см. buildPoliticalBake ниже). Признак тот же,
+      // что в tools/bake-political.html — менять вместе.
+      if (isBorderGlow || p.getAttribute('fill-opacity') === '0.05') p.classList.add('map-political-baked');
     });
   }
   classifyPoliticalOverlay();
@@ -414,6 +418,70 @@ function finishMapPick(p) {
     }
     baseBackdrop.parentNode.insertBefore(g, baseBackdrop.nextSibling);
   })();
+
+  /* Запечённый политический слой (15.09.2026, жалоба игрока на лаги).
+     Заливка территорий (fill-opacity 0.05) и размытое свечение границ — это
+     ~0.4 МБ координат контуров, которые браузер растеризует заново на каждом
+     кадре перетаскивания. Замер в режиме «Карта» при жесте: 15–17 мс на кадр
+     с ними, 7.5 мс без них, 7.5–8 мс если заменить их картинкой. Замена
+     размытия обводками без фильтра НЕ помогает (14.8 мс): дорого не размытие,
+     а сами контуры. Поэтому tools/bake-political.py снимает этот слой в тайлы
+     (тем же движком Chromium), а здесь тайлы встают НА ТО ЖЕ МЕСТО в дереве,
+     что и исходные пути, и те прячутся. Пунктир секторов и гиперлинии
+     остаются вектором — они дешёвые и должны быть чёткими на зуме.
+
+     ⚠️ Исходные пути прячутся только когда ВСЕ тайлы загрузились (класс
+     `political-baked`): нет файлов/битый тайл — остаётся прежний вектор.
+     ⚠️ После нового экспорта map.svg — пересобрать тайлы и поднять
+     POLITICAL_VER, иначе поверх новой карты будут старые территории. */
+  const POLITICAL_DIR = 'images/political/';
+  const POLITICAL_GRID = 2;   // = --grid у tools/bake-political.py
+  const POLITICAL_VER = '1';
+  let politicalTiles = [];
+  let politicalRequested = false;
+
+  (function buildPoliticalBake(){
+    const first = svg.querySelector('.map-political-baked');
+    if (!first) return;
+    const core = pz.getInitialViewBox();
+    const NS = 'http://www.w3.org/2000/svg';
+    const g = document.createElementNS(NS, 'g');
+    // .map-political — чтобы «Графика» прятала и картинку, как и вектор.
+    g.setAttribute('class', 'map-political political-bake');
+    const step = core.w / POLITICAL_GRID;
+    for (let r = 0; r < POLITICAL_GRID; r++) {
+      for (let c = 0; c < POLITICAL_GRID; c++) {
+        const t = document.createElementNS(NS, 'image');
+        t.setAttribute('x', core.x + c * step);
+        t.setAttribute('y', core.y + r * step);
+        t.setAttribute('width', step + GRAPHICS_BLEED);
+        t.setAttribute('height', step + GRAPHICS_BLEED);
+        t.setAttribute('preserveAspectRatio', 'none');
+        t.dataset.src = `${POLITICAL_DIR}p_${r}_${c}.webp?v=${POLITICAL_VER}`;
+        politicalTiles.push(t);
+        g.appendChild(t);
+      }
+    }
+    first.parentNode.insertBefore(g, first);
+  })();
+
+  // Качаем при первом показе «Карты» (в «Графике» и «Нодах» слой не виден).
+  function requestPoliticalTiles() {
+    if (politicalRequested || !politicalTiles.length) return;
+    politicalRequested = true;
+    let left = politicalTiles.length;
+    let failed = false;
+    politicalTiles.forEach(t => {
+      t.addEventListener('load', () => {
+        if (--left === 0 && !failed) svg.classList.add('political-baked');
+      }, {once: true});
+      t.addEventListener('error', () => {
+        failed = true;
+        svg.querySelector('.political-bake')?.remove();
+      }, {once: true});
+      t.setAttribute('href', t.dataset.src);
+    });
+  }
 
   /* Подставляет href тайлам — ровно один раз, при первом входе в "Графику".
 
@@ -805,7 +873,10 @@ function finishMapPick(p) {
     if (node.kind === 'location' && node.data.submap) { openSubmapNode(node); return; }
     const titleHtml = node.data.title ? `<div class="modal-title">${escapeHtml(node.data.title)}</div>` : '';
     const textHtml = node.data.text ? `<div>${escapeHtml(node.data.text).replace(/\n/g, '<br>')}</div>` : '';
-    openModal(titleHtml + textHtml);
+    // Локация без своей карты (сейчас это события) — карточка; владельцу в ней кнопка правки.
+    const editHtml = canEditNodes() ? '<div class="modal-edit-row"><button type="button" class="editor-btn" data-node-edit>✏️ Правка</button></div>' : '';
+    openModal(titleHtml + textHtml + editHtml);
+    document.querySelector('#modalContent [data-node-edit]')?.addEventListener('click', () => showNodeEditor(node));
   }
 
   /* Открывает submap-окно ЛЮБОГО маркера с полем "submap" в markers.json
@@ -838,7 +909,11 @@ function finishMapPick(p) {
     return result;
   }
 
+  // Какая локация сейчас открыта в окне-вкладыше — для кнопки «✏️ Правка» (#phenomEdit).
+  let openSubmapNodeCurrent = null;
+
   function openSubmapNode(node) {
+    openSubmapNodeCurrent = node;
     const mapChars = collectSubmapCharacters(node);
     const byId = new Map(mapChars.map(c => [c.id, c]));
     setSubmapCharacters(
@@ -1114,6 +1189,7 @@ function finishMapPick(p) {
     // Качаем тайлы фона только когда в режим реально зашли (см.
     // requestGraphicsTiles выше) — до этого момента ноль байт.
     if (viewMode === 'graphics') requestGraphicsTiles();
+    if (viewMode === 'map') requestPoliticalTiles();
     /* 📍 калибровка и 🏷️ подписи — инструменты САМОЙ карты, в режиме нод они
        бессмысленны и даже опасны: подписей там нет вообще, а координаты —
        компактной раскладки, а НЕ те, что идут в markers.json. Оставить
@@ -1311,16 +1387,23 @@ function finishMapPick(p) {
       closeModal();
       closeStory();
     };
+    // Общий выбор места на карте галактики: для персонажа и для сюжета/локации.
+    // reopenForm — как вернуться к своей форме после тапа или «Отмены».
+    const pickPlace = (label, onPick, reopenForm) => {
+      closeLayers();
+      closePhenom();
+      if (viewMode === 'nodes') setViewMode('map', true);
+      pickBannerText.textContent = `📍 Тапни, где стоит ${label}`;
+      pickBanner.hidden = false;
+      const back = () => { pickBanner.hidden = true; pickCancel = null; reopenForm(); };
+      mapPickHandler = (p) => { onPick(p); back(); };
+      pickCancel = () => { mapPickHandler = null; back(); };
+    };
     initEditor({
       graph,
+      pickPlace,
       pickOnMap(char, onPick) {
-        closeLayers();
-        closePhenom();
-        if (viewMode === 'nodes') setViewMode('map', true);
-        pickBannerText.textContent = `📍 Тапни, где стоит ${char.name || 'персонаж'}`;
-        pickBanner.hidden = false;
-        mapPickHandler = (p) => { onPick(p); reopen(char); };
-        pickCancel = () => { mapPickHandler = null; reopen(char); };
+        pickPlace(char.name || 'персонаж', onPick, () => reopen(char));
       },
       pickOnSubmap(char, locationNode, onPick) {
         closeLayers();
@@ -1328,9 +1411,23 @@ function finishMapPick(p) {
         pickBannerText.textContent = `🏙 Тапни, где на карте «${nodeTitle(locationNode)}» стоит ${char.name || 'персонаж'}`;
         pickBanner.hidden = false;
         const done = () => { if (isPhenomOpen()) closePhenom(); reopen(char); };
-        setSubmapPickHandler((p) => { onPick(p); done(); });
+        // Третий путь, кроме тапа и «Отмены»: окно закрыли ✕/«назад» —
+        // closePhenom сам вызовет onAbort, и мы вернёмся к форме.
+        setSubmapPickHandler((p) => { onPick(p); done(); }, () => reopen(char));
         pickCancel = () => { setSubmapPickHandler(null); done(); };
       },
+    });
+
+    // «✏️ Правка» у сюжета и у локации с картой — только владельцу группы.
+    const storyEdit = document.getElementById('storyEdit');
+    const phenomEdit = document.getElementById('phenomEdit');
+    storyEdit.hidden = phenomEdit.hidden = !canEditNodes();
+    storyEdit.addEventListener('click', () => {
+      const story = getOpenStory();
+      if (story) showNodeEditor(graph.get(story.id));
+    });
+    phenomEdit.addEventListener('click', () => {
+      if (openSubmapNodeCurrent) showNodeEditor(openSubmapNodeCurrent);
     });
   }
 

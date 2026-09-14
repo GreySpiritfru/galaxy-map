@@ -26,7 +26,7 @@
    потребуется открывать ДВА таких окна одновременно — вот тут придётся
    заводить второй экземпляр overlay/viewer, сейчас это не нужно (как и
    везде в проекте, одновременно открыто максимум одно окно-вкладыш). */
-import { closeModal, escapeHtml } from './modal.js?v=104';
+import { closeModal, escapeHtml } from './modal.js?v=108';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже
@@ -38,9 +38,22 @@ let currentSubmap = null; // {type, source, initialZoom} — конфиг из m
    пиксель исходного изображения (submapX/submapY) — вместо печати в консоль
    PHENOM_DEBUG. Одноразовый: после тапа сбрасывается. */
 let submapPickHandler = null;
-export function setSubmapPickHandler(fn) { submapPickHandler = fn; }
+let submapPickAbort = null; // окно закрыли (✕, «назад», тап по фону), не выбрав место
+export function setSubmapPickHandler(fn, onAbort) {
+  submapPickHandler = fn;
+  submapPickAbort = fn ? (onAbort || null) : null;
+}
+function finishSubmapPick(p) {
+  const handler = submapPickHandler;
+  submapPickHandler = null;
+  submapPickAbort = null;
+  handler(p);
+}
 
 const SUBMAP_DEFAULT_ZOOM = 2.2; // если у submap нет своего initialZoom — во сколько раз ближе домашнего вида открывать по умолчанию
+// Во сколько раз ближе домашнего вида камера подлетает к персонажу из списка 👥
+// (минимум — если игрок уже приблизился сильнее, не отдаляем).
+const SUBMAP_CHAR_FOCUS_ZOOM = 6;
 
 function ensurePhenomViewer() {
   if (phenomViewer) return;
@@ -84,9 +97,7 @@ function ensurePhenomViewer() {
     if (submapPickHandler) {
       const size = tiledImage.getContentSize();
       if (imagePoint.x < 0 || imagePoint.y < 0 || imagePoint.x > size.x || imagePoint.y > size.y) return;
-      const handler = submapPickHandler;
-      submapPickHandler = null;
-      handler({x: imagePoint.x, y: imagePoint.y});
+      finishSubmapPick({x: imagePoint.x, y: imagePoint.y});
       return;
     }
     console.log('[submap] submapX/submapY:', Math.round(imagePoint.x), Math.round(imagePoint.y));
@@ -205,7 +216,12 @@ function renderPhenomCharOverlays() {
     }
     const tracker = new OpenSeadragon.MouseTracker({
       element: el,
-      clickHandler: () => { if (onPhenomCharSelect) onPhenomCharSelect(c.id); },
+      clickHandler: () => {
+        // Выбор места в редакторе: тап по чужому маркеру = «встать рядом с
+        // ним», а не открыть его окно поверх незаконченного выбора.
+        if (submapPickHandler) { finishSubmapPick({x: c.x, y: c.y}); return; }
+        if (onPhenomCharSelect) onPhenomCharSelect(c.id);
+      },
     });
     tracker.setTracking(true);
     const point = tiledImage.imageToViewportCoordinates(c.x, c.y);
@@ -219,11 +235,15 @@ function panToPhenomChar(c) {
   const tiledImage = phenomViewer.world.getItemAt(0);
   const point = tiledImage.imageToViewportCoordinates(c.x, c.y);
   const vp = phenomViewer.viewport;
-  vp.panTo(point, false);
   // Не отдаляем, если и так уже приближены сильнее — только подтягиваем
-  // зум минимум до комфортного уровня, чтобы не дёргать вид туда-сюда.
-  const targetZoom = vp.getHomeZoom() * (currentSubmap.initialZoom || SUBMAP_DEFAULT_ZOOM);
-  if (vp.getZoom() < targetZoom) vp.zoomTo(targetZoom, null, true);
+  // зум минимум до фиксированного уровня «к персонажу». Раньше минимум был
+  // тем же, что при открытии карты (initialZoom), и персонаж оставался
+  // точкой среди целого района.
+  const targetZoom = vp.getHomeZoom() * Math.max(SUBMAP_CHAR_FOCUS_ZOOM, currentSubmap.initialZoom || SUBMAP_DEFAULT_ZOOM);
+  // Зум вокруг центра (null), а не вокруг точки: иначе он сдвигает центр
+  // и спорит с panTo — персонаж оставался сбоку, а не посередине.
+  if (vp.getZoom() < targetZoom) vp.zoomTo(targetZoom, null, false);
+  vp.panTo(point, false);
 }
 
 /* Список персонажей — карточки-портреты (тот же язык, что у
@@ -339,6 +359,15 @@ export function isPhenomOpen() {
 export function closePhenom() {
   closeModal(); // если поверх открыто "Описание Феном" — не оставлять его висеть над картой
   phenomOverlay.classList.remove('open');
+  // Закрыли, не выбрав место для редактора, — отменяем выбор, иначе полоска
+  // «тапни, где стоит…» висела бы над картой, а следующий тап по Феному
+  // молча записал бы координату.
+  if (submapPickHandler) {
+    const abort = submapPickAbort;
+    submapPickHandler = null;
+    submapPickAbort = null;
+    if (abort) abort();
+  }
 }
 
 // ✕ (#phenomClose) больше не вешается тут — js/navigation.js сам вешает на

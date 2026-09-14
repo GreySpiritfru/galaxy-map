@@ -15,7 +15,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml } from './modal.js?v=104';
+import { modalContent, escapeHtml, openIframeModal } from './modal.js?v=108';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -271,3 +271,189 @@ export function showEditor(char) {
 }
 
 export function getEditingCharacter() { return currentChar; }
+
+/* ============================================================
+   Сюжеты, локации и события — только владелец группы (mine=*).
+   Данные — stories.json и markers.json («role»: «event» = событие).
+
+   Описание и картинку форма НЕ отправляет сама: sendData ограничен 4096
+   байтами, а описание сюжета бывает длиннее (у «Переворота» ~5 КБ в UTF-8).
+   Кнопки «Изменить описание»/«Сменить картинку» закрывают карту, и бот ждёт
+   текст или фото следующим сообщением в личке — тот же приём, что у аватара.
+   ============================================================ */
+export function canEditNodes() {
+  return EDIT_MODE && ALL;
+}
+
+function nodeOriginal(node) {
+  const d = node.data;
+  const base = {
+    title: d.title || '',
+    parent: d.parent || '',
+    links: Array.isArray(d.links) ? [...d.links] : [],
+    x: typeof d.x === 'number' ? d.x : null,
+    y: typeof d.y === 'number' ? d.y : null,
+  };
+  if (node.kind === 'story') {
+    Object.assign(base, {shortTitle: d.shortTitle || '', code: d.code || '', archiveUrl: d.archiveUrl || '', color: d.color || ''});
+  } else {
+    base.role = d.role === 'event' ? 'event' : '';
+  }
+  return base;
+}
+
+export function showNodeEditor(node) {
+  if (!hooks || !canEditNodes() || !node || (node.kind !== 'story' && node.kind !== 'location')) return;
+  const key = 'node:' + node.id;
+  if (!drafts.has(key)) drafts.set(key, nodeOriginal(node));
+  const draft = drafts.get(key);
+  const graph = hooks.graph;
+  const isStory = node.kind === 'story';
+  const kindLabel = isStory ? 'Сюжет' : (draft.role === 'event' ? 'Событие' : 'Локация');
+
+  // Привязать к себе или к своему же потомку нельзя — получится цикл.
+  const descendants = new Set();
+  (function collect(n) { n.children.forEach(ch => { descendants.add(ch.id); collect(ch); }); })(node);
+  const targets = [...graph.values()].filter(n =>
+    (n.kind === 'story' || n.kind === 'location') && n.id !== node.id && !descendants.has(n.id));
+  const groups = [
+    ['Сюжеты', targets.filter(n => n.kind === 'story')],
+    ['Локации', targets.filter(n => n.kind === 'location' && n.data.role !== 'event')],
+    ['События', targets.filter(n => n.kind === 'location' && n.data.role === 'event')],
+  ];
+  const option = (n) => `<option value="${escapeHtml(n.id)}"${draft.parent === n.id ? ' selected' : ''}>${escapeHtml(nodeLabel(n))}</option>`;
+  const linkTargets = [...graph.values()].filter(n => (n.kind === 'story' || n.kind === 'location') && n.id !== node.id);
+  const incoming = new Set(node.links.map(n => n.id));
+  draft.links.forEach(id => incoming.delete(id));
+
+  const image = isStory ? (node.data.markerImage || (node.data.images || [])[0] || '') : (node.data.image || '');
+  const input = (name, label, max, extra = '') =>
+    `<label class="editor-field">${label}<input name="${name}" maxlength="${max}" value="${escapeHtml(draft[name])}" ${extra}></label>`;
+
+  openIframeModal('about:blank', null);
+  modalContent.innerHTML = `
+    <form class="editor" autocomplete="off">
+      <div class="editor-title">✏️ ${escapeHtml(kindLabel)}: ${escapeHtml(node.data.title || node.id)}</div>
+
+      <fieldset class="editor-section">
+        <legend>Основное</legend>
+        ${input('title', 'Название', 80)}
+        ${isStory ? `
+          ${input('shortTitle', 'Короткое название (для вкладки в окне локации)', 30)}
+          ${input('code', 'Номер (например 2 или К.3)', 10)}
+          ${input('archiveUrl', 'Ссылка на архив', 300, 'type="url" placeholder="https://…"')}
+          ${input('color', 'Цвет маркера (пусто — по умолчанию)', 40, 'placeholder="#ffd76a"')}
+        ` : (node.data.submap ? '' : `
+          <label class="editor-field">Тип
+            <select name="role">
+              <option value=""${draft.role ? '' : ' selected'}>Локация</option>
+              <option value="event"${draft.role === 'event' ? ' selected' : ''}>Событие (ромб)</option>
+            </select>
+          </label>`)}
+      </fieldset>
+
+      <fieldset class="editor-section">
+        <legend>Описание и картинка</legend>
+        <div class="editor-avatar-row">
+          <div class="editor-avatar">
+            ${image ? `<img src="${escapeHtml(image)}" alt="" onerror="this.remove()">` : ''}
+            <span>${escapeHtml((node.data.title || '?').trim().charAt(0).toUpperCase())}</span>
+          </div>
+          <div>
+            <div class="editor-hint">Окно закроется, а бот попросит прислать новый текст или фото в личку.</div>
+            <button type="button" class="editor-btn" data-act="text">📝 Изменить описание</button>
+            <button type="button" class="editor-btn" data-act="image">🖼 Сменить картинку</button>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="editor-section">
+        <legend>Привязка и место</legend>
+        <label class="editor-field">Где находится
+          <select name="parent">
+            <option value=""${draft.parent ? '' : ' selected'}>— Отдельно, своё место на карте —</option>
+            ${groups.map(([label, list]) => list.length ? `<optgroup label="${label}">${list.map(option).join('')}</optgroup>` : '').join('')}
+          </select>
+        </label>
+        ${draft.parent
+          ? '<div class="editor-hint">На карте галактики стоит рядом со своей привязкой.</div>'
+          : `<div class="editor-place">
+               <div>Карта галактики: <b>${draft.x == null ? 'не указано' : `${draft.x}, ${draft.y}`}</b></div>
+               <button type="button" class="editor-btn" data-act="pick-map">📍 Указать на карте</button>
+             </div>`}
+      </fieldset>
+
+      <fieldset class="editor-section">
+        <legend>Связи</legend>
+        <div class="editor-links">
+          ${linkTargets.map(n => {
+            const own = draft.links.includes(n.id);
+            const locked = incoming.has(n.id);
+            return `<label class="editor-link${locked ? ' is-locked' : ''}">
+              <input type="checkbox" name="links" value="${escapeHtml(n.id)}"${own || locked ? ' checked' : ''}${locked ? ' disabled' : ''}>
+              <span>${escapeHtml(nodeLabel(n))}</span>
+            </label>`;
+          }).join('')}
+        </div>
+        <div class="editor-hint">Серые отметки — связь записана у другой точки, снимается в её правке.</div>
+      </fieldset>
+
+      <div class="editor-status" role="status"></div>
+      <div class="editor-actions">
+        <button type="button" class="editor-btn editor-btn--ghost" data-act="reset">Сбросить</button>
+        <button type="submit" class="editor-btn editor-btn--primary">💾 Сохранить</button>
+      </div>
+    </form>`;
+
+  const form = modalContent.querySelector('form');
+  const status = form.querySelector('.editor-status');
+  const say = (text, isError) => { status.textContent = text; status.classList.toggle('is-error', !!isError); };
+  const report = (res) => {
+    if (!res.ok) say(res.error ? `Не отправилось: ${res.error}` : `Не в Telegram — боту ушло бы: ${res.preview}`, !!res.error);
+  };
+
+  form.addEventListener('input', (e) => {
+    const el = e.target;
+    if (el.name === 'links') {
+      draft.links = [...form.querySelectorAll('input[name="links"]:checked:not(:disabled)')].map(i => i.value);
+      if (draft.links.length > LINKS_MAX) {
+        el.checked = false;
+        draft.links = draft.links.filter(id => id !== el.value);
+        say(`Не больше ${LINKS_MAX} связей.`, true);
+      }
+      return;
+    }
+    if (el.name in draft) draft[el.name] = el.value.trim();
+  });
+  form.querySelector('select[name="parent"]').addEventListener('change', () => showNodeEditor(node));
+
+  form.addEventListener('click', (e) => {
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (!act) return;
+    if (act === 'pick-map') {
+      hooks.pickPlace(node.data.title || 'точка', (p) => { draft.x = Math.round(p.x); draft.y = Math.round(p.y); },
+        () => showNodeEditor(node));
+    } else if (act === 'reset') {
+      drafts.delete(key);
+      showNodeEditor(node);
+    } else if (act === 'text' || act === 'image') {
+      report(sendToBot({v: 1, t: act, id: node.id}));
+    }
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const orig = nodeOriginal(node);
+    const set = {};
+    Object.keys(orig).forEach(k => {
+      const same = Array.isArray(orig[k]) ? JSON.stringify(orig[k]) === JSON.stringify(draft[k]) : orig[k] === draft[k];
+      if (!same) set[k] = draft[k];
+    });
+    // Координаты уходят только парой: бот не примет одну без другой.
+    if ('x' in set || 'y' in set) { set.x = draft.x; set.y = draft.y; }
+    if (!Object.keys(set).length) { say('Изменений нет.'); return; }
+    if ('title' in set && !set.title) { say('Название не может быть пустым.', true); return; }
+    if (set.archiveUrl && !/^https:\/\//i.test(set.archiveUrl)) { say('Ссылка на архив должна начинаться с https://', true); return; }
+    report(sendToBot({v: 1, t: 'node', id: node.id, set}));
+  });
+}

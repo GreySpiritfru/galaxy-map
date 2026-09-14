@@ -174,6 +174,9 @@ html, body {
   font-size: 12px;
   margin: 4px 0 8px;
 }
+/* Кнопка «✏️ Правка» внизу карточки события (map.js, openNode). */
+.modal-edit-row { margin-top: 14px; }
+.editor-avatar-row .editor-btn { margin: 0 6px 6px 0; }
 .editor-avatar-row {
   display: flex;
   align-items: center;
@@ -993,9 +996,10 @@ html, body {
    рисуются как везде (.story-character-chip), overflow:hidden тут и
    отвечает за то, чтобы <img> обрезался по скруглённому квадрату. */
 .phenom-char-marker {
-  width: 22px;
-  height: 22px;
-  border-radius: 7px;
+  /* 22px на телефоне терялись среди арта города — подняли до 32. */
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
   background: rgba(175,238,238,0.92);
   border: 2px solid #0b2b2b;
   box-shadow: 0 0 0 1px rgba(175,238,238,0.6);
@@ -1010,10 +1014,10 @@ html, body {
   object-fit: cover;
 }
 /* Заглушка-буква переиспользует .story-character-fallback, но там шрифт
-   18px — для этого маркера (22px целиком) он ушёл бы за края, поэтому
+   18px — для этого маркера (32px целиком) он великоват, поэтому
    размер шрифта тут свой, поменьше. */
 .phenom-char-marker .story-character-fallback {
-  font-size: 11px;
+  font-size: 15px;
 }
 
 /* ===== Окно-вкладыш сюжетного маркера =====
@@ -1160,6 +1164,12 @@ html, body {
    ⚠️ Побочный эффект, а не случайность: скрытые элементы — это как раз самая
    дорогая часть кадра после текста (грабли №18), так что "Графика" рендерится
    ЛЕГЧЕ, чем "Карта", а не только выглядит чище. */
+/* Запечённый политический слой (buildPoliticalBake в js/map.js): пока тайлы
+   не загрузились — картинки не видно, работает вектор; загрузились — наоборот. */
+.svg-widget svg .political-bake { display: none; }
+.svg-widget svg.political-baked .political-bake { display: inline; }
+.svg-widget svg.political-baked .map-political-baked { display: none; }
+
 .svg-widget svg.graphics-mode .map-political {
   display: none;
 }

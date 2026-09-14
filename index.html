@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=104" />
+  <link rel="stylesheet" href="css/styles.css?v=108" />
 </head>
 <body>
 
@@ -185,6 +185,10 @@
       <button class="tabbar-btn" id="phenomDescriptionTab" data-ref="phenom">
         <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Описание Фенома</span>
       </button>
+      <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
+      <button class="tabbar-btn" id="phenomEdit" hidden>
+        <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
+      </button>
     </div>
     <div class="phenom-content" id="phenomContent">
       <!-- Персонажи, привязанные прямо к самой карте Феном (submapX/submapY в
@@ -228,6 +232,10 @@
       <button class="tabbar-btn" id="storyParent">
         <span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>
       </button>
+      <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
+      <button class="tabbar-btn" id="storyEdit" hidden>
+        <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
+      </button>
       <button class="tabbar-btn" id="storyArchive">
         <span class="tabbar-btn-icon" aria-hidden="true">🗂️</span><span class="tabbar-btn-label">Архив</span>
       </button>
@@ -239,6 +247,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=104"></script>
+<script type="module" src="js/main.js?v=108"></script>
 </body>
 </html>
