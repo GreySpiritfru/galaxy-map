@@ -119,7 +119,7 @@
     "player": "Спирит",
     "sheetUrl": "https://teletype.in/@greyspirit/LwUEi4D1U3B",
     "parent": "story-1",
-    "links": [],
+    "links": ["mina-vulpina"],
     "image": "images/rain.jpg",
     "color": "",
     "submapX": 2500,
