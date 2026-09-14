@@ -26,13 +26,19 @@
    потребуется открывать ДВА таких окна одновременно — вот тут придётся
    заводить второй экземпляр overlay/viewer, сейчас это не нужно (как и
    везде в проекте, одновременно открыто максимум одно окно-вкладыш). */
-import { closeModal, escapeHtml } from './modal.js?v=90';
+import { closeModal, escapeHtml } from './modal.js?v=104';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже
 const phenomInfoContent = document.getElementById('phenomInfoContent');
 let phenomViewer = null;
 let currentSubmap = null; // {type, source, initialZoom} — конфиг из markers.json, с которым сейчас открыт viewer
+
+/* Редактор (js/editor.js): следующий тап по карте локации отдаётся сюда как
+   пиксель исходного изображения (submapX/submapY) — вместо печати в консоль
+   PHENOM_DEBUG. Одноразовый: после тапа сбрасывается. */
+let submapPickHandler = null;
+export function setSubmapPickHandler(fn) { submapPickHandler = fn; }
 
 const SUBMAP_DEFAULT_ZOOM = 2.2; // если у submap нет своего initialZoom — во сколько раз ближе домашнего вида открывать по умолчанию
 
@@ -69,10 +75,20 @@ function ensurePhenomViewer() {
   // координаты клика (то же по смыслу, что режим 📍 у главной карты, только
   // временное и без своего UI — карта Феном меняется намного реже).
   phenomViewer.addHandler('canvas-click', (e) => {
-    if (!window.PHENOM_DEBUG || !phenomViewer.world.getItemCount()) return;
+    // e.quick = короткий тап без перетаскивания; конец драга кликом не считаем.
+    if (!e.quick || !phenomViewer.world.getItemCount()) return;
+    if (!submapPickHandler && !window.PHENOM_DEBUG) return;
     const tiledImage = phenomViewer.world.getItemAt(0);
     const viewportPoint = phenomViewer.viewport.pointFromPixel(e.position);
     const imagePoint = tiledImage.viewportToImageCoordinates(viewportPoint);
+    if (submapPickHandler) {
+      const size = tiledImage.getContentSize();
+      if (imagePoint.x < 0 || imagePoint.y < 0 || imagePoint.x > size.x || imagePoint.y > size.y) return;
+      const handler = submapPickHandler;
+      submapPickHandler = null;
+      handler({x: imagePoint.x, y: imagePoint.y});
+      return;
+    }
     console.log('[submap] submapX/submapY:', Math.round(imagePoint.x), Math.round(imagePoint.y));
   });
 }

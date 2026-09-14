@@ -8,13 +8,17 @@
    (маркеры персонажей квадратные со скруглением, чтобы отличались от круглых
    маркеров фракций и сюжетов).
    ============================================================ */
-import { openIframeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=90';
+import { openIframeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=104';
+import { canEdit, showEditor } from './editor.js?v=104';
 
 const charToolbar = document.getElementById('charToolbar');
 const sheetBtn = document.getElementById('charSheet');
 const storyBtn = document.getElementById('charStory');
 const notesBtn = document.getElementById('charNotes');
 const rollsBtn = document.getElementById('charRolls');
+// «✏️ Правка» — только у своих персонажей и только в карте, открытой
+// кнопкой из лички бота (см. js/editor.js).
+const editBtn = document.getElementById('charEdit');
 
 // Персонаж, чьё окно открыто сейчас. Нужен и кнопкам этой панели, и map.js —
 // оттуда вешается переход на связанный сюжет (там есть и список сюжетов, и
@@ -23,7 +27,7 @@ let current = null;
 export function getOpenCharacter() { return current; }
 
 function setActive(btn) {
-  [sheetBtn, notesBtn, rollsBtn].forEach(b => b.classList.toggle('active', b === btn));
+  [sheetBtn, notesBtn, rollsBtn, editBtn].forEach(b => b.classList.toggle('active', b === btn));
 }
 
 // Вкладка-заглушка вместо iframe. Панель при этом остаётся пристыкованной,
@@ -37,8 +41,16 @@ function showStub(btn, title, text) {
   setActive(btn);
 }
 
-export function openCharacter(char) {
+export function openCharacter(char, {edit = false} = {}) {
   current = char;
+  editBtn.hidden = !canEdit(char.id);
+  if (edit && canEdit(char.id)) {
+    // Возврат к форме после выбора места на карте — анкету не грузим вовсе.
+    openIframeModal('about:blank', charToolbar, editBtn);
+    showEditor(char);
+    setActive(editBtn);
+    return;
+  }
   if (char.sheetUrl) {
     openIframeModal(char.sheetUrl, charToolbar, sheetBtn);
   } else {
@@ -58,6 +70,12 @@ sheetBtn.addEventListener('click', () => {
   if (isDockedWith(charToolbar) && iframe && iframe.src === current.sheetUrl) return;
   modalContent.innerHTML = `<iframe src="${escapeHtml(current.sheetUrl)}" loading="lazy"></iframe>`;
   setActive(sheetBtn);
+});
+
+editBtn.addEventListener('click', () => {
+  if (!current || !canEdit(current.id)) return;
+  showEditor(current);
+  setActive(editBtn);
 });
 
 notesBtn.addEventListener('click', () => {

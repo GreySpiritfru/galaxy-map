@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=90" />
+  <link rel="stylesheet" href="css/styles.css?v=104" />
 </head>
 <body>
 
@@ -28,6 +28,10 @@
          статьи — отдельные кнопки в углу карты для этого больше не нужны.
          🚀 стоит слева от неё и ведёт не в статью, а в само место — карту
          корабля-города (это навигация, а не справка, поэтому отдельной кнопкой). -->
+    <!-- .controls-main — общая колонка для 🚀/📖 и переключателя режима: оба
+         ряда растягиваются до ширины более широкого из них, поэтому Феном со
+         Справочником всегда ровно той же ширины, что и "Ноды | Карта | Графика". -->
+    <div class="controls-main">
     <div class="controls-row">
       <button id="gotoPhenom" class="corner-btn" title="Корабль-город Феном">
         <span aria-hidden="true">🚀</span><span class="corner-btn-label">Феном</span>
@@ -35,7 +39,6 @@
       <button id="openHandbook" class="corner-btn" data-ref="galaxy" title="Справочник">
         <span aria-hidden="true">📖</span><span class="corner-btn-label">Справочник</span>
       </button>
-      <button id="toolsToggle" class="tools-toggle" aria-label="Инструменты карты" aria-expanded="false">⋯</button>
     </div>
     <!-- Переключатель режима просмотра (как слои на обычных картах), см.
          setViewMode в js/map.js. "Карта" — обычная карта галактики (с
@@ -50,20 +53,17 @@
       <button class="view-switch-btn active" data-view="map" title="Карта галактики">Карта</button>
       <button class="view-switch-btn" data-view="graphics" title="Карта без политической раскраски — только фон, гиперлейны и названия систем">Графика</button>
     </div>
-    <div class="controls-tools" id="controlsTools">
-      <button id="zoomIn" aria-label="Zoom in">＋</button>
-      <button id="zoomOut" aria-label="Zoom out">－</button>
-      <button id="reset" aria-label="Reset view">⟲</button>
-      <button id="labelsToggle" title="Показывать только готовые системы (быстрее на слабых устройствах)">🏷️</button>
-      <button id="calibToggle" title="Режим калибровки координат">📍</button>
     </div>
-    <!-- "?" вынесен из общего ряда отдельной строкой: .svg-controls —
-         колонка с align-items:flex-end, поэтому кнопка сама встаёт под "⋯"
-         (крайний правый элемент ряда) на любой ширине экрана. -->
-    <button id="helpBtn" class="tools-toggle" title="Как пользоваться картой">?</button>
+    <!-- Меню "⋯" (зум ＋/－, сброс вида, калибровка 📍) убрано 15.09.2026: зум
+         и так жестами, а калибровка переедет в будущий редактор нод (её код в
+         js/map.js оставлен, просто без кнопки). Из меню осталась только 🏷️ —
+         отдельной кнопкой под переключателем режима, над "?".
+         .svg-controls — колонка с align-items:flex-end, поэтому обе кнопки
+         встают у правого края на любой ширине экрана. -->
+    <button id="labelsToggle" class="map-tool-btn" title="Показывать только готовые системы (быстрее на слабых устройствах)">🏷️</button>
+    <button id="helpBtn" class="map-tool-btn" title="Как пользоваться картой">?</button>
   </div>
   <div class="calib-panel" id="calibPanel"></div>
-  <div class="svg-hint">Перетаскивание — палец/мышь, масштаб — щипок/колёсико. Тапни по названию системы.</div>
 </div>
 
 <!-- Единая панель перекрёстной навигации между статьями-справочниками (Феном/
@@ -116,12 +116,23 @@
   <button class="tabbar-btn" id="charStory">
     <span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>
   </button>
+  <!-- Только у своих персонажей в карте, открытой из лички бота — js/editor.js. -->
+  <button class="tabbar-btn" id="charEdit" hidden>
+    <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
+  </button>
   <button class="tabbar-btn" id="charNotes">
     <span class="tabbar-btn-icon" aria-hidden="true">📝</span><span class="tabbar-btn-label">Заметки</span>
   </button>
   <button class="tabbar-btn" id="charRolls">
     <span class="tabbar-btn-icon" aria-hidden="true">🎲</span><span class="tabbar-btn-label">Броски</span>
   </button>
+</div>
+
+<!-- Полоска «тапни, где стоит персонаж» — выбор места в редакторе (js/editor.js,
+     pickOnMap/pickOnSubmap в js/map.js). Поверх и карты галактики, и окна локации. -->
+<div class="pick-banner" id="pickBanner" hidden>
+  <span id="pickBannerText"></span>
+  <button type="button" id="pickBannerCancel">Отмена</button>
 </div>
 
 <!-- Модал для "инфо"-точек (фракции/регионы) -->
@@ -228,6 +239,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=90"></script>
+<script type="module" src="js/main.js?v=104"></script>
 </body>
 </html>

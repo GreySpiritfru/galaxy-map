@@ -1,13 +1,14 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=90';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=90';
-import { openSystem, slugify } from './system-view.js?v=90';
-import { openSubmap, setPhenomChildren, setSubmapCharacters } from './phenom.js?v=90';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=90';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=90';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks } from './graph.js?v=90';
+import { createPanZoom } from './panzoom.js?v=104';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=104';
+import { openSystem, slugify } from './system-view.js?v=104';
+import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=104';
+import { initEditor } from './editor.js?v=104';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=104';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=104';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks } from './graph.js?v=104';
 
 const SVG_PATH = 'map.svg';
 
@@ -16,6 +17,15 @@ const SVG_PATH = 'map.svg';
 
 let calibMode = false;
 const calibPanel = document.getElementById('calibPanel');
+
+/* Выбор места тапом для редактора (js/editor.js). Пока задан — следующий тап
+   по карте (или по маркеру) отдаёт координаты сюда, а не открывает окно. */
+let mapPickHandler = null;
+function finishMapPick(p) {
+  const handler = mapPickHandler;
+  mapPickHandler = null;
+  handler(p);
+}
 
 (async function(){
   const container = document.getElementById('svgWidget');
@@ -95,7 +105,10 @@ const calibPanel = document.getElementById('calibPanel');
        focusOn() начнёт упираться в него и перестанет долетать куда надо. */
     zoomInLimit: 0.07,
     boundsPad: 0.2,      // запас побольше, чтобы можно было докрутить камеру до самых крайних систем
-    onClick: (p) => { if (calibMode) showCalib(p.x, p.y); }
+    onClick: (p) => {
+      if (mapPickHandler) { finishMapPick(p); return; }
+      if (calibMode) showCalib(p.x, p.y);
+    }
   });
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -464,12 +477,12 @@ const calibPanel = document.getElementById('calibPanel');
   })();
   const graphBackdrop = graphLayer.querySelector('.graph-backdrop');
 
-  document.getElementById('zoomIn').addEventListener('click', pz.zoomIn);
-  document.getElementById('zoomOut').addEventListener('click', pz.zoomOut);
-  document.getElementById('reset').addEventListener('click', pz.reset);
-
+  /* Кнопки зума ＋/－/⟲ и калибровки 📍 из угла карты убраны (15.09.2026,
+     вместе с меню "⋯"). Сама калибровка (calibMode, showCalib, calibPanel)
+     оставлена — она переедет в будущий редактор нод; пока кнопки нет,
+     calibToggle === null, и все обращения к нему через ?. */
   const calibToggle = document.getElementById('calibToggle');
-  calibToggle.addEventListener('click', () => {
+  calibToggle?.addEventListener('click', () => {
     calibMode = !calibMode;
     calibToggle.classList.toggle('active', calibMode);
     calibPanel.style.display = calibMode ? 'block' : 'none';
@@ -498,16 +511,6 @@ const calibPanel = document.getElementById('calibPanel');
     const on = !svg.classList.contains('labels-minimal');
     applyLabelsMinimal(on);
     try { localStorage.setItem(LABELS_MINIMAL_KEY, on ? '1' : '0'); } catch (e) {}
-  });
-
-  // Сворачиваемое меню инструментов (zoom/reset/калибровка) — скрыто по умолчанию,
-  // разворачивается по кнопке "⋯" рядом с кнопкой "Феном".
-  const toolsToggle = document.getElementById('toolsToggle');
-  const controlsTools = document.getElementById('controlsTools');
-  toolsToggle.addEventListener('click', () => {
-    const open = controlsTools.classList.toggle('open');
-    toolsToggle.classList.toggle('open', open);
-    toolsToggle.setAttribute('aria-expanded', String(open));
   });
 
   function showCalib(x, y) {
@@ -624,12 +627,42 @@ const calibPanel = document.getElementById('calibPanel');
     return c;
   }
 
-  function createMapIcon({x, y, image, dotFill, dotStroke, ringColor, shape, size, aspect, onTap}) {
+  /* "Маяк" сюжетного маркера (игрок, 15.09.2026: сюжеты должны привлекать
+     внимание издалека, но мягко). Сходящиеся к маркеру кольца, которые
+     стягиваются к центру и тают (лучи-штрихи тоже были — игрок попросил
+     убрать, 15.09.2026). Вся анимация — в CSS
+     (.story-beacon в css/styles.css), тут только геометрия.
+
+     ⚠️ Производительность (грабли №15/17): анимируются только transform,
+     opacity и stroke-dashoffset у простых фигур, БЕЗ фильтров и без opacity
+     на больших группах. Обводка — vector-effect: non-scaling-stroke, иначе при
+     scale(3) кольцо на подлёте становилось втрое толще. На время жеста
+     (.panning), в режиме экономии (🏷️) и при prefers-reduced-motion анимация
+     останавливается — см. CSS. pointer-events: none — маяк не расширяет зону
+     тапа по маркеру. */
+  const BEACON_RINGS = 3;
+  function addStoryBeacon(g, iconSize, color) {
+    const beacon = document.createElementNS(ns, 'g');
+    beacon.setAttribute('class', 'story-beacon');
+    beacon.style.color = color;
+    for (let i = 0; i < BEACON_RINGS; i++) {
+      const ring = document.createElementNS(ns, 'circle');
+      ring.setAttribute('class', 'story-beacon-ring');
+      ring.setAttribute('r', iconSize * 0.55);
+      ring.style.animationDelay = `${-i * 3.6 / BEACON_RINGS}s`;
+      beacon.appendChild(ring);
+    }
+    g.appendChild(beacon);
+  }
+
+  function createMapIcon({x, y, image, dotFill, dotStroke, ringColor, shape, size, aspect, onTap, beacon}) {
     const iconSize = size || MARKER_SIZE;
     const iconAspect = aspect || 1;
     const g = document.createElementNS(ns, 'g');
     g.setAttribute('class', 'hotspot');
     g.setAttribute('transform', `translate(${x} ${y})`);
+    // Маяк — первым ребёнком, ПОД иконкой.
+    if (beacon) addStoryBeacon(g, iconSize, beacon);
 
     function addDefaultDot() {
       const c = makeIconShape(shape, iconSize * 0.875, iconAspect); // та же пропорция, что была у фиксированных 7/8
@@ -755,7 +788,7 @@ const calibPanel = document.getElementById('calibPanel');
      тап по карте, кнопка "Сюжет"/"Локация" в окне персонажа и сюжета,
      переход из окна сюжета к персонажу, кнопки сюжетов внутри Фенома.
      Отсюда же и одинаковый перелёт камеры везде (goToNode ниже). */
-  function openNode(node) {
+  function openNode(node, opts) {
     if (node.kind === 'story') {
       setStoryParentButton(parentButtonMeta(node));
       openStory(node.data);
@@ -763,7 +796,7 @@ const calibPanel = document.getElementById('calibPanel');
     }
     if (node.kind === 'character') {
       updateStoryButton(parentButtonMeta(node));
-      openCharacter(node.data);
+      openCharacter(node.data, opts);
       return;
     }
     // Маркер с полем submap ("Феном" сейчас единственный, но не единственно
@@ -899,7 +932,9 @@ const calibPanel = document.getElementById('calibPanel');
         dotFill: node.data.color || style.dotFill,
         dotStroke: style.dotStroke,
         ringColor: node.data.color || style.ringColor,
+        beacon: node.kind === 'story' ? (node.data.color || style.ringColor) : null,
         onTap: () => {
+          if (mapPickHandler) { finishMapPick({x: node.x, y: node.y}); return; }
           if (calibMode) { showCalib(node.x, node.y); return; }
           goToNode(node);
         },
@@ -1087,11 +1122,11 @@ const calibPanel = document.getElementById('calibPanel');
        координаты, те же подписи систем), калибровка и подписи там работают
        так же, как и в "Карте". */
     const onMapView = viewMode !== 'nodes';
-    calibToggle.disabled = !onMapView;
+    if (calibToggle) calibToggle.disabled = !onMapView;
     labelsToggle.disabled = !onMapView;
     if (!onMapView && calibMode) {
       calibMode = false;
-      calibToggle.classList.remove('active');
+      calibToggle?.classList.remove('active');
       calibPanel.style.display = 'none';
       calibPanel.textContent = '';
     }
@@ -1244,6 +1279,7 @@ const calibPanel = document.getElementById('calibPanel');
     graphNodes = [...graph.values()].filter(n => n.onMap && n.__el);
     applyGraphPositions();
     wireStoryWindows(graph);
+    wireEditor(graph);
 
     // Сохранённый режим применяем без анимации: страница только что
     // открылась, перелетать не от чего.
@@ -1254,6 +1290,49 @@ const calibPanel = document.getElementById('calibPanel');
 
     return graph;
   });
+
+  /* Редактор персонажей (js/editor.js): выбор места тапом. Окна над картой
+     на время выбора закрываются, сверху висит полоска с подсказкой и
+     «Отмена»; после тапа (или отмены) окно персонажа открывается заново
+     сразу на вкладке «Правка» — черновик формы хранится в editor.js. */
+  const pickBanner = document.getElementById('pickBanner');
+  const pickBannerText = document.getElementById('pickBannerText');
+  let pickCancel = null;
+  document.getElementById('pickBannerCancel').addEventListener('click', () => { if (pickCancel) pickCancel(); });
+
+  function wireEditor(graph) {
+    const reopen = (char) => {
+      pickBanner.hidden = true;
+      pickCancel = null;
+      const node = graph.get(char.id);
+      if (node) openNode(node, {edit: true});
+    };
+    const closeLayers = () => {
+      closeModal();
+      closeStory();
+    };
+    initEditor({
+      graph,
+      pickOnMap(char, onPick) {
+        closeLayers();
+        closePhenom();
+        if (viewMode === 'nodes') setViewMode('map', true);
+        pickBannerText.textContent = `📍 Тапни, где стоит ${char.name || 'персонаж'}`;
+        pickBanner.hidden = false;
+        mapPickHandler = (p) => { onPick(p); reopen(char); };
+        pickCancel = () => { mapPickHandler = null; reopen(char); };
+      },
+      pickOnSubmap(char, locationNode, onPick) {
+        closeLayers();
+        openSubmapNode(locationNode);
+        pickBannerText.textContent = `🏙 Тапни, где на карте «${nodeTitle(locationNode)}» стоит ${char.name || 'персонаж'}`;
+        pickBanner.hidden = false;
+        const done = () => { if (isPhenomOpen()) closePhenom(); reopen(char); };
+        setSubmapPickHandler((p) => { onPick(p); done(); });
+        pickCancel = () => { setSubmapPickHandler(null); done(); };
+      },
+    });
+  }
 
   /* Кнопка "Сюжет"/"Локация" в панели персонажа: уводит к его родителю в
      графе (сюжет либо, как у Ледо/Текила, сам Феном-маркер напрямую — см.
@@ -1398,6 +1477,7 @@ const calibPanel = document.getElementById('calibPanel');
       textEl.parentNode.insertBefore(hit, textEl);
 
       const trigger = () => {
+        if (mapPickHandler) { finishMapPick({x: bbox.x + bbox.width/2, y: bbox.y + bbox.height/2}); return; }
         if (calibMode) { showCalib(bbox.x + bbox.width/2, bbox.y + bbox.height/2); return; }
         openSystem(name);
       };

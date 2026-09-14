@@ -115,6 +115,184 @@ html, body {
   color: #fff;
 }
 
+/* ===== Редактор персонажа (js/editor.js) =====
+   Живёт на месте iframe анкеты, под пристыкованной панелью — отсюда верхний
+   отступ, как у .char-stub. */
+.editor {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 76px 16px 28px;
+  background: #0e0e14;
+  color: rgba(255,255,255,0.85);
+  font-family: sans-serif;
+  font-size: 14px;
+  -webkit-overflow-scrolling: touch;
+}
+.editor-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 12px;
+}
+.editor-section {
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  margin: 0 0 14px;
+  padding: 10px 12px 12px;
+  min-width: 0;
+}
+.editor-section legend {
+  padding: 0 6px;
+  color: #AFEEEE;
+  font-size: 13px;
+}
+.editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+}
+.editor-field input,
+.editor-field select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  font-size: 15px; /* ≥15px — иначе iOS зумит страницу при фокусе */
+}
+.editor-field select option,
+.editor-field select optgroup { background: #1a1a22; }
+.editor-hint {
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  margin: 4px 0 8px;
+}
+.editor-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* Квадрат со скруглением — как маркер персонажа на карте. Буква-заглушка лежит
+   ПОД картинкой: нет аватара или битый путь (img удаляет себя) — видна буква. */
+.editor-avatar {
+  position: relative;
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(175,238,238,0.14);
+  box-shadow: inset 0 0 0 1.5px #AFEEEE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #AFEEEE;
+  font-size: 28px;
+  font-weight: 700;
+}
+.editor-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.editor-place {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 8px;
+}
+.editor-place > div { flex: 1 1 100%; }
+.editor-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.editor-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  font-size: 13px;
+}
+.editor-link.is-locked { opacity: 0.55; }
+.editor-btn {
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(175,238,238,0.45);
+  background: rgba(175,238,238,0.12);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+.editor-btn--ghost {
+  border-color: rgba(255,255,255,0.18);
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+}
+.editor-btn--primary {
+  background: #AFEEEE;
+  border-color: #AFEEEE;
+  color: #0e0e14;
+  font-weight: 700;
+}
+.editor-status {
+  min-height: 18px;
+  margin: 4px 0 10px;
+  font-size: 13px;
+  color: #AFEEEE;
+  word-break: break-word;
+}
+.editor-status.is-error { color: #ff9a9a; }
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Полоска выбора места: над окнами локаций (250/251), под модалом (300) она
+   не нужна — модал на время выбора закрыт. */
+.pick-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: 12px;
+  z-index: 320;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(14,14,20,0.92);
+  box-shadow: inset 0 0 0 1.5px #AFEEEE;
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 14px;
+}
+.pick-banner span { flex: 1; }
+/* display:flex выше перебивает атрибут hidden — возвращаем ему силу. */
+.pick-banner[hidden],
+.tabbar-btn[hidden] { display: none; }
+.pick-banner button {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+}
+
 /* Включённый тумблер в меню инструментов (🏷️, 📍) — тот же "нажатый" вид,
    что и у активной статьи в таб-баре. */
 .svg-controls button.active {
@@ -123,6 +301,38 @@ html, body {
 }
 
 .hotspot, .hotspot * { pointer-events: auto; }
+
+/* Маяк сюжетного маркера — сходящиеся кольца (см. addStoryBeacon в
+   js/map.js). Мягко: пик непрозрачности ~0.45, тонкие линии, медленный цикл.
+   Цвет — color группы (= цвет кольца сюжета), фигуры берут currentColor. */
+.hotspot .story-beacon,
+.hotspot .story-beacon * { pointer-events: none; }
+
+.story-beacon-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2px;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: storyBeaconRing 3.6s cubic-bezier(0.25, 0.1, 0.35, 1) infinite;
+}
+@keyframes storyBeaconRing {
+  0%   { transform: scale(3.6); opacity: 0; }
+  45%  { opacity: 0.42; }
+  100% { transform: scale(1);   opacity: 0; }
+}
+
+/* Стоп анимации: во время жеста (каждый кадр и так перерисовывается вся сцена,
+   грабли №15), в режиме экономии 🏷️ (слабые устройства) и если в системе
+   просили меньше движения. Прячем совсем, а не ставим на паузу — застывший
+   кадр с полупрозрачным кольцом выглядел бы как артефакт. */
+.svg-widget svg.panning .story-beacon,
+.svg-widget svg.labels-minimal .story-beacon { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .story-beacon { display: none; }
+}
 .sys-hit { pointer-events: auto; cursor: pointer; }
 
 .svg-controls {
@@ -157,21 +367,35 @@ html, body {
 }
 
 /* Кнопки-таблетки в углу карты (🚀 Феном и 📖 Справочник) — в отличие от
-   квадратных .tools-toggle ("?" и "⋯") у них есть текстовая подпись, которая
+   квадратных .map-tool-btn (🏷️ и "?") у них есть текстовая подпись, которая
    прячется на узких экранах (см. медиазапрос в конце файла). */
-.corner-btn {
+/* Колонка 🚀/📖 + переключатель режима: оба ряда одной ширины (игрок,
+   15.09.2026). Ширина колонки — по более широкому ряду, второй
+   растягивается под неё за счёт flex: 1 у кнопок. */
+.controls-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.controls-main .view-switch-btn { flex: 1 1 auto; }
+
+/* Размер и цвет — как у секций переключателя режима (.view-switch-btn):
+   тот же отступ, шрифт и приглушённый белый, чтобы угол читался одним блоком.
+   min-height: 0 гасит 44px из общего .svg-controls button. */
+.svg-controls .corner-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  width: auto;
-  min-width: auto;
-  padding: 8px 14px;
-  font-size: 13px;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 18px;   /* как у .view-switch-btn: эмодзи иначе делает ряд на 2px выше */
+  font-weight: 600;
+  color: rgba(255,255,255,0.65);
   white-space: nowrap;
-}
-
-.tools-toggle.open {
-  background: rgba(255,255,255,0.24);
 }
 
 /* Переключатель режима просмотра ("Ноды | Карта | Графика") — сегментированная
@@ -195,11 +419,15 @@ html, body {
 .svg-controls .view-switch-btn {
   min-width: 0;
   min-height: 0;
-  padding: 7px 12px;
+  /* 9px, а не 10 как у 🚀/📖: по замеру высота была равной (38px), но
+     сплошной переключатель с залитой активной секцией на глаз казался выше —
+     игрок попросил ниже на 2px (36px). */
+  padding: 9px 16px;
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 18px;
   font-weight: 600;
   color: rgba(255,255,255,0.65);
   white-space: nowrap;
@@ -229,8 +457,24 @@ html, body {
   cursor: default;
 }
 
+/* 🏷️ и "?" под переключателем режима — квадраты высотой с ряд переключателя
+   (38px), одинаковые на телефоне и компьютере. Специфичность
+   .svg-controls .map-tool-btn выше, чем у .svg-controls button, поэтому
+   перебивает и мобильный размер из медиазапроса в конце файла. */
+.svg-controls .map-tool-btn {
+  width: 38px;
+  height: 38px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  font-size: 16px;
+  line-height: 38px;
+}
+
+/* Был чёрным — на полупрозрачной тёмной кнопке почти не читался. Теперь тем
+   же приглушённым белым, что и подписи соседних кнопок угла. */
 #helpBtn {
-  color: #000;
+  color: rgba(255,255,255,0.65);
 }
 
 /* Мягкое "дыхание" вокруг кнопки подсказки — для новых игроков, пока они
@@ -243,28 +487,6 @@ html, body {
 }
 #helpBtn.pulse {
   animation: helpPulse 2.4s ease-in-out infinite;
-}
-
-/* Инструменты карты (zoom/reset/калибровка) скрыты, пока не открыт tools-toggle,
-   чтобы не загромождать угол карты рядом с новой кнопкой "Феном". */
-.controls-tools {
-  display: none;
-  flex-direction: column;
-  gap: 8px;
-}
-.controls-tools.open { display: flex; }
-
-.svg-hint {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
-  color: rgba(255,255,255,0.7);
-  background: rgba(0,0,0,0.35);
-  padding: 8px 10px;
-  border-radius: 8px;
-  font-size: 12px;
-  z-index: 10;
-  max-width: 60vw;
 }
 
 .calib-panel {
@@ -473,10 +695,25 @@ html, body {
    больше). */
 .ref-toolbar { display: none; }
 .tabbar .toolbar-close-btn {
+  position: relative;
   background: none;
   backdrop-filter: none;
   border-radius: 0;
+  /* ⚠️ Ширину НЕ увеличивать: в #refToolbar на 375px подпись «Галактика»
+     упирается в свою ячейку, и уже 36px обрезали её до «Галакти…». */
   width: 30px;
+}
+/* Черта справа от ✕/↩ (игрок, 15.09.2026): без видимой границы палец
+   промахивался мимо крестика и попадал в соседнюю вкладку. Псевдоэлемент, а
+   не border-right — черта не на всю высоту ряда, как в .tabbar-split. */
+.tabbar .toolbar-close-btn::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 1px;
+  background: rgba(255,255,255,0.22);
 }
 .tabbar-btn {
   display: flex;
@@ -903,11 +1140,6 @@ html, body {
 .graph-backdrop { display: none; }
 .svg-widget svg.nodes-mode .graph-backdrop { display: block; }
 
-/* Подсказка внизу ("Тапни по названию системы") — про саму карту; в режиме
-   нод названий систем нет вообще, и она откровенно врёт.
-   Селектор-сосед, а не :has() — .svg-hint лежит в .svg-widget после самого
-   <svg> (см. index.html), и так это работает даже там, где :has() ещё нет. */
-.svg-widget svg.nodes-mode ~ .svg-hint { display: none; }
 
 /* Режим "Графика" (15.09.2026) — та же карта, что и "Карта" (те же камера/
    координаты, см. setViewMode в js/map.js — переключение между ними вообще
@@ -952,10 +1184,19 @@ html, body {
    клик висит на названии системы, а не на точке.
    #icon-circle — обычные системы (729), #icon-square (42) и #icon-diamond
    (37) — заселённые, цветом владельца. Значки гиперврат/червоточин
-   (#icon-l-gate, #icon-wormhole) не трогаем — под ними нет запечённого. */
+   (#icon-l-gate, #icon-wormhole) спрятаны отдельным правилом ниже — везде. */
 .svg-widget svg.graphics-mode.graphics-ready use[href="#icon-circle"],
 .svg-widget svg.graphics-mode.graphics-ready use[href="#icon-square"],
 .svg-widget svg.graphics-mode.graphics-ready use[href="#icon-diamond"] { display: none; }
+/* Значки гиперврат (#icon-l-gate, 12 шт.) и червоточин (#icon-wormhole, 10) —
+   убраны "пока" во ВСЕХ режимах (игрок, 15.09.2026). Отдельных линий-связей у
+   них в экспорте нет, только значки рядом с точкой системы. #icon-gateway и
+   #icon-shroud-tunnel в символах экспорта объявлены, но на карте не используются
+   — спрятаны заодно, чтобы не всплыли после следующего экспорта. */
+.svg-widget svg use[href="#icon-l-gate"],
+.svg-widget svg use[href="#icon-wormhole"],
+.svg-widget svg use[href="#icon-gateway"],
+.svg-widget svg use[href="#icon-shroud-tunnel"] { display: none; }
 
 .map-thread {
   stroke: rgba(175,238,238,0.35);
@@ -1043,9 +1284,3 @@ html, body {
   .tabbar-btn { padding: 4px 1px; }
 }
 
-@media (max-width: 460px) {
-  /* На узком экране у 🚀/📖 остаются только иконки — иначе ряд из четырёх
-     кнопок с подписями упирается в левый край карты. */
-  .corner-btn-label { display: none; }
-  .corner-btn { padding: 8px 10px; }
-}
