@@ -106,22 +106,56 @@ const RELAX_SETTLE = 40;    // добивающих проходов тольк�
 const RELAX_RATE = 0.5;     // доля коррекции за проход (меньше 1 — чтобы узлы не скакали)
 const PARENT_PULL = 0.05;   // насколько родитель тянет ребёнка к нужному расстоянию
 const LINK_PULL = 0.05;     // насколько союзники притягиваются друг к другу
+/* Союзники из РАЗНЫХ колец (у них разные родители) в режиме нод тянутся
+   впятеро слабее: сильная пружина вытаскивала персонажа из кольца его сюжета к
+   чужому кластеру. Смотреть друг на друга их разворачивает orientRing, а не
+   пружина. */
+const CROSS_LINK_PULL = 0.01;
+/* Нить не должна проходить под чужим маркером: просвет между краем маркера и
+   линией (см. clearThreads в relax). */
+const LINE_CLEARANCE_SHARE = 0.5; // доля от gap
+
+/* Союз на КАРТЕ дальше этого расстояния (в единицах карты, между стартовыми
+   позициями узлов) — «далёкий»: пружина его не тянет, нить на карте не
+   рисуется (класс .far, показывается только в режиме нод). Раньше союзники из
+   сюжетов на разных концах карты стягивались друг к другу из своих колец, и
+   пунктир шёл через полкарты. 40 — половина кадра, на который камера наводится
+   при тапе по маркеру (FOCUS_WIDTH в map.js): ближняя связь целиком видна рядом. */
+export const MAP_LINK_REACH = 40;
+
+/* Ширина маркера к высоте у локаций с полем "border" (markers.json). Сама
+   форма рисуется в map.js (LOCATION_BORDER), но раскладке ширина нужна тоже:
+   без неё широкий «Кольцо Авалона» считался кругом и налезал на соседей. */
+export const LOCATION_ASPECT = {'wide-square': 1.6};
+
+/* Радиус «зоны» маркера для расталкивания: половина его ШИРИНЫ — у широких
+   локаций она больше половины высоты. Круг с запасом по вертикали, зато
+   гарантированно без наездов. */
+function radiusOf(node) {
+  return node.size * (node.aspect || 1) / 2;
+}
 
 // Расстояние между ЦЕНТРАМИ двух узлов, при котором их маркеры не касаются.
 function minDistance(a, b) {
-  return (a.size + b.size) / 2 + gap;
+  return radiusOf(a) + radiusOf(b) + gap;
 }
 
-/* Радиус кольца, на которое сядут `count` детей размера childSize вокруг
-   родителя размера parentSize. Берём больший из двух: не ближе к родителю,
+/* Радиус кольца, на которое сядут `count` детей с радиусом childR вокруг
+   родителя с радиусом parentR. Берём больший из двух: не ближе к родителю,
    чем позволяют их размеры, и не теснее друг к другу, чем позволяют свои. */
-function ringRadius(parentSize, childSize, count, arc) {
-  const clearance = (parentSize + childSize) / 2 + gap;
+function ringRadius(parentR, childR, count, arc) {
+  const clearance = parentR + childR + gap;
   if (count <= 1) return clearance;
   const step = arc >= TWO_PI - 1e-6 ? arc / count : arc / (count - 1);
-  const spacing = childSize + gap;
+  const spacing = 2 * childR + gap;
   const needed = spacing / (2 * Math.sin(Math.min(step, Math.PI) / 2));
   return Math.max(clearance, needed);
+}
+
+function subtreeNodes(node, out = []) {
+  out.push(node);
+  node.children.forEach(child => { if (child.onMap) subtreeNodes(child, out); });
+  return out;
 }
 
 /* Разбор сырых списков в узлы графа. sources — [{kind, items}], где items
@@ -151,6 +185,8 @@ export function buildNodes(sources) {
         // выше и layoutGraphView внизу). Считается ровно так же, как size,
         // просто по своей таблице и со своим CHILD_SHRINK.
         graphSize: (kind === 'location' && item.role === 'event') ? EVENT_LOCATION_SIZE : (GRAPH_VIEW_SIZE[kind] || GRAPH_VIEW_SIZE.location),
+        // Событие — всегда ромб, border у него не действует (см. renderNodes в map.js).
+        aspect: (kind === 'location' && item.role !== 'event' && LOCATION_ASPECT[item.border]) || 1,
         x: 0, y: 0,
         rest: 0,      // желаемое расстояние до родителя (радиус его кольца)
         pinned: false, // корень: стоит на координатах из JSON, релаксация его не двигает
@@ -268,8 +304,12 @@ function placeTree(roots) {
    корни берутся не из x/y в JSON, а пакуются вокруг центра (см. packRoots и
    layoutGraphView внизу файла); всё остальное — кольца детей, дуги, порядок
    союзников — у обеих раскладок общее и должно оставаться общим. */
-function placeChildren(roots) {
+/* orient — развернуть кольца так, чтобы узлы, связанные с ДРУГИМИ ветками
+   графа, смотрели в их сторону (orientRing ниже). Только для режима нод: на
+   карте далёкие связи не рисуются вовсе, а ближние и так рядом. */
+function placeChildren(roots, orient = false) {
   const queue = roots.slice();
+  const placed = new Set(roots);
 
   while (queue.length) {
     const node = queue.shift();
@@ -284,20 +324,103 @@ function placeChildren(roots) {
       ? Math.atan2(node.y - node.parent.y, node.x - node.parent.x)
       : -Math.PI / 2;
     const arc = node.parent ? CHILD_ARC : TWO_PI;
-    const childSize = Math.max(...children.map(c => c.size));
-    const radius = ringRadius(node.size, childSize, children.length, arc);
+    const childR = Math.max(...children.map(radiusOf));
+    const radius = ringRadius(radiusOf(node), childR, children.length, arc);
 
+    const angles = (orient && orientRing(node, children, outward, arc, placed))
+      || children.map((_, i) => ringAngle(i, children.length, outward, arc));
     children.forEach((child, i) => {
-      let angle;
-      if (children.length === 1) angle = outward;
-      else if (arc >= TWO_PI - 1e-6) angle = outward + i * (TWO_PI / children.length);
-      else angle = outward + arc * (i / (children.length - 1) - 0.5);
       child.rest = radius;
-      child.x = node.x + radius * Math.cos(angle);
-      child.y = node.y + radius * Math.sin(angle);
+      child.x = node.x + radius * Math.cos(angles[i]);
+      child.y = node.y + radius * Math.sin(angles[i]);
+      placed.add(child);
       queue.push(child);
     });
   }
+}
+
+// Угол i-го из count детей: весь круг начиная с start либо дуга с серединой на start.
+function ringAngle(i, count, start, arc) {
+  if (count === 1) return start;
+  if (arc >= TWO_PI - 1e-6) return start + i * (TWO_PI / count);
+  return start + arc * (i / (count - 1) - 0.5);
+}
+
+/* Порядок детей на кольце с учётом связей, уходящих в ДРУГИЕ ветки графа.
+
+   Раньше кольцо всегда начиналось сверху, и персонаж, связанный с чужим
+   кластером, мог оказаться на дальней от него стороне — нить шла через весь
+   свой кластер под чужими маркерами (Мина ↔ Райден, 15.09.2026). Теперь для
+   каждого ребёнка считается направление на его внешних союзников (и на
+   союзников всего его поддерева: сюжет с таким персонажем тоже поворачивается
+   к нужной стороне), и из вариантов «повернуть кольцо / отразить / сдвинуть
+   по дуге» выбирается тот, где дети смотрят туда, куда уходят их нити, а
+   союзники-соседи по кольцу остаются рядом.
+
+   Союзник, которого ещё не расставили (обход идёт сверху вниз), берётся по
+   ближайшему уже стоящему предку — корню его кластера или его сюжету.
+   Нет внешних связей — null, кольцо встаёт как раньше. */
+function orientRing(node, children, outward, arc, placed) {
+  const n = children.length;
+  const inside = new Set(subtreeNodes(node));
+  const anchorOf = (other) => {
+    let cur = other;
+    while (cur && !placed.has(cur)) cur = cur.parent;
+    return cur;
+  };
+  const prefs = children.map(child => {
+    let vx = 0, vy = 0;
+    subtreeNodes(child).forEach(m => m.links.forEach(other => {
+      if (!other.onMap || inside.has(other)) return;
+      const anchor = anchorOf(other);
+      if (!anchor) return;
+      const dx = anchor.x - node.x, dy = anchor.y - node.y, d = Math.hypot(dx, dy);
+      if (d < 1e-6) return;
+      vx += dx / d; vy += dy / d;
+    }));
+    const weight = Math.hypot(vx, vy);
+    return weight > 1e-6 ? {angle: Math.atan2(vy, vx), weight} : null;
+  });
+  if (!prefs.some(Boolean)) return null;
+
+  const index = new Map(children.map((c, i) => [c, i]));
+  const siblingPairs = [];
+  children.forEach((c, i) => c.links.forEach(other => {
+    const j = index.get(other);
+    if (j > i) siblingPairs.push([i, j]);
+  }));
+
+  const full = arc >= TWO_PI - 1e-6;
+  const candidates = [];
+  [1, -1].forEach(dir => {
+    if (full) {
+      // Поворот всего кольца мелким шагом (и зеркально): порядок соседей не рвётся.
+      const steps = Math.max(16, n * 4);
+      for (let k = 0; k < steps; k++) {
+        const start = outward + k * TWO_PI / steps;
+        candidates.push(children.map((_, i) => start + dir * i * (TWO_PI / n)));
+      }
+    } else {
+      // Дуга: циклический сдвиг порядка (и зеркально). Разрыв группы союзников
+      // на концах дуги штрафуется ниже.
+      for (let s = 0; s < n; s++) {
+        candidates.push(children.map((_, i) => {
+          const slot = (i + s) % n;
+          return ringAngle(dir > 0 ? slot : n - 1 - slot, n, outward, arc);
+        }));
+      }
+    }
+  });
+
+  let best = null;
+  candidates.forEach(angles => {
+    let cost = 0;
+    prefs.forEach((p, i) => { if (p) cost += p.weight * (1 - Math.cos(angles[i] - p.angle)); });
+    siblingPairs.forEach(([i, j]) => { cost += 0.5 * (1 - Math.cos(angles[i] - angles[j])); });
+    // Строго меньше: при равенстве остаётся первый вариант — прежняя раскладка.
+    if (!best || cost < best.cost - 1e-9) best = {cost, angles};
+  });
+  return best.angles;
 }
 
 /* Релаксация всего графа разом (а не каждого дерева по отдельности): два
@@ -310,11 +433,47 @@ function placeChildren(roots) {
      2) пружина вдоль союза — ещё слабее, подтягивает союзников друг к другу;
      3) расталкивание всех со всеми.
    Последние проходы идут БЕЗ пружин: пружина, отработав последней, могла бы
-   снова втянуть узел в соседа, и итог был бы с наездами. */
-function relax(nodes) {
+   снова втянуть узел в соседа, и итог был бы с наездами.
+
+   threads — нити, из-под которых выталкиваются чужие маркеры (clearThreads);
+   linkPull(a, b) — сила пружины союза для пары (0 — не тянуть). */
+function relax(nodes, threads, linkPull) {
   const move = (node, dx, dy) => {
     if (node.pinned) return;
     node.x += dx; node.y += dy;
+  };
+
+  /* Маркер, лежащий на чужой нити, отодвигается от неё поперёк, а нить (её
+     незакреплённые концы) — от него: половина на половину, закреплённое не
+     двигается. Проекция за концами отрезка не считается — там наезд на сам
+     конец, это дело separate(). */
+  const clearance = gap * LINE_CLEARANCE_SHARE;
+  const clearThreads = () => {
+    threads.forEach(({a, b}) => {
+      const vx = b.x - a.x, vy = b.y - a.y;
+      const len2 = vx * vx + vy * vy;
+      if (len2 < 1e-9) return;
+      nodes.forEach(c => {
+        if (c === a || c === b) return;
+        const s = ((c.x - a.x) * vx + (c.y - a.y) * vy) / len2;
+        if (s <= 0 || s >= 1) return;
+        let dx = c.x - (a.x + s * vx), dy = c.y - (a.y + s * vy);
+        let d = Math.hypot(dx, dy);
+        const need = radiusOf(c) + clearance;
+        if (d >= need) return;
+        if (d < 1e-6) { dx = -vy; dy = vx; d = Math.hypot(dx, dy); }
+        const ux = dx / d, uy = dy / d;
+        const lineMovable = !(a.pinned && b.pinned);
+        const cShare = c.pinned ? 0 : (lineMovable ? 0.5 : 1);
+        const push = (need - d) * RELAX_RATE;
+        move(c, ux * push * cShare, uy * push * cShare);
+        if (!lineMovable) return;
+        const lineShare = 1 - cShare;
+        // Конец ближе к маркеру сдвигается сильнее — так нить поворачивается, а не едет целиком.
+        move(a, -ux * push * lineShare * (1 - s), -uy * push * lineShare * (1 - s));
+        move(b, -ux * push * lineShare * s, -uy * push * lineShare * s);
+      });
+    });
   };
 
   const separate = () => {
@@ -347,17 +506,22 @@ function relax(nodes) {
     });
     nodes.forEach(node => {
       node.links.forEach(other => {
+        const strength = linkPull(node, other);
+        if (!strength) return;
         const rest = minDistance(node, other);
         const dx = node.x - other.x, dy = node.y - other.y;
         const d = Math.hypot(dx, dy) || 1e-6;
         if (d <= rest) return; // ближе не тянем, этим занимается расталкивание
-        const pull = (d - rest) * LINK_PULL;
+        const pull = (d - rest) * strength;
         move(node, -dx / d * pull, -dy / d * pull);
       });
     });
+    clearThreads();
     separate();
   }
-  for (let pass = 0; pass < RELAX_SETTLE; pass++) separate();
+  // Расталкивание — последним: нить из-под маркера можно не дотолкать, а вот
+  // маркеры друг на друга налезать не должны никогда.
+  for (let pass = 0; pass < RELAX_SETTLE; pass++) { clearThreads(); separate(); }
 }
 
 /* Список нитей: kind 'parent' — сплошная нить к родителю, 'link' —
@@ -372,7 +536,11 @@ function relax(nodes) {
    не помнить, где они были когда-то. Набор рёбер при этом у обеих раскладок
    ОДИН И ТОТ ЖЕ (связи-то не меняются, меняются только координаты), поэтому
    считается он тоже один раз. */
-function buildThreads(nodes) {
+const linkKey = (a, b) => a.id < b.id ? `${a.id}|${b.id}` : `${b.id}|${a.id}`;
+
+/* far — ключи далёких на карте союзов (см. MAP_LINK_REACH): у таких нитей
+   far = true, map.js рисует их только в режиме нод. */
+function buildThreads(nodes, far = new Set()) {
   const threads = [];
   nodes.forEach(node => {
     if (node.parent && node.parent.onMap) {
@@ -384,10 +552,10 @@ function buildThreads(nodes) {
   nodes.forEach(node => {
     node.links.forEach(other => {
       if (!other.onMap) return; // союзник живёт вне карты — нить рисовать не к чему
-      const key = node.id < other.id ? `${node.id}|${other.id}` : `${other.id}|${node.id}`;
+      const key = linkKey(node, other);
       if (drawn.has(key)) return;
       drawn.add(key);
-      threads.push({kind: 'link', a: node, b: other});
+      threads.push({kind: 'link', a: node, b: other, far: far.has(key)});
     });
   });
   return threads;
@@ -398,8 +566,15 @@ function buildThreads(nodes) {
 export function layoutNodes(byId) {
   const nodes = [...byId.values()].filter(n => n.onMap);
   placeTree(nodes.filter(n => !n.parent));
-  relax(nodes);
-  return buildThreads(nodes);
+  // Далёкость — по стартовой раскладке, ДО пружин: иначе пружина сама и
+  // стянула бы союзников в «ближних».
+  const far = new Set();
+  nodes.forEach(node => node.links.forEach(other => {
+    if (other.onMap && Math.hypot(node.x - other.x, node.y - other.y) > MAP_LINK_REACH) far.add(linkKey(node, other));
+  }));
+  const threads = buildThreads(nodes, far);
+  relax(nodes, threads.filter(t => !t.far), (a, b) => far.has(linkKey(a, b)) ? 0 : LINK_PULL);
+  return threads;
 }
 
 /* ============================================================
@@ -435,10 +610,10 @@ const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
    лучше оставить лишний просвет, чем получить наложение двух сюжетов. */
 function subtreeRadius(node) {
   const children = node.children.filter(c => c.onMap);
-  if (!children.length) return node.size / 2;
-  const childSize = Math.max(...children.map(c => c.size));
+  if (!children.length) return radiusOf(node);
+  const childR = Math.max(...children.map(radiusOf));
   const arc = node.parent ? CHILD_ARC : TWO_PI;
-  return ringRadius(node.size, childSize, children.length, arc)
+  return ringRadius(radiusOf(node), childR, children.length, arc)
        + Math.max(...children.map(subtreeRadius));
 }
 
@@ -480,24 +655,49 @@ function subtreeRadius(node) {
    всё равно пересчитается (graphViewWidth в map.js) и всё останется видно —
    просто уже не так плотно. Пересчитывать всю раскладку на поворот не стали:
    узлы бы прыгнули на новые места, а это дороже потерянной плотности. */
+/* ⚠️ Кластеры, между которыми есть союзы (15.09.2026), ставятся ВПЛОТНУЮ друг к
+   другу: для такого корня перебирается PACK_CANDIDATES свободных мест, и из
+   них берётся то, где он ближе к уже поставленным союзным кластерам (с
+   поправкой на удалённость от центра — пятно не должно расползаться). Без
+   союзов — как раньше, первое свободное место. */
+const PACK_CANDIDATES = 60;
 function packRoots(roots, aspect) {
   const safeAspect = Math.min(2, Math.max(0.5, aspect || 1));
   const kx = Math.sqrt(safeAspect), ky = 1 / Math.sqrt(safeAspect);
+
+  const rootOf = (node) => { let cur = node; while (cur.parent) cur = cur.parent; return cur; };
+  const linkedRoots = new Map(roots.map(root => [root, new Map()]));
+  roots.forEach(root => subtreeNodes(root).forEach(m => m.links.forEach(other => {
+    if (!other.onMap) return;
+    const otherRoot = rootOf(other);
+    if (otherRoot === root || !linkedRoots.has(otherRoot)) return;
+    const counts = linkedRoots.get(root);
+    counts.set(otherRoot, (counts.get(otherRoot) || 0) + 1);
+  })));
+
   const placed = [];
   roots
     .map(root => ({root, r: subtreeRadius(root)}))
     .sort((a, b) => b.r - a.r)
     .forEach(({root, r}) => {
-      let x = 0, y = 0;
+      const links = linkedRoots.get(root);
+      const partners = placed.filter(p => links.has(p.root));
+      let best = null, found = 0;
       for (let t = 0; t < GRAPH_VIEW_SEED_TRIES; t++) {
         const angle = t * GOLDEN_ANGLE;
         const d = GRAPH_VIEW_SEED_STEP * Math.sqrt(t);
-        x = d * Math.cos(angle) * kx;
-        y = d * Math.sin(angle) * ky;
-        if (placed.every(p => Math.hypot(p.x - x, p.y - y) >= p.r + r + GRAPH_VIEW_ROOT_GAP)) break;
+        const x = d * Math.cos(angle) * kx;
+        const y = d * Math.sin(angle) * ky;
+        if (!placed.every(p => Math.hypot(p.x - x, p.y - y) >= p.r + r + GRAPH_VIEW_ROOT_GAP)) continue;
+        if (!partners.length) { best = {x, y}; break; }
+        const cost = d + partners.reduce((sum, p) =>
+          sum + links.get(p.root) * (Math.hypot(p.x - x, p.y - y) - p.r - r), 0);
+        if (!best || cost < best.cost) best = {x, y, cost};
+        if (++found >= PACK_CANDIDATES) break;
       }
-      root.x = x; root.y = y;
-      placed.push({x, y, r});
+      if (!best) best = {x: 0, y: 0};
+      root.x = best.x; root.y = best.y;
+      placed.push({root, x: best.x, y: best.y, r});
     });
 }
 
@@ -521,17 +721,19 @@ export function layoutGraphView(byId, cx, cy, aspect) {
 
   const roots = nodes.filter(n => !n.parent);
   packRoots(roots, aspect);
-  placeChildren(roots);
+  placeChildren(roots, true);
   // Корни остаются pinned (упаковка уже развела их без пересечений) — релаксация
-  // тут работает только внутри кластеров, доводя кольца детей.
-  relax(nodes);
+  // тут работает только внутри кластеров, доводя кольца детей. Здесь рисуются
+  // ВСЕ союзы, в том числе далёкие на карте, — их нити и расчищаем.
+  relax(nodes, buildThreads(nodes), (a, b) => a.parent === b.parent ? LINK_PULL : CROSS_LINK_PULL);
 
   // Габариты — с учётом самих маркеров, а не только их центров: иначе крайний
   // узел наполовину вылезал бы за кадр, на который наведётся камера.
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   nodes.forEach(n => {
-    x0 = Math.min(x0, n.x - n.size / 2); x1 = Math.max(x1, n.x + n.size / 2);
-    y0 = Math.min(y0, n.y - n.size / 2); y1 = Math.max(y1, n.y + n.size / 2);
+    const hw = radiusOf(n), hh = n.size / 2;
+    x0 = Math.min(x0, n.x - hw); x1 = Math.max(x1, n.x + hw);
+    y0 = Math.min(y0, n.y - hh); y1 = Math.max(y1, n.y + hh);
   });
   const dx = cx - (x0 + x1) / 2, dy = cy - (y0 + y1) / 2;
   nodes.forEach(n => { n.x += dx; n.y += dy; });

@@ -1,14 +1,14 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=108';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=108';
-import { openSystem, slugify } from './system-view.js?v=108';
-import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=108';
-import { initEditor, canEditNodes, showNodeEditor } from './editor.js?v=108';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=108';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=108';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks } from './graph.js?v=108';
+import { createPanZoom } from './panzoom.js?v=112';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=112';
+import { openSystem, slugify } from './system-view.js?v=112';
+import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=112';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=112';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=112';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=112';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=112';
 
 const SVG_PATH = 'map.svg';
 
@@ -812,9 +812,11 @@ function finishMapPick(p) {
      border (см. renderNodes ниже: event проверяется первым). Один источник
      правды вместо разбросанных по коду проверок конкретных id — привяжут
      новую локацию с этим полем, форма подхватится сама. */
+  // Ширина широкого квадрата — из graph.js: раскладке она нужна та же самая,
+  // иначе маркер налезает на соседей (15.09.2026).
   const LOCATION_BORDER = {
     circle:       {shape: 'circle', aspect: 1},
-    'wide-square': {shape: 'square', aspect: 1.6},
+    'wide-square': {shape: 'square', aspect: LOCATION_ASPECT['wide-square']},
     hexagon:      {shape: 'hexagon', aspect: 1},
   };
 
@@ -963,7 +965,9 @@ function finishMapPick(p) {
   function renderThreads(threads) {
     threads.forEach(t => {
       const line = document.createElementNS(ns, 'line');
-      line.setAttribute('class', t.kind === 'link' ? 'map-thread link' : 'map-thread');
+      // .far — союз между точками на разных концах карты (MAP_LINK_REACH в
+      // graph.js): на карте такая нить не рисуется, только в режиме нод.
+      line.setAttribute('class', t.kind === 'link' ? `map-thread link${t.far ? ' far' : ''}` : 'map-thread');
       // Координаты не проставляем здесь: нить знает только СВОИ УЗЛЫ (t.a/t.b,
       // см. buildThreads в graph.js), а конкретные числа ставит
       // applyGraphPositions() — и при первой отрисовке, и в каждом кадре
@@ -1186,6 +1190,11 @@ function finishMapPick(p) {
     // и `.graphics-mode` в css/styles.css. Камера/позиции узлов при этом не
     // меняются — это тот же вид, что "Карта", только с другим CSS.
     svg.classList.toggle('graphics-mode', viewMode === 'graphics');
+    /* Далёкие союзы (.map-thread.far) видны только при `.nodes-mode.far-links`:
+       nodes-mode ставится ПОСЛЕ затухания карты (узлы уже слетаются), а
+       far-links снимается СРАЗУ при уходе из нод — длинная нить не мелькает
+       поверх карты ни в одну сторону. */
+    svg.classList.toggle('far-links', viewMode === 'nodes');
     // Качаем тайлы фона только когда в режим реально зашли (см.
     // requestGraphicsTiles выше) — до этого момента ноль байт.
     if (viewMode === 'graphics') requestGraphicsTiles();
@@ -1325,6 +1334,10 @@ function finishMapPick(p) {
     loadJsonList(STORIES_PATH),
     loadJsonList(CHARACTERS_PATH),
   ]).then(([markers, stories, characters]) => {
+    // Свои отправленные, но ещё не доехавшие до GitHub Pages правки редактора
+    // (js/editor.js) — поверх скачанных файлов и ДО раскладки: новая привязка
+    // или место должны попасть в расчёт позиций.
+    const pendingShown = applyPendingEdits({location: markers, story: stories, character: characters});
     const graph = buildNodes([
       {kind: 'location', items: markers},
       {kind: 'story', items: stories},
@@ -1356,6 +1369,7 @@ function finishMapPick(p) {
     applyGraphPositions();
     wireStoryWindows(graph);
     wireEditor(graph);
+    if (pendingShown) showPendingToast();
 
     // Сохранённый режим применяем без анимации: страница только что
     // открылась, перелетать не от чего.
@@ -1377,9 +1391,20 @@ function finishMapPick(p) {
   document.getElementById('pickBannerCancel').addEventListener('click', () => { if (pickCancel) pickCancel(); });
 
   function wireEditor(graph) {
-    const reopen = (char) => {
+    // Пока идёт выбор места, кнопка «✏️ Мои персонажи» внизу карты спрятана
+    // (.is-picking в css): открыть список посреди выбора — потерять форму.
+    const showPickBanner = (text) => {
+      pickBannerText.textContent = text;
+      pickBanner.hidden = false;
+      document.body.classList.add('is-picking');
+    };
+    const hidePickBanner = () => {
       pickBanner.hidden = true;
       pickCancel = null;
+      document.body.classList.remove('is-picking');
+    };
+    const reopen = (char) => {
+      hidePickBanner();
       const node = graph.get(char.id);
       if (node) openNode(node, {edit: true});
     };
@@ -1393,23 +1418,24 @@ function finishMapPick(p) {
       closeLayers();
       closePhenom();
       if (viewMode === 'nodes') setViewMode('map', true);
-      pickBannerText.textContent = `📍 Тапни, где стоит ${label}`;
-      pickBanner.hidden = false;
-      const back = () => { pickBanner.hidden = true; pickCancel = null; reopenForm(); };
+      showPickBanner(`📍 Тапни, где стоит ${label}`);
+      const back = () => { hidePickBanner(); reopenForm(); };
       mapPickHandler = (p) => { onPick(p); back(); };
       pickCancel = () => { mapPickHandler = null; back(); };
     };
     initEditor({
       graph,
       pickPlace,
+      openCharacterEditor(node) {
+        openNode(node, {edit: true});
+      },
       pickOnMap(char, onPick) {
         pickPlace(char.name || 'персонаж', onPick, () => reopen(char));
       },
       pickOnSubmap(char, locationNode, onPick) {
         closeLayers();
         openSubmapNode(locationNode);
-        pickBannerText.textContent = `🏙 Тапни, где на карте «${nodeTitle(locationNode)}» стоит ${char.name || 'персонаж'}`;
-        pickBanner.hidden = false;
+        showPickBanner(`🏙 Тапни, где на карте «${nodeTitle(locationNode)}» стоит ${char.name || 'персонаж'}`);
         const done = () => { if (isPhenomOpen()) closePhenom(); reopen(char); };
         // Третий путь, кроме тапа и «Отмены»: окно закрыли ✕/«назад» —
         // closePhenom сам вызовет onAbort, и мы вернёмся к форме.

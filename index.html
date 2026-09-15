@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=108" />
+  <link rel="stylesheet" href="css/styles.css?v=112" />
 </head>
 <body>
 
@@ -64,6 +64,11 @@
     <button id="helpBtn" class="map-tool-btn" title="Как пользоваться картой">?</button>
   </div>
   <div class="calib-panel" id="calibPanel"></div>
+  <!-- Редактор (js/editor.js): кнопка списка «что можно править» — только в
+       карте, открытой кнопкой из лички бота, — и подсказка, что свои
+       сохранённые правки уже показаны, хотя у остальных ещё нет. -->
+  <div class="editor-toast" id="editorToast" role="status" hidden></div>
+  <button type="button" class="editor-fab" id="editorFab" hidden></button>
 </div>
 
 <!-- Единая панель перекрёстной навигации между статьями-справочниками (Феном/
@@ -247,6 +252,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=108"></script>
+<script type="module" src="js/main.js?v=112"></script>
 </body>
 </html>

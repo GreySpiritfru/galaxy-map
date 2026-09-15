@@ -5,10 +5,19 @@
    поверх статьи. Используется отовсюду: map.js (маркеры), system-view.js
    (лор системы), articles.js (статьи-справочники), onboarding.js.
    ============================================================ */
+/* ⚠️ Кавычки экранируются тоже: результат подставляется не только в текст, но и
+   в атрибуты (src="…" анкеты, title="…" с именем, value="…" в редакторе), а
+   имена и ссылки пишут сами игроки через редактор. Раньше тут был приём с
+   div.textContent → innerHTML, который кавычки НЕ экранирует: `"` в ссылке на
+   анкету закрывал атрибут, и дальше можно было дописать свой обработчик
+   события — чужой код у каждого, кто откроет окно (15.09.2026). */
 export function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str == null ? '' : String(str);
-  return div.innerHTML;
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 const modalBackdrop = document.getElementById('modalBackdrop');

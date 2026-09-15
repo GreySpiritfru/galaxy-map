@@ -296,6 +296,155 @@ html, body {
   font-size: 13px;
 }
 
+/* Кнопка «✏️ Мои персонажи» / «✏️ Редактор» внизу карты — под большой палец.
+   Окна (250+) её перекрывают сами; на время выбора места прячем (.is-picking). */
+.editor-fab {
+  position: absolute;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 25;
+  padding: 11px 20px;
+  border: none;
+  border-radius: 999px;
+  background: #AFEEEE;
+  color: #0e0e14;
+  font-family: sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  cursor: pointer;
+}
+.editor-fab[hidden],
+.is-picking .editor-fab { display: none; }
+/* Поверх открытых окон кнопка просвечивала бы сквозь прозрачный фон модала.
+   Где :has не поддерживается, она просто остаётся видна — тап всё равно
+   попадает в фон окна. */
+body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .editor-fab,
+body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .editor-toast { display: none; }
+
+.editor-toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 25;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(14,14,20,0.92);
+  box-shadow: inset 0 0 0 1.5px rgba(175,238,238,0.6);
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+}
+.editor-toast[hidden] { display: none; }
+
+.editor-pending {
+  margin: -4px 0 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(175,238,238,0.1);
+  color: rgba(255,255,255,0.8);
+  font-size: 12px;
+}
+
+/* Союзники по сюжетам/локациям. */
+.editor-links-group + .editor-links-group { margin-top: 10px; }
+.editor-links-title {
+  margin: 0 0 6px;
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+}
+
+/* Список «что можно править» (showEditorList) — в обычном модале. */
+.editor-list .editor-hint { margin-top: 0; }
+.editor-search {
+  position: sticky;
+  top: -16px; /* прилипает к краю карточки, у которой свой padding 16px */
+  z-index: 1;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: #15151d;
+  color: #fff;
+  font-size: 15px; /* ≥15px — иначе iOS зумит страницу при фокусе */
+}
+.editor-list-section[hidden],
+.editor-item[hidden] { display: none; }
+.editor-list-title {
+  margin: 12px 0 6px;
+  color: #AFEEEE;
+  font-size: 13px;
+}
+.editor-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.editor-item:active { background: rgba(175,238,238,0.16); }
+.editor-item-avatar {
+  position: relative;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: rgba(175,238,238,0.14);
+  box-shadow: inset 0 0 0 1.5px #AFEEEE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #AFEEEE;
+  font-weight: 700;
+}
+.editor-item-avatar.is-round {
+  border-radius: 50%;
+  background: rgba(255,215,106,0.14);
+  box-shadow: inset 0 0 0 1.5px #ffd76a;
+  color: #ffd76a;
+}
+.editor-item-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.editor-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.editor-item-name,
+.editor-item-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-item-sub {
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+}
+
 /* Включённый тумблер в меню инструментов (🏷️, 📍) — тот же "нажатый" вид,
    что и у активной статьи в таб-баре. */
 .svg-controls button.active {
@@ -572,6 +721,38 @@ html, body {
   font-weight: 700;
   margin: 0 26px 8px 0;
 }
+
+/* Подсказка «?» (js/onboarding.js). */
+.help { line-height: 1.4; }
+.help-logo {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  aspect-ratio: 1280 / 523; /* место под лого заранее — текст не прыгает, пока грузится */
+  margin: 4px auto 12px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+.help-section { margin: 10px 0 0; }
+.help-heading {
+  margin-bottom: 4px;
+  color: #AFEEEE;
+  font-weight: 700;
+}
+.help ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.help li { margin: 3px 0; }
+.help-footer {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.45);
+  font-size: 11px;
+  text-align: center;
+}
+.help-footer a { color: #AFEEEE; }
 
 /* ===== П.3: полноэкранный просмотр системы ===== */
 .system-overlay {
@@ -1217,6 +1398,10 @@ html, body {
   stroke: rgba(255,215,106,0.45);
   stroke-dasharray: 0.7 0.7;
 }
+/* Союз между точками на разных концах карты (MAP_LINK_REACH в js/graph.js) —
+   только в режиме нод, на карте он тянулся бы через полкарты. */
+.map-thread.far { display: none; }
+svg.nodes-mode.far-links .map-thread.far { display: inline; }
 
 /* Группа связанных между собой персонажей внутри окна сюжета — визуальный
    аналог нити между ними на карте (см. groupByLinks в js/stories.js). */
