@@ -1,14 +1,14 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=116';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=116';
-import { openSystem, slugify } from './system-view.js?v=116';
-import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=116';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=116';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=116';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=116';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=116';
+import { createPanZoom } from './panzoom.js?v=117';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=117';
+import { openSystem, slugify } from './system-view.js?v=117';
+import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=117';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=117';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=117';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=117';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=117';
 
 const SVG_PATH = 'map.svg';
 

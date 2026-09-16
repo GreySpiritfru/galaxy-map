@@ -479,11 +479,11 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 }
 
 /* Стоп анимации: во время жеста (каждый кадр и так перерисовывается вся сцена,
-   грабли №15), в режиме экономии 🏷️ (слабые устройства) и если в системе
-   просили меньше движения. Прячем совсем, а не ставим на паузу — застывший
+   грабли №15) и если в системе просили меньше движения. В режиме 🏷️ маяки
+   остаются (16.09.2026, по просьбе игрока): по замеру они в покое ничего не
+   стоят, а без них сюжеты на карте не найти. Прячем совсем, а не ставим на паузу — застывший
    кадр с полупрозрачным кольцом выглядел бы как артефакт. */
-.svg-widget svg.panning .story-beacon,
-.svg-widget svg.labels-minimal .story-beacon { display: none; }
+.svg-widget svg.panning .story-beacon { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .story-beacon { display: none; }
 }
