@@ -1,0 +1,31 @@
+<svg id="exportSystemMap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-600 -600 1200 1200" width="2048" height="2048"><rect class="bg-rect" x="-600" y="-600" width="1200" height="1200" fill="rgb(0, 0, 0)"></rect><defs><filter id="glow" filterUnits="objectBoundingBox" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="2"></feGaussianBlur></filter><filter id="starGlow" filterUnits="objectBoundingBox" x="-500%" y="-500%" width="1100%" height="1100%"><feGaussianBlur in="SourceGraphic" stdDeviation="10"></feGaussianBlur></filter></defs><g> <circle cx="0" cy="0" r="73.18" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="-8.56279" cy="-72.87044" r="17.76" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="125.39" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="-79.496" cy="96.98164" r="15.23" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle> <circle fill="#FFFFFF" r="6.164414002968976" cx="0" cy="0" filter="url(#starGlow)"></circle>  <circle fill="rgb(0, 0, 0)" r="6.164414002968976" cx="0" cy="0" filter=""></circle> <circle fill="rgb(156, 91, 45)" r="3.4641016151377544" cx="-8.56279" cy="-72.87044"></circle><path d="
+			M 0 3.4641016151377544
+			A 3.4641016151377544 3.4641016151377544 0 0 0 0 -3.4641016151377544
+			A 1.7320508075688772 3.4641016151377544 0 0 1 0 3.4641016151377544
+			Z
+		" transform=" translate(-8.56279 -72.87044) rotate(263.2980760598461)" fill="#000000" opacity="0.5"></path><circle fill="rgb(131, 150, 156)" r="2.449489742783178" cx="-24.61942" cy="-80.4774"></circle><path d="
+			M 0 2.449489742783178
+			A 2.449489742783178 2.449489742783178 0 0 0 0 -2.449489742783178
+			A 1.224744871391589 2.449489742783178 0 0 1 0 2.449489742783178
+			Z
+		" transform=" translate(-24.61942 -80.4774) rotate(252.9902278659861)" fill="#000000" opacity="0.5"></path><circle fill="rgb(156, 91, 45)" r="3.605551275463989" cx="-79.496" cy="96.98164"></circle><path d="
+			M 0 3.605551275463989
+			A 3.605551275463989 3.605551275463989 0 0 0 0 -3.605551275463989
+			A 1.8027756377319946 3.605551275463989 0 0 1 0 3.605551275463989
+			Z
+		" transform=" translate(-79.496 96.98164) rotate(129.3415261254773)" fill="#000000" opacity="0.5"></path><circle fill="rgb(131, 150, 156)" r="2.449489742783178" cx="-94.6864" cy="98.56418"></circle><path d="
+			M 0 2.449489742783178
+			A 2.449489742783178 2.449489742783178 0 0 0 0 -2.449489742783178
+			A 1.224744871391589 2.449489742783178 0 0 1 0 2.449489742783178
+			Z
+		" transform=" translate(-94.6864 98.56418) rotate(133.8504530492445)" fill="#000000" opacity="0.5"></path><defs><path id="planetLabelPath3055" d="M 11.164414002968975 0 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath3055" startOffset="0" dominant-baseline="middle" text-anchor="start">Предел Федерации</textPath></text><defs><path id="planetLabelPath3056" d="M -0.09868838486224618 -72.87044 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath3056" startOffset="0" dominant-baseline="middle" text-anchor="start">Предел Федерации I</textPath></text><defs><path id="planetLabelPath3057" d="M -17.169930257216823 -80.4774 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath3057" startOffset="0" dominant-baseline="middle" text-anchor="start">Eiserne Bastion</textPath></text><defs><path id="planetLabelPath3058" d="M -70.890448724536 96.98164 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath3058" startOffset="0" dominant-baseline="middle" text-anchor="start">Предел Федерации II</textPath></text><defs><path id="planetLabelPath3059" d="M -87.23691025721683 98.56418 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath3059" startOffset="0" dominant-baseline="middle" text-anchor="start">Пограничная станция</textPath></text><g fill="rgb(51, 127, 91)"><path d="
+				M -224.5028696064673 332.4130886990786
+				L -172.40828107899978 362.1814250004887
+				L -208.3783541098702 364.6621196922728
+				Z
+			"></path><defs><path id="connectionLabelPath343" pathLength="1" d="M -630.0964517131789 94.88657196074448 L 238.14669041128022 591.0255103175782"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath343" startOffset="0.5" text-anchor="middle" dominant-baseline="auto">Орим</textPath></text></g><g fill="rgb(51, 127, 91)"><path d="
+				M -367.63282980456376 -160.45592058222303
+				L -387.45385528825017 -103.824419200262
+				L -396.42050967372734 -138.74717838580466
+				Z
+			"></path><defs><path id="connectionLabelPath5" pathLength="1" d="M -537.99926312863 341.44076041540666 L -207.6488384005238 -602.4175959506107"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath5" startOffset="0.5" text-anchor="middle" dominant-baseline="hanging">?-UX71</textPath></text></g></g><g transform="translate(-600 -600) scale(1.2)"></g></svg>

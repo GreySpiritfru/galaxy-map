@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Карта галактики — Феном</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Карта Феном — огромная растровая иллюстрация (21284x9902px), порезана офлайн
+       на тайлы (Deep Zoom Image, см. phenom-tiles/) и рендерится через OpenSeadragon:
+       грузятся только видимые тайлы нужного уровня приближения, а не вся картинка
+       разом (та же проблема, что уже возникала с 4096px-текстурой в map.svg, только
+       на порядок крупнее — тайлы решают её в принципе, а не переносом лимита). -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/5.0.1/openseadragon.min.js"></script>
+  <!-- Самый тяжёлый файл на странице (~2.7 МБ после пережатия подложки в WebP,
+       см. tools/optimize-map-svg.py) — без preload браузер начинает качать его
+       только после разбора HTML и выполнения JS до строки с fetch() в map.js;
+       так эта загрузка стартует параллельно с остальным. -->
+  <link rel="preload" href="map.svg" as="fetch" crossorigin />
+  <link rel="stylesheet" href="css/styles.css?v=112" />
+</head>
+<body>
+
+<div class="svg-widget" id="svgWidget">
+  <div class="svg-controls" id="controls">
+    <!-- Раньше тут стопкой висели 4 отдельные кнопки статей-справочников. Теперь
+         одна 📖: она открывает "Описание галактики", а дальше по всем остальным
+         статьям ходят пристыкованным таб-баром (#refToolbar) прямо внутри
+         статьи — отдельные кнопки в углу карты для этого больше не нужны.
+         🚀 стоит слева от неё и ведёт не в статью, а в само место — карту
+         корабля-города (это навигация, а не справка, поэтому отдельной кнопкой). -->
+    <!-- .controls-main — общая колонка для 🚀/📖 и переключателя режима: оба
+         ряда растягиваются до ширины более широкого из них, поэтому Феном со
+         Справочником всегда ровно той же ширины, что и "Ноды | Карта | Графика". -->
+    <div class="controls-main">
+    <div class="controls-row">
+      <button id="gotoPhenom" class="corner-btn" title="Корабль-город Феном">
+        <span aria-hidden="true">🚀</span><span class="corner-btn-label">Феном</span>
+      </button>
+      <button id="openHandbook" class="corner-btn" data-ref="galaxy" title="Справочник">
+        <span aria-hidden="true">📖</span><span class="corner-btn-label">Справочник</span>
+      </button>
+    </div>
+    <!-- Переключатель режима просмотра (как слои на обычных картах), см.
+         setViewMode в js/map.js. "Карта" — обычная карта галактики (с
+         политической раскраской StellarMaps), "Ноды" — тот же граф связей,
+         собранный компактным кластером без самой карты. "Графика" (15.09.2026)
+         — та же карта и камера, что и "Карта", но со скрытой политической
+         раскраской (границы/заливка территорий, названия фракций) — см.
+         classifyPoliticalOverlay в js/map.js и .graphics-mode в
+         css/styles.css. -->
+    <div class="view-switch" id="viewSwitch" role="group" aria-label="Режим просмотра карты">
+      <button class="view-switch-btn" data-view="nodes" title="Граф связей: все точки и их связи, без самой карты">Ноды</button>
+      <button class="view-switch-btn active" data-view="map" title="Карта галактики">Карта</button>
+      <button class="view-switch-btn" data-view="graphics" title="Карта без политической раскраски — только фон, гиперлейны и названия систем">Графика</button>
+    </div>
+    </div>
+    <!-- Меню "⋯" (зум ＋/－, сброс вида, калибровка 📍) убрано 15.09.2026: зум
+         и так жестами, а калибровка переедет в будущий редактор нод (её код в
+         js/map.js оставлен, просто без кнопки). Из меню осталась только 🏷️ —
+         отдельной кнопкой под переключателем режима, над "?".
+         .svg-controls — колонка с align-items:flex-end, поэтому обе кнопки
+         встают у правого края на любой ширине экрана. -->
+    <button id="labelsToggle" class="map-tool-btn" title="Показывать только готовые системы (быстрее на слабых устройствах)">🏷️</button>
+    <button id="helpBtn" class="map-tool-btn" title="Как пользоваться картой">?</button>
+  </div>
+  <div class="calib-panel" id="calibPanel"></div>
+  <!-- Редактор (js/editor.js): кнопка списка «что можно править» — только в
+       карте, открытой кнопкой из лички бота, — и подсказка, что свои
+       сохранённые правки уже показаны, хотя у остальных ещё нет. -->
+  <div class="editor-toast" id="editorToast" role="status" hidden></div>
+  <button type="button" class="editor-fab" id="editorFab" hidden></button>
+</div>
+
+<!-- Единая панель перекрёстной навигации между статьями-справочниками (Феном/
+     Расы/Магический лор/Технологии/Описание галактики). Сама по себе нигде не
+     показывается (см. .ref-toolbar { display:none } ) — существует только чтобы
+     её пристыковать в #modalCard через openIframeModal, как и .system-toolbar/
+     .phenom-toolbar. Наполнение и клики — см. REF_ARTICLES в js/articles.js. -->
+<div class="ref-toolbar lore-toolbar tabbar" id="refToolbar">
+  <button class="toolbar-close-btn" id="refToolbarClose" aria-label="Закрыть">✕</button>
+  <!-- Феном занимает двойную ячейку и разделён надвое: левая половина —
+       статья про него (как у остальных вкладок), правая — переход в само
+       место, на карту корабля-города (закрывает статью, наводит камеру на
+       маркер и открывает окно Феном, см. #refPhenomMap в js/map.js). -->
+  <div class="tabbar-split">
+    <button class="tabbar-btn" data-ref="phenom">
+      <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Феном</span>
+    </button>
+    <button class="tabbar-btn" id="refPhenomMap" title="Перейти на карту Фенома">
+      <span class="tabbar-btn-icon" aria-hidden="true">🚀</span><span class="tabbar-btn-label">Карта</span>
+    </button>
+  </div>
+  <button class="tabbar-btn" data-ref="races">
+    <span class="tabbar-btn-icon" aria-hidden="true">🧬</span><span class="tabbar-btn-label">Расы</span>
+  </button>
+  <button class="tabbar-btn" data-ref="magic">
+    <span class="tabbar-btn-icon" aria-hidden="true">🔮</span><span class="tabbar-btn-label">Магия</span>
+  </button>
+  <button class="tabbar-btn" data-ref="tech">
+    <span class="tabbar-btn-icon" aria-hidden="true">🔧</span><span class="tabbar-btn-label">Техника</span>
+  </button>
+  <button class="tabbar-btn" data-ref="galaxy">
+    <span class="tabbar-btn-icon" aria-hidden="true">🌌</span><span class="tabbar-btn-label">Галактика</span>
+  </button>
+</div>
+
+<!-- Панель персонажа. Механизм тот же, что у #refToolbar: сама по себе нигде
+     не показывается, а пристыковывается внутрь #modalCard через
+     openIframeModal. Отличие в наполнении — это не переход между статьями, а
+     вкладки одного персонажа: анкета (Teletype), связанный сюжет, заметки и
+     броски. Логика — js/characters.js, данные — characters.json. -->
+<div class="ref-toolbar lore-toolbar tabbar" id="charToolbar">
+  <button class="toolbar-close-btn" id="charToolbarClose" aria-label="Закрыть">✕</button>
+  <button class="tabbar-btn" id="charSheet">
+    <span class="tabbar-btn-icon" aria-hidden="true">📋</span><span class="tabbar-btn-label">Анкета</span>
+  </button>
+  <!-- Иконка/подпись НЕ зашиты — ставятся в map.js по типу родителя узла в
+       графе (PARENT_KIND_META): "Локация" для маркера (например, Ледо/Текила
+       привязаны прямо к Феному), "Сюжет" для сюжета. Кнопка целиком прячется,
+       если родителя нет вообще. -->
+  <button class="tabbar-btn" id="charStory">
+    <span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>
+  </button>
+  <!-- Только у своих персонажей в карте, открытой из лички бота — js/editor.js. -->
+  <button class="tabbar-btn" id="charEdit" hidden>
+    <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
+  </button>
+  <button class="tabbar-btn" id="charNotes">
+    <span class="tabbar-btn-icon" aria-hidden="true">📝</span><span class="tabbar-btn-label">Заметки</span>
+  </button>
+  <button class="tabbar-btn" id="charRolls">
+    <span class="tabbar-btn-icon" aria-hidden="true">🎲</span><span class="tabbar-btn-label">Броски</span>
+  </button>
+</div>
+
+<!-- Полоска «тапни, где стоит персонаж» — выбор места в редакторе (js/editor.js,
+     pickOnMap/pickOnSubmap в js/map.js). Поверх и карты галактики, и окна локации. -->
+<div class="pick-banner" id="pickBanner" hidden>
+  <span id="pickBannerText"></span>
+  <button type="button" id="pickBannerCancel">Отмена</button>
+</div>
+
+<!-- Модал для "инфо"-точек (фракции/регионы) -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-card" id="modalCard">
+    <button class="modal-close" id="modalClose">×</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<!-- Полноэкранный вид отдельной системы. Меню — тот же таб-бар, что и у
+     #refToolbar (см. ниже): "Карта системы" — всегда активна, пока статья не
+     открыта, переключение никогда не пересоздаёт саму карту (#systemContainer
+     не трогается) — просто закрывает/открывает статью поверх.
+
+     ⚠️ Без ↩ рядом с ✕ — сознательно (12.09.2026, по замечанию игрока): тут
+     это буквально переключение между двумя равноправными вкладками в одном
+     ряду ("Карта системы"/"Контролирующая раса"), а не "чтение статьи, из
+     которой нужно куда-то выбираться" — вкладка сама по себе уже и есть
+     самый явный и понятный "путь назад", отдельная стрелка тут только
+     дублировала бы то, что видно и так. -->
+<div class="system-overlay" id="systemOverlay">
+  <div class="system-toolbar lore-toolbar tabbar">
+    <button class="toolbar-close-btn" id="systemBack" aria-label="Закрыть">✕</button>
+    <button class="tabbar-btn active" id="systemMapTab">
+      <span class="tabbar-btn-icon" aria-hidden="true">🗺️</span><span class="tabbar-btn-label">Карта системы</span>
+    </button>
+    <button class="tabbar-btn" id="systemLore">
+      <span class="tabbar-btn-icon" aria-hidden="true">👑</span><span class="tabbar-btn-label">Контролирующая раса</span>
+    </button>
+  </div>
+  <div id="systemContainer" style="position:absolute; inset:0; touch-action:none;"></div>
+</div>
+
+<!-- Окно-вкладыш "Корабль-город Феном" — открывается поверх карты галактики,
+     сама карта карта остаётся видна (затемнена) по краям. Внутри — карта Феном
+     (тайлы + OpenSeadragon, см. js/phenom.js). -->
+<div class="phenom-overlay" id="phenomOverlay">
+  <div class="phenom-card" id="phenomCard">
+    <!-- Меню окна локации — тот же таб-бар, что у статей-справочников и вида
+         системы (.tabbar, см. грабли №12). В разметке только крестик и
+         кнопка "Описание <локации>" (#phenomDescriptionTab — data-ref и
+         подпись подставляются под КОНКРЕТНУЮ локацию при каждом открытии,
+         см. setPhenomDescriptionTab в js/phenom.js, дефолт — Феном); вкладки
+         привязанных сюжетов дописываются СЮДА ЖЕ из графа связей
+         (setPhenomChildren в js/phenom.js) — руками их добавлять не надо,
+         привязка живёт в stories.json. -->
+    <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
+      <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть">✕</button>
+      <button class="tabbar-btn" id="phenomDescriptionTab" data-ref="phenom">
+        <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Описание Фенома</span>
+      </button>
+      <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
+      <button class="tabbar-btn" id="phenomEdit" hidden>
+        <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
+      </button>
+    </div>
+    <div class="phenom-content" id="phenomContent">
+      <!-- Персонажи, привязанные прямо к самой карте Феном (submapX/submapY в
+           characters.json) — кнопка слева сверху над картой открывает их
+           список, тап по пункту наводит вид OpenSeadragon на маркер. Список
+           наполняется из графа связей при каждом открытии окна, см.
+           openSubmapNode в js/map.js и setSubmapCharacters в js/phenom.js —
+           руками сюда ничего не добавляется. Кнопка прячется сама, если
+           таких персонажей пока нет. -->
+      <div class="phenom-char-nav" id="phenomCharNav" hidden>
+        <button class="phenom-char-nav-btn" id="phenomCharNavBtn" title="Персонажи на карте Феном">👥</button>
+        <div class="phenom-char-nav-list" id="phenomCharNavList" hidden></div>
+      </div>
+      <div class="phenom-viewer" id="phenomViewer"></div>
+      <!-- Содержимое для локаций без карты ("submap.type": "info", см.
+           markers.json/CLAUDE.md) — баннер(ы) + заголовок + сворачиваемое
+           описание, тот же визуальный язык, что у окна сюжета (переиспользует
+           .story-banner-img/.story-title/.story-accordion), только тут это не
+           сюжет, а локация без тайловой карты внутри (напр. "Кольцо Авалона").
+           Показывается ВМЕСТО #phenomViewer/#phenomCharNav, а не рядом — см.
+           openSubmap в js/phenom.js. -->
+      <div class="story-content phenom-info-content" id="phenomInfoContent" hidden></div>
+    </div>
+  </div>
+</div>
+
+<!-- Окно-вкладыш сюжетного маркера — тот же слой, что и "Феном" (карта под
+     ним видна, затемнена по краям), но содержимое текстовое, а не карта на
+     тайлах. Данные — из stories.json, см. js/stories.js. Меню переведено на
+     общий .tabbar (как у статей/системы/Феном/персонажа, см. грабли №12) —
+     раньше тут были широкие текстовые кнопки-пилюли (.story-action-btn),
+     единственное место в проекте, которое ещё не было на общем стиле. -->
+<div class="phenom-overlay story-overlay" id="storyOverlay">
+  <div class="phenom-card" id="storyCard">
+    <div class="phenom-toolbar lore-toolbar tabbar" id="storyToolbar">
+      <button class="toolbar-close-btn" id="storyClose" aria-label="Закрыть">✕</button>
+      <!-- Иконка/подпись НЕ зашиты — как и #charStory, ставятся в map.js по
+           типу родителя узла в графе (PARENT_KIND_META): "Локация" для
+           Феном/маркера, "Сюжет" для другого сюжета. Прячется, если
+           родителя нет. -->
+      <button class="tabbar-btn" id="storyParent">
+        <span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>
+      </button>
+      <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
+      <button class="tabbar-btn" id="storyEdit" hidden>
+        <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
+      </button>
+      <button class="tabbar-btn" id="storyArchive">
+        <span class="tabbar-btn-icon" aria-hidden="true">🗂️</span><span class="tabbar-btn-label">Архив</span>
+      </button>
+      <button class="tabbar-btn" id="storyTelegram">
+        <span class="tabbar-btn-icon" aria-hidden="true">📜</span><span class="tabbar-btn-label">Сюжеты</span>
+      </button>
+    </div>
+    <div class="phenom-content story-content" id="storyContent"></div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js?v=112"></script>
+</body>
+</html>

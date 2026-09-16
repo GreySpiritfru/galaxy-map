@@ -1,0 +1,1481 @@
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #0b0b10;
+  height: 100%;
+  overflow: hidden;
+}
+
+.svg-widget {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  touch-action: none;
+  background: #0b0b10;
+}
+
+.svg-widget svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-drag: none;
+  touch-action: none;
+  /* На карте галактики ~1600 подписей, и каждая перерисовывается при любом
+     изменении viewBox, то есть на КАЖДОМ кадре перетаскивания. Замер: текст
+     съедает почти половину времени кадра (28 мс всего, 14.8 мс если убрать
+     все подписи). optimizeSpeed отключает кернинг и лигатуры — на подписях
+     из 5-10 символов это незаметно, а кадр дешевеет примерно на 14%
+     (25.4 -> 21.9 мс). Только для главной карты: вид системы и так лёгкий. */
+  text-rendering: optimizeSpeed;
+}
+
+/* Пока палец/мышь ведёт карту (класс .panning вешает createPanZoom), мелкие
+   подписи систем не рисуем. Это самая дорогая часть кадра: их ~1600, каждая
+   перерисовывается при любом изменении viewBox, то есть на каждом кадре
+   перетаскивания. Замер: 28 мс на кадр было, 14.4 мс без подписей.
+   Остаются видимыми названия фракций и готовых систем (.map-label-major,
+   несколько десятков штук) — по ним видно, куда едешь, а стоят они копейки.
+   Отпустил палец — класс снимается, подписи возвращаются мгновенно.
+   Только для карты галактики: вид системы лёгкий, там прятать нечего.
+
+   Тот же приём переиспользован кнопкой 🏷️ в меню "⋯" (.labels-minimal) —
+   там это уже не на время жеста, а насовсем: выбор игрока, который остаётся
+   между заходами (localStorage, см. labelsToggle в js/map.js). Нужно это
+   в первую очередь для Firefox: в нём SVG-текст рендерится заметно медленнее,
+   чем в Chromium, и на телефоне карта ощутимо подлагивает — при том что в
+   Telegram Mini App и в Chrome та же карта едет плавно. */
+.svg-widget svg.panning text:not(.map-label-major),
+.svg-widget svg.labels-minimal text:not(.map-label-major) {
+  display: none;
+}
+
+/* Второй тяжёлый слой — свечения/заливки территорий из самого экспорта
+   StellarMaps: 82 элемента с `filter="url(#fade)"` и подобными, внутри
+   каждого feGaussianBlur. Область фильтра задана в процентах от размера
+   фигуры (`width="200%"`), то есть растёт вместе с приближением — ровно та
+   же болезнь, что была у нашего тумана (см. грабли №17). Отсюда и эффект
+   "чем ближе, тем хуже": на сильном зуме кадр стоит ~10-13 мс против пола
+   в 6.1, и это ПОСЛЕ отключения подписей.
+   Совсем убрать нельзя — вместе со свечением пропадает мягкая заливка
+   территорий, и они превращаются в пустые контуры.
+
+   Раньше гасили на время каждого жеста перетаскивания (как подписи выше) —
+   но, в отличие от подписей, у заливки это визуально мигание: она то
+   пропадает, то возвращается на каждом драге, и это раздражало сильнее, чем
+   экономило (по просьбе игрока, 12.09.2026). Подписи при перетаскивании
+   пропадать НЕЗАМЕТНО (их не разглядываешь на ходу), а заливка — фон, она
+   всегда в поле зрения. Поэтому по умолчанию заливка теперь ВСЕГДА видна, и
+   гасится только вместе с подписями — насовсем, тем же тумблером 🏷️
+   (`.labels-minimal`), для тех же слабых устройств/Firefox, где выигрыш по
+   грабле №18 действительно нужен ценой мигания при перетаскивании.
+
+   ⚠️ Два важных уточнения, оба получены на граблях:
+
+   1. Именно `display: none`, а НЕ `filter: none`. filter:none не убирает
+      элемент, а показывает его БЕЗ размытия — мягкое свечение превращается
+      в жирную сплошную плашку поверх и без того толстой границы.
+
+   2. Целимся строго в `[filter*="fade"]`, а не во все `[filter]`. В экспорте
+      StellarMaps атрибут `filter` висит на 82 элементах, но это две разные
+      вещи: 29 штук с `url(#fade)` — те самые широкие мягкие полосы вдоль
+      границ (stroke-width 11.25 + размытие 11.25), дорогие и лишние; и 53
+      штуки с ПУСТЫМ `filter=""` — пунктирные границы и заливки территорий,
+      которые ничего не стоят. Пряча всё подряд, мы убирали вместе со
+      свечением и саму границу — на скриншоте от пользователя территория
+      оставалась без контура. */
+.svg-widget svg.labels-minimal [filter*="fade"] {
+  display: none;
+}
+
+/* Вкладка-заглушка в окне персонажа ("Заметки"/"Броски") — показывается на
+   месте iframe с анкетой, поэтому должна сама занять всю карточку и покрасить
+   фон: у .modal-card--iframe фон прозрачный, его задаёт содержимое. */
+.char-stub {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 80px 24px 24px;
+  background: #0e0e14;
+  color: rgba(255,255,255,0.65);
+  font-family: sans-serif;
+  font-size: 14px;
+  text-align: center;
+}
+.char-stub-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ===== Редактор персонажа (js/editor.js) =====
+   Живёт на месте iframe анкеты, под пристыкованной панелью — отсюда верхний
+   отступ, как у .char-stub. */
+.editor {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 76px 16px 28px;
+  background: #0e0e14;
+  color: rgba(255,255,255,0.85);
+  font-family: sans-serif;
+  font-size: 14px;
+  -webkit-overflow-scrolling: touch;
+}
+.editor-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 12px;
+}
+.editor-section {
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  margin: 0 0 14px;
+  padding: 10px 12px 12px;
+  min-width: 0;
+}
+.editor-section legend {
+  padding: 0 6px;
+  color: #AFEEEE;
+  font-size: 13px;
+}
+.editor-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+}
+.editor-field input,
+.editor-field select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  font-size: 15px; /* ≥15px — иначе iOS зумит страницу при фокусе */
+}
+.editor-field select option,
+.editor-field select optgroup { background: #1a1a22; }
+.editor-hint {
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  margin: 4px 0 8px;
+}
+/* Кнопка «✏️ Правка» внизу карточки события (map.js, openNode). */
+.modal-edit-row { margin-top: 14px; }
+.editor-avatar-row .editor-btn { margin: 0 6px 6px 0; }
+.editor-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* Квадрат со скруглением — как маркер персонажа на карте. Буква-заглушка лежит
+   ПОД картинкой: нет аватара или битый путь (img удаляет себя) — видна буква. */
+.editor-avatar {
+  position: relative;
+  flex: 0 0 auto;
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(175,238,238,0.14);
+  box-shadow: inset 0 0 0 1.5px #AFEEEE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #AFEEEE;
+  font-size: 28px;
+  font-weight: 700;
+}
+.editor-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.editor-place {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 8px;
+}
+.editor-place > div { flex: 1 1 100%; }
+.editor-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.editor-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  font-size: 13px;
+}
+.editor-link.is-locked { opacity: 0.55; }
+.editor-btn {
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(175,238,238,0.45);
+  background: rgba(175,238,238,0.12);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+.editor-btn--ghost {
+  border-color: rgba(255,255,255,0.18);
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+}
+.editor-btn--primary {
+  background: #AFEEEE;
+  border-color: #AFEEEE;
+  color: #0e0e14;
+  font-weight: 700;
+}
+.editor-status {
+  min-height: 18px;
+  margin: 4px 0 10px;
+  font-size: 13px;
+  color: #AFEEEE;
+  word-break: break-word;
+}
+.editor-status.is-error { color: #ff9a9a; }
+.editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Полоска выбора места: над окнами локаций (250/251), под модалом (300) она
+   не нужна — модал на время выбора закрыт. */
+.pick-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  top: 12px;
+  z-index: 320;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(14,14,20,0.92);
+  box-shadow: inset 0 0 0 1.5px #AFEEEE;
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 14px;
+}
+.pick-banner span { flex: 1; }
+/* display:flex выше перебивает атрибут hidden — возвращаем ему силу. */
+.pick-banner[hidden],
+.tabbar-btn[hidden] { display: none; }
+.pick-banner button {
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+}
+
+/* Кнопка «✏️ Мои персонажи» / «✏️ Редактор» внизу карты — под большой палец.
+   Окна (250+) её перекрывают сами; на время выбора места прячем (.is-picking). */
+.editor-fab {
+  position: absolute;
+  left: 50%;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 25;
+  padding: 11px 20px;
+  border: none;
+  border-radius: 999px;
+  background: #AFEEEE;
+  color: #0e0e14;
+  font-family: sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+  cursor: pointer;
+}
+.editor-fab[hidden],
+.is-picking .editor-fab { display: none; }
+/* Поверх открытых окон кнопка просвечивала бы сквозь прозрачный фон модала.
+   Где :has не поддерживается, она просто остаётся видна — тап всё равно
+   попадает в фон окна. */
+body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .editor-fab,
+body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .editor-toast { display: none; }
+
+.editor-toast {
+  position: absolute;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 25;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(14,14,20,0.92);
+  box-shadow: inset 0 0 0 1.5px rgba(175,238,238,0.6);
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+}
+.editor-toast[hidden] { display: none; }
+
+.editor-pending {
+  margin: -4px 0 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(175,238,238,0.1);
+  color: rgba(255,255,255,0.8);
+  font-size: 12px;
+}
+
+/* Союзники по сюжетам/локациям. */
+.editor-links-group + .editor-links-group { margin-top: 10px; }
+.editor-links-title {
+  margin: 0 0 6px;
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+}
+
+/* Список «что можно править» (showEditorList) — в обычном модале. */
+.editor-list .editor-hint { margin-top: 0; }
+.editor-search {
+  position: sticky;
+  top: -16px; /* прилипает к краю карточки, у которой свой padding 16px */
+  z-index: 1;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.18);
+  background: #15151d;
+  color: #fff;
+  font-size: 15px; /* ≥15px — иначе iOS зумит страницу при фокусе */
+}
+.editor-list-section[hidden],
+.editor-item[hidden] { display: none; }
+.editor-list-title {
+  margin: 12px 0 6px;
+  color: #AFEEEE;
+  font-size: 13px;
+}
+.editor-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.editor-item:active { background: rgba(175,238,238,0.16); }
+.editor-item-avatar {
+  position: relative;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  overflow: hidden;
+  background: rgba(175,238,238,0.14);
+  box-shadow: inset 0 0 0 1.5px #AFEEEE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #AFEEEE;
+  font-weight: 700;
+}
+.editor-item-avatar.is-round {
+  border-radius: 50%;
+  background: rgba(255,215,106,0.14);
+  box-shadow: inset 0 0 0 1.5px #ffd76a;
+  color: #ffd76a;
+}
+.editor-item-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.editor-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.editor-item-name,
+.editor-item-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-item-sub {
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+}
+
+/* Включённый тумблер в меню инструментов (🏷️, 📍) — тот же "нажатый" вид,
+   что и у активной статьи в таб-баре. */
+.svg-controls button.active {
+  background: rgba(175,238,238,0.28);
+  box-shadow: inset 0 0 0 1.5px #AFEEEE;
+}
+
+.hotspot, .hotspot * { pointer-events: auto; }
+
+/* Маяк сюжетного маркера — сходящиеся кольца (см. addStoryBeacon в
+   js/map.js). Мягко: пик непрозрачности ~0.45, тонкие линии, медленный цикл.
+   Цвет — color группы (= цвет кольца сюжета), фигуры берут currentColor. */
+.hotspot .story-beacon,
+.hotspot .story-beacon * { pointer-events: none; }
+
+.story-beacon-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2px;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation: storyBeaconRing 3.6s cubic-bezier(0.25, 0.1, 0.35, 1) infinite;
+}
+@keyframes storyBeaconRing {
+  0%   { transform: scale(3.6); opacity: 0; }
+  45%  { opacity: 0.42; }
+  100% { transform: scale(1);   opacity: 0; }
+}
+
+/* Стоп анимации: во время жеста (каждый кадр и так перерисовывается вся сцена,
+   грабли №15), в режиме экономии 🏷️ (слабые устройства) и если в системе
+   просили меньше движения. Прячем совсем, а не ставим на паузу — застывший
+   кадр с полупрозрачным кольцом выглядел бы как артефакт. */
+.svg-widget svg.panning .story-beacon,
+.svg-widget svg.labels-minimal .story-beacon { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .story-beacon { display: none; }
+}
+.sys-hit { pointer-events: auto; cursor: pointer; }
+
+.svg-controls {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  z-index: 20;
+}
+
+.svg-controls button {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  backdrop-filter: blur(6px);
+  min-width: 44px;
+  min-height: 44px;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+/* Верхний ряд угла карты: "?" + 🚀 Феном + 📖 Справочник + "⋯" (инструменты) */
+.controls-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* Кнопки-таблетки в углу карты (🚀 Феном и 📖 Справочник) — в отличие от
+   квадратных .map-tool-btn (🏷️ и "?") у них есть текстовая подпись, которая
+   прячется на узких экранах (см. медиазапрос в конце файла). */
+/* Колонка 🚀/📖 + переключатель режима: оба ряда одной ширины (игрок,
+   15.09.2026). Ширина колонки — по более широкому ряду, второй
+   растягивается под неё за счёт flex: 1 у кнопок. */
+.controls-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.controls-main .view-switch-btn { flex: 1 1 auto; }
+
+/* Размер и цвет — как у секций переключателя режима (.view-switch-btn):
+   тот же отступ, шрифт и приглушённый белый, чтобы угол читался одним блоком.
+   min-height: 0 гасит 44px из общего .svg-controls button. */
+.svg-controls .corner-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 18px;   /* как у .view-switch-btn: эмодзи иначе делает ряд на 2px выше */
+  font-weight: 600;
+  color: rgba(255,255,255,0.65);
+  white-space: nowrap;
+}
+
+/* Переключатель режима просмотра ("Ноды | Карта | Графика") — сегментированная
+   кнопка под 🚀/📖, как слои на обычных картах. См. setViewMode в js/map.js.
+
+   ⚠️ Почти всё тут — перебивание общего `.svg-controls button` (у него свои
+   min-width/min-height 44px, padding и фон под ОТДЕЛЬНО стоящую квадратную
+   кнопку). Секции сегментированной кнопки — не отдельные кнопки: фон, рамка и
+   скругление у них общие, на контейнере, а у самих секций только подсветка
+   активной. По той же причине отдельно гасим `.svg-controls button.active`
+   (там фон + внутренняя обводка, для сегмента это слишком громко). */
+.view-switch {
+  display: flex;
+  align-items: stretch;
+  background: rgba(255,255,255,0.08);
+  border-radius: 8px;
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+}
+
+.svg-controls .view-switch-btn {
+  min-width: 0;
+  min-height: 0;
+  /* 9px, а не 10 как у 🚀/📖: по замеру высота была равной (38px), но
+     сплошной переключатель с залитой активной секцией на глаз казался выше —
+     игрок попросил ниже на 2px (36px). */
+  padding: 9px 16px;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 14px;
+  line-height: 18px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.65);
+  white-space: nowrap;
+}
+
+.svg-controls .view-switch-btn + .view-switch-btn {
+  border-left: 1px solid rgba(255,255,255,0.1);
+}
+
+.svg-controls .view-switch-btn.active {
+  background: rgba(175,238,238,0.22);
+  box-shadow: none;
+  color: #AFEEEE;
+}
+
+/* "Графика" — заглушка. Отдельно от :disabled у остальных кнопок: тут это не
+   временно недоступное состояние, а раздел, которого пока просто нет. */
+.svg-controls .view-switch-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* В режиме нод 📍 (калибровка) и 🏷️ (подписи) отключены — они про саму карту,
+   которой там нет (см. updateViewModeUi в js/map.js). */
+.svg-controls button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* 🏷️ и "?" под переключателем режима — квадраты высотой с ряд переключателя
+   (38px), одинаковые на телефоне и компьютере. Специфичность
+   .svg-controls .map-tool-btn выше, чем у .svg-controls button, поэтому
+   перебивает и мобильный размер из медиазапроса в конце файла. */
+.svg-controls .map-tool-btn {
+  width: 38px;
+  height: 38px;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  font-size: 16px;
+  line-height: 38px;
+}
+
+/* Был чёрным — на полупрозрачной тёмной кнопке почти не читался. Теперь тем
+   же приглушённым белым, что и подписи соседних кнопок угла. */
+#helpBtn {
+  color: rgba(255,255,255,0.65);
+}
+
+/* Мягкое "дыхание" вокруг кнопки подсказки — для новых игроков, пока они
+   сами не нажали и не посмотрели обучение хотя бы раз (см. onboarding.js).
+   Не мигание (резкая смена видимости), а плавно расширяющееся/тающее
+   кольцо — заметно, но не раздражает. */
+@keyframes helpPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(175,238,238,0.55); }
+  50%      { box-shadow: 0 0 0 9px rgba(175,238,238,0); }
+}
+#helpBtn.pulse {
+  animation: helpPulse 2.4s ease-in-out infinite;
+}
+
+.calib-panel {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  background: rgba(0,0,0,0.55);
+  color: #9f9;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: monospace;
+  z-index: 20;
+  display: none;
+  white-space: pre;
+}
+
+/* ===== П.1: мобильный модал для инфо-точек =====
+   Центрированное окно, ~20% свободного поля по краям — тап по фону закрывает.
+   Фон вокруг больше не затемняется, только сама карточка полупрозрачная,
+   с плавным появлением (fade + лёгкое всплытие). */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+  padding: 10vh 6vw;
+  box-sizing: border-box;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+.modal-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 480px;
+  max-height: 100%;
+  overflow-y: auto;
+  background: rgba(10,10,16,0.82);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 16px 18px;
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 14px;
+  position: relative;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  transform: scale(0.94) translateY(8px);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-backdrop.open .modal-card {
+  transform: scale(1) translateY(0);
+}
+
+.modal-close {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 6px;
+}
+
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 26px 8px 0;
+}
+
+/* Подсказка «?» (js/onboarding.js). */
+.help { line-height: 1.4; }
+.help-logo {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  aspect-ratio: 1280 / 523; /* место под лого заранее — текст не прыгает, пока грузится */
+  margin: 4px auto 12px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+.help-section { margin: 10px 0 0; }
+.help-heading {
+  margin-bottom: 4px;
+  color: #AFEEEE;
+  font-weight: 700;
+}
+.help ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.help li { margin: 3px 0; }
+.help-footer {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.45);
+  font-size: 11px;
+  text-align: center;
+}
+.help-footer a { color: #AFEEEE; }
+
+/* ===== П.3: полноэкранный просмотр системы ===== */
+.system-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: none;
+  z-index: 200;
+}
+.system-overlay.open { display: block; }
+
+/* Сама "менюшка" — единая скруглённая панель со своим фоном (как у Telegram
+   нижнего таб-бара), кнопки внутри — без собственного фона/рамки, см.
+   .tabbar-btn ниже. В пристыкованном виде (.compact, статья открыта) фон/
+   скругления берёт на себя .lore-toolbar.compact (та же панель становится
+   полноширинной "шторкой" сверху) — тут это только для обычного состояния
+   поверх карты системы.
+   left+right (а не left+max-width) — так у панели есть ОПРЕДЕЛЁННАЯ ширина,
+   а не "по содержимому": кнопкам внутри нужен flex:1 1 0, чтобы поровну
+   делить ширину и не обрезаться многоточием — без явной ширины контейнера
+   flex-basis:0 у детей не даёт браузеру толком посчитать ширину "по
+   содержимому" (родитель схлопывался у'же, чем требовалось для полных
+   подписей). Заодно так панель выглядит как настоящий таб-бар Telegram, а не
+   как плотный кластер кнопок в углу. */
+.system-toolbar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 12px;
+  z-index: 210;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  background: rgba(12,12,18,0.62);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  padding: 6px 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+
+/* Кнопка "Контролирующая раса" показывается только если для системы есть
+   запись в systems/lore.json (см. openSystem() в system-view.js) — иначе
+   в меню остаются только ✕ и "Карта системы". */
+#systemLore { display: none; }
+#systemLore.visible { display: flex; }
+
+/* Кнопка закрытия — везде один и тот же квадрат-иконка (у системы, Феном,
+   сюжета и у самой панели статей-справочников/персонажа), но НЕ всегда
+   крестик: js/navigation.js подменяет её текст на ↩, когда клик по ней
+   вернёт к чему-то (родительскому окну), а не сразу к голой карте — см.
+   `closeTop()`/`sync()` там. Системный тулбар (#systemBack) в этом не
+   участвует и всегда остаётся ✕ (13.09.2026, по замечанию игрока) — там
+   переключение между двумя равноправными вкладками в одном ряду, а не
+   drill-down в статью, и сама вкладка уже читается как "путь назад".
+   Всегда обычный флекс-элемент ПЕРВЫМ в ряду тулбара (а не отдельная
+   фиксированная кнопка поверх ряда) — так она едет вместе с рядом при
+   горизонтальном свайпе, а не "плавает" отдельно над ним не пристыкованной
+   к остальным кнопкам (так и было раньше с #modalClose — выглядело
+   нестыкуемо, особенно при скролле). */
+.toolbar-close-btn {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 18px;
+  line-height: 1;
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+
+/* Пока открыта статья (лор системы ИЛИ описание Феном), соответствующий
+   тулбар (.system-toolbar или .phenom-toolbar — оба помечены общим классом
+   .lore-toolbar, см. openIframeModal в JS) временно переносится внутрь
+   #modalCard и превращается в компактную "шторку" — узкую полупрозрачную
+   панель на всю ширину, наезжающую поверх статьи сверху. При закрытии
+   переносится обратно туда, откуда был взят. Свой крестик (.toolbar-close-btn,
+   первый элемент ряда) едет вместе с панелью — отдельный фиксированный
+   #modalClose в этом состоянии скрывается через JS (см. openIframeModal в
+   modal.js), чтобы не дублировать его и не плавать поверх ряда отдельным
+   несостыкованным элементом. */
+.lore-toolbar.compact {
+  position: fixed;
+  inset: 0 0 auto 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 10px;
+  background: rgba(12,12,18,0.62);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  box-sizing: border-box;
+  z-index: 2;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 8px;
+  animation: loreBarIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lore-toolbar.compact::-webkit-scrollbar { display: none; }
+
+/* #refToolbar — панель перекрёстной навигации между статьями-справочниками.
+   Сама по себе никогда не отображается: существует только чтобы её
+   пристыковать в #modalCard (см. openRefArticle в JS), как и .system-toolbar/
+   .phenom-toolbar — тем же общим механизмом (.lore-toolbar.compact).
+
+   .tabbar — общий стиль таб-бара Telegram (скрин-референс от пользователя),
+   используется и здесь, и в .system-toolbar (вид системы): кнопки НЕ
+   обособлены каждая своим фоном/рамкой/скруглением, а стоят вплотную друг к
+   другу, как единое целое — просто иконка + мелкая подпись под ней,
+   выделяется только цветом активная (.tabbar-btn.active). Кнопки
+   распределены поровну на всю ширину (flex:1 1 0) — этого достаточно, чтобы
+   любой набор кнопок (2 у системы, 5 у статей) помещался на телефоне без
+   горизонтального скролла, поэтому overflow-x у .lore-toolbar.compact тут
+   просто не срабатывает (safety net на случай, если кнопок станет ощутимо
+   больше). */
+.ref-toolbar { display: none; }
+.tabbar .toolbar-close-btn {
+  position: relative;
+  background: none;
+  backdrop-filter: none;
+  border-radius: 0;
+  /* ⚠️ Ширину НЕ увеличивать: в #refToolbar на 375px подпись «Галактика»
+     упирается в свою ячейку, и уже 36px обрезали её до «Галакти…». */
+  width: 30px;
+}
+/* Черта справа от ✕/↩ (игрок, 15.09.2026): без видимой границы палец
+   промахивался мимо крестика и попадал в соседнюю вкладку. Псевдоэлемент, а
+   не border-right — черта не на всю высоту ряда, как в .tabbar-split. */
+.tabbar .toolbar-close-btn::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 1px;
+  background: rgba(255,255,255,0.22);
+}
+.tabbar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1 1 0;
+  min-width: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 4px 2px;
+  color: rgba(255,255,255,0.65);
+  cursor: pointer;
+}
+.tabbar-btn-icon {
+  font-size: 19px;
+  line-height: 1;
+}
+.tabbar-btn-label {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.tabbar-btn.active {
+  color: #AFEEEE;
+}
+
+/* Двойная вкладка: две половинки в одной ячейке двойной ширины, разделённые
+   тонкой чертой — читается как одна тема ("Феном"), но с двумя действиями
+   (статья про него / переход на его карту). */
+.tabbar-split {
+  display: flex;
+  flex: 1.8 1 0;
+  min-width: 0;
+}
+.tabbar-split .tabbar-btn + .tabbar-btn {
+  border-left: 1px solid rgba(255,255,255,0.15);
+}
+@keyframes loreBarIn {
+  from { transform: translateY(-100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Модал со статьёй Teletype поверх карты системы — та же карточка,
+   что и у обычных маркеров, но развёрнута на весь экран без рамки:
+   Teletype оформляет себя сам. Статья идёт от самого верха экрана,
+   перенесённая "шторка" (.lore-toolbar.compact, со своим крестиком
+   первым элементом ряда) лежит поверх неё как плавающий элемент
+   (position: fixed). */
+.modal-backdrop.backdrop--iframe {
+  padding: 0;
+  align-items: stretch;
+  justify-content: stretch;
+}
+.modal-card.modal-card--iframe {
+  max-width: 100%;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  /* Базовый .modal-card скроллится сам (overflow-y:auto) — для текстовых
+     карточек маркеров это нужно, но для iframe со статьёй нельзя: вложенный
+     <iframe> внутри скроллящегося контейнера "перетягивает" на себя тач/колесо
+     с мобильных браузеров, из-за чего статья внутри переставала скроллиться
+     и реагировать на тапы. Весь скролл должен быть только внутри iframe. */
+  overflow: hidden;
+}
+.modal-card--iframe .modal-close {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  margin: 0;
+  font-size: 24px;
+  background: rgba(12,12,18,0.62);
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  z-index: 3;
+}
+.modal-card--iframe #modalContent {
+  width: 100%;
+  height: 100%;
+}
+.modal-card--iframe iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
+}
+
+.system-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #aaa;
+  font-family: sans-serif;
+  text-align: center;
+  padding: 0 30px;
+}
+
+/* ===== Всплывающее окно "Корабль-город Феном" =====
+   В отличие от .system-overlay (полноэкранный, закрывает карту галактики),
+   это окно-вкладыш поверх карты: карта остаётся под ним, видна и затемнена
+   по краям за пределами карточки (~90% экрана). */
+.phenom-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5vh 5vw;
+  box-sizing: border-box;
+  z-index: 250;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.phenom-overlay.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.phenom-card {
+  width: 100%;
+  height: 100%;
+  background: #0e0e14;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform-origin: center center;
+}
+/* Камера сначала "наводится" на маркер Феном (см. focusAndOpenPhenom в JS),
+   и только когда она долетает — окно раскрывается будто вырастая из той же
+   точки в центре экрана, где только что оказался маркер: от маленькой кляксы
+   до полноразмерной карточки. */
+.phenom-overlay.open .phenom-card {
+  animation: phenomCardMorph 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes phenomCardMorph {
+  from { transform: scale(0.05); border-radius: 50%; opacity: 0.3; }
+  60%  { border-radius: 30%; opacity: 1; }
+  to   { transform: scale(1); border-radius: 18px; opacity: 1; }
+}
+/* Ряд не переносится на новую строку, а скроллится по горизонтали —
+   см. подробное обоснование у .lore-toolbar.compact выше; тот же приём
+   тут нужен и без пристыковки статьи, у самого окна Феном/сюжета. */
+.phenom-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.phenom-toolbar::-webkit-scrollbar { display: none; }
+/* Меню окна Феном переведено на .tabbar (как статьи и вид системы, см.
+   грабли №12): кнопки делят ширину поровну через flex:1 1 0, поэтому зазор
+   между ними не нужен — он только отъедал бы место у подписей, которых тут
+   до четырёх в ряд. */
+.phenom-toolbar.tabbar { gap: 0; }
+.phenom-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  background: #0e0e14;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.phenom-viewer {
+  position: absolute;
+  inset: 0;
+}
+/* Содержимое локации без карты (submap.type: "info", см. js/phenom.js) —
+   переиспользует .story-content (тот же скролл/паддинг/шрифт, что у окна
+   сюжета), но живёт ВНУТРИ #phenomContent рядом с #phenomViewer, а не как
+   отдельный флекс-child в .phenom-card — тот же трюк с position:absolute,
+   что и у .phenom-viewer, чтобы полностью занять место карты. .phenom-content
+   выше даёт user-select:none/touch-action:none всему контенту окна локации
+   разом — для текста тут это неверно (нужно выделять/скроллить), поэтому
+   переопределяем оба свойства обратно. */
+.phenom-info-content {
+  position: absolute;
+  inset: 0;
+  touch-action: pan-y;
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Кнопка "персонажи на карте Феном" (слева сверху над самой картой, а не в
+   общем таб-баре — это навигация ВНУТРИ карты, а не смена вкладки окна) и её
+   выпадающий список. z-index выше .phenom-viewer, но ниже общего тулбара
+   сверху, чтобы не перекрывать крестик закрытия при узком экране. */
+.phenom-char-nav {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 5;
+  touch-action: auto; /* .phenom-content целиком touch-action:none — кнопке и списку нужны обычные тапы/скролл */
+}
+.phenom-char-nav-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid rgba(175,238,238,0.45);
+  background: rgba(14,14,20,0.75);
+  backdrop-filter: blur(6px);
+  color: #AFEEEE;
+  font-size: 16px;
+  cursor: pointer;
+}
+/* Ряд-портретов (не текстовый список) — карточки .story-character-chip
+   переиспользованы отсюда же (см. .phenom-char-nav-item ниже), тот же
+   визуальный язык, что у персонажей внутри окна сюжета. В один ряд помещается
+   2-3 карточки, остальные — горизонтальным скроллом вбок, а не вниз: ширина
+   контейнера ФИКСИРОВАННАЯ (168px ≈ 3 чипа по 46px + зазоры), лишнее уходит
+   за край и скроллится по X. */
+.phenom-char-nav-list {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  width: 168px;
+  background: rgba(14,14,20,0.92);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(175,238,238,0.35);
+  border-radius: 10px;
+  padding: 8px;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+/* [hidden] — атрибут, не класс; UA-стиль display:none у него ниже по
+   специфичности, чем display:flex выше, и без этого правила список остаётся
+   видимым, даже когда JS выставляет .hidden = true (грабля, отловленная на
+   этом же компоненте — см. аналогичный список выпадающего меню Феном). */
+.phenom-char-nav-list[hidden] { display: none; }
+
+/* Маркер персонажа ПРЯМО НА карте Феном (оверлей OpenSeadragon, координаты —
+   submapX/submapY в characters.json, см. js/phenom.js). Квадрат со
+   скруглением — тот же язык, что у персонажей на карте галактики
+   (см. .hotspot/makeIconShape в js/map.js), только это обычный HTML/CSS
+   элемент, а не SVG: OpenSeadragon кладёт оверлеи в DOM поверх канваса.
+   ⚠️ Раньше показывал только плашку цвета без портрета, даже если c.image
+   был заполнен (14.09.2026, нашёл игрок) — теперь картинка/заглушка-буква
+   рисуются как везде (.story-character-chip), overflow:hidden тут и
+   отвечает за то, чтобы <img> обрезался по скруглённому квадрату. */
+.phenom-char-marker {
+  /* 22px на телефоне терялись среди арта города — подняли до 32. */
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  background: rgba(175,238,238,0.92);
+  border: 2px solid #0b2b2b;
+  box-shadow: 0 0 0 1px rgba(175,238,238,0.6);
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: auto;
+}
+.phenom-char-marker img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Заглушка-буква переиспользует .story-character-fallback, но там шрифт
+   18px — для этого маркера (32px целиком) он великоват, поэтому
+   размер шрифта тут свой, поменьше. */
+.phenom-char-marker .story-character-fallback {
+  font-size: 15px;
+}
+
+/* ===== Окно-вкладыш сюжетного маркера =====
+   Использует ту же карточку/анимацию, что и .phenom-overlay/.phenom-card
+   (см. index.html — оба класса навешаны на один элемент), здесь только то,
+   что отличается: текст вместо карты, а значит обычный вертикальный скролл
+   внутри карточки, а не туда, зафиксированное под OpenSeadragon. */
+
+/* 13.09.2026: сюжет, привязанный к маркеру-локации (напр. "Переворот" к
+   Феному), теперь ОТКРЫВАЕТСЯ ПОВЕРХ окна этой локации, а не заменяет его
+   (см. setPhenomChildren в js/phenom.js) — это даёт настоящую вложенность
+   3-го уровня (локация -> сюжет -> персонаж) вместо замены на том же
+   уровне, и делает возможным реальный "шаг назад" от сюжета к локации.
+   .story-overlay делит класс .phenom-overlay (и его z-index 250) с окном
+   локации — на случай, если оба одновременно .open, явно поднимаем сюжет
+   выше, а не полагаемся на порядок в index.html (тот факт, что #storyOverlay
+   объявлен позже #phenomOverlay, тоже даёт этот эффект, но так это не
+   сломается, если разметку когда-нибудь переставят). */
+.story-overlay {
+  z-index: 251;
+}
+.story-content {
+  overflow-y: auto;
+  padding: 10px 20px 28px;
+  color: #fff;
+  font-family: sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: pan-y;
+}
+/* object-fit:contain (не cover) — картинка вписывается целиком, без обрезки,
+   какая бы у неё ни была пропорция; max-width/max-height — по факту "процент
+   от окна", ограничивающий слишком большую картинку, но никогда не растягивающий
+   маленькую сверх исходного размера (max-width сам по себе этого не даёт). */
+.story-banner-img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 45vh;
+  object-fit: contain;
+  border-radius: 12px;
+  margin: 0 auto 14px;
+  background: rgba(255,255,255,0.03);
+}
+
+@media (max-width: 600px) {
+  .story-banner-img { max-height: 32vh; }
+}
+
+/* Ряд персонажей, привязанных к сюжету ("parent" в characters.json) —
+   первое, что видно после верхней шторки, до баннера и заголовка. Тот же
+   "квадрат со скруглёнными углами", что и у маркера персонажа на самой
+   карте (см. .hotspot/makeIconShape в js/map.js), только это уже обычный
+   HTML внутри статьи, а не SVG. Тап уводит прямо к персонажу — обратная
+   связь к кнопке "Сюжет" в его собственном окне. */
+.story-characters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center; /* группы выше одиночных чипов (рамка+паддинг, см.
+    .story-character-group) — без center одиночные чипы прижимались к верху
+    строки и выглядели "приподнятыми" относительно групп */
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.story-character-chip {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1.5px solid #AFEEEE;
+  border-radius: 13px;
+  background: rgba(175,238,238,0.12);
+  overflow: hidden;
+  cursor: pointer;
+}
+.story-character-chip img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.story-character-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #AFEEEE;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+/* Нити графа связей (см. renderThreads в js/map.js) — тонкие статичные
+   линии, никакой анимации/физики. Сплошная — "родитель", то есть к чему
+   точка привязана; пунктирная — "союз", связь равных. Разница должна
+   читаться на глаз, иначе непонятно, где иерархия, а где просто дружба. */
+/* ============================================================
+   Режим "Ноды" (15.09.2026, см. setViewMode в js/map.js)
+
+   От карты не остаётся ничего: ни растровой подложки, ни ~1600 подписей, ни
+   заливок территорий с их фильтрами, ни прямоугольников маски — то есть
+   ровно всё, что и составляет стоимость кадра (грабли №15/17/18). Видимым
+   остаётся только #graphLayer с нашими маркерами и нитями.
+
+   Одним селектором "всё, кроме слоя графа", а не перечислением того, что
+   прятать: содержимое экспорта StellarMaps мы не контролируем, и после
+   следующего экспорта список элементов может быть другим.
+   <defs> исключён явно — он и так ничего не рисует, но внутри него живут
+   паттерн звёзд и градиенты, на которые ссылается фон самого режима нод.
+   ============================================================ */
+.svg-widget svg.nodes-mode > *:not(#graphLayer):not(defs) {
+  display: none;
+}
+
+/* Звёздный фон под графом. На самой карте он не нужен (там своя подложка и
+   маска), а во время переключения режимов работает шторкой: его же
+   прозрачность и анимируется, давая проявление/растворение карты — см.
+   fadeBackdrop в js/map.js, там же расписано, почему анимируется именно он,
+   а не прозрачность самой карты. Во время перехода display/opacity им
+   управляет JS инлайново, эти правила — состояния покоя. */
+.graph-backdrop { display: none; }
+.svg-widget svg.nodes-mode .graph-backdrop { display: block; }
+
+
+/* Режим "Графика" (15.09.2026) — та же карта, что и "Карта" (те же камера/
+   координаты, см. setViewMode в js/map.js — переключение между ними вообще
+   не трогает viewBox), только со скрытой политической раскраской StellarMaps:
+   заливка территорий фракций, их светящийся контур (те самые 82 blur-фильтра,
+   грабли №18), пунктирные линии секторов внутри и названия фракций (шрифт
+   Impact). Звёздный/туманный фон, гиперлейны (тонкая белая линия между
+   системами) и обычные названия систем (Tahoma) остаются — это и есть
+   "полноценная карта из редактора Stellaris, но без политики" по просьбе
+   игрока.
+
+   Элементы помечены классом `.map-political` ОДИН РАЗ при загрузке
+   (`classifyPoliticalOverlay` в js/map.js — правило, по которому опознаётся
+   территория, а не список конкретных id/цветов, потому что экспорт каждый
+   раз даёт другой набор фракций). Тут — просто display:none по классу, тот
+   же приём, что у `.labels-minimal`/`.panning` выше.
+
+   ⚠️ Побочный эффект, а не случайность: скрытые элементы — это как раз самая
+   дорогая часть кадра после текста (грабли №18), так что "Графика" рендерится
+   ЛЕГЧЕ, чем "Карта", а не только выглядит чище. */
+/* Запечённый политический слой (buildPoliticalBake в js/map.js): пока тайлы
+   не загрузились — картинки не видно, работает вектор; загрузились — наоборот. */
+.svg-widget svg .political-bake { display: none; }
+.svg-widget svg.political-baked .political-bake { display: inline; }
+.svg-widget svg.political-baked .map-political-baked { display: none; }
+
+.svg-widget svg.graphics-mode .map-political {
+  display: none;
+}
+
+/* Фон режима "Графика" — сетка тайлов, нарезанная из HD-карты галактики
+   модпака (см. buildGraphicsBackdrop в js/map.js и
+   tools/build-graphics-background.py). Вдвое резче базового растра
+   StellarMaps, который вшит в map.svg.
+
+   ⚠️ Базовый растр гасится не по самому `.graphics-mode`, а по паре
+   `.graphics-mode.graphics-ready`: класс `graphics-ready` вешается только
+   после того, как превью фона РЕАЛЬНО загрузилось. Если тайлов нет (никто не
+   прогонял сборщик), режим тихо останется на обычном фоне, а не покажет
+   чёрный экран. */
+.svg-widget svg #graphicsBackdrop { display: none; }
+.svg-widget svg.graphics-mode #graphicsBackdrop { display: block; }
+.svg-widget svg.graphics-mode.graphics-ready .map-base-backdrop { display: none; }
+/* Точки систем StellarMaps в «Графике» спрятаны совсем: вместо них в фон
+   запечены значки звёзд из игры (tools/build-graphics-background.py
+   --star-icons). Сначала пробовали притушить до 15% — игрок: точки лежат
+   поверх звёзд и замыливают их, лучше убрать. Кликабельности это не лишает:
+   клик висит на названии системы, а не на точке.
+   #icon-circle — обычные системы (729), #icon-square (42) и #icon-diamond
+   (37) — заселённые, цветом владельца. Значки гиперврат/червоточин
+   (#icon-l-gate, #icon-wormhole) спрятаны отдельным правилом ниже — везде. */
+.svg-widget svg.graphics-mode.graphics-ready use[href="#icon-circle"],
+.svg-widget svg.graphics-mode.graphics-ready use[href="#icon-square"],
+.svg-widget svg.graphics-mode.graphics-ready use[href="#icon-diamond"] { display: none; }
+/* Значки гиперврат (#icon-l-gate, 12 шт.) и червоточин (#icon-wormhole, 10) —
+   убраны "пока" во ВСЕХ режимах (игрок, 15.09.2026). Отдельных линий-связей у
+   них в экспорте нет, только значки рядом с точкой системы. #icon-gateway и
+   #icon-shroud-tunnel в символах экспорта объявлены, но на карте не используются
+   — спрятаны заодно, чтобы не всплыли после следующего экспорта. */
+.svg-widget svg use[href="#icon-l-gate"],
+.svg-widget svg use[href="#icon-wormhole"],
+.svg-widget svg use[href="#icon-gateway"],
+.svg-widget svg use[href="#icon-shroud-tunnel"] { display: none; }
+
+.map-thread {
+  stroke: rgba(175,238,238,0.35);
+  stroke-width: 0.25;
+  pointer-events: none;
+}
+.map-thread.link {
+  stroke: rgba(255,215,106,0.45);
+  stroke-dasharray: 0.7 0.7;
+}
+/* Союз между точками на разных концах карты (MAP_LINK_REACH в js/graph.js) —
+   только в режиме нод, на карте он тянулся бы через полкарты. */
+.map-thread.far { display: none; }
+svg.nodes-mode.far-links .map-thread.far { display: inline; }
+
+/* Группа связанных между собой персонажей внутри окна сюжета — визуальный
+   аналог нити между ними на карте (см. groupByLinks в js/stories.js). */
+.story-character-group {
+  display: flex;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px dashed rgba(255,215,106,0.45);
+  border-radius: 16px;
+}
+
+/* Ряд кнопок "привязанные сюжеты" внутри окна Феном (см. setPhenomChildren
+   в js/phenom.js). Наполняется из графа связей, поэтому кнопок может быть
+   сколько угодно — ряд переносится по строкам, а не уезжает за экран. */
+.story-code {
+  display: inline-block;
+  background: rgba(255,215,106,0.16);
+  color: #ffd76a;
+  border: 1px solid rgba(255,215,106,0.4);
+  border-radius: 6px;
+  padding: 1px 7px;
+  font-size: 13px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.story-title {
+  font-size: 19px;
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+
+/* Сворачиваемый блок описания — нативный <details>/<summary>, оформлен под
+   цитату-"шторку" в духе Telegram (полоска слева + треугольник-стрелка,
+   разворачивающаяся при открытии). См. openStory() в js/stories.js. */
+.story-accordion {
+  border-left: 3px solid rgba(175,238,238,0.55);
+  background: rgba(255,255,255,0.04);
+  border-radius: 0 8px 8px 0;
+  padding: 0 12px;
+  margin: 0 0 14px;
+}
+.story-accordion summary {
+  cursor: pointer;
+  padding: 10px 0;
+  font-weight: 600;
+  color: #AFEEEE;
+  list-style: none;
+}
+.story-accordion summary::-webkit-details-marker { display: none; }
+.story-accordion summary::before {
+  content: '▸';
+  display: inline-block;
+  width: 1em;
+  margin-right: 4px;
+  transition: transform 0.2s ease;
+}
+.story-accordion[open] summary::before {
+  transform: rotate(90deg);
+}
+.story-accordion-body {
+  padding: 0 0 12px;
+  white-space: normal;
+}
+
+@media (max-width: 600px) {
+  .svg-controls { right: 8px; top: 8px; }
+  .svg-controls button { padding: 6px 8px; min-width: 40px; min-height: 40px; }
+  .phenom-overlay { padding: 3vh 3vw; }
+  /* Вкладок в таб-баре статей шесть (у Фенома двойная ячейка), и самая
+     длинная подпись — "Галактика" — на 375px упирается в свою ячейку и
+     обрезается многоточием. Поджимаем зазоры и боковые отступы: этого
+     хватает, чтобы влезли все подписи целиком, не уменьшая шрифт. */
+  .tabbar.compact { gap: 4px; }
+  .tabbar-btn { padding: 4px 1px; }
+}
+

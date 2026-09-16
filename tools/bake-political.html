@@ -1,0 +1,50 @@
+<!doctype html>
+<!-- Служебная страница для tools/bake-political.py: рисует ТОЛЬКО дорогую часть
+     политического слоя map.svg (полупрозрачная заливка территорий + размытое
+     свечение границ) на прозрачном фоне, в кадре одного тайла. Её снимает
+     скриншотом Edge без окна — это тот же движок Chromium, что и у игроков,
+     поэтому картинка совпадает с векторной один в один. Игрокам не нужна. -->
+<html><head><meta charset="utf-8">
+<style>
+  html, body { margin: 0; background: transparent; overflow: hidden; }
+  #c svg { display: block; }
+</style></head>
+<body><div id="c"></div>
+<script>
+(async () => {
+  const q = new URLSearchParams(location.search);
+  const size = +q.get('px');                          // сторона тайла в пикселях
+  const [x, y, w, h] = q.get('box').split(',').map(Number); // кадр тайла в единицах карты
+  const text = await (await fetch('../map.svg', {cache: 'no-cache'})).text();
+  const c = document.getElementById('c');
+  c.innerHTML = text;
+  const svg = c.querySelector('svg');
+
+  // Тот же признак, что у BAKED_POLITICAL в js/map.js — менять вместе.
+  const isBaked = (el) => el.tagName === 'path' && (
+    (el.getAttribute('filter') || '').includes('fade') || el.getAttribute('fill-opacity') === '0.05');
+
+  // Прячем всё, кроме запекаемых путей и того, на что они ссылаются
+  // (defs: фильтр #fade, clipPath-ы свечения).
+  const KEEP_TAGS = new Set(['defs', 'clipPath', 'filter', 'style', 'linearGradient', 'radialGradient', 'mask', 'pattern', 'symbol']);
+  function walk(el) {
+    let keep = false;
+    for (const child of [...el.children]) {
+      if (KEEP_TAGS.has(child.tagName)) continue;
+      if (isBaked(child)) { keep = true; continue; }
+      if (walk(child)) keep = true;
+      else child.style.display = 'none';
+    }
+    return keep;
+  }
+  walk(svg);
+
+  svg.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('width', size);
+  svg.setAttribute('height', size);
+  svg.style.width = size + 'px';
+  svg.style.height = size + 'px';
+  document.title = 'ready';
+})();
+</script></body></html>

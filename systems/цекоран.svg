@@ -1,0 +1,96 @@
+<svg id="exportSystemMap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-600 -600 1200 1200" width="4096" height="4096"><rect class="bg-rect" x="-600" y="-600" width="1200" height="1200" fill="rgb(0, 0, 0)"></rect><defs><filter id="glow" filterUnits="objectBoundingBox" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="2"></feGaussianBlur></filter><filter id="starGlow" filterUnits="objectBoundingBox" x="-500%" y="-500%" width="1100%" height="1100%"><feGaussianBlur in="SourceGraphic" stdDeviation="10"></feGaussianBlur></filter></defs><g> <circle cx="0" cy="0" r="24.34" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="37.42" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="103.69" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="128.785" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="48.71035" cy="119.29998" r="15" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="158.94" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="194.94" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="240.8" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="57.81126" cy="-234.09853" r="15" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="57.81126" cy="-234.09853" r="20" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="314.62" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="505.02" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="-470.9665" cy="183.2162" r="46.225" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="-495.83739" cy="222.18988" r="15" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="-470.9665" cy="183.2162" r="66.91" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="-470.9665" cy="183.2162" r="95.085" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="-500" cy="121.99858" r="15" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle> <circle fill="rgb(237, 231, 116)" r="8" cx="24.34" cy="0" filter="url(#starGlow)"></circle>  <circle fill="rgb(237, 231, 116)" r="8" cx="24.34" cy="0" filter=""></circle> <circle fill="rgb(244, 139, 15)" r="6.164414002968976" cx="-37.42" cy="0.01534" filter="url(#starGlow)"></circle>  <circle fill="rgb(244, 139, 15)" r="6.164414002968976" cx="-37.42" cy="0.01534" filter=""></circle> <circle fill="rgb(174, 121, 83)" r="3.872983346207417" cx="0.87306" cy="-103.69"></circle><path d="
+			M 0 3.872983346207417
+			A 3.872983346207417 3.872983346207417 0 0 0 0 -3.872983346207417
+			A 1.9364916731037085 3.872983346207417 0 0 1 0 3.872983346207417
+			Z
+		" transform=" translate(0.87306 -103.69) rotate(-89.5175863516588)" fill="#000000" opacity="0.5"></path><circle fill="rgb(131, 150, 156)" r="4.242640687119285" cx="48.71035" cy="119.29998"></circle><path d="
+			M 0 4.242640687119285
+			A 4.242640687119285 4.242640687119285 0 0 0 0 -4.242640687119285
+			A 2.1213203435596424 4.242640687119285 0 0 1 0 4.242640687119285
+			Z
+		" transform=" translate(48.71035 119.29998) rotate(67.78973703331934)" fill="#000000" opacity="0.5"></path><circle fill="rgb(255, 86, 0)" r="2.345207879911715" cx="42.20335" cy="132.82173"></circle><path d="
+			M 0 2.345207879911715
+			A 2.345207879911715 2.345207879911715 0 0 0 0 -2.345207879911715
+			A 1.1726039399558574 2.345207879911715 0 0 1 0 2.345207879911715
+			Z
+		" transform=" translate(42.20335 132.82173) rotate(72.37264111317234)" fill="#000000" opacity="0.5"></path><circle fill="rgb(174, 121, 83)" r="4.898979485566356" cx="-156.83404" cy="27.64761"></circle><path d="
+			M 0 4.898979485566356
+			A 4.898979485566356 4.898979485566356 0 0 0 0 -4.898979485566356
+			A 2.449489742783178 4.898979485566356 0 0 1 0 4.898979485566356
+			Z
+		" transform=" translate(-156.83404 27.64761) rotate(170.00228984104265)" fill="#000000" opacity="0.5"></path><circle fill="rgb(174, 121, 83)" r="4.795831523312719" cx="128.80075" cy="146.34535"></circle><path d="
+			M 0 4.795831523312719
+			A 4.795831523312719 4.795831523312719 0 0 0 0 -4.795831523312719
+			A 2.3979157616563596 4.795831523312719 0 0 1 0 4.795831523312719
+			Z
+		" transform=" translate(128.80075 146.34535) rotate(48.64850690568641)" fill="#000000" opacity="0.5"></path><circle fill="rgb(150, 126, 90)" r="4.242640687119285" cx="57.81126" cy="-234.09853"></circle><path d="
+			M 0 4.242640687119285
+			A 4.242640687119285 4.242640687119285 0 0 0 0 -4.242640687119285
+			A 2.1213203435596424 4.242640687119285 0 0 1 0 4.242640687119285
+			Z
+		" transform=" translate(57.81126 -234.09853) rotate(-76.12820191553686)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="1.8708286933869707" cx="57.43116" cy="-249.09853"></circle><path d="
+			M 0 1.8708286933869707
+			A 1.8708286933869707 1.8708286933869707 0 0 0 0 -1.8708286933869707
+			A 0.9354143466934853 1.8708286933869707 0 0 1 0 1.8708286933869707
+			Z
+		" transform=" translate(57.43116 -249.09853) rotate(-77.01698339734166)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="1.7320508075688772" cx="68.21906" cy="-217.01533"></circle><path d="
+			M 0 1.7320508075688772
+			A 1.7320508075688772 1.7320508075688772 0 0 0 0 -1.7320508075688772
+			A 0.8660254037844386 1.7320508075688772 0 0 1 0 1.7320508075688772
+			Z
+		" transform=" translate(68.21906 -217.01533) rotate(-72.5493895288803)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="4.358898943540674" cx="192.83059" cy="248.63789"></circle><path d="
+			M 0 4.358898943540674
+			A 4.358898943540674 4.358898943540674 0 0 0 0 -4.358898943540674
+			A 2.179449471770337 4.358898943540674 0 0 1 0 4.358898943540674
+			Z
+		" transform=" translate(192.83059 248.63789) rotate(52.20470883043405)" fill="#000000" opacity="0.5"></path><circle fill="rgb(244, 139, 15)" r="7.0710678118654755" cx="-470.9665" cy="183.2162" filter="url(#starGlow)"></circle>  <circle fill="rgb(244, 139, 15)" r="7.0710678118654755" cx="-470.9665" cy="183.2162" filter=""></circle> <circle fill="rgb(255, 86, 0)" r="3.872983346207417" cx="-495.83739" cy="222.18988"></circle><path d="
+			M 0 3.872983346207417
+			A 3.872983346207417 3.872983346207417 0 0 0 0 -3.872983346207417
+			A 1.9364916731037085 3.872983346207417 0 0 1 0 3.872983346207417
+			Z
+		" transform=" translate(-495.83739 222.18988) rotate(155.8623535760301)" fill="#000000" opacity="0.5"></path><circle fill="rgb(255, 86, 0)" r="2.23606797749979" cx="-496.45299" cy="207.18988"></circle><path d="
+			M 0 2.23606797749979
+			A 2.23606797749979 2.23606797749979 0 0 0 0 -2.23606797749979
+			A 1.118033988749895 2.23606797749979 0 0 1 0 2.23606797749979
+			Z
+		" transform=" translate(-496.45299 207.18988) rotate(157.3472521377262)" fill="#000000" opacity="0.5"></path><circle fill="rgb(174, 121, 83)" r="3.4641016151377544" cx="-404.90827" cy="194.66851"></circle><path d="
+			M 0 3.4641016151377544
+			A 3.4641016151377544 3.4641016151377544 0 0 0 0 -3.4641016151377544
+			A 1.7320508075688772 3.4641016151377544 0 0 1 0 3.4641016151377544
+			Z
+		" transform=" translate(-404.90827 194.66851) rotate(154.3230610486349)" fill="#000000" opacity="0.5"></path><circle fill="rgb(174, 121, 83)" r="4.795831523312719" cx="-500" cy="121.99858"></circle><path d="
+			M 0 4.795831523312719
+			A 4.795831523312719 4.795831523312719 0 0 0 0 -4.795831523312719
+			A 2.3979157616563596 4.795831523312719 0 0 1 0 4.795831523312719
+			Z
+		" transform=" translate(-500 121.99858) rotate(166.28791671824143)" fill="#000000" opacity="0.5"></path><circle fill="rgb(191, 187, 224)" r="2" cx="-500" cy="111.80218"></circle><path d="
+			M 0 2
+			A 2 2 0 0 0 0 -2
+			A 1 2 0 0 1 0 2
+			Z
+		" transform=" translate(-500 111.80218) rotate(167.39575037339017)" fill="#000000" opacity="0.5"></path><defs><path id="planetLabelPath8434" d="M 37.34 0 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8434" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран A</textPath></text><defs><path id="planetLabelPath8435" d="M -26.255585997031027 0.01534 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8435" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран B</textPath></text><defs><path id="planetLabelPath8436" d="M 9.746043346207417 -103.69 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8436" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран I</textPath></text><defs><path id="planetLabelPath8437" d="M 57.95299068711928 119.29998 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8437" startOffset="0" dominant-baseline="middle" text-anchor="start">Цек-Тризик</textPath></text><defs><path id="planetLabelPath8438" d="M 49.54855787991171 132.82173 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8438" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран IIa</textPath></text><defs><path id="planetLabelPath8439" d="M -146.93506051443364 27.64761 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8439" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран III</textPath></text><defs><path id="planetLabelPath8440" d="M 138.59658152331272 146.34535 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8440" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран IV</textPath></text><defs><path id="planetLabelPath8441" d="M 67.05390068711928 -234.09853 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8441" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран V</textPath></text><defs><path id="planetLabelPath8442" d="M 64.30198869338697 -249.09853 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8442" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран Va</textPath></text><defs><path id="planetLabelPath8443" d="M 74.95111080756888 -217.01533 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8443" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран Vb</textPath></text><defs><path id="planetLabelPath8444" d="M 202.18948894354068 248.63789 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8444" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран VI</textPath></text><defs><path id="planetLabelPath8445" d="M -458.8954321881345 183.2162 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8445" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран C</textPath></text><defs><path id="planetLabelPath8446" d="M -486.9644066537926 222.18988 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8446" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран CI</textPath></text><defs><path id="planetLabelPath8447" d="M -489.2169220225002 207.18988 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8447" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран CIa</textPath></text><defs><path id="planetLabelPath8448" d="M -396.4441683848623 194.66851 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8448" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран CII</textPath></text><defs><path id="planetLabelPath8449" d="M -490.2041684766873 121.99858 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8449" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран CIII</textPath></text><defs><path id="planetLabelPath8450" d="M -493 111.80218 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath8450" startOffset="0" dominant-baseline="middle" text-anchor="start">Цекоран CIIIa</textPath></text><g fill="rgb(51, 127, 91)"><path d="
+				M 4.184848069867726 -401.1015919273222
+				L -55.690670468239766 -397.23865524744434
+				L -27.04055675914532 -419.12862976675245
+				Z
+			"></path><defs><path id="connectionLabelPath127" pathLength="1" d="M -524.3936542934254 -361.98935804355847 L 473.53165467503294 -426.3716360415235"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath127" startOffset="0.5" text-anchor="middle" dominant-baseline="hanging">Цк’Ран-Тцек</textPath></text></g><g fill="rgb(51, 127, 91)"><path d="
+				M -400.2387620082433 26.625803013407438
+				L -391.7897312814775 86.0279400101365
+				L -415.8149589771034 59.143215087360566
+				Z
+			"></path><defs><path id="connectionLabelPath440" pathLength="1" d="M -461.47265795151463 -439.3950226882007 L -320.6554791720847 550.6405939239503"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath440" startOffset="0.5" text-anchor="middle" dominant-baseline="auto">Кричрена</textPath></text></g><g fill="rgb(51, 127, 91)"><path d="
+				M -267.7789735666893 -298.65435090681393
+				L -309.33088325807205 -255.3711116449568
+				L -302.9826748329997 -290.86336783967965
+				Z
+			"></path><defs><path id="connectionLabelPath476" pathLength="1" d="M -631.2139059020825 87.14358838053909 L 61.31792228763072 -634.2437326504127"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath476" startOffset="0.5" text-anchor="middle" dominant-baseline="hanging">Цк-Тенрец</textPath></text></g><g fill="rgb(51, 127, 91)"><path d="
+				M 133.63599473372383 378.20817139708674
+				L 188.55489667908975 354.0438545411257
+				L 169.15021799172712 384.43231361756153
+				Z
+			"></path><defs><path id="connectionLabelPath53" pathLength="1" d="M -298.57576357630603 562.918744940001 L 616.7392688464595 160.1801306739838"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath53" startOffset="0.5" text-anchor="middle" dominant-baseline="auto">Чрец’Крокс</textPath></text></g><g fill="rgb(51, 127, 91)"><path d="
+				M 377.7087734297063 -135.04103996277132
+				L 353.3404654664994 -189.86973287998677
+				L 383.80085042050797 -170.578155742448
+				Z
+			"></path><defs><path id="connectionLabelPath679" pathLength="1" d="M 157.88632867827772 -617.3304684012403 L 564.0247947317255 296.4810802190167"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath679" startOffset="0.5" text-anchor="middle" dominant-baseline="hanging">Чрец’Арос-Тцек</textPath></text></g></g><g transform="translate(-600 -600) scale(1.2)"></g></svg>
