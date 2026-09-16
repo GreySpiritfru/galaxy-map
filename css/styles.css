@@ -22,6 +22,8 @@ html, body {
   overflow: hidden;
   user-select: none;
   -webkit-user-drag: none;
+  /* iOS: без этого долгое нажатие на иконку маркера открывает меню картинки. */
+  -webkit-touch-callout: none;
   touch-action: none;
   /* На карте галактики ~1600 подписей, и каждая перерисовывается при любом
      изменении viewBox, то есть на КАЖДОМ кадре перетаскивания. Замер: текст
@@ -486,6 +488,29 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   .story-beacon { display: none; }
 }
 .sys-hit { pointer-events: auto; cursor: pointer; }
+
+/* «Где это на карте» — долгое нажатие на маркер в нодах (showNodeOnMap в
+   js/map.js): по прилёту маркер обводится сходящимся кольцом. Число повторов
+   ставит скрипт; длительность 0.9s продублирована там же (снятие кольца). */
+.map-locate-ring {
+  fill: none;
+  stroke: #AFEEEE;
+  stroke-width: 2.5px;
+  vector-effect: non-scaling-stroke;
+  transform-box: fill-box;
+  transform-origin: center;
+  pointer-events: none;
+  opacity: 0;
+  animation: mapLocateRing 0.9s ease-out;
+}
+@keyframes mapLocateRing {
+  0%   { transform: scale(4); opacity: 0; }
+  35%  { opacity: 1; }
+  100% { transform: scale(1); opacity: 0.2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .map-locate-ring { animation: none; opacity: 1; }
+}
 
 .svg-controls {
   position: absolute;

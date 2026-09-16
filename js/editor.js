@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=112';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=116';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -445,7 +445,7 @@ export function showEditorList() {
         <div class="editor-list-section">
           ${sections.length > 1 ? `<div class="editor-list-title">${label}</div>` : ''}
           ${list.map(row).join('')}
-        </div>`).join('') || '<div class="editor-hint">Пока нечего править — попроси владельца группы привязать персонажа.</div>'}
+        </div>`).join('') || '<div class="editor-hint">Пока нечего править — попроси владельца группы открыть тебе правку персонажа.</div>'}
     </div>`);
 
   const list = modalContent.querySelector('.editor-list');

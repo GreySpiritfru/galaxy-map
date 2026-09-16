@@ -137,6 +137,29 @@ export function createPanZoom(svg, opts) {
 
   let isPanning = false, panStart = null, panViewStart = null, moved = false, downTarget = null;
 
+  /* Долгое нажатие — та же схема, что у тапа: элемент помечается __onLongPress.
+     Срабатывает, если палец продержали LONG_PRESS_MS и почти не сдвинули
+     (LONG_PRESS_SLOP — дрожание пальца больше 3 px, после которых уже едет
+     карта). Обработчик вернул false — нажатие не его, отпускание остаётся
+     обычным тапом; иначе тап на отпускании не срабатывает. */
+  const LONG_PRESS_MS = 500;
+  const LONG_PRESS_SLOP = 10;
+  let longPressTimer = null, longPressDone = false;
+  function cancelLongPress() {
+    if (longPressTimer) { clearTimeout(longPressTimer); longPressTimer = null; }
+  }
+  function findLongPressHandler(el) {
+    while (el && el !== svg) {
+      if (el.__onLongPress) return el.__onLongPress;
+      el = el.parentNode;
+    }
+    return null;
+  }
+  // Меню «сохранить картинку» по долгому нажатию на иконку маркера.
+  svg.addEventListener('contextmenu', (e) => {
+    if (findLongPressHandler(e.target)) e.preventDefault();
+  });
+
   // Единая точка входа для "тапа" по интерактивному элементу (hotspot, подпись системы и т.п.).
   // Вместо отдельных click-слушателей на каждом элементе — элемент просто помечается
   // свойством __onTap, а здесь мы поднимаемся вверх по DOM от места клика и ищем ближайший
@@ -162,12 +185,24 @@ export function createPanZoom(svg, opts) {
     isPanning = true; moved = false;
     panStart = {x: e.clientX, y: e.clientY};
     panViewStart = {...cur};
+    cancelLongPress();
+    longPressDone = false;
+    const longPress = findLongPressHandler(e.target);
+    if (longPress) {
+      longPressTimer = setTimeout(() => {
+        longPressTimer = null;
+        if (!isPanning || pinch.active) return;
+        longPressDone = longPress(e) !== false;
+        if (longPressDone) { isPanning = false; busyDrag = false; refreshBusy(); }
+      }, LONG_PRESS_MS);
+    }
   });
 
   svg.addEventListener('pointermove', (e) => {
     if (!isPanning) return;
     e.preventDefault();
     const dx = e.clientX - panStart.x, dy = e.clientY - panStart.y;
+    if (longPressTimer && Math.hypot(dx, dy) > LONG_PRESS_SLOP) cancelLongPress();
     // Класс вешаем не на pointerdown, а только когда палец реально поехал —
     // иначе подписи моргали бы на каждом обычном тапе по системе/маркеру.
     if (!moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
@@ -192,6 +227,13 @@ export function createPanZoom(svg, opts) {
   });
 
   svg.addEventListener('pointerup', (e) => {
+    cancelLongPress();
+    if (longPressDone) {
+      // Нажатие уже обработано долгим — отпускание не тап и не конец драга.
+      longPressDone = false;
+      try { svg.releasePointerCapture(e.pointerId); } catch (err) {}
+      return;
+    }
     if (isPanning) {
       svg.releasePointerCapture(e.pointerId);
       if (!moved) {
@@ -204,6 +246,7 @@ export function createPanZoom(svg, opts) {
     busyDrag = false; refreshBusy();
   });
   svg.addEventListener('pointercancel', () => {
+    cancelLongPress();
     isPanning = false;
     busyDrag = false; refreshBusy();
   });
@@ -213,6 +256,7 @@ export function createPanZoom(svg, opts) {
 
   svg.addEventListener('touchstart', (e) => {
     if (e.touches.length === 2) {
+      cancelLongPress();
       cancelAnim();
       pinch.active = true;
       busyPinch = true; refreshBusy();

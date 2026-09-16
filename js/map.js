@@ -1,14 +1,14 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=112';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=112';
-import { openSystem, slugify } from './system-view.js?v=112';
-import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=112';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=112';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=112';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=112';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=112';
+import { createPanZoom } from './panzoom.js?v=116';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=116';
+import { openSystem, slugify } from './system-view.js?v=116';
+import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=116';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=116';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=116';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=116';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=116';
 
 const SVG_PATH = 'map.svg';
 
@@ -723,7 +723,7 @@ function finishMapPick(p) {
     g.appendChild(beacon);
   }
 
-  function createMapIcon({x, y, image, dotFill, dotStroke, ringColor, shape, size, aspect, onTap, beacon}) {
+  function createMapIcon({x, y, image, dotFill, dotStroke, ringColor, shape, size, aspect, onTap, onLongPress, beacon}) {
     const iconSize = size || MARKER_SIZE;
     const iconAspect = aspect || 1;
     const g = document.createElementNS(ns, 'g');
@@ -785,6 +785,7 @@ function finishMapPick(p) {
     }
 
     g.__onTap = onTap;
+    if (onLongPress) g.__onLongPress = onLongPress;
     graphLayer.appendChild(g);
     return g;
   }
@@ -1017,6 +1018,12 @@ function finishMapPick(p) {
           if (calibMode) { showCalib(node.x, node.y); return; }
           goToNode(node);
         },
+        // Долгое нажатие — переход между нодами и картой прямо к этому маркеру
+        // (locateNode). Во время выбора места/калибровки — обычный тап.
+        onLongPress: () => {
+          if (mapPickHandler || calibMode) return false;
+          locateNode(node);
+        },
       });
     });
   }
@@ -1217,7 +1224,42 @@ function finishMapPick(p) {
     }
   }
 
-  async function setViewMode(mode, instant) {
+  /* Долгое нажатие на маркер (16.09.2026) — переключение режима прямо к нему:
+     - в нодах: уйти на карту (ту, с которой пришли), камера прилетает не туда,
+       откуда уходили в ноды, а к маркеру — чтобы было видно, где он на карте.
+       Кадр шире FOCUS_WIDTH — вокруг должно быть видно окрестности;
+     - на карте/в «Графике»: уйти в ноды, камера — на этот маркер в графе, чуть
+       ближе общего вида (на телефоне общий вид и так на пределе зума, там
+       просто центрируется).
+     Окно не открывается; по прилёту маркер несколько раз обводится кольцом. */
+  const LOCATE_WIDTH = 160;
+  const LOCATE_NODES_ZOOM = 0.6;
+  const LOCATE_PULSES = 3;
+  async function locateNode(node) {
+    try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium'); } catch (e) {}
+    const toNodes = viewMode !== 'nodes';
+    if (toNodes) {
+      await setViewMode('nodes', false, {x: node.graphX, y: node.graphY, w: graphViewWidth() * LOCATE_NODES_ZOOM});
+    } else {
+      await setViewMode(savedMapMode(), false, {x: node.mapX, y: node.mapY, w: LOCATE_WIDTH});
+    }
+    if ((viewMode === 'nodes') !== toNodes || !node.__el) return;
+    const ring = document.createElementNS(ns, 'circle');
+    ring.setAttribute('class', 'map-locate-ring');
+    ring.setAttribute('cx', node.x);
+    ring.setAttribute('cy', node.y);
+    ring.setAttribute('r', (toNodes ? node.graphSize : node.size) * 0.75);
+    ring.style.animationIterationCount = LOCATE_PULSES;
+    graphLayer.appendChild(ring);
+    // По таймеру, а не по animationend: при prefers-reduced-motion анимации нет
+    // вовсе, и кольцо осталось бы навсегда. 900 — длительность в css.
+    setTimeout(() => ring.remove(), LOCATE_PULSES * 900 + 100);
+  }
+  // На какую карту возвращаться из нод: ту, что была до них («Графика» тоже карта).
+  let mapModeBeforeNodes = 'map';
+  function savedMapMode() { return mapModeBeforeNodes; }
+
+  async function setViewMode(mode, instant, focus) {
     if (mode === viewMode || !viewSwitchBtns.some(b => b.dataset.view === mode)) return;
     /* ⚠️ Ждём граф ТОЛЬКО если он ещё не приехал. Просто `await graphReady`
        здесь был бы дедлоком: эта же функция вызывается ИЗНУТРИ graphReady.then
@@ -1243,7 +1285,10 @@ function finishMapPick(p) {
       return;
     }
 
-    if (toNodes) savedMapView = pz.getViewBox(); // вернёмся ровно туда, откуда ушли
+    if (toNodes) {
+      savedMapView = pz.getViewBox(); // вернёмся ровно туда, откуда ушли
+      mapModeBeforeNodes = viewMode;
+    }
     viewMode = mode;
     updateViewModeUi();
     try { localStorage.setItem(VIEW_MODE_KEY, mode); } catch (e) {}
@@ -1256,9 +1301,9 @@ function finishMapPick(p) {
       n.targetScale = toNodes ? n.graphSize / n.size : 1;
     });
 
-    const target = toNodes
+    const target = focus || (toNodes
       ? {x: graphViewCenter.x, y: graphViewCenter.y, w: graphViewWidth()}
-      : {x: savedMapView.x + savedMapView.w / 2, y: savedMapView.y + savedMapView.h / 2, w: savedMapView.w};
+      : {x: savedMapView.x + savedMapView.w / 2, y: savedMapView.y + savedMapView.h / 2, w: savedMapView.w});
 
     if (instant) {
       graphNodes.forEach(n => { n.x = n.targetX; n.y = n.targetY; n.viewScale = n.targetScale; });
@@ -1412,6 +1457,29 @@ function finishMapPick(p) {
       closeModal();
       closeStory();
     };
+    /* Место выбирается на pointerup (panzoom) / отпускании пальца (OpenSeadragon),
+       а на телефоне браузер ПОСЛЕ этого досылает синтетический click в ту же
+       точку экрана. Открой форму сразу — click попадал в неё: чаще всего в
+       «📝 Изменить описание» (стоит как раз посередине), и карта закрывалась,
+       а бот просил текст. Поэтому форма открывается после этого click (он
+       гасится) или через паузу, если его не будет (мышь без click, старый WebView). */
+    const afterTap = (fn) => {
+      let done = false;
+      const run = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        document.removeEventListener('click', swallow, true);
+        fn();
+      };
+      const swallow = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setTimeout(run, 0);
+      };
+      document.addEventListener('click', swallow, true);
+      const timer = setTimeout(run, 450);
+    };
     // Общий выбор места на карте галактики: для персонажа и для сюжета/локации.
     // reopenForm — как вернуться к своей форме после тапа или «Отмены».
     const pickPlace = (label, onPick, reopenForm) => {
@@ -1420,7 +1488,7 @@ function finishMapPick(p) {
       if (viewMode === 'nodes') setViewMode('map', true);
       showPickBanner(`📍 Тапни, где стоит ${label}`);
       const back = () => { hidePickBanner(); reopenForm(); };
-      mapPickHandler = (p) => { onPick(p); back(); };
+      mapPickHandler = (p) => { onPick(p); hidePickBanner(); afterTap(reopenForm); };
       pickCancel = () => { mapPickHandler = null; back(); };
     };
     initEditor({
@@ -1439,7 +1507,7 @@ function finishMapPick(p) {
         const done = () => { if (isPhenomOpen()) closePhenom(); reopen(char); };
         // Третий путь, кроме тапа и «Отмены»: окно закрыли ✕/«назад» —
         // closePhenom сам вызовет onAbort, и мы вернёмся к форме.
-        setSubmapPickHandler((p) => { onPick(p); done(); }, () => reopen(char));
+        setSubmapPickHandler((p) => { onPick(p); hidePickBanner(); afterTap(done); }, () => reopen(char));
         pickCancel = () => { setSubmapPickHandler(null); done(); };
       },
     });

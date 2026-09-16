@@ -26,7 +26,7 @@
    потребуется открывать ДВА таких окна одновременно — вот тут придётся
    заводить второй экземпляр overlay/viewer, сейчас это не нужно (как и
    везде в проекте, одновременно открыто максимум одно окно-вкладыш). */
-import { closeModal, escapeHtml } from './modal.js?v=112';
+import { closeModal, escapeHtml } from './modal.js?v=116';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже
@@ -216,7 +216,11 @@ function renderPhenomCharOverlays() {
     }
     const tracker = new OpenSeadragon.MouseTracker({
       element: el,
-      clickHandler: () => {
+      clickHandler: (e) => {
+        // MouseTracker зовёт clickHandler и в конце перетаскивания, если палец
+        // отпустили над маркером: карту тянули, а открывалась анкета.
+        // quick — короткий тап без сдвига (как у canvas-click выше).
+        if (!e.quick) return;
         // Выбор места в редакторе: тап по чужому маркеру = «встать рядом с
         // ним», а не открыть его окно поверх незаконченного выбора.
         if (submapPickHandler) { finishSubmapPick({x: c.x, y: c.y}); return; }
