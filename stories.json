@@ -36,10 +36,12 @@
     "images": ["images/gxexp.jpg"],
     "markerImage": "images/gxexp.jpg",
     "color": "",
-    "parent": "",
+    "parent": "system:g-ux71",
     "links": [],
     "x": -157,
     "y": -219,
+    "systemX": 84,
+    "systemY": -83,
     "archiveUrl": "https://docs.google.com/document/d/1Rmtlx5xPQMgKyndHtP0ybh6mRBPNHk3EyaHntLIGp4s/edit?usp=sharing",
     "completed": true
   }
