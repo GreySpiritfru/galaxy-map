@@ -1683,8 +1683,27 @@ function finishMapPick(p) {
     if (saved && saved !== 'map') setViewMode(saved, true);
     else updateViewModeUi();
 
+    openFromLink(graph);
     return graph;
   });
+
+  /* Ссылка сразу на точку (17.09.2026) — для постов в канале и VK:
+     - Telegram: https://t.me/phenome2_bot/PhenomeMap?startapp=<id> — Mini App
+       получает <id> в initDataUnsafe.start_param (и в адресе как tgWebAppStartParam);
+     - браузер: https://greyspiritfru.github.io/galaxy-map/?open=<id>.
+     <id> — id сюжета/локации/персонажа из JSON (латиница, цифры, «-» и «_» —
+     других знаков startapp не допускает). Камера летит к точке, окно открывается
+     как от тапа по маркеру; точка внутри системы открывается сразу поверх карты.
+     Ссылки выдаёт бот: «ссылки», «ссылка <название>». */
+  function openFromLink(graph) {
+    const tg = window.Telegram && window.Telegram.WebApp;
+    const params = new URLSearchParams(location.search);
+    const id = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param)
+      || params.get('tgWebAppStartParam') || params.get('open') || '';
+    const node = /^[A-Za-z0-9_-]{1,64}$/.test(id) ? graph.get(id) : null;
+    if (!node || node.kind === 'system') return;
+    goToNode(node);
+  }
 
   /* Редактор персонажей (js/editor.js): выбор места тапом. Окна над картой
      на время выбора закрываются, сверху висит полоска с подсказкой и
