@@ -1,14 +1,14 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=120';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=120';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick } from './system-view.js?v=120';
-import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=120';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=120';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=120';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=120';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=120';
+import { createPanZoom } from './panzoom.js?v=121';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=121';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick } from './system-view.js?v=121';
+import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=121';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=121';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=121';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=121';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=121';
 
 const SVG_PATH = 'map.svg';
 
