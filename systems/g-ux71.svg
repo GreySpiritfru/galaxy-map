@@ -1,0 +1,51 @@
+<svg id="exportSystemMap" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-500 -500 1000 1000" width="4096" height="4096"><rect class="bg-rect" x="-500" y="-500" width="1000" height="1000" fill="rgb(0, 0, 0)"></rect><defs><filter id="glow" filterUnits="objectBoundingBox" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceGraphic" stdDeviation="2"></feGaussianBlur></filter><filter id="starGlow" filterUnits="objectBoundingBox" x="-500%" y="-500%" width="1100%" height="1100%"><feGaussianBlur in="SourceGraphic" stdDeviation="10"></feGaussianBlur></filter></defs><g> <circle cx="0" cy="0" r="70" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="95" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="120" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="145" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="170" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="195" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="220" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle>  <circle cx="0" cy="0" r="245" fill="none" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" stroke="rgb(62, 62, 62)" stroke-opacity="1"></circle> <circle fill="rgb(224, 214, 46)" r="8.246211251235321" cx="0" cy="0" filter="url(#starGlow)"></circle>  <circle fill="rgb(224, 214, 46)" r="8.246211251235321" cx="0" cy="0" filter=""></circle> <circle fill="rgb(255, 86, 0)" r="4.123105625617661" cx="3.78" cy="70"></circle><path d="
+			M 0 4.123105625617661
+			A 4.123105625617661 4.123105625617661 0 0 0 0 -4.123105625617661
+			A 2.0615528128088303 4.123105625617661 0 0 1 0 4.123105625617661
+			Z
+		" transform=" translate(3.78 70) rotate(86.9090299964595)" fill="#000000" opacity="0.5"></path><circle fill="rgb(156, 91, 45)" r="4.58257569495584" cx="83.9515" cy="-44.52745"></circle><path d="
+			M 0 4.58257569495584
+			A 4.58257569495584 4.58257569495584 0 0 0 0 -4.58257569495584
+			A 2.29128784747792 4.58257569495584 0 0 1 0 4.58257569495584
+			Z
+		" transform=" translate(83.9515 -44.52745) rotate(-27.94125241146794)" fill="#000000" opacity="0.5"></path><circle fill="rgb(255, 86, 0)" r="5.0990195135927845" cx="-78.102" cy="91.1148"></circle><path d="
+			M 0 5.0990195135927845
+			A 5.0990195135927845 5.0990195135927845 0 0 0 0 -5.0990195135927845
+			A 2.5495097567963922 5.0990195135927845 0 0 1 0 5.0990195135927845
+			Z
+		" transform=" translate(-78.102 91.1148) rotate(130.60259962808993)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="4.58257569495584" cx="128.72085" cy="-66.8566"></circle><path d="
+			M 0 4.58257569495584
+			A 4.58257569495584 4.58257569495584 0 0 0 0 -4.58257569495584
+			A 2.29128784747792 4.58257569495584 0 0 1 0 4.58257569495584
+			Z
+		" transform=" translate(128.72085 -66.8566) rotate(-27.44701075656526)" fill="#000000" opacity="0.5"></path><circle fill="rgb(255, 86, 0)" r="5.0990195135927845" cx="-32.5363" cy="167.1678"></circle><path d="
+			M 0 5.0990195135927845
+			A 5.0990195135927845 5.0990195135927845 0 0 0 0 -5.0990195135927845
+			A 2.5495097567963922 5.0990195135927845 0 0 1 0 5.0990195135927845
+			Z
+		" transform=" translate(-32.5363 167.1678) rotate(101.01392708470989)" fill="#000000" opacity="0.5"></path><circle fill="rgb(239, 239, 239)" r="4.58257569495584" cx="-150.2163" cy="-124.36125"></circle><path d="
+			M 0 4.58257569495584
+			A 4.58257569495584 4.58257569495584 0 0 0 0 -4.58257569495584
+			A 2.29128784747792 4.58257569495584 0 0 1 0 4.58257569495584
+			Z
+		" transform=" translate(-150.2163 -124.36125) rotate(219.620718006464)" fill="#000000" opacity="0.5"></path><circle fill="rgb(150, 126, 90)" r="5.5677643628300215" cx="44.5962" cy="215.8134"></circle><path d="
+			M 0 5.5677643628300215
+			A 5.5677643628300215 5.5677643628300215 0 0 0 0 -5.5677643628300215
+			A 2.7838821814150108 5.5677643628300215 0 0 1 0 5.5677643628300215
+			Z
+		" transform=" translate(44.5962 215.8134) rotate(78.32459532805059)" fill="#000000" opacity="0.5"></path><circle fill="rgb(168, 218, 39)" r="3.4641016151377544" cx="-35.3633" cy="-243.00325"></circle><path d="
+			M 0 3.4641016151377544
+			A 3.4641016151377544 3.4641016151377544 0 0 0 0 -3.4641016151377544
+			A 1.7320508075688772 3.4641016151377544 0 0 1 0 3.4641016151377544
+			Z
+		" transform=" translate(-35.3633 -243.00325) rotate(261.72009590565665)" fill="#000000" opacity="0.5"></path><defs><path id="planetLabelPath2316" d="M 13.246211251235321 0 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2316" startOffset="0" dominant-baseline="middle" text-anchor="start">G-UX71</textPath></text><defs><path id="planetLabelPath2317" d="M 12.90310562561766 70 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2317" startOffset="0" dominant-baseline="middle" text-anchor="start">Горячая планета</textPath></text><defs><path id="planetLabelPath2318" d="M 93.53407569495583 -44.52745 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2318" startOffset="0" dominant-baseline="middle" text-anchor="start">Облако осколков</textPath></text><defs><path id="planetLabelPath2319" d="M -68.00298048640722 91.1148 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2319" startOffset="0" dominant-baseline="middle" text-anchor="start">Горячая планета 2</textPath></text><defs><path id="planetLabelPath2320" d="M 138.30342569495585 -66.8566 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2320" startOffset="0" dominant-baseline="middle" text-anchor="start">Замерзший мир</textPath></text><defs><path id="planetLabelPath2321" d="M -22.43728048640721 167.1678 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2321" startOffset="0" dominant-baseline="middle" text-anchor="start">Горячая планета 3</textPath></text><defs><path id="planetLabelPath2322" d="M -140.63372430504415 -124.36125 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2322" startOffset="0" dominant-baseline="middle" text-anchor="start">Замерзший мир 2</textPath></text><defs><path id="planetLabelPath2323" d="M 55.16396436283003 215.8134 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2323" startOffset="0" dominant-baseline="middle" text-anchor="start">Газовый гигант</textPath></text><defs><path id="planetLabelPath2324" d="M -26.89919838486225 -243.00325 h 1000" pathLength="1"></path></defs><text font-family="Orbitron" font-size="10" fill="#FFFFFF"><textPath href="#planetLabelPath2324" startOffset="0" dominant-baseline="middle" text-anchor="start">Токсичный мир</textPath></text><g fill="rgb(51, 127, 91)"><path d="
+				M 348.2462001178017 199.05924772165702
+				L 374.0422149413426 144.8876165922212
+				L 379.2014179060508 180.57210376478608
+				Z
+			"></path><defs><path id="connectionLabelPath126" pathLength="1" d="M 141.66311473927857 621.2540236669425 L 571.5966951316263 -281.60649515698776"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath126" startOffset="0.5" text-anchor="middle" dominant-baseline="auto">Предел Федерации</textPath></text></g><g fill="rgb(51, 127, 91)"><path d="
+				M -333.57266755008163 222.77629017362398
+				L -296.6114384279118 270.0400981219735
+				L -330.8466556384466 258.7286038551887
+				Z
+			"></path><defs><path id="connectionLabelPath241" pathLength="1" d="M -619.1636450113826 -150.53697451529467 L -3.143159641885802 637.1931579571972"></path></defs><text font-family="Orbitron" font-size="10"><textPath href="#connectionLabelPath241" startOffset="0.5" text-anchor="middle" dominant-baseline="auto">?-UX70</textPath></text></g></g><g transform="translate(-500 -500) scale(1)"></g></svg>
