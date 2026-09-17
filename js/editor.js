@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=119';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=120';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -52,6 +52,7 @@ const FIELD_LABELS = {
     title: 'Название', shortTitle: 'Короткое название', code: 'Номер', archiveUrl: 'Архив', color: 'Цвет',
     completed: 'Статус',
     role: 'Тип', parent: 'Привязка', links: 'Связи', x: 'Место на карте', y: 'Место на карте',
+    systemX: 'Место в системе', systemY: 'Место в системе',
   },
 };
 
@@ -102,14 +103,19 @@ function fieldsOf(kind, d) {
       submapY: typeof d.submapY === 'number' ? d.submapY : null,
     };
   }
+  // Место внутри системы — у сюжета и локации с "parent": "system:<слаг>".
+  const inSystem = {
+    systemX: typeof d.systemX === 'number' ? d.systemX : null,
+    systemY: typeof d.systemY === 'number' ? d.systemY : null,
+  };
   if (kind === 'story') {
     return {
-      title: d.title || '', ...common,
+      title: d.title || '', ...common, ...inSystem,
       shortTitle: d.shortTitle || '', code: d.code || '', archiveUrl: d.archiveUrl || '', color: d.color || '',
       completed: d.completed === true,
     };
   }
-  return {title: d.title || '', ...common, role: d.role === 'event' ? 'event' : ''};
+  return {title: d.title || '', ...common, ...inSystem, role: d.role === 'event' ? 'event' : ''};
 }
 
 /* ============================================================
@@ -248,6 +254,7 @@ function changesOf(kind, data, draft) {
   // могло совпасть со старым по одной из осей).
   if ('x' in set || 'y' in set) { set.x = draft.x; set.y = draft.y; }
   if ('submapX' in set || 'submapY' in set) { set.submapX = draft.submapX; set.submapY = draft.submapY; }
+  if ('systemX' in set || 'systemY' in set) { set.systemX = draft.systemX; set.systemY = draft.systemY; }
   return set;
 }
 
@@ -690,8 +697,11 @@ export function showNodeEditor(node) {
     ['Сюжеты', targets.filter(n => n.kind === 'story')],
     ['Локации', targets.filter(n => n.kind === 'location' && n.data.role !== 'event')],
     ['События', targets.filter(n => n.kind === 'location' && n.data.role === 'event')],
+    // Системы с картой (systems/manifest.json) — не точки графа, а список из map.js.
+    ['Системы', (hooks.systems || []).map(s => ({id: s.id, data: {title: '🪐 ' + s.title}}))],
   ];
   const option = (n) => `<option value="${escapeHtml(n.id)}"${draft.parent === n.id ? ' selected' : ''}>${escapeHtml(nodeLabel(n))}</option>`;
+  const system = draft.parent.startsWith('system:') ? (hooks.systems || []).find(s => s.id === draft.parent) : null;
   const linkTargets = [...graph.values()].filter(n => (n.kind === 'story' || n.kind === 'location') && n.id !== node.id);
   const incoming = new Set(node.links.map(n => n.id));
   draft.links.forEach(id => incoming.delete(id));
@@ -750,7 +760,14 @@ export function showNodeEditor(node) {
             ${groups.map(([label, list]) => list.length ? `<optgroup label="${label}">${list.map(option).join('')}</optgroup>` : '').join('')}
           </select>
         </label>
-        ${draft.parent
+        ${system
+          ? `<div class="editor-place">
+               <div>В системе «${escapeHtml(system.title)}»: <b>${draft.systemX == null ? 'место не указано' : `${draft.systemX}, ${draft.systemY}`}</b></div>
+               <button type="button" class="editor-btn" data-act="pick-system">🪐 Указать в системе</button>
+               ${draft.systemX == null ? '' : '<button type="button" class="editor-btn editor-btn--ghost" data-act="clear-system">Убрать</button>'}
+             </div>
+             <div class="editor-hint">На карте галактики — значок у названия системы, в окне системы — маркер и вкладка.</div>`
+          : draft.parent
           ? '<div class="editor-hint">На карте галактики стоит рядом со своей привязкой.</div>'
           : `<div class="editor-place">
                <div>Карта галактики: <b>${draft.x == null ? 'не указано' : `${draft.x}, ${draft.y}`}</b></div>
@@ -788,7 +805,12 @@ export function showNodeEditor(node) {
     draft.completed = e.target.checked;
     syncClosingConfirmation();
   });
-  form.querySelector('select[name="parent"]').addEventListener('change', () => showNodeEditor(node));
+  form.querySelector('select[name="parent"]').addEventListener('change', () => {
+    // Место внутри системы имеет смысл только у точки в системе.
+    if (!draft.parent.startsWith('system:')) { draft.systemX = null; draft.systemY = null; }
+    syncClosingConfirmation();
+    showNodeEditor(node);
+  });
 
   const problemOf = (set) => {
     if ('title' in set && !set.title) return 'Название не может быть пустым.';
@@ -821,6 +843,17 @@ export function showNodeEditor(node) {
         draft.y = Math.round(p.y);
         syncClosingConfirmation();
       }, () => showNodeEditor(node));
+    } else if (act === 'pick-system') {
+      hooks.pickInSystem(node.data.title || 'точка', draft.parent, (p) => {
+        draft.systemX = Math.round(p.x);
+        draft.systemY = Math.round(p.y);
+        syncClosingConfirmation();
+      }, () => showNodeEditor(node));
+    } else if (act === 'clear-system') {
+      draft.systemX = null;
+      draft.systemY = null;
+      syncClosingConfirmation();
+      showNodeEditor(node);
     } else if (act === 'reset') {
       drafts.delete(node.kind + ':' + node.id);
       syncClosingConfirmation();

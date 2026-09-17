@@ -37,7 +37,7 @@ const TWO_PI = Math.PI * 2;
 /* Базовый размер точки по её типу — тот же, что был до появления графа
    (8 у фракций и сюжетов, 2 у персонажа-спутника). Реальный размер узла
    может оказаться меньше базового, см. CHILD_SHRINK. */
-const BASE_SIZE = { location: 8, story: 8, character: 3 };
+const BASE_SIZE = { location: 8, story: 8, character: 3, system: 8 };
 
 /* Размеры тех же узлов в режиме "Ноды" (см. layoutGraphView внизу файла) —
    иерархия там намеренно ПЛОЩЕ, чем на карте.
@@ -54,7 +54,7 @@ const BASE_SIZE = { location: 8, story: 8, character: 3 };
    заметно мельче), но персонаж уже полноценная кликабельная мишень, а не
    точка. На карте те же узлы остаются прежними (8 / 4.4 / 2) — там мелкий
    персонаж правильный, он спутник на орбите, а не самостоятельное место. */
-const GRAPH_VIEW_SIZE = { location: 8, story: 8, character: 4.5 };
+const GRAPH_VIEW_SIZE = { location: 8, story: 8, character: 4.5, system: 8 };
 const GRAPH_VIEW_SHRINK = 0.8;
 
 /* "role": "event" у локации (markers.json) — старые/декоративные точки,
@@ -198,6 +198,10 @@ export function buildNodes(sources) {
            сейчас в проекте им никто не пользуется, но он проверен (тесты в
            истории сессии) и оставлен как есть на будущее. */
         onMap: item.onMap !== false,
+        /* mapHidden — узел есть в режиме «Ноды», но НЕ на карте галактики
+           (17.09.2026): сама система (kind 'system' — её «маркер» на карте это
+           подпись StellarMaps) и всё, что внутри неё. Считается ниже. */
+        mapHidden: kind === 'system',
       });
     });
   });
@@ -256,6 +260,9 @@ export function buildNodes(sources) {
       // всё поддерево уходит с карты целиком. Иначе дети "постоянного"
       // сюжета остались бы висеть без якоря в случайном месте.
       if (!node.onMap) child.onMap = false;
+      // Внутри системы — на карте галактики не рисуется (вместо маркера значок у
+      // подписи системы, см. renderSystemBadges в map.js), в нодах — как обычно.
+      if (node.mapHidden) child.mapHidden = true;
       queue.push(child);
     });
   }
@@ -563,17 +570,31 @@ function buildThreads(nodes, far = new Set()) {
 
 /* Основная раскладка — "как на карте": корни стоят на своих координатах из
    JSON, дети кольцами вокруг них. Пишет x/y прямо в узлы и возвращает нити. */
+/* ⚠️ Узлы mapHidden (система и всё внутри неё) в карточной раскладке не
+   участвуют: места на карте не занимают и соседей не расталкивают. Их «позиция
+   на карте» — звезда системы: оттуда они вылетают при переходе в ноды и туда
+   возвращаются. Возвращаются ВСЕ нити, у нитей к таким узлам nodesOnly = true —
+   map.js рисует их только в режиме нод, как далёкие союзы. */
 export function layoutNodes(byId) {
-  const nodes = [...byId.values()].filter(n => n.onMap);
+  const onMap = [...byId.values()].filter(n => n.onMap);
+  const nodes = onMap.filter(n => !n.mapHidden);
   placeTree(nodes.filter(n => !n.parent));
   // Далёкость — по стартовой раскладке, ДО пружин: иначе пружина сама и
   // стянула бы союзников в «ближних».
   const far = new Set();
   nodes.forEach(node => node.links.forEach(other => {
-    if (other.onMap && Math.hypot(node.x - other.x, node.y - other.y) > MAP_LINK_REACH) far.add(linkKey(node, other));
+    if (other.onMap && !other.mapHidden && Math.hypot(node.x - other.x, node.y - other.y) > MAP_LINK_REACH) far.add(linkKey(node, other));
   }));
-  const threads = buildThreads(nodes, far);
-  relax(nodes, threads.filter(t => !t.far), (a, b) => far.has(linkKey(a, b)) ? 0 : LINK_PULL);
+  relax(nodes, buildThreads(nodes, far).filter(t => !t.far && !t.a.mapHidden && !t.b.mapHidden),
+    (a, b) => far.has(linkKey(a, b)) || a.mapHidden || b.mapHidden ? 0 : LINK_PULL);
+  onMap.filter(n => n.mapHidden).forEach(n => {
+    let anchor = n;
+    while (anchor.parent && anchor.kind !== 'system') anchor = anchor.parent;
+    n.x = Number(anchor.data.x) || 0;
+    n.y = Number(anchor.data.y) || 0;
+  });
+  const threads = buildThreads(onMap, far);
+  threads.forEach(t => { t.nodesOnly = t.a.mapHidden || t.b.mapHidden; });
   return threads;
 }
 

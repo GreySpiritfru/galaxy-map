@@ -1437,6 +1437,23 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 .map-thread.far { display: none; }
 svg.nodes-mode.far-links .map-thread.far { display: inline; }
 
+/* Система и всё, что внутри неё (17.09.2026, mapHidden в js/graph.js), — только
+   в режиме нод, по тому же правилу, что далёкие союзы: на карте галактики
+   вместо них значки у подписи системы. */
+.map-thread.nodes-only,
+.hotspot.nodes-only { display: none; }
+svg.nodes-mode.far-links .map-thread.nodes-only,
+svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
+
+/* Значки у подписи системы (renderSystemBadges в js/map.js) — как значки справа
+   от названия системы в Stellaris. Маяк у значка мельче и спокойнее, чем у
+   маркера сюжета: он в самой гуще подписей. */
+.system-badges .story-beacon-ring { stroke-width: 1px; }
+.system-badges-more { pointer-events: none; }
+
+/* Маркеры внутри окна системы — поверх её SVG, постоянного размера на экране. */
+.system-markers .hotspot { cursor: pointer; }
+
 /* Группа связанных между собой персонажей внутри окна сюжета — визуальный
    аналог нити между ними на карте (см. groupByLinks в js/stories.js). */
 .story-character-group {

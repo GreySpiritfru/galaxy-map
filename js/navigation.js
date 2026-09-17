@@ -38,10 +38,10 @@
    вложенность считается по ТИПАМ слоёв (модал/сюжет/локация/система), а не
    по конкретным id узлов, этого достаточно для всех текущих сценариев.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=119';
-import { closeSystem, isSystemOpen, showSystemMap } from './system-view.js?v=119';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=119';
-import { closeStory, isStoryOpen } from './stories.js?v=119';
+import { closeModal, isArticleOpen } from './modal.js?v=120';
+import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=120';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=120';
+import { closeStory, isStoryOpen } from './stories.js?v=120';
 
 function depth() {
   let d = 0;
@@ -63,14 +63,15 @@ function depth() {
    "активный таб", который обновляет только showSystemMap(), и просто
    закрыть модал в обход неё оставило бы "Контролирующую расу" подсвеченной
    поверх уже закрытой статьи. */
+/* ⚠️ С 17.09.2026 поверх системы открывается и окно сюжета (вкладка/маркер
+   внутри системы), поэтому система больше не проверяется первой — только её
+   статья расы (isSystemLoreOpen), а сама система закрывается последней, как
+   самый нижний слой. */
 function closeTop() {
-  if (isSystemOpen()) {
-    if (isArticleOpen()) showSystemMap(); else closeSystem();
-    return;
-  }
-  if (isArticleOpen()) { closeModal(); return; }
+  if (isArticleOpen()) { if (isSystemLoreOpen()) showSystemMap(); else closeModal(); return; }
   if (isStoryOpen()) { closeStory(); return; }
   if (isPhenomOpen()) { closePhenom(); return; }
+  if (isSystemOpen()) { closeSystem(); return; }
 }
 
 // --- ESC на компьютере (в т.ч. Telegram Desktop — это обычная веб-страница) ---

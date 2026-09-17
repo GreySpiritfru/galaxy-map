@@ -1,14 +1,14 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=119';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=119';
-import { openSystem, slugify } from './system-view.js?v=119';
-import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=119';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=119';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=119';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=119';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=119';
+import { createPanZoom } from './panzoom.js?v=120';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=120';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick } from './system-view.js?v=120';
+import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=120';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=120';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=120';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=120';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=120';
 
 const SVG_PATH = 'map.svg';
 
@@ -723,7 +723,9 @@ function finishMapPick(p) {
     g.appendChild(beacon);
   }
 
-  function createMapIcon({x, y, image, dotFill, dotStroke, ringColor, shape, size, aspect, onTap, onLongPress, beacon}) {
+  // container — куда положить (по умолчанию слой графа; значки у подписей систем
+  // и маркеры внутри окна системы кладутся в свои группы).
+  function createMapIcon({x, y, image, dotFill, dotStroke, ringColor, shape, size, aspect, onTap, onLongPress, beacon, container}) {
     const iconSize = size || MARKER_SIZE;
     const iconAspect = aspect || 1;
     const g = document.createElementNS(ns, 'g');
@@ -786,7 +788,7 @@ function finishMapPick(p) {
 
     g.__onTap = onTap;
     if (onLongPress) g.__onLongPress = onLongPress;
-    graphLayer.appendChild(g);
+    (container || graphLayer).appendChild(g);
     return g;
   }
 
@@ -802,6 +804,8 @@ function finishMapPick(p) {
     location:  {shape: 'circle', dotFill: 'rgba(255,200,50,0.9)',   dotStroke: '#111',    ringColor: '#fff'},
     story:     {shape: 'circle', dotFill: 'rgba(196,148,255,0.95)', dotStroke: '#1a0f2e', ringColor: '#ffd76a'},
     character: {shape: 'square', dotFill: 'rgba(175,238,238,0.92)', dotStroke: '#0b2b2b', ringColor: '#AFEEEE'},
+    // Система — узел только режима «Ноды»: мини-карта самой системы в бирюзовом круге.
+    system:    {shape: 'circle', dotFill: 'rgba(175,238,238,0.25)', dotStroke: '#AFEEEE', ringColor: '#AFEEEE'},
   };
 
   /* "border" у локации (markers.json, 15.09.2026) — какую ФОРМУ (не цвет, не
@@ -825,6 +829,7 @@ function finishMapPick(p) {
   // (markerImage у сюжета, image у остальных) — сводим в одном месте, чтобы
   // отрисовка про это больше не знала.
   function nodeImage(node) {
+    if (node.kind === 'system') return `systems/${encodeURIComponent(node.data.slug)}.svg`;
     return node.data.markerImage || node.data.image || '';
   }
 
@@ -851,6 +856,7 @@ function finishMapPick(p) {
     location: {icon: '📍', label: 'Локация'},
     story: {icon: '🎬', label: 'Сюжет'},
     character: {icon: '👤', label: 'Персонаж'},
+    system: {icon: '🪐', label: 'Система'},
   };
   function parentButtonMeta(node) {
     if (!node.parent) return null;
@@ -871,6 +877,11 @@ function finishMapPick(p) {
     if (node.kind === 'character') {
       updateStoryButton(parentButtonMeta(node));
       openCharacter(node.data, opts);
+      return;
+    }
+    // Система (родитель сюжета «system:<слаг>»): её окно, камера — на точку focusId внутри.
+    if (node.kind === 'system') {
+      openSystem(node.data.title, {focusId: opts && opts.focusId});
       return;
     }
     // Маркер с полем submap ("Феном" сейчас единственный, но не единственно
@@ -951,14 +962,18 @@ function finishMapPick(p) {
   // Точке без маркера на карте (onMap: false, см. js/graph.js) лететь некуда —
   // позиции у неё нет вообще, открываем её окно сразу. instant — см.
   // focusAndOpen выше: передаётся дальше без изменений.
-  function goToNode(node, instant) {
-    if (!node.onMap) { openNode(node); return; }
+  // opts — передаются в openNode (у системы: focusId — на какую точку внутри навести камеру).
+  function goToNode(node, instant, opts) {
+    if (!node.onMap) { openNode(node, opts); return; }
     /* В режиме "Ноды" весь граф помещается в кадр целиком (камера наведена на
        кластер), так что лететь некуда — перелёт только сдвинул бы кластер под
        уже открывшимся окном, а после его закрытия игрок обнаружил бы граф не
        там, где оставил. Открываем сразу. */
-    if (viewMode === 'nodes') { openNode(node); return; }
-    focusAndOpen(node.x, node.y, () => openNode(node), instant);
+    if (viewMode === 'nodes') { openNode(node, opts); return; }
+    // Точка внутри системы на карте галактики стоит в звезде системы — камера
+    // летит к системе. Уже открытая система: камера карты не видна, сразу.
+    if (node.mapHidden && isSystemOpen()) { openNode(node, opts); return; }
+    focusAndOpen(node.x, node.y, () => openNode(node, opts), instant);
   }
 
   /* Нити между узлами: сплошная к родителю, пунктирная к союзнику (см.
@@ -971,7 +986,9 @@ function finishMapPick(p) {
       const line = document.createElementNS(ns, 'line');
       // .far — союз между точками на разных концах карты (MAP_LINK_REACH в
       // graph.js): на карте такая нить не рисуется, только в режиме нод.
-      line.setAttribute('class', t.kind === 'link' ? `map-thread link${t.far ? ' far' : ''}` : 'map-thread');
+      // .nodes-only — нить к системе или точке внутри неё (на карте их нет).
+      line.setAttribute('class', (t.kind === 'link' ? `map-thread link${t.far ? ' far' : ''}` : 'map-thread')
+        + (t.nodesOnly ? ' nodes-only' : ''));
       // Координаты не проставляем здесь: нить знает только СВОИ УЗЛЫ (t.a/t.b,
       // см. buildThreads в graph.js), а конкретные числа ставит
       // applyGraphPositions() — и при первой отрисовке, и в каждом кадре
@@ -981,43 +998,51 @@ function finishMapPick(p) {
     });
   }
 
+  /* Как выглядит маркер точки — форма, цвета, картинка, маяк. Одно и то же для
+     маркера на карте, значка у подписи системы и маркера внутри окна системы. */
+  function nodeIconOptions(node) {
+    const style = NODE_STYLE[node.kind] || NODE_STYLE.location;
+    // "role": "event" в markers.json — старые/второстепенные локации
+    // (остались от версии карты до Феном/сюжетов/персонажей): ромб вместо
+    // круга, размер уже уменьшен в graph.js (EVENT_LOCATION_SIZE). Цвета
+    // пока те же, что у обычной локации — задача была только про форму
+    // и размер, не про цвет.
+    const isEventLocation = node.kind === 'location' && node.data.role === 'event';
+    // "border" в markers.json (необязательное, только для локаций) —
+    // явная форма конкретной локации вместо обычного круга: "wide-square"
+    // у "Кольца Авалона", "hexagon" у Фенома (см. LOCATION_BORDER выше).
+    // "role": "event" проверяется ПЕРВЫМ и даёт ромб независимо от border —
+    // это другая категория (второстепенные фракции), а не альтернативная
+    // форма локации.
+    let shape = style.shape, aspect = 1;
+    if (isEventLocation) {
+      shape = 'diamond';
+    } else if (node.kind === 'location' && node.data.border) {
+      const border = LOCATION_BORDER[node.data.border];
+      if (border) { shape = border.shape; aspect = border.aspect; }
+    }
+    return {
+      image: nodeImage(node), shape, aspect,
+      dotFill: isCompleted(node) ? COMPLETED_COLOR : (node.data.color || style.dotFill),
+      dotStroke: style.dotStroke,
+      ringColor: isCompleted(node) ? COMPLETED_COLOR : (node.data.color || style.ringColor),
+      // Завершённый сюжет (completed в stories.json) — без маяка и серый:
+      // зовёт «сюда, тут идёт игра» только то, что ещё идёт.
+      beacon: node.kind === 'story' && !isCompleted(node) ? (node.data.color || style.ringColor) : null,
+    };
+  }
+
   function renderNodes(nodes) {
     nodes.forEach(node => {
       if (!node.onMap) return; // живёт только внутри окна родителя, маркера на карте нет
-      const style = NODE_STYLE[node.kind] || NODE_STYLE.location;
-      // "role": "event" в markers.json — старые/второстепенные локации
-      // (остались от версии карты до Феном/сюжетов/персонажей): ромб вместо
-      // круга, размер уже уменьшен в graph.js (EVENT_LOCATION_SIZE). Цвета
-      // пока те же, что у обычной локации — задача была только про форму
-      // и размер, не про цвет.
-      const isEventLocation = node.kind === 'location' && node.data.role === 'event';
-      // "border" в markers.json (необязательное, только для локаций) —
-      // явная форма конкретной локации вместо обычного круга: "wide-square"
-      // у "Кольца Авалона", "hexagon" у Фенома (см. LOCATION_BORDER выше).
-      // "role": "event" проверяется ПЕРВЫМ и даёт ромб независимо от border —
-      // это другая категория (второстепенные фракции), а не альтернативная
-      // форма локации.
-      let shape = style.shape, aspect = 1;
-      if (isEventLocation) {
-        shape = 'diamond';
-      } else if (node.kind === 'location' && node.data.border) {
-        const border = LOCATION_BORDER[node.data.border];
-        if (border) { shape = border.shape; aspect = border.aspect; }
-      }
       // Иконка всегда рисуется в КАРТОЧНОМ размере (node.size); укрупнение в
       // режиме нод делается масштабом самой группы в applyGraphPositions —
       // так один и тот же <g> годится для обоих режимов, и его не нужно
       // перерисовывать на переключении (а заодно маркер плавно растёт прямо
       // во время перелёта, что и просил игрок).
       node.__el = createMapIcon({
+        ...nodeIconOptions(node),
         x: node.x, y: node.y, size: node.size,
-        image: nodeImage(node), shape, aspect,
-        dotFill: isCompleted(node) ? COMPLETED_COLOR : (node.data.color || style.dotFill),
-        dotStroke: style.dotStroke,
-        ringColor: isCompleted(node) ? COMPLETED_COLOR : (node.data.color || style.ringColor),
-        // Завершённый сюжет (completed в stories.json) — без маяка и серый:
-        // зовёт «сюда, тут идёт игра» только то, что ещё идёт.
-        beacon: node.kind === 'story' && !isCompleted(node) ? (node.data.color || style.ringColor) : null,
         onTap: () => {
           if (mapPickHandler) { finishMapPick({x: node.x, y: node.y}); return; }
           if (calibMode) { showCalib(node.x, node.y); return; }
@@ -1033,6 +1058,8 @@ function finishMapPick(p) {
       // Картинка обесцвечивается в css (.map-node-completed image) — фильтр
       // только на маленькой <image>, не на всей группе (грабли №17).
       if (isCompleted(node)) node.__el.classList.add('map-node-completed');
+      // Система и всё внутри неё — только в нодах (на карте вместо них значки у подписи).
+      if (node.mapHidden) node.__el.classList.add('nodes-only');
     });
   }
 
@@ -1062,6 +1089,140 @@ function finishMapPick(p) {
     setCharacterNavigator(id => {
       const node = graph.get(id);
       if (node) goToNode(node, true);
+    });
+  }
+
+  /* ============================================================
+     Системы как места сюжетов (17.09.2026)
+
+     Точка с "parent": "system:<слаг>" живёт ВНУТРИ системы: на карте галактики
+     её маркера нет, вместо него — значок справа от подписи системы (как значки
+     у названий систем в самой Stellaris), по значку на каждую точку. В окне
+     системы — маркер на systemX/systemY (единицы SVG системы) и вкладка в
+     таб-баре. В нодах — обычный кластер: система → сюжет → персонажи.
+     ============================================================ */
+
+  // Маркер внутри системы — постоянного размера на экране, как значки на карте
+  // Stellaris: SVG системы от края до края — ~1000 единиц, и маркер в единицах
+  // карты на телефоне был бы то точкой, то блином во весь экран.
+  const SYSTEM_MARKER_PX = 30;
+  // Ширина кадра (доля всей системы), на которую камера подлетает к маркеру.
+  const SYSTEM_FOCUS_SHARE = 0.35;
+
+  function systemChildIcon(child) {
+    if (child.kind === 'story') return isCompleted(child) ? '✅' : '🎬';
+    if (child.kind === 'character') return '👤';
+    return child.data.role === 'event' ? '🔶' : '📍';
+  }
+
+  function hasSystemPlace(node) {
+    return typeof node.data.systemX === 'number' && typeof node.data.systemY === 'number';
+  }
+
+  function wireSystemWindows(graph) {
+    const focusIn = (sys, node, duration) => {
+      if (!sys || !sys.pz || !hasSystemPlace(node)) return;
+      const full = sys.pz.getInitialViewBox().w;
+      const w = Math.min(sys.pz.getViewBox().w, full * SYSTEM_FOCUS_SHARE);
+      sys.pz.focusOn(node.data.systemX, node.data.systemY, w, duration);
+    };
+
+    setSystemDecorator(({slug, svg: sysSvg, pz: sysPz, focusId}) => {
+      const sysNode = graph.get('system:' + slug);
+      const inside = sysNode ? sysNode.children.filter(c => c.onMap !== false) : [];
+      setSystemTabs(inside.map(c => ({id: c.id, icon: systemChildIcon(c), label: c.data.shortTitle || nodeTitle(c)})), (id) => {
+        const node = graph.get(id);
+        if (!node) return;
+        focusIn(getOpenSystem(), node, 0);
+        openNode(node);
+      });
+
+      if (sysSvg && !sysSvg.__systemMarkers) {
+        const layer = document.createElementNS(ns, 'g');
+        layer.setAttribute('class', 'system-markers');
+        sysSvg.appendChild(layer);
+        const markers = inside.filter(hasSystemPlace).map(node => {
+          const el = createMapIcon({
+            ...nodeIconOptions(node),
+            x: node.data.systemX, y: node.data.systemY, size: 1, container: layer,
+            onTap: () => {
+              if (trySystemPick({x: node.data.systemX, y: node.data.systemY})) return;
+              openNode(node);
+            },
+          });
+          if (isCompleted(node)) el.classList.add('map-node-completed');
+          return {el, x: node.data.systemX, y: node.data.systemY};
+        });
+        // Масштаб маркеров — от текущего кадра: сколько единиц SVG в одном
+        // пикселе экрана (preserveAspectRatio meet — берём большую из сторон).
+        const rescale = () => {
+          const vb = sysSvg.viewBox.baseVal;
+          const k = Math.max(vb.width / (sysSvg.clientWidth || 1), vb.height / (sysSvg.clientHeight || 1)) * SYSTEM_MARKER_PX;
+          markers.forEach(m => m.el.setAttribute('transform', `translate(${m.x} ${m.y}) scale(${k})`));
+        };
+        rescale();
+        if (markers.length) new MutationObserver(rescale).observe(sysSvg, {attributes: true, attributeFilter: ['viewBox']});
+        sysSvg.__systemMarkers = true;
+      }
+
+      if (focusId && graph.has(focusId)) focusIn({pz: sysPz}, graph.get(focusId), 600);
+    });
+  }
+
+  /* Значки у подписи системы на карте галактики — по одному на точку внутри,
+     слева направо от конца подписи. Кладутся в SVG рядом с самой подписью, а не
+     в слой графа: так режим нод прячет их вместе с картой (он оставляет только
+     #graphLayer), а «Графика» и 🏷️ — нет. Тап — окно системы с камерой на этой
+     точке, долгое нажатие — к этой точке в нодах. */
+  const SYSTEM_BADGE_SIZE = 2.6;
+  const SYSTEM_BADGE_GAP = 0.6;
+  const SYSTEM_BADGE_MAX = 5;
+  let labelsBySlug = new Map();
+
+  function renderSystemBadges(graph) {
+    graph.forEach(sys => {
+      if (sys.kind !== 'system') return;
+      const inside = sys.children.filter(c => c.onMap !== false);
+      const texts = (labelsBySlug.get(sys.data.slug) || []).filter(t => t.style.display !== 'none');
+      if (!inside.length || !texts.length) return;
+      const last = texts[texts.length - 1];
+      let box;
+      try { box = texts[0].getBBox(); } catch (e) { return; }
+      const group = document.createElementNS(ns, 'g');
+      group.setAttribute('class', 'system-badges');
+      last.parentNode.insertBefore(group, last.nextSibling);
+
+      const cy = box.y + box.height / 2;
+      const step = SYSTEM_BADGE_SIZE + SYSTEM_BADGE_GAP;
+      const x0 = box.x + box.width + SYSTEM_BADGE_GAP * 1.5 + SYSTEM_BADGE_SIZE / 2;
+      inside.slice(0, SYSTEM_BADGE_MAX).forEach((node, i) => {
+        const el = createMapIcon({
+          ...nodeIconOptions(node),
+          x: x0 + i * step, y: cy, size: SYSTEM_BADGE_SIZE, container: group,
+          onTap: () => {
+            if (mapPickHandler) { finishMapPick({x: sys.x, y: sys.y}); return; }
+            if (calibMode) { showCalib(sys.x, sys.y); return; }
+            goToNode(sys, false, {focusId: node.id});
+          },
+          onLongPress: () => {
+            if (mapPickHandler || calibMode) return false;
+            locateNode(node);
+          },
+        });
+        if (isCompleted(node)) el.classList.add('map-node-completed');
+      });
+      const extra = inside.length - SYSTEM_BADGE_MAX;
+      if (extra > 0) {
+        const more = document.createElementNS(ns, 'text');
+        more.setAttribute('x', x0 + SYSTEM_BADGE_MAX * step - SYSTEM_BADGE_SIZE / 2);
+        more.setAttribute('y', cy);
+        more.setAttribute('dominant-baseline', 'central');
+        more.setAttribute('font-size', '2.4');
+        more.setAttribute('fill', '#AFEEEE');
+        more.setAttribute('class', 'map-label-major system-badges-more');
+        more.textContent = `+${extra}`;
+        group.appendChild(more);
+      }
     });
   }
 
@@ -1382,6 +1543,76 @@ function finishMapPick(p) {
     btn.addEventListener('click', () => setViewMode(btn.dataset.view, false));
   });
 
+  const MANIFEST_PATH = 'systems/manifest.json';
+  /* systems/names.json — переименование подписей систем без нового экспорта
+     map.svg: {"название в map.svg": "название на карте"}. Подпись меняется
+     прямо в SVG при загрузке, и дальше система живёт под НОВЫМ именем: слаг
+     для manifest.json, lore.json и файла systems/<slug>.svg берётся из него.
+     Пример: {"?-UX71": "G-UX71"} → файл systems/g-ux71.svg. Нет файла — ничего
+     не переименовываем. */
+  const NAMES_PATH = 'systems/names.json';
+  async function loadSystemNames() {
+    try {
+      const resp = await fetch(NAMES_PATH, {cache:'no-cache'});
+      if (resp.status === 404) return {};
+      const data = await resp.json();
+      return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+    } catch (e) {
+      return {};
+    }
+  }
+  // Список слагов уже готовых систем — один лёгкий запрос вместо 1644 проверок
+  // по отдельности. Файла может не быть вообще (пока ни одной системы не готово) —
+  // тогда просто ничего не подсвечиваем, это не ошибка.
+  async function loadReadySystems() {
+    try {
+      const resp = await fetch(MANIFEST_PATH, {cache:'no-cache'});
+      // Та же история: не полагаемся на resp.ok из-за ложного срабатывания на 304
+      const list = await resp.json();
+      return new Set(list);
+    } catch (e) {
+      return new Set();
+    }
+  }
+
+  // Одна загрузка на всех: и подписи систем, и граф (системы как узлы).
+  const namesPromise = loadSystemNames();
+  const manifestPromise = loadReadySystems();
+
+  /* Системы как точки графа (17.09.2026): "parent": "system:<слаг>" у сюжета
+     или локации. Место системы на карте — её звезда: значок StellarMaps
+     (<use href="#icon-…">) стоит прямо перед подписью, подпись висит под ним.
+     Имя — с учётом systems/names.json, как у подписи на карте. Только системы
+     из manifest.json: нет своей карты — прятать сюжет некуда, и такая привязка
+     считается битой (точка встаёт на свои x/y, как при любой битой связи). */
+  function collectSystemAnchors(names, readySlugs) {
+    const found = new Map();
+    svg.querySelectorAll('text').forEach(t => {
+      const family = t.getAttribute('font-family') || '';
+      if (family === 'Impact' || parseFloat(t.getAttribute('font-size') || '0') >= 4.5) return;
+      const raw = t.textContent.trim();
+      if (!raw) return;
+      const shown = (typeof names[raw] === 'string' && names[raw].trim()) || raw;
+      const slug = slugify(shown);
+      if (!readySlugs.has(slug)) return;
+      let icon = t.previousElementSibling;
+      while (icon && icon.classList.contains('sys-hit')) icon = icon.previousElementSibling;
+      const ix = parseFloat(icon?.getAttribute('x')), iy = parseFloat(icon?.getAttribute('y'));
+      const iw = parseFloat(icon?.getAttribute('width')), ih = parseFloat(icon?.getAttribute('height'));
+      const hasIcon = icon && icon.tagName.toLowerCase() === 'use' && [ix, iy, iw, ih].every(isFinite);
+      if (found.has(slug) && (found.get(slug).hasIcon || !hasIcon)) return;
+      const tx = parseFloat(t.getAttribute('x')), ty = parseFloat(t.getAttribute('y'));
+      found.set(slug, {
+        slug, title: shown, hasIcon,
+        x: hasIcon ? ix + iw / 2 : tx,
+        y: hasIcon ? iy + ih / 2 : ty - 1.5,
+      });
+    });
+    return found;
+  }
+  // Все системы с картой — для «Привязки» в редакторе сюжета/локации.
+  let systemChoices = [];
+
   /* Три файла грузятся параллельно, но раскладка считается, только когда
      приехали все: связи ходят МЕЖДУ файлами (персонаж -> сюжет -> Феном), и
      по части графа позиции посчитать нельзя. Раньше маркеры фракций
@@ -1390,15 +1621,31 @@ function finishMapPick(p) {
     loadJsonList(MARKERS_PATH),
     loadJsonList(STORIES_PATH),
     loadJsonList(CHARACTERS_PATH),
-  ]).then(([markers, stories, characters]) => {
+    namesPromise,
+    manifestPromise,
+  ]).then(([markers, stories, characters, names, readySlugs]) => {
     // Свои отправленные, но ещё не доехавшие до GitHub Pages правки редактора
     // (js/editor.js) — поверх скачанных файлов и ДО раскладки: новая привязка
     // или место должны попасть в расчёт позиций.
     const pendingShown = applyPendingEdits({location: markers, story: stories, character: characters});
+    const anchors = collectSystemAnchors(names, readySlugs);
+    systemChoices = [...anchors.values()]
+      .map(a => ({id: 'system:' + a.slug, title: a.title}))
+      .sort((a, b) => a.title.localeCompare(b.title, 'ru'));
+    // Узлами графа становятся только системы, к которым что-то привязано:
+    // остальные в режиме нод были бы пустыми кружками.
+    const used = new Set([...markers, ...stories, ...characters]
+      .map(item => item && typeof item.parent === 'string' && item.parent.startsWith('system:') ? item.parent.slice(7) : null)
+      .filter(Boolean));
+    const systems = [...used].filter(slug => anchors.has(slug)).map(slug => {
+      const a = anchors.get(slug);
+      return {id: 'system:' + slug, slug, title: a.title, x: a.x, y: a.y};
+    });
     const graph = buildNodes([
       {kind: 'location', items: markers},
       {kind: 'story', items: stories},
       {kind: 'character', items: characters},
+      {kind: 'system', items: systems},
     ]);
 
     /* Обе раскладки считаются тут же, одна за другой, и обе замораживаются.
@@ -1425,6 +1672,7 @@ function finishMapPick(p) {
     graphNodes = [...graph.values()].filter(n => n.onMap && n.__el);
     applyGraphPositions();
     wireStoryWindows(graph);
+    wireSystemWindows(graph);
     wireEditor(graph);
     if (pendingShown) showPendingToast();
 
@@ -1497,6 +1745,7 @@ function finishMapPick(p) {
     const pickPlace = (label, onPick, reopenForm) => {
       closeLayers();
       closePhenom();
+      if (isSystemOpen()) closeSystem();
       if (viewMode === 'nodes') setViewMode('map', true);
       showPickBanner(`📍 Тапни, где стоит ${label}`);
       const back = () => { hidePickBanner(); reopenForm(); };
@@ -1506,6 +1755,21 @@ function finishMapPick(p) {
     initEditor({
       graph,
       pickPlace,
+      systems: systemChoices,
+      // Место сюжета/локации внутри системы: её окно, тап — systemX/systemY.
+      pickInSystem(label, systemId, onPick, reopenForm) {
+        const choice = systemChoices.find(s => s.id === systemId);
+        if (!choice) return;
+        closeLayers();
+        closePhenom();
+        const back = () => { hidePickBanner(); reopenForm(); };
+        openSystem(choice.title);
+        showPickBanner(`🪐 Тапни, где в системе «${choice.title}» стоит ${label}`);
+        const done = () => { if (isSystemOpen()) closeSystem(); back(); };
+        // Третий путь, кроме тапа и «Отмены»: окно закрыли ✕/«назад» — closeSystem сам вызовет back.
+        setSystemPickHandler((p) => { onPick(p); hidePickBanner(); afterTap(done); }, back);
+        pickCancel = () => { setSystemPickHandler(null); done(); };
+      },
       openCharacterEditor(node) {
         openNode(node, {edit: true});
       },
@@ -1571,7 +1835,8 @@ function finishMapPick(p) {
     const node = graph.get(story.id);
     if (!node || !node.parent) return;
     closeStory();
-    goToNode(node.parent, true);
+    // У системы — камера на маркер этого сюжета внутри неё.
+    goToNode(node.parent, true, {focusId: node.id});
   });
 
   // Все входы в Феном ведут через один и тот же перелёт камеры (focusAndOpen
@@ -1606,38 +1871,6 @@ function finishMapPick(p) {
      Ждём document.fonts.ready: в карте зашит кастомный шрифт (Orbitron), и если
      измерять getBBox() до его загрузки, размеры текста считаются по запасному
      шрифту — область клика получается смещена относительно того, что видно на экране. */
-  const MANIFEST_PATH = 'systems/manifest.json';
-  /* systems/names.json — переименование подписей систем без нового экспорта
-     map.svg: {"название в map.svg": "название на карте"}. Подпись меняется
-     прямо в SVG при загрузке, и дальше система живёт под НОВЫМ именем: слаг
-     для manifest.json, lore.json и файла systems/<slug>.svg берётся из него.
-     Пример: {"?-UX71": "G-UX71"} → файл systems/g-ux71.svg. Нет файла — ничего
-     не переименовываем. */
-  const NAMES_PATH = 'systems/names.json';
-  async function loadSystemNames() {
-    try {
-      const resp = await fetch(NAMES_PATH, {cache:'no-cache'});
-      if (resp.status === 404) return {};
-      const data = await resp.json();
-      return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
-    } catch (e) {
-      return {};
-    }
-  }
-  // Список слагов уже готовых систем — один лёгкий запрос вместо 1644 проверок
-  // по отдельности. Файла может не быть вообще (пока ни одной системы не готово) —
-  // тогда просто ничего не подсвечиваем, это не ошибка.
-  async function loadReadySystems() {
-    try {
-      const resp = await fetch(MANIFEST_PATH, {cache:'no-cache'});
-      // Та же история: не полагаемся на resp.ok из-за ложного срабатывания на 304
-      const list = await resp.json();
-      return new Set(list);
-    } catch (e) {
-      return new Set();
-    }
-  }
-
   const setupSystemLabels = (readySlugs, names) => {
     svg.querySelectorAll('text').forEach(textEl => {
       let name = textEl.textContent.trim();
@@ -1684,6 +1917,9 @@ function finishMapPick(p) {
          createPanZoom), так что рабочий процесс расстановки маркеров жив. */
       const slug = slugify(name);
       if (!readySlugs.has(slug)) return;
+      // Для значков того, что внутри системы (renderSystemBadges).
+      if (!labelsBySlug.has(slug)) labelsBySlug.set(slug, []);
+      labelsBySlug.get(slug).push(textEl);
 
       textEl.setAttribute('fill', '#AFEEEE'); // подсветка готовых систем
       textEl.classList.add('map-label-major'); // готовые системы тоже не прячем при перетаскивании
@@ -1714,7 +1950,7 @@ function finishMapPick(p) {
   };
 
   const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-  Promise.all([fontsReady, loadReadySystems(), loadSystemNames()]).then(([, readySlugs, names]) => {
+  const labelsReady = Promise.all([fontsReady, manifestPromise, namesPromise]).then(([, readySlugs, names]) => {
     setupSystemLabels(readySlugs, names);
     // Сохранённый выбор режима подписей применяем именно ЗДЕСЬ, а не раньше:
     // класс .map-label-major проставляется внутри setupSystemLabels, и до
@@ -1724,5 +1960,7 @@ function finishMapPick(p) {
       if (localStorage.getItem(LABELS_MINIMAL_KEY) === '1') applyLabelsMinimal(true);
     } catch (e) {}
   });
+  // Значкам нужны и размеры подписей (после шрифта), и граф.
+  Promise.all([labelsReady, graphReady]).then(([, graph]) => renderSystemBadges(graph));
 
 })();

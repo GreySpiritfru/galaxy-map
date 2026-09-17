@@ -1,8 +1,8 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=119';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith } from './modal.js?v=119';
+import { createPanZoom } from './panzoom.js?v=120';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=120';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -32,6 +32,12 @@ export function showSystemMap() {
   if (isDockedWith(systemToolbarEl)) closeModal();
   systemMapTab.classList.add('active');
   systemLoreBtn.classList.remove('active');
+}
+
+// Открыта ли сейчас именно статья системы (а не окно сюжета/персонажа поверх
+// неё) — для closeTop в js/navigation.js.
+export function isSystemLoreOpen() {
+  return isSystemOpen() && isDockedWith(systemToolbarEl);
 }
 systemMapTab.addEventListener('click', showSystemMap);
 
@@ -73,6 +79,65 @@ export function closeSystem() {
   systemContainer.innerHTML = '';
   systemLoreBtn.classList.remove('visible');
   systemLoreBtn.onclick = null;
+  current = null;
+  setSystemTabs([]);
+  // Закрыли посреди выбора места (✕/«назад») — редактор вернётся к форме.
+  if (systemPickHandler) {
+    const abort = systemPickAbort;
+    systemPickHandler = systemPickAbort = null;
+    if (abort) abort();
+  }
+}
+
+/* ============================================================
+   Что внутри системы (17.09.2026): сюжеты/локации с "parent": "system:<слаг>"
+   и systemX/systemY — координатами в единицах SVG системы. Сам этот модуль про
+   граф ничего не знает: map.js регистрирует декоратор, который рисует маркеры
+   в SVG открытой системы и отдаёт вкладки для таб-бара.
+   ============================================================ */
+let systemDecorator = null;
+// decorate({slug, svg, pz, focusId}) — вызывается после вставки SVG системы.
+export function setSystemDecorator(fn) { systemDecorator = fn; }
+
+// Открытая система: слаг, её SVG и пан/зум — повторный вход в ту же систему
+// (кнопка «Система» из окна сюжета) не пересоздаёт карту, только наводит камеру.
+let current = null;
+export function getOpenSystem() { return current; }
+
+// Вкладки того, что внутри системы: [{id, icon, label}] → onSelect(id).
+export function setSystemTabs(items, onSelect) {
+  systemToolbarEl.querySelectorAll('.system-child-tab').forEach(el => el.remove());
+  items.forEach(item => {
+    const btn = document.createElement('button');
+    btn.className = 'tabbar-btn system-child-tab';
+    btn.innerHTML = '<span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>';
+    btn.querySelector('.tabbar-btn-icon').textContent = item.icon;
+    btn.querySelector('.tabbar-btn-label').textContent = item.label;
+    btn.title = item.label;
+    btn.addEventListener('click', () => {
+      // Статья расы пристыкована к этому же ряду — сначала закрыть её, иначе
+      // окно сюжета откроется ПОД ней (модал выше по z-index).
+      showSystemMap();
+      onSelect(item.id);
+    });
+    systemToolbarEl.appendChild(btn);
+  });
+}
+
+// Выбор места тапом внутри системы — для редактора (map.js, pickInSystem).
+let systemPickHandler = null;
+let systemPickAbort = null;
+export function setSystemPickHandler(fn, onAbort) {
+  systemPickHandler = fn;
+  systemPickAbort = fn ? (onAbort || null) : null;
+}
+// Тап по маркеру во время выбора места — тоже место, а не открытие окна.
+export function trySystemPick(p) {
+  if (!systemPickHandler) return false;
+  const handler = systemPickHandler;
+  systemPickHandler = systemPickAbort = null;
+  handler(p);
+  return true;
 }
 
 // slug из названия системы -> ожидаемое имя файла systems/<slug>.svg
@@ -113,16 +178,25 @@ function sanitizeSvg(svgText) {
   return tpl.content;
 }
 
-export async function openSystem(name) {
+/* opts.focusId — навести камеру на маркер этой точки внутри системы (переход
+   из окна сюжета «🪐 Система», значок у подписи на карте галактики). */
+export async function openSystem(name, opts = {}) {
+  const slug = slugify(name);
+  // Та же система уже открыта (например, под окном сюжета) — не пересоздаём
+  // карту и не сбрасываем зум, только наводим камеру.
+  if (isSystemOpen() && current && current.slug === slug) {
+    if (systemDecorator) systemDecorator({slug, svg: current.svg, pz: current.pz, focusId: opts.focusId});
+    return;
+  }
   systemOverlay.classList.add('open');
   systemContainer.innerHTML = '';
+  current = {slug, svg: null, pz: null};
+  const opened = current;
   // Свежий вход в систему — всегда с активной вкладки "Карта системы",
   // независимо от того, в каком состоянии остался тулбар от предыдущей
   // открытой системы.
   systemMapTab.classList.add('active');
   systemLoreBtn.classList.remove('active');
-
-  const slug = slugify(name);
 
   // Кнопка "Контролирующая раса" (или как её назовут в lore.json) — показываем,
   // только если для этой системы есть запись. Настраиваем её независимо от того,
@@ -160,16 +234,21 @@ export async function openSystem(name) {
       svgText = await resp.text();
       systemCache[slug] = svgText;
     } catch (err) {
+      if (current !== opened) return;
       systemContainer.innerHTML = `
         <div class="system-placeholder">
           <div>
-            <div style="font-size:18px;font-weight:700;margin-bottom:8px;">${name}</div>
+            <div style="font-size:18px;font-weight:700;margin-bottom:8px;">${escapeHtml(name)}</div>
             <div>Карта этой системы не исследована игроками, либо ещё не готова.</div>
           </div>
         </div>`;
+      // Вкладки того, что внутри, — даже без карты.
+      if (systemDecorator) systemDecorator({slug, svg: null, pz: null, focusId: null});
       return;
     }
   }
+  // Пока качался файл, окно закрыли или открыли другую систему.
+  if (current !== opened) return;
 
   systemContainer.appendChild(sanitizeSvg(svgText));
   const innerSvg = systemContainer.querySelector('svg');
@@ -182,6 +261,13 @@ export async function openSystem(name) {
     innerSvg.style.touchAction = 'none';
     innerSvg.style.userSelect = 'none';
     innerSvg.style.webkitUserSelect = 'none';
-    createPanZoom(innerSvg, { zoomOutLimit: 1, boundsPad: 0 });
+    const pz = createPanZoom(innerSvg, {
+      zoomOutLimit: 1,
+      boundsPad: 0,
+      onClick: (p) => { trySystemPick(p); },
+    });
+    current.svg = innerSvg;
+    current.pz = pz;
   }
+  if (systemDecorator) systemDecorator({slug, svg: current.svg, pz: current.pz, focusId: opts.focusId});
 }
