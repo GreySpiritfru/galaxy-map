@@ -1,8 +1,8 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=117';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith } from './modal.js?v=117';
+import { createPanZoom } from './panzoom.js?v=119';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith } from './modal.js?v=119';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -77,13 +77,41 @@ export function closeSystem() {
 
 // slug из названия системы -> ожидаемое имя файла systems/<slug>.svg
 // (нужен и map.js — для подсветки уже готовых систем по списку из manifest.json)
+// Знаки, запрещённые в именах файлов Windows (\ / : * ? < > |), заменяются на
+// «_»: у части систем в экспорте StellarMaps вместо буквы «?» («?-UX71»), и
+// файл с таким именем на Windows не создать — теперь это «_-ux71.svg».
+// Проще — переименовать подпись в systems/names.json (см. map.js).
 export function slugify(name) {
   return name.trim().toLowerCase()
     .replace(/['"«»]/g, '')
+    .replace(/[\\/:*?<>|]/g, '_')
     .replace(/\s+/g, '_');
 }
 
 const systemCache = {};
+
+/* Карту системы с 17.09.2026 может залить и бот («загрузить систему», файл
+   проверяет map_systems.py на сервере). Вторая линия защиты — здесь: SVG
+   разбирается в инертном <template> (скрипты не выполняются, картинки не
+   грузятся), всё исполняемое и внешние ссылки выкидываются до вставки. */
+const UNSAFE_SVG_TAGS = new Set(['script', 'foreignobject', 'iframe', 'object', 'embed', 'audio', 'video']);
+function sanitizeSvg(svgText) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = svgText;
+  tpl.content.querySelectorAll('*').forEach(el => {
+    if (UNSAFE_SVG_TAGS.has(el.localName.toLowerCase())) { el.remove(); return; }
+    [...el.attributes].forEach(attr => {
+      const name = attr.name.toLowerCase();
+      const value = attr.value.replace(/\s+/g, '').toLowerCase();
+      const isHref = name === 'href' || name === 'xlink:href';
+      if (name.startsWith('on') || value.includes('javascript:') ||
+          (isHref && !value.startsWith('#') && !value.startsWith('data:image/'))) {
+        el.removeAttribute(attr.name);
+      }
+    });
+  });
+  return tpl.content;
+}
 
 export async function openSystem(name) {
   systemOverlay.classList.add('open');
@@ -143,7 +171,7 @@ export async function openSystem(name) {
     }
   }
 
-  systemContainer.insertAdjacentHTML('afterbegin', svgText);
+  systemContainer.appendChild(sanitizeSvg(svgText));
   const innerSvg = systemContainer.querySelector('svg');
   if (innerSvg) {
     innerSvg.style.width = '100%';

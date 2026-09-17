@@ -16,7 +16,7 @@
    локация снова становится видна сама. См. #storyParent ниже и общий
    принцип "родитель узла определяет кнопку" в map.js (PARENT_KIND_META).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=117';
+import { escapeHtml } from './modal.js?v=119';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любого
 // открытого сюжета, поэтому не в stories.json, а константой здесь.
@@ -124,7 +124,7 @@ export function openStory(s) {
   storyContent.innerHTML = `
     ${charsHtml}
     ${imagesHtml}
-    <div class="story-title">${codeHtml}${escapeHtml(s.title || '')}</div>
+    <div class="story-title">${codeHtml}${escapeHtml(s.title || '')}${s.completed === true ? ' <span class="story-completed">✅ Завершён</span>' : ''}</div>
     <details class="story-accordion" open>
       <summary>Описание истории:</summary>
       <div class="story-accordion-body">${descHtml}</div>

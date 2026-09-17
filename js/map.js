@@ -1,14 +1,14 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=117';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=117';
-import { openSystem, slugify } from './system-view.js?v=117';
-import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=117';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=117';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=117';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=117';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=117';
+import { createPanZoom } from './panzoom.js?v=119';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=119';
+import { openSystem, slugify } from './system-view.js?v=119';
+import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=119';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=119';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=119';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=119';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=119';
 
 const SVG_PATH = 'map.svg';
 
@@ -844,6 +844,9 @@ function finishMapPick(p) {
      "Локация", а не "Сюжет". Один источник правды на оба места вместо двух
      захардкоженных подписей — привяжут в будущем персонажа или сюжет к
      новому типу узла, кнопка сама подхватит правильный текст. */
+  // Цвет кольца и заглушки завершённого сюжета (см. isCompleted).
+  const COMPLETED_COLOR = '#8a8f98';
+
   const PARENT_KIND_META = {
     location: {icon: '📍', label: 'Локация'},
     story: {icon: '🎬', label: 'Сюжет'},
@@ -938,7 +941,7 @@ function finishMapPick(p) {
       storyChildren.map(child => ({
         id: child.id,
         label: child.data.shortTitle || nodeTitle(child),
-        icon: '🎬',
+        icon: isCompleted(child) ? '✅' : '🎬',
       })),
       (id) => { const target = storyById.get(id); if (target) goToNode(target, true); }
     );
@@ -1009,10 +1012,12 @@ function finishMapPick(p) {
       node.__el = createMapIcon({
         x: node.x, y: node.y, size: node.size,
         image: nodeImage(node), shape, aspect,
-        dotFill: node.data.color || style.dotFill,
+        dotFill: isCompleted(node) ? COMPLETED_COLOR : (node.data.color || style.dotFill),
         dotStroke: style.dotStroke,
-        ringColor: node.data.color || style.ringColor,
-        beacon: node.kind === 'story' ? (node.data.color || style.ringColor) : null,
+        ringColor: isCompleted(node) ? COMPLETED_COLOR : (node.data.color || style.ringColor),
+        // Завершённый сюжет (completed в stories.json) — без маяка и серый:
+        // зовёт «сюда, тут идёт игра» только то, что ещё идёт.
+        beacon: node.kind === 'story' && !isCompleted(node) ? (node.data.color || style.ringColor) : null,
         onTap: () => {
           if (mapPickHandler) { finishMapPick({x: node.x, y: node.y}); return; }
           if (calibMode) { showCalib(node.x, node.y); return; }
@@ -1025,7 +1030,14 @@ function finishMapPick(p) {
           locateNode(node);
         },
       });
+      // Картинка обесцвечивается в css (.map-node-completed image) — фильтр
+      // только на маленькой <image>, не на всей группе (грабли №17).
+      if (isCompleted(node)) node.__el.classList.add('map-node-completed');
     });
+  }
+
+  function isCompleted(node) {
+    return node.kind === 'story' && node.data.completed === true;
   }
 
   /* Окно сюжета показывает своих персонажей рядом маркеров-квадратов (см.
@@ -1595,6 +1607,23 @@ function finishMapPick(p) {
      измерять getBBox() до его загрузки, размеры текста считаются по запасному
      шрифту — область клика получается смещена относительно того, что видно на экране. */
   const MANIFEST_PATH = 'systems/manifest.json';
+  /* systems/names.json — переименование подписей систем без нового экспорта
+     map.svg: {"название в map.svg": "название на карте"}. Подпись меняется
+     прямо в SVG при загрузке, и дальше система живёт под НОВЫМ именем: слаг
+     для manifest.json, lore.json и файла systems/<slug>.svg берётся из него.
+     Пример: {"?-UX71": "G-UX71"} → файл systems/g-ux71.svg. Нет файла — ничего
+     не переименовываем. */
+  const NAMES_PATH = 'systems/names.json';
+  async function loadSystemNames() {
+    try {
+      const resp = await fetch(NAMES_PATH, {cache:'no-cache'});
+      if (resp.status === 404) return {};
+      const data = await resp.json();
+      return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
+    } catch (e) {
+      return {};
+    }
+  }
   // Список слагов уже готовых систем — один лёгкий запрос вместо 1644 проверок
   // по отдельности. Файла может не быть вообще (пока ни одной системы не готово) —
   // тогда просто ничего не подсвечиваем, это не ошибка.
@@ -1609,10 +1638,15 @@ function finishMapPick(p) {
     }
   }
 
-  const setupSystemLabels = (readySlugs) => {
+  const setupSystemLabels = (readySlugs, names) => {
     svg.querySelectorAll('text').forEach(textEl => {
-      const name = textEl.textContent.trim();
+      let name = textEl.textContent.trim();
       if (!name) return;
+      const renamed = typeof names[name] === 'string' ? names[name].trim() : '';
+      if (renamed) {
+        textEl.textContent = renamed;
+        name = renamed;
+      }
 
       // Названия фракций/цивилизаций в экспорте StellarMaps используют другой
       // шрифт (Impact, крупнее), чем обычные системы (Tahoma, мельче) —
@@ -1680,8 +1714,8 @@ function finishMapPick(p) {
   };
 
   const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-  Promise.all([fontsReady, loadReadySystems()]).then(([, readySlugs]) => {
-    setupSystemLabels(readySlugs);
+  Promise.all([fontsReady, loadReadySystems(), loadSystemNames()]).then(([, readySlugs, names]) => {
+    setupSystemLabels(readySlugs, names);
     // Сохранённый выбор режима подписей применяем именно ЗДЕСЬ, а не раньше:
     // класс .map-label-major проставляется внутри setupSystemLabels, и до
     // этого момента "важных" подписей ещё нет — включив режим раньше, мы бы

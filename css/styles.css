@@ -232,6 +232,15 @@ html, body {
   font-size: 13px;
 }
 .editor-link.is-locked { opacity: 0.55; }
+.editor-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 10px;
+  font-size: 14px;
+}
+.editor-check input { width: 18px; height: 18px; accent-color: #AFEEEE; }
+.editor-check small { color: rgba(255,255,255,0.5); font-size: 12px; }
 .editor-btn {
   padding: 9px 14px;
   border-radius: 10px;
@@ -1458,6 +1467,21 @@ svg.nodes-mode.far-links .map-thread.far { display: inline; }
   font-weight: 700;
   margin: 0 0 14px;
 }
+/* Завершённый сюжет (completed в stories.json): плашка у заголовка окна,
+   на карте — серое кольцо, обесцвеченная картинка, без маяка. */
+.story-completed {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.65);
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.map-node-completed { opacity: 0.75; }
+.map-node-completed image { filter: grayscale(1) brightness(0.8); }
 
 /* Сворачиваемый блок описания — нативный <details>/<summary>, оформлен под
    цитату-"шторку" в духе Telegram (полоска слева + треугольник-стрелка,

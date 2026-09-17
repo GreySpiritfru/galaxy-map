@@ -5,7 +5,7 @@
    игрока, к сайту/репозиторию отношения не имеет) кнопка мягко пульсирует,
    чтобы её было видно, но не мигает резко и не лезет с окном сама.
    ============================================================ */
-import { openModal } from './modal.js?v=117';
+import { openModal } from './modal.js?v=119';
 
 const ONBOARDING_SEEN_KEY = 'galaxyMapOnboardingSeen';
 const helpBtn = document.getElementById('helpBtn');

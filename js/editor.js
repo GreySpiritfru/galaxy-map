@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=117';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=119';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -50,6 +50,7 @@ const FIELD_LABELS = {
   },
   node: {
     title: 'Название', shortTitle: 'Короткое название', code: 'Номер', archiveUrl: 'Архив', color: 'Цвет',
+    completed: 'Статус',
     role: 'Тип', parent: 'Привязка', links: 'Связи', x: 'Место на карте', y: 'Место на карте',
   },
 };
@@ -105,6 +106,7 @@ function fieldsOf(kind, d) {
     return {
       title: d.title || '', ...common,
       shortTitle: d.shortTitle || '', code: d.code || '', archiveUrl: d.archiveUrl || '', color: d.color || '',
+      completed: d.completed === true,
     };
   }
   return {title: d.title || '', ...common, role: d.role === 'event' ? 'event' : ''};
@@ -712,6 +714,10 @@ export function showNodeEditor(node) {
           ${input('code', 'Номер (например 2 или К.3)', CODE_MAX)}
           ${input('archiveUrl', 'Ссылка на архив', URL_MAX, 'type="url" placeholder="https://…"')}
           ${input('color', 'Цвет маркера (пусто — по умолчанию)', COLOR_MAX, 'placeholder="#ffd76a"')}
+          <label class="editor-check">
+            <input type="checkbox" name="completed"${draft.completed ? ' checked' : ''}>
+            <span>Сюжет завершён <small>— маркер станет серым и без маяка</small></span>
+          </label>
         ` : (submap ? '' : `
           <label class="editor-field">Тип
             <select name="role">
@@ -773,7 +779,13 @@ export function showNodeEditor(node) {
 
   form.addEventListener('input', (e) => {
     const el = e.target;
-    if (el.name !== 'links' && el.name in draft) draft[el.name] = el.value.trim();
+    if (el.type === 'checkbox' && el.name === 'completed') draft.completed = el.checked;
+    else if (el.name !== 'links' && el.name in draft) draft[el.name] = el.value.trim();
+    syncClosingConfirmation();
+  });
+  // Старые WebView не шлют input у чекбоксов — только change.
+  form.querySelector('input[name="completed"]')?.addEventListener('change', (e) => {
+    draft.completed = e.target.checked;
     syncClosingConfirmation();
   });
   form.querySelector('select[name="parent"]').addEventListener('change', () => showNodeEditor(node));
