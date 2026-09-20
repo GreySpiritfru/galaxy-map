@@ -1,14 +1,14 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=123';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=123';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=123';
-import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=123';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=123';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=123';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=123';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=123';
+import { createPanZoom } from './panzoom.js?v=124';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=124';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=124';
+import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=124';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=124';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=124';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=124';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=124';
 
 const SVG_PATH = 'map.svg';
 
@@ -1145,20 +1145,36 @@ function finishMapPick(p) {
      таб-баре. В нодах — обычный кластер: система → сюжет → персонажи.
      ============================================================ */
 
-  /* Маркер внутри системы — в единицах САМОЙ системы, как маркер на карте
-     галактики: приближаешь камеру — растёт вместе с картой (20.09.2026, по
-     просьбе игрока; до этого он держал постоянный размер на экране и вёл себя
-     не как остальные маркеры проекта — «как будто новый тип»).
-     ⚠️ Размер задан ДОЛЕЙ стороны системы, а не числом единиц: у разных SVG
-     систем свой viewBox (у нынешних ~1000), и одна и та же доля даёт одинаковый
-     на глаз маркер в любой из них. */
-  const SYSTEM_MARKER_SHARE = 0.05;
-  /* Потолок размера маркера НА ЭКРАНЕ (20.09.2026, по просьбе игрока «слишком
-     огромные»). Маркер живёт в единицах системы и растёт вместе с картой, как
-     на карте галактики, но у системы кадр маленький: пары приближений хватало,
-     чтобы персонаж занял четверть экрана. Дорос до этого предела — дальше
-     держит его и не растёт. */
-  const SYSTEM_MARKER_MAX_PX = 44;
+  /* Маркеры внутри системы: размер в единицах САМОЙ системы, но с окном
+     допустимого размера НА ЭКРАНЕ (20.09.2026, вторая попытка — первая
+     развалилась, см. ниже).
+
+     ⚠️ Главное правило: маркер, кольцо его детей и нити к ним — ОДНО созвездие
+     и масштабируются ТОЛЬКО ЦЕЛИКОМ, одним `scale()` на группе. В первой
+     версии потолок ужимал сами иконки, а кольцо и нити оставались в единицах
+     системы — на четырёхкратном приближении маркеры были 44 px, а нить между
+     ними 162 px (замер), то есть дети улетали от родителя тем дальше, чем
+     ближе камера («линии очень далеко от центрального маркера»). Там же
+     терялась иерархия: потолок упирал и родителя (50 ед.), и ребёнка (27.5)
+     в одно и то же число пикселей, и они становились одинаковыми.
+
+     ⚠️ Размер — ЧИСЛО ЕДИНИЦ, а не доля стороны системы, как было. Доля не
+     годится: viewBox у систем разный (1000 у G-UX71, 1200 у остальных), а
+     сам рисунок везде в одном масштабе — звезда r≈8, планеты r≈2..8, подписи
+     font-size 10. Маркер в 36 единиц — это чуть больше двух звёзд, то есть
+     он читается как объект системы, а не накрывает её целиком (5% от 1000
+     давали 50 единиц — три звезды, отсюда «слишком огромные»).
+
+     ⚠️ Почему вообще окно, а не чистый «как на карте галактики». Кадр системы
+     меняется в разы сильнее галактического (zoomInLimit ниже + сам рисунок
+     занимает то весь viewBox, то его четверть — у Тау Кита содержимое в
+     радиусе 130 из 600), а работа этого маркера — показать аватар, и ему
+     нужно примерно постоянное число пикселей. Внутри окна созвездие живёт в
+     единицах системы и растёт/мельчает вместе с картой, как любой маркер
+     проекта; упёрлось в край окна — держит размер, по-прежнему целиком. */
+  const SYSTEM_MARKER_UNITS = 36;
+  const SYSTEM_MARKER_MIN_PX = 26;
+  const SYSTEM_MARKER_MAX_PX = 42;
   // Ребёнок маркера (персонаж сюжета) мельче родителя — та же доля, что в графе.
   const SYSTEM_CHILD_SHRINK = 0.55;
   // Просвет между родителем и кольцом его детей, в долях размера родителя.
@@ -1209,6 +1225,10 @@ function finishMapPick(p) {
      флагу): состав детей и их аватары меняются через редактор, а SVG системы
      переиспользуется. */
   function drawSystemMarkers(sysSvg, sysPz, inside) {
+    // Повторное открытие той же системы карту не пересоздаёт (см. openSystem),
+    // поэтому старых наблюдателей надо снять руками — иначе на том же SVG их
+    // копилось по одному на открытие.
+    (sysSvg.__markerObservers || []).forEach(o => o.disconnect());
     sysSvg.querySelectorAll('.system-markers').forEach(el => el.remove());
     const placed = inside.filter(hasSystemPlace);
     if (!placed.length) return;
@@ -1216,18 +1236,25 @@ function finishMapPick(p) {
     const layer = document.createElementNS(ns, 'g');
     layer.setAttribute('class', 'system-markers');
     sysSvg.appendChild(layer);
-    // Нити — отдельной группой ПОД маркерами, как #graphLayer на карте.
-    const threads = document.createElementNS(ns, 'g');
-    layer.appendChild(threads);
 
-    const full = (sysPz ? sysPz.getInitialViewBox().w : sysSvg.viewBox.baseVal.width) || 1000;
-    const size = full * SYSTEM_MARKER_SHARE;
+    const size = SYSTEM_MARKER_UNITS;
     const childSize = size * SYSTEM_CHILD_SHRINK;
     const ringGap = size / 2 + size * SYSTEM_RING_GAP + childSize / 2;
 
-    const markers = [];
-    placed.forEach(node => {
-      const x = node.data.systemX, y = node.data.systemY;
+    /* Одно созвездие = одна группа: родитель в её начале координат, дети и
+       нити — вокруг него в ТЕХ ЖЕ локальных единицах. Масштаб задаётся всей
+       группе разом, поэтому нить физически не может отвязаться от маркера:
+       расстояние до ребёнка ужимается ровно во столько же раз, во сколько сам
+       маркер (в первой версии ужимались только иконки, см. комментарий выше). */
+    const clusters = placed.map(node => {
+      const g = document.createElementNS(ns, 'g');
+      g.setAttribute('class', 'system-cluster');
+      layer.appendChild(g);
+      // Нити — отдельной группой ПОД маркерами, как #graphLayer на карте.
+      const threads = document.createElementNS(ns, 'g');
+      g.appendChild(threads);
+
+      const cluster = {g, x: node.data.systemX, y: node.data.systemY, k: 1};
       const kids = node.children.filter(c => c.onMap !== false);
       // Кольцо шире, если детей много: иначе на 10+ персонажах они налезли бы
       // друг на друга (та же мысль, что ringRadius в graph.js, только проще —
@@ -1237,42 +1264,64 @@ function finishMapPick(p) {
       // графе (в SVG y растёт вниз, см. js/graph.js).
       kids.forEach((child, i) => {
         const a = -Math.PI / 2 + (2 * Math.PI * i) / kids.length;
-        const cx = x + radius * Math.cos(a), cy = y + radius * Math.sin(a);
+        const lx = radius * Math.cos(a), ly = radius * Math.sin(a);
         const line = document.createElementNS(ns, 'line');
         line.setAttribute('class', 'map-thread');
-        line.setAttribute('x1', x); line.setAttribute('y1', y);
-        line.setAttribute('x2', cx); line.setAttribute('y2', cy);
-        // Толщина — от размера маркера: .map-thread в css считает в единицах
-        // карты галактики, а тут единицы системы, их в кадре в разы больше.
-        line.setAttribute('stroke-width', childSize * 0.1);
+        line.setAttribute('x1', 0); line.setAttribute('y1', 0);
+        line.setAttribute('x2', lx); line.setAttribute('y2', ly);
+        /* Толщина — от размера маркера: .map-thread в CSS посчитана в единицах
+           карты галактики, а тут единицы системы, их в кадре в разы больше.
+           ⚠️ Именно style, а не setAttribute: правило таблицы стилей сильнее
+           атрибута-презентации, и нити в системе оставались теми же 0.25
+           единицы — волосок, который вдобавок не менялся вместе с маркером. */
+        line.style.strokeWidth = childSize * 0.07;
         threads.appendChild(line);
-        markers.push(addSystemMarker(layer, child, cx, cy, childSize));
+        addSystemMarker(g, child, lx, ly, childSize, cluster);
       });
-      markers.push(addSystemMarker(layer, node, x, y, size));
+      addSystemMarker(g, node, 0, 0, size, cluster);
+      return cluster;
     });
 
-    /* Потолок размера на экране: пока маркер мельче предела — он просто часть
-       карты (масштаб 1, растёт вместе с ней), дальше группа ужимается ровно во
-       столько раз, во сколько переросла. Пересчёт — по смене viewBox, как
-       раньше у маркеров постоянного размера. */
+    /* Окно размера на экране. Внутри него масштаб 1 — созвездие просто часть
+       карты системы и ездит вместе с ней; за краями окна оно целиком ужимается
+       или растягивается ровно во столько раз, во сколько вышло за край.
+       Функция от масштаба непрерывная (на самой границе k = 1), поэтому в
+       момент включения потолка маркер не прыгает. */
     const rescale = () => {
       const vb = sysSvg.viewBox.baseVal;
-      const pxPerUnit = Math.min((sysSvg.clientWidth || 1) / vb.width, (sysSvg.clientHeight || 1) / vb.height);
-      markers.forEach(m => {
-        const k = Math.min(1, SYSTEM_MARKER_MAX_PX / (m.size * pxPerUnit));
-        m.el.setAttribute('transform', `translate(${m.x} ${m.y})` + (k < 1 ? ` scale(${k})` : ''));
+      // ⚠️ Размер окна системы в пикселях — обязательное условие: до первой
+      // раскладки он нулевой, и «дорасти до минимума» превращалось в scale в
+      // сотни раз (прежний потолок такого не ловил: он умел только ужимать).
+      const w = sysSvg.clientWidth, h = sysSvg.clientHeight;
+      if (!w || !h || !vb.width || !vb.height) return;
+      const px = size * Math.min(w / vb.width, h / vb.height);
+      const k = px > SYSTEM_MARKER_MAX_PX ? SYSTEM_MARKER_MAX_PX / px
+              : px < SYSTEM_MARKER_MIN_PX ? SYSTEM_MARKER_MIN_PX / px : 1;
+      clusters.forEach(c => {
+        c.k = k;
+        c.g.setAttribute('transform', `translate(${c.x} ${c.y})` + (k !== 1 ? ` scale(${k})` : ''));
       });
     };
     rescale();
-    new MutationObserver(rescale).observe(sysSvg, {attributes: true, attributeFilter: ['viewBox']});
+    const onViewBox = new MutationObserver(rescale);
+    onViewBox.observe(sysSvg, {attributes: true, attributeFilter: ['viewBox']});
+    // Размер окна тоже меняет масштаб на экране: поворот телефона, открытие
+    // клавиатуры. Первый вызов приходит сразу после раскладки — им же и
+    // считается масштаб, если к моменту отрисовки размера ещё не было.
+    const onSize = new ResizeObserver(rescale);
+    onSize.observe(sysSvg);
+    sysSvg.__markerObservers = [onViewBox, onSize];
   }
 
-  function addSystemMarker(layer, node, x, y, size) {
+  /* x/y — ЛОКАЛЬНЫЕ координаты внутри созвездия (у родителя 0,0). Настоящее
+     место ребёнка в системе зависит от текущего масштаба группы, поэтому для
+     выбора места (редактор) оно считается в момент тапа, а не при отрисовке. */
+  function addSystemMarker(layer, node, x, y, size, cluster) {
     const el = createMapIcon({
       ...nodeIconOptions(node),
       x, y, size, container: layer,
       onTap: () => {
-        if (trySystemPick({x, y})) return;
+        if (trySystemPick({x: cluster.x + x * cluster.k, y: cluster.y + y * cluster.k})) return;
         openNode(node);
       },
       // Долгое нажатие — как на карте: к этой точке в нодах (20.09.2026).
@@ -1284,7 +1333,7 @@ function finishMapPick(p) {
       },
     });
     if (isCompleted(node)) el.classList.add('map-node-completed');
-    return {el, x, y, size};
+    return el;
   }
 
   /* Значки у подписи системы на карте галактики — по одному на точку внутри,

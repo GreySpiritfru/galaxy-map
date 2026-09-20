@@ -1,8 +1,8 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=123';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=123';
+import { createPanZoom } from './panzoom.js?v=124';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=124';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -266,6 +266,13 @@ export async function openSystem(name, opts = {}) {
     innerSvg.style.webkitUserSelect = 'none';
     const pz = createPanZoom(innerSvg, {
       zoomOutLimit: 1,
+      /* Приближение ограничено сильнее, чем по умолчанию в panzoom (0.02).
+         В системе не на что смотреть глубже: рисунок целиком укладывается в
+         радиус 120–500 единиц, планета там r≈2..8, и на кадре в 24 единицы
+         (прежний предел) в экран попадала пустота между орбитами, а маркеры
+         на таком зуме давно держат свой потолок размера. 0.05 — это ~60
+         единиц в кадре, планета занимает седьмую часть экрана. */
+      zoomInLimit: 0.05,
       boundsPad: 0,
       onClick: (p) => { trySystemPick(p); },
     });

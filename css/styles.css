@@ -1471,8 +1471,9 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 .system-badges .story-beacon-ring { stroke-width: 1px; }
 .system-badges-more { pointer-events: none; }
 
-/* Маркеры внутри окна системы — поверх её SVG, в единицах самой системы
-   (масштабируются вместе с ней, как маркеры на карте галактики). */
+/* Маркеры внутри окна системы — поверх её SVG. Каждая точка с детьми это одно
+   созвездие (.system-cluster), которое масштабируется ЦЕЛИКОМ, см.
+   drawSystemMarkers в js/map.js. */
 .system-markers .hotspot { cursor: pointer; }
 
 /* Та же защита от меню «сохранить картинку», что у маркеров карты (см.
