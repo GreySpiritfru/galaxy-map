@@ -270,20 +270,6 @@
     "y": -40
   },
   {
-    "id": "izura-hebi",
-    "name": "Изура Хеби",
-    "race": "Мутант",
-    "role": "",
-    "player": "",
-    "sheetUrl": "https://teletype.in/@greyspirit/xahokuG6dA8",
-    "parent": "story-k3",
-    "links": [],
-    "image": "images/izi.jpg",
-    "color": "",
-    "x": -200,
-    "y": -40
-  },
-  {
     "id": "loki",
     "name": "Локи",
     "race": "Куннласси",
