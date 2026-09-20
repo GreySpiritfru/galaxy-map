@@ -1,8 +1,8 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=121';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=121';
+import { createPanZoom } from './panzoom.js?v=123';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=123';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -131,6 +131,9 @@ export function setSystemPickHandler(fn, onAbort) {
   systemPickHandler = fn;
   systemPickAbort = fn ? (onAbort || null) : null;
 }
+// Идёт ли сейчас выбор места (долгое нажатие по маркеру в это время — не
+// «перейти в ноды», а обычный тап, то есть выбор точки).
+export function isSystemPicking() { return !!systemPickHandler; }
 // Тап по маркеру во время выбора места — тоже место, а не открытие окна.
 export function trySystemPick(p) {
   if (!systemPickHandler) return false;

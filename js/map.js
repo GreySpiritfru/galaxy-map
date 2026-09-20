@@ -1,14 +1,14 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=121';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=121';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick } from './system-view.js?v=121';
-import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=121';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=121';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=121';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=121';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=121';
+import { createPanZoom } from './panzoom.js?v=123';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=123';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=123';
+import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=123';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=123';
+import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=123';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=123';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=123';
 
 const SVG_PATH = 'map.svg';
 
@@ -677,6 +677,20 @@ function finishMapPick(p) {
       p.setAttribute('points', `0,${-h} ${h},0 0,${h} ${-h},0`);
       return p;
     }
+    // Почти ровный квадрат — у событий (20.09.2026, по просьбе игрока вместо
+    // ромба). От 'square' отличается только скруглением: у персонажей оно
+    // сильное (0.45 высоты, «карточка»), тут едва намеченное, чтобы угол
+    // читался как угол.
+    if (shape === 'event-square') {
+      const w = size * aspect, h = size;
+      const r = document.createElementNS(ns, 'rect');
+      r.setAttribute('x', -w/2);
+      r.setAttribute('y', -h/2);
+      r.setAttribute('width', w);
+      r.setAttribute('height', h);
+      r.setAttribute('rx', h * 0.12);
+      return r;
+    }
     if (shape === 'hexagon') {
       const r = size/2;
       // "Плоский верх" (flat-top): первая вершина справа (0°), а не сверху —
@@ -725,7 +739,7 @@ function finishMapPick(p) {
 
   // container — куда положить (по умолчанию слой графа; значки у подписей систем
   // и маркеры внутри окна системы кладутся в свои группы).
-  function createMapIcon({x, y, image, dotFill, dotStroke, ringColor, shape, size, aspect, onTap, onLongPress, beacon, container}) {
+  function createMapIcon({x, y, image, imageZoom, dotFill, dotStroke, ringColor, shape, size, aspect, onTap, onLongPress, beacon, container}) {
     const iconSize = size || MARKER_SIZE;
     const iconAspect = aspect || 1;
     const g = document.createElementNS(ns, 'g');
@@ -754,16 +768,21 @@ function finishMapPick(p) {
       clip.appendChild(makeIconShape(shape, iconSize, iconAspect));
       g.appendChild(clip);
 
-      const imgW = iconSize * iconAspect;
+      // imageZoom — во сколько раз растянуть САМ арт внутри маркера, не трогая
+      // размер маркера (обрезка остаётся по его форме). Нужен мини-карте
+      // системы в режиме нод: вписанная целиком, она превращается в пятно, и
+      // центральной звезды с подписью на ней не разобрать.
+      const zoom = imageZoom || 1;
+      const imgW = iconSize * iconAspect * zoom;
+      const imgH = iconSize * zoom;
       const img = document.createElementNS(ns, 'image');
       img.setAttribute('href', image);
       img.setAttribute('x', -imgW/2);
-      img.setAttribute('y', -iconSize/2);
+      img.setAttribute('y', -imgH/2);
       img.setAttribute('width', imgW);
-      img.setAttribute('height', iconSize);
+      img.setAttribute('height', imgH);
       img.setAttribute('preserveAspectRatio', 'xMidYMid slice');
       img.setAttribute('clip-path', `url(#${clipId})`);
-      img.style.cursor = 'pointer';
 
       const ring = makeIconShape(shape, iconSize, iconAspect);
       ring.setAttribute('fill', 'none');
@@ -782,6 +801,18 @@ function finishMapPick(p) {
 
       g.appendChild(img);
       g.appendChild(ring);
+      /* Долгое нажатие по маркеру на телефоне открывало системное меню
+         «сохранить картинку» поверх перехода в ноды (нашёл игрок,
+         20.09.2026): WebView предлагает его по долгому тапу именно по
+         <image>, независимо от нашего preventDefault на contextmenu.
+         Поэтому картинка событий не получает вообще (pointer-events: none
+         у .hotspot image в css), а тап и долгое нажатие ловит прозрачная
+         фигура ПОВЕРХ неё — той же формы и размера. */
+      const hit = makeIconShape(shape, iconSize, iconAspect);
+      hit.setAttribute('fill', 'transparent');
+      hit.setAttribute('class', 'hotspot-hit');
+      hit.style.cursor = 'pointer';
+      g.appendChild(hit);
     } else {
       addDefaultDot();
     }
@@ -807,6 +838,14 @@ function finishMapPick(p) {
     // Система — узел только режима «Ноды»: мини-карта самой системы в бирюзовом круге.
     system:    {shape: 'circle', dotFill: 'rgba(175,238,238,0.25)', dotStroke: '#AFEEEE', ringColor: '#AFEEEE'},
   };
+
+  /* Во сколько раз приблизить арт системы ВНУТРИ её маркера (imageZoom в
+     createMapIcon). SVG системы — это вся система от края до края: вписанная в
+     кружок целиком, она читается как тёмное пятно с еле заметными орбитами.
+     ⚠️ «Полтора раза» тут не работает: звезда занимает около 1% ширины SVG, и
+     при 1.5 её всё так же не видно. 4 — кадр примерно в четверть системы:
+     центральная звезда с подписью и ближние орбиты (20.09.2026). */
+  const SYSTEM_ART_ZOOM = 5;
 
   /* "border" у локации (markers.json, 15.09.2026) — какую ФОРМУ (не цвет, не
      размер) взять вместо обычного круга: "circle" (по умолчанию, можно не
@@ -1016,13 +1055,17 @@ function finishMapPick(p) {
     // форма локации.
     let shape = style.shape, aspect = 1;
     if (isEventLocation) {
-      shape = 'diamond';
+      shape = 'event-square';
     } else if (node.kind === 'location' && node.data.border) {
       const border = LOCATION_BORDER[node.data.border];
       if (border) { shape = border.shape; aspect = border.aspect; }
     }
     return {
       image: nodeImage(node), shape, aspect,
+      // Мини-карта системы вписывается в кружок целиком и превращается в
+      // тёмное пятно — приближаем её арт внутри маркера (20.09.2026, по
+      // просьбе игрока: должно быть видно центральную звезду и её подпись).
+      imageZoom: node.kind === 'system' ? SYSTEM_ART_ZOOM : 1,
       dotFill: isCompleted(node) ? COMPLETED_COLOR : (node.data.color || style.dotFill),
       dotStroke: style.dotStroke,
       ringColor: isCompleted(node) ? COMPLETED_COLOR : (node.data.color || style.ringColor),
@@ -1102,10 +1145,24 @@ function finishMapPick(p) {
      таб-баре. В нодах — обычный кластер: система → сюжет → персонажи.
      ============================================================ */
 
-  // Маркер внутри системы — постоянного размера на экране, как значки на карте
-  // Stellaris: SVG системы от края до края — ~1000 единиц, и маркер в единицах
-  // карты на телефоне был бы то точкой, то блином во весь экран.
-  const SYSTEM_MARKER_PX = 30;
+  /* Маркер внутри системы — в единицах САМОЙ системы, как маркер на карте
+     галактики: приближаешь камеру — растёт вместе с картой (20.09.2026, по
+     просьбе игрока; до этого он держал постоянный размер на экране и вёл себя
+     не как остальные маркеры проекта — «как будто новый тип»).
+     ⚠️ Размер задан ДОЛЕЙ стороны системы, а не числом единиц: у разных SVG
+     систем свой viewBox (у нынешних ~1000), и одна и та же доля даёт одинаковый
+     на глаз маркер в любой из них. */
+  const SYSTEM_MARKER_SHARE = 0.05;
+  /* Потолок размера маркера НА ЭКРАНЕ (20.09.2026, по просьбе игрока «слишком
+     огромные»). Маркер живёт в единицах системы и растёт вместе с картой, как
+     на карте галактики, но у системы кадр маленький: пары приближений хватало,
+     чтобы персонаж занял четверть экрана. Дорос до этого предела — дальше
+     держит его и не растёт. */
+  const SYSTEM_MARKER_MAX_PX = 44;
+  // Ребёнок маркера (персонаж сюжета) мельче родителя — та же доля, что в графе.
+  const SYSTEM_CHILD_SHRINK = 0.55;
+  // Просвет между родителем и кольцом его детей, в долях размера родителя.
+  const SYSTEM_RING_GAP = 0.35;
   // Ширина кадра (доля всей системы), на которую камера подлетает к маркеру.
   const SYSTEM_FOCUS_SHARE = 0.35;
 
@@ -1137,36 +1194,97 @@ function finishMapPick(p) {
         openNode(node);
       });
 
-      if (sysSvg && !sysSvg.__systemMarkers) {
-        const layer = document.createElementNS(ns, 'g');
-        layer.setAttribute('class', 'system-markers');
-        sysSvg.appendChild(layer);
-        const markers = inside.filter(hasSystemPlace).map(node => {
-          const el = createMapIcon({
-            ...nodeIconOptions(node),
-            x: node.data.systemX, y: node.data.systemY, size: 1, container: layer,
-            onTap: () => {
-              if (trySystemPick({x: node.data.systemX, y: node.data.systemY})) return;
-              openNode(node);
-            },
-          });
-          if (isCompleted(node)) el.classList.add('map-node-completed');
-          return {el, x: node.data.systemX, y: node.data.systemY};
-        });
-        // Масштаб маркеров — от текущего кадра: сколько единиц SVG в одном
-        // пикселе экрана (preserveAspectRatio meet — берём большую из сторон).
-        const rescale = () => {
-          const vb = sysSvg.viewBox.baseVal;
-          const k = Math.max(vb.width / (sysSvg.clientWidth || 1), vb.height / (sysSvg.clientHeight || 1)) * SYSTEM_MARKER_PX;
-          markers.forEach(m => m.el.setAttribute('transform', `translate(${m.x} ${m.y}) scale(${k})`));
-        };
-        rescale();
-        if (markers.length) new MutationObserver(rescale).observe(sysSvg, {attributes: true, attributeFilter: ['viewBox']});
-        sysSvg.__systemMarkers = true;
-      }
+      if (sysSvg) drawSystemMarkers(sysSvg, sysPz, inside);
 
       if (focusId && graph.has(focusId)) focusIn({pz: sysPz}, graph.get(focusId), 600);
     });
+  }
+
+  /* Маркеры внутри окна системы: сама точка на своих systemX/systemY и её дети
+     кольцом вокруг неё — ровно как на карте галактики, где персонажи стоят на
+     орбите вокруг своего сюжета (20.09.2026, по просьбе игрока: «вокруг маркера
+     в системе нет его детей»). Своих координат у детей нет и не нужно — место
+     в системе задаётся только родителю, остальное считается от него.
+     ⚠️ Рисуется заново при КАЖДОМ открытии окна (раньше — один раз на SVG, по
+     флагу): состав детей и их аватары меняются через редактор, а SVG системы
+     переиспользуется. */
+  function drawSystemMarkers(sysSvg, sysPz, inside) {
+    sysSvg.querySelectorAll('.system-markers').forEach(el => el.remove());
+    const placed = inside.filter(hasSystemPlace);
+    if (!placed.length) return;
+
+    const layer = document.createElementNS(ns, 'g');
+    layer.setAttribute('class', 'system-markers');
+    sysSvg.appendChild(layer);
+    // Нити — отдельной группой ПОД маркерами, как #graphLayer на карте.
+    const threads = document.createElementNS(ns, 'g');
+    layer.appendChild(threads);
+
+    const full = (sysPz ? sysPz.getInitialViewBox().w : sysSvg.viewBox.baseVal.width) || 1000;
+    const size = full * SYSTEM_MARKER_SHARE;
+    const childSize = size * SYSTEM_CHILD_SHRINK;
+    const ringGap = size / 2 + size * SYSTEM_RING_GAP + childSize / 2;
+
+    const markers = [];
+    placed.forEach(node => {
+      const x = node.data.systemX, y = node.data.systemY;
+      const kids = node.children.filter(c => c.onMap !== false);
+      // Кольцо шире, если детей много: иначе на 10+ персонажах они налезли бы
+      // друг на друга (та же мысль, что ringRadius в graph.js, только проще —
+      // тут одно кольцо, без поддеревьев).
+      const radius = Math.max(ringGap, kids.length * childSize * 1.15 / (2 * Math.PI));
+      // Начинаем сверху и идём по часовой — тот же порядок, что у колец в
+      // графе (в SVG y растёт вниз, см. js/graph.js).
+      kids.forEach((child, i) => {
+        const a = -Math.PI / 2 + (2 * Math.PI * i) / kids.length;
+        const cx = x + radius * Math.cos(a), cy = y + radius * Math.sin(a);
+        const line = document.createElementNS(ns, 'line');
+        line.setAttribute('class', 'map-thread');
+        line.setAttribute('x1', x); line.setAttribute('y1', y);
+        line.setAttribute('x2', cx); line.setAttribute('y2', cy);
+        // Толщина — от размера маркера: .map-thread в css считает в единицах
+        // карты галактики, а тут единицы системы, их в кадре в разы больше.
+        line.setAttribute('stroke-width', childSize * 0.1);
+        threads.appendChild(line);
+        markers.push(addSystemMarker(layer, child, cx, cy, childSize));
+      });
+      markers.push(addSystemMarker(layer, node, x, y, size));
+    });
+
+    /* Потолок размера на экране: пока маркер мельче предела — он просто часть
+       карты (масштаб 1, растёт вместе с ней), дальше группа ужимается ровно во
+       столько раз, во сколько переросла. Пересчёт — по смене viewBox, как
+       раньше у маркеров постоянного размера. */
+    const rescale = () => {
+      const vb = sysSvg.viewBox.baseVal;
+      const pxPerUnit = Math.min((sysSvg.clientWidth || 1) / vb.width, (sysSvg.clientHeight || 1) / vb.height);
+      markers.forEach(m => {
+        const k = Math.min(1, SYSTEM_MARKER_MAX_PX / (m.size * pxPerUnit));
+        m.el.setAttribute('transform', `translate(${m.x} ${m.y})` + (k < 1 ? ` scale(${k})` : ''));
+      });
+    };
+    rescale();
+    new MutationObserver(rescale).observe(sysSvg, {attributes: true, attributeFilter: ['viewBox']});
+  }
+
+  function addSystemMarker(layer, node, x, y, size) {
+    const el = createMapIcon({
+      ...nodeIconOptions(node),
+      x, y, size, container: layer,
+      onTap: () => {
+        if (trySystemPick({x, y})) return;
+        openNode(node);
+      },
+      // Долгое нажатие — как на карте: к этой точке в нодах (20.09.2026).
+      // Окно системы при этом закрывается, иначе граф оказался бы под ним.
+      onLongPress: () => {
+        if (isSystemPicking()) return false;
+        closeSystem();
+        locateNode(node);
+      },
+    });
+    if (isCompleted(node)) el.classList.add('map-node-completed');
+    return {el, x, y, size};
   }
 
   /* Значки у подписи системы на карте галактики — по одному на точку внутри,
@@ -1174,9 +1292,14 @@ function finishMapPick(p) {
      в слой графа: так режим нод прячет их вместе с картой (он оставляет только
      #graphLayer), а «Графика» и 🏷️ — нет. Тап — окно системы с камерой на этой
      точке, долгое нажатие — к этой точке в нодах. */
-  const SYSTEM_BADGE_SIZE = 2.6;
-  const SYSTEM_BADGE_GAP = 0.6;
+  const SYSTEM_BADGE_SIZE = 3.2;
+  const SYSTEM_BADGE_GAP = 0.45;
   const SYSTEM_BADGE_MAX = 5;
+  /* Куда по высоте ставить значок относительно рамки подписи. Ровно по
+     середине рамки (0.5) значок сидит НИЖЕ букв: в getBBox у текста есть ещё
+     место под выносные элементы, а в названиях систем их нет. 0.42 — центр
+     самих заглавных букв (20.09.2026, по просьбе игрока «поровнее»). */
+  const SYSTEM_BADGE_BASELINE = 0.42;
   let labelsBySlug = new Map();
 
   function renderSystemBadges(graph) {
@@ -1192,9 +1315,9 @@ function finishMapPick(p) {
       group.setAttribute('class', 'system-badges');
       last.parentNode.insertBefore(group, last.nextSibling);
 
-      const cy = box.y + box.height / 2;
+      const cy = box.y + box.height * SYSTEM_BADGE_BASELINE;
       const step = SYSTEM_BADGE_SIZE + SYSTEM_BADGE_GAP;
-      const x0 = box.x + box.width + SYSTEM_BADGE_GAP * 1.5 + SYSTEM_BADGE_SIZE / 2;
+      const x0 = box.x + box.width + SYSTEM_BADGE_GAP + SYSTEM_BADGE_SIZE / 2;
       inside.slice(0, SYSTEM_BADGE_MAX).forEach((node, i) => {
         const el = createMapIcon({
           ...nodeIconOptions(node),
@@ -1217,7 +1340,7 @@ function finishMapPick(p) {
         more.setAttribute('x', x0 + SYSTEM_BADGE_MAX * step - SYSTEM_BADGE_SIZE / 2);
         more.setAttribute('y', cy);
         more.setAttribute('dominant-baseline', 'central');
-        more.setAttribute('font-size', '2.4');
+        more.setAttribute('font-size', SYSTEM_BADGE_SIZE * 0.9);
         more.setAttribute('fill', '#AFEEEE');
         more.setAttribute('class', 'map-label-major system-badges-more');
         more.textContent = `+${extra}`;

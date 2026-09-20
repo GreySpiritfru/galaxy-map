@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=121';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=123';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -595,6 +595,7 @@ export function showEditor(char) {
           </div>`).join('')}
         <div class="editor-hint">Серые отметки — союз указан у другого персонажа, снять его может только его игрок.</div>
       </fieldset>
+      ${canEditNodes() ? dangerBox('Персонаж исчезнет с карты, привязка к игроку снимется. Анкета и аватар останутся лежать в репозитории.') : ''}
 
       <div class="editor-status" role="status"></div>
       <div class="editor-actions">
@@ -658,6 +659,15 @@ export function showEditor(char) {
       showEditor(char);
     } else if (act === 'avatar') {
       submit('avatar');
+    } else if (act === 'del') {
+      // showEditor получает ДАННЫЕ персонажа (не узел графа) — имя лежит прямо тут.
+      armDelete(form, char.name || char.id);
+    } else if (act === 'del-no') {
+      resetDelete(form);
+    } else if (act === 'del-yes') {
+      // Правки формы при удалении не сохраняем — точки всё равно не будет.
+      setClosingConfirmation(false);
+      report(sendToBot({v: 1, t: 'del', id: char.id}, null));
     }
   });
 
@@ -665,6 +675,40 @@ export function showEditor(char) {
     e.preventDefault();
     submit(null);
   });
+}
+
+/* ============================================================
+   Удаление точки (20.09.2026) — только у владельца группы (mine=*), и
+   персонажей тоже: это не правка своего, а убирание точки с карты насовсем.
+
+   Подтверждения ДВА и в разных местах: кнопка сначала меняется на «Удалить
+   навсегда» прямо в форме, а после отправки бот ещё раз переспрашивает кнопкой
+   в личке — и там же пишет, что уедет вместе с точкой (привязанные к ней точки
+   остаются на карте отдельно, рядом с её местом).
+   ============================================================ */
+function dangerBox(hint) {
+  return `
+      <fieldset class="editor-section">
+        <legend>Удаление</legend>
+        <div class="editor-hint">${escapeHtml(hint)}</div>
+        <div data-del-row>
+          <button type="button" class="editor-btn editor-btn--danger" data-act="del">🗑 Удалить</button>
+        </div>
+      </fieldset>`;
+}
+
+function armDelete(form, name) {
+  const row = form.querySelector('[data-del-row]');
+  if (!row) return;
+  row.innerHTML = `
+    <div class="editor-hint">Точно удалить «${escapeHtml(name)}»? Бот переспросит ещё раз в личке.</div>
+    <button type="button" class="editor-btn editor-btn--ghost" data-act="del-no">Оставить</button>
+    <button type="button" class="editor-btn editor-btn--danger" data-act="del-yes">Удалить навсегда</button>`;
+}
+
+function resetDelete(form) {
+  const row = form.querySelector('[data-del-row]');
+  if (row) row.innerHTML = '<button type="button" class="editor-btn editor-btn--danger" data-act="del">🗑 Удалить</button>';
 }
 
 /* ============================================================
@@ -732,7 +776,7 @@ export function showNodeEditor(node) {
           <label class="editor-field">Тип
             <select name="role">
               <option value=""${draft.role ? '' : ' selected'}>Локация</option>
-              <option value="event"${draft.role === 'event' ? ' selected' : ''}>Событие (ромб)</option>
+              <option value="event"${draft.role === 'event' ? ' selected' : ''}>Событие (квадрат)</option>
             </select>
           </label>`)}
       </fieldset>
@@ -782,6 +826,7 @@ export function showNodeEditor(node) {
         </div>
         <div class="editor-hint">Серые отметки — связь записана у другой точки, снимается в её правке.</div>
       </fieldset>
+      ${dangerBox('Точка исчезнет с карты. Привязанные к ней останутся, но уже сами по себе, рядом с этим местом.')}
 
       <div class="editor-status" role="status"></div>
       <div class="editor-actions">
@@ -860,6 +905,13 @@ export function showNodeEditor(node) {
       showNodeEditor(node);
     } else if (act === 'text' || act === 'image') {
       submit(act);
+    } else if (act === 'del') {
+      armDelete(form, node.data.title || node.id);
+    } else if (act === 'del-no') {
+      resetDelete(form);
+    } else if (act === 'del-yes') {
+      setClosingConfirmation(false);
+      report(sendToBot({v: 1, t: 'del', id: node.id}, null));
     }
   });
 
