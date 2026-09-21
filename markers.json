@@ -95,7 +95,7 @@
     "y": -100,
     "image": "images/locations/kreyser-gorizont.jpg?v=1790023378",
     "parent": "",
-    "links": [],
+    "links": ["phenome"],
     "title": "Крейсер Горизонт",
     "text": ""
   }
