@@ -9,24 +9,20 @@
    <script> в index.html (глобальная UMD-сборка) — этот модуль просто
    использует window.OpenSeadragon.
 
-   ⚠️ Физически это ОДНО окно на весь проект (единственный `.phenom-overlay`
-   в разметке), но ЧТО в нём показывать — решает не этот файл, а данные:
-   маркер в markers.json, у которого заполнено поле "submap", передаёт свой
-   submap сюда через openSubmap(config) (вызывается из js/map.js, см.
-   graph.js — узел с полем submap считается "точкой входа" в такое окно, а
-   не жёстко зашитый id "phenome"). Два типа содержимого сейчас реализованы:
-   `"dzi"` ({source, initialZoom} — тайловая карта, как у Фенома) и (14.09.2026)
-   `"info"` ({title, images, description, descriptionRef, descriptionLabel} —
-   готовый текст без карты вообще, см. renderPhenomInfoContent ниже; первый
-   пример — "Кольцо Авалона"). Третий зарезервированный в CLAUDE.md тип,
-   `"image"` (картинка без тайлов), пока не реализован. characters.json так
-   же сможет привязывать персонажей к ЛЮБОЙ dzi-локации через submapX/
-   submapY (см. ниже) — для "info"-типа система координат не нужна, там
-   нет ни тайлов, ни карты, по которой их размещать. Если когда-нибудь
-   потребуется открывать ДВА таких окна одновременно — вот тут придётся
-   заводить второй экземпляр overlay/viewer, сейчас это не нужно (как и
-   везде в проекте, одновременно открыто максимум одно окно-вкладыш). */
-import { closeModal, escapeHtml } from './modal.js?v=124';
+   ⚠️ Это НИЖНИЙ СЛОЙ окна мировой точки, а не «окно Фенома»: в нём
+   открывается любая точка world.json. Само содержимое рисует общий
+   js/node-window.js, здесь — только хозяйство слоя и тайловая карта для тех
+   точек, у которых заполнено поле "submap" (сейчас это один Феном). Верхний
+   слой — js/stories.js, он нужен, чтобы точка, открытая из окна родителя,
+   легла ПОВЕРХ него.
+
+   ⚠️ До 23.09.2026 «что показать» решал тип внутри submap: "dzi" — тайлы,
+   "info" — готовый текст (так был сделан Авалон). Второго типа больше нет:
+   точка без своей карты — это просто точка, и текст ей рисует тот же общий
+   код, что и всем остальным. characters.json привязывает персонажей к любой
+   точке с тайловой картой через submapX/submapY (см. ниже). */
+import { closeModal, escapeHtml } from './modal.js?v=125';
+import { renderNodeContent, applyNodeToolbar } from './node-window.js?v=125';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже
@@ -104,56 +100,18 @@ function ensurePhenomViewer() {
   });
 }
 
-/* Вкладки сюжетов, привязанных к Феному ("parent": "phenome" в stories.json).
-   Сам список и переход прокидывает сюда map.js — там есть и граф связей, и
-   камера; ровно та же схема, что у setCharacterNavigator в stories.js. Тут
-   только отрисовка, чтобы phenom.js не знал ни про граф, ни про то, как
-   открываются окна сюжетов.
-
-   Вкладки добавляются в ТОТ ЖЕ ряд, что и "Описание Фенома" (.phenom-toolbar
-   с классом .tabbar), а не отдельной строкой под ним — ряд один на всё меню
-   окна, как у статей-справочников. Поэтому кнопки тут строятся в точности как
-   разметка .tabbar-btn в index.html: иконка сверху, мелкая подпись снизу. */
-// Строго по id, а не по классам: у окна сюжета разметка та же самая
-// (.phenom-overlay > .phenom-card > .phenom-toolbar), и селектор по классам
-// отличал бы их только порядком в index.html — то есть случайно.
-const phenomToolbar = document.getElementById('phenomToolbar');
-const phenomDescriptionTab = document.getElementById('phenomDescriptionTab');
-
-/* Вкладка "Описание <локации>" — единственная, что зашита статикой в
-   index.html (data-ref="phenom" по умолчанию), но подпись и саму ссылку
-   (REF_ARTICLES-ключ в js/articles.js) нужно подставлять под КАЖДУЮ
-   локацию свою — иначе у "Кольца Авалона" в шапке было бы написано
-   "Описание Фенома". Вызывается из openSubmap ниже при каждом открытии;
-   если конкретный submap не задал свои descriptionRef/descriptionLabel —
-   откатываемся на Феном (текущее поведение, ничего не меняется для него). */
-function setPhenomDescriptionTab(refKey, label) {
-  phenomDescriptionTab.dataset.ref = refKey;
-  phenomDescriptionTab.querySelector('.tabbar-btn-label').textContent = label;
-}
-
-export function setPhenomChildren(items, goTo) {
-  phenomToolbar.querySelectorAll('.phenom-story-tab').forEach(el => el.remove());
-  items.forEach(item => {
-    const btn = document.createElement('button');
-    btn.className = 'tabbar-btn phenom-story-tab';
-    btn.innerHTML = '<span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>';
-    btn.querySelector('.tabbar-btn-icon').textContent = item.icon;
-    btn.querySelector('.tabbar-btn-label').textContent = item.label;
-    btn.title = item.label;
-    btn.addEventListener('click', () => {
-      // closePhenom() тут больше НЕ вызывается (13.09.2026) — сюжет теперь
-      // открывается ПОВЕРХ окна локации, а не вместо него (см. .story-overlay
-      // в css/styles.css, z-index 251 против 250 у .phenom-overlay), это даёт
-      // настоящую вложенность локация -> сюжет и осмысленный "шаг назад" от
-      // сюжета обратно к локации (кнопка #storyParent в map.js), вместо
-      // замены одного окна другим на одном уровне, откуда возвращаться было
-      // буквально некуда.
-      goTo(item.id);
-    });
-    phenomToolbar.appendChild(btn);
-  });
-}
+/* Ряд-таббар этого слоя. Строго по id, а не по классам: у верхнего слоя
+   разметка та же самая (.phenom-overlay > .phenom-card > .phenom-toolbar), и
+   селектор по классам отличал бы их только порядком в index.html — то есть
+   случайно. Что показать в ряду, решает общий js/node-window.js. */
+const refs = {
+  toolbar: document.getElementById('phenomToolbar'),
+  parent: document.getElementById('phenomParent'),
+  article: document.getElementById('phenomDescriptionTab'),
+  archive: document.getElementById('phenomArchive'),
+  index: document.getElementById('phenomTelegram'),
+  edit: document.getElementById('phenomEdit'),
+};
 
 /* Персонажи, у которых есть submapX/submapY в characters.json — точки
    ВНУТРИ этого тайлового окна, а не на карте галактики. Это независимая
@@ -300,53 +258,34 @@ phenomOverlay.addEventListener('click', (e) => {
 
 let phenomArmed = false;
 
-/* Рендер содержимого для submap.type === "info" — локация без тайловой
-   карты внутри (например, "Кольцо Авалона": просто заголовок + баннер +
-   сворачиваемое описание). Разметка и классы намеренно ТЕ ЖЕ, что у
-   openStory() в js/stories.js (.story-banner-img/.story-title/
-   .story-accordion) — визуально это то же самое окно сюжета, просто у
-   локации, а не у сюжета (см. CLAUDE.md). config — это сам объект submap
-   из markers.json, со своими images/title/description (НЕ теми же полями,
-   что у "dzi" — там title/images вообще не нужны). */
-function renderPhenomInfoContent(config) {
-  const imagesHtml = (Array.isArray(config.images) ? config.images : [])
-    .map(src => `<img class="story-banner-img" src="${escapeHtml(src)}" alt="" loading="lazy">`)
-    .join('');
-  const descHtml = config.description ? escapeHtml(config.description).replace(/\n/g, '<br>') : '';
-  phenomInfoContent.innerHTML = `
-    ${imagesHtml}
-    <div class="story-title">${escapeHtml(config.title || '')}</div>
-    <details class="story-accordion" open>
-      <summary>Описание:</summary>
-      <div class="story-accordion-body">${descHtml}</div>
-    </details>
-  `;
-}
+/* Единственная точка входа в это окно снаружи: показывает ЛЮБУЮ мировую
+   точку (view из map.js). Содержимое зависит от того, есть ли у точки своя
+   карта:
+     есть submap — тайлы OpenSeadragon (Феном), список персонажей 👥 и всё
+                   остальное хозяйство этого файла;
+     нет submap — обычное содержимое окна (баннеры/заголовок/описание/
+                   персонажи), которое рисует общий js/node-window.js.
+   Раньше вторая ветка была «submap типа info» — отдельным типом данных ради
+   одной локации (Кольцо Авалона). Теперь это просто точка без своей карты, а
+   тип остался только у настоящей тайловой карты.
 
-/* Единственная точка входа в это окно снаружи. config — это data.submap
-   узла графа ({type, source, initialZoom, ...}, см. markers.json и шапку
-   файла). Если viewer уже создан (окно открывали раньше в этой сессии) и
-   запрошен ДРУГОЙ source — переоткрываем его через viewer.open(), не
-   пересоздавая OpenSeadragon с нуля; тот же 'open'-обработчик сам подхватит
-   новый зум и перерисует маркеры персонажей для новой карты.
-
-   ⚠️ `type: "info"` (14.09.2026) — второй тип содержимого из зарезервированных
-   в markers.json (см. раздел про submap в CLAUDE.md): вместо тайлов —
-   готовый текст/баннер, #phenomViewer/#phenomCharNav прячутся,
-   #phenomInfoContent показывается вместо них. OpenSeadragon для такой
-   локации вообще не трогаем — ни ensurePhenomViewer(), ни .open(). */
-export function openSubmap(config) {
-  const isInfo = config.type === 'info';
-  const changed = phenomViewer && currentSubmap && currentSubmap.source !== config.source;
-  currentSubmap = config;
+   ⚠️ Если viewer уже создан (окно открывали раньше в этой сессии) и запрошена
+   ДРУГАЯ карта — переоткрываем через viewer.open(), не пересоздавая
+   OpenSeadragon с нуля; тот же 'open'-обработчик сам подхватит новый зум и
+   перерисует маркеры персонажей. */
+export function openWorldWindow(view, handlers) {
+  const submap = view.submap || null;
+  const changed = phenomViewer && currentSubmap && submap && currentSubmap.source !== submap.source;
+  currentSubmap = submap;
   phenomOverlay.classList.add('open');
-  setPhenomDescriptionTab(config.descriptionRef || 'phenom', config.descriptionLabel || 'Описание Фенома');
-  phenomViewerEl.hidden = isInfo;
-  phenomInfoContent.hidden = !isInfo;
-  if (isInfo) {
-    renderPhenomInfoContent(config);
+  applyNodeToolbar(refs, view, handlers || {});
+  phenomViewerEl.hidden = !submap;
+  phenomInfoContent.hidden = !!submap;
+  if (!submap) {
+    phenomCharNav.hidden = true;
+    renderNodeContent(phenomInfoContent, view, (id) => handlers && handlers.onCharacter && handlers.onCharacter(id));
   } else if (changed) {
-    phenomViewer.open(config.source);
+    phenomViewer.open(submap.source);
   } else {
     ensurePhenomViewer();
   }

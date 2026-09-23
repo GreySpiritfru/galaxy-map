@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=124" />
+  <link rel="stylesheet" href="css/styles.css?v=125" />
 </head>
 <body>
 
@@ -187,12 +187,23 @@
          привязка живёт в stories.json. -->
     <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
       <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть">✕</button>
+      <!-- Иконка/подпись ставятся в map.js по типу родителя (PARENT_KIND_META);
+           кнопка прячется, если родителя нет. -->
+      <button class="tabbar-btn" id="phenomParent">
+        <span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>
+      </button>
       <button class="tabbar-btn" id="phenomDescriptionTab" data-ref="phenom">
-        <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Описание Фенома</span>
+        <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Статья</span>
       </button>
       <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
       <button class="tabbar-btn" id="phenomEdit" hidden>
         <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
+      </button>
+      <button class="tabbar-btn" id="phenomArchive">
+        <span class="tabbar-btn-icon" aria-hidden="true">🗂️</span><span class="tabbar-btn-label">Архив</span>
+      </button>
+      <button class="tabbar-btn" id="phenomTelegram">
+        <span class="tabbar-btn-icon" aria-hidden="true">📜</span><span class="tabbar-btn-label">Сюжеты</span>
       </button>
     </div>
     <div class="phenom-content" id="phenomContent">
@@ -237,6 +248,11 @@
       <button class="tabbar-btn" id="storyParent">
         <span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>
       </button>
+      <!-- Статья точки: data-ref (статья-справочник) или внешняя ссылка,
+           см. applyNodeToolbar в js/node-window.js. -->
+      <button class="tabbar-btn" id="storyArticle">
+        <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Статья</span>
+      </button>
       <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
       <button class="tabbar-btn" id="storyEdit" hidden>
         <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
@@ -252,6 +268,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=124"></script>
+<script type="module" src="js/main.js?v=125"></script>
 </body>
 </html>

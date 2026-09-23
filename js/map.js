@@ -1,14 +1,14 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=124';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=124';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=124';
-import { openSubmap, setPhenomChildren, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=124';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=124';
-import { openStory, setCharacterNavigator, closeStory, getOpenStory, setStoryParentButton } from './stories.js?v=124';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=124';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, LOCATION_ASPECT } from './graph.js?v=124';
+import { createPanZoom } from './panzoom.js?v=125';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=125';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=125';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=125';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=125';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=125';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=125';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=125';
 
 const SVG_PATH = 'map.svg';
 
@@ -586,13 +586,15 @@ function finishMapPick(p) {
     calibPanel.textContent = `x: ${rx}\ny: ${ry}\n\n{ x: ${rx}, y: ${ry} }`;
   }
 
-  /* --- Точки на карте (фракции/персонажи/сюжеты) — данные из markers.json
-     и stories.json. Отрисовка иконки — общий код (createMapIcon), у каждого
-     набора точек свой источник данных, свой цвет обводки/заглушки и свой
-     обработчик тапа, чтобы визуально и по смыслу их не путать. --- */
+  /* --- Точки на карте. Файла ровно два, и делятся они по тому, КТО правит
+     точку, а не по тому, что на ней нарисовано (23.09.2026):
+       world.json      — мировые точки, правит владелец группы. Локация,
+                         фракция, корабль, сюжет — одна и та же точка, разница
+                         только в заполненных полях;
+       characters.json — игровые точки, правит игрок-владелец.
+     Отрисовка иконки общая (createMapIcon), разный только набор полей. --- */
   const ns = 'http://www.w3.org/2000/svg';
-  const MARKERS_PATH = 'markers.json';
-  const STORIES_PATH = 'stories.json';
+  const WORLD_PATH = 'world.json';
   const CHARACTERS_PATH = 'characters.json';
   const MARKER_SIZE = 8; // размер картинки-маркера в единицах SVG
 
@@ -832,12 +834,15 @@ function finishMapPick(p) {
      квадрат со скруглением — чтобы другую сущность было видно ещё до тапа.
      Поле color в JSON, если заполнено, переопределяет цвет разом. */
   const NODE_STYLE = {
-    location:  {shape: 'circle', dotFill: 'rgba(255,200,50,0.9)',   dotStroke: '#111',    ringColor: '#fff'},
-    story:     {shape: 'circle', dotFill: 'rgba(196,148,255,0.95)', dotStroke: '#1a0f2e', ringColor: '#ffd76a'},
+    world:     {shape: 'event-square', dotFill: 'rgba(255,200,50,0.9)', dotStroke: '#111', ringColor: '#fff'},
     character: {shape: 'square', dotFill: 'rgba(175,238,238,0.92)', dotStroke: '#0b2b2b', ringColor: '#AFEEEE'},
     // Система — узел только режима «Ноды»: мини-карта самой системы в бирюзовом круге.
     system:    {shape: 'circle', dotFill: 'rgba(175,238,238,0.25)', dotStroke: '#AFEEEE', ringColor: '#AFEEEE'},
   };
+  /* Мировая точка с маяком («сюжет» в редакторе) — круг и золотое кольцо, как
+     было у сюжетов до объединения: за галочкой остался ровно один смысл —
+     точка мигает и выделяется, см. beacon в renderNodes. */
+  const BEACON_STYLE = {shape: 'circle', dotFill: 'rgba(196,148,255,0.95)', dotStroke: '#1a0f2e', ringColor: '#ffd76a'};
 
   /* Во сколько раз приблизить арт системы ВНУТРИ её маркера (imageZoom в
      createMapIcon). SVG системы — это вся система от края до края: вписанная в
@@ -847,59 +852,51 @@ function finishMapPick(p) {
      центральная звезда с подписью и ближние орбиты (20.09.2026). */
   const SYSTEM_ART_ZOOM = 5;
 
-  /* "border" у локации (markers.json, 15.09.2026) — какую ФОРМУ (не цвет, не
-     размер) взять вместо обычного круга: "circle" (по умолчанию, можно не
-     писать явно), "wide-square" (широкий квадрат — Кольцо Авалона, аспект
-     задан тут одной ручкой на все такие локации), "hexagon" (Феном). Не
-     путать с "role": "event" — тот про совсем другую категорию точек
-     (второстепенные фракции-остатки) и всегда даёт ромб, приоритет выше
-     border (см. renderNodes ниже: event проверяется первым). Один источник
-     правды вместо разбросанных по коду проверок конкретных id — привяжут
-     новую локацию с этим полем, форма подхватится сама. */
-  // Ширина широкого квадрата — из graph.js: раскладке она нужна та же самая,
-  // иначе маркер налезает на соседей (15.09.2026).
-  const LOCATION_BORDER = {
-    circle:       {shape: 'circle', aspect: 1},
-    'wide-square': {shape: 'square', aspect: LOCATION_ASPECT['wide-square']},
-    hexagon:      {shape: 'hexagon', aspect: 1},
-  };
+  /* Форма мировой точки НЕ хранится в данных, а выводится из того, что у точки
+     есть (23.09.2026 — раньше были поля "role" и "border", и каждая новая
+     разновидность точки требовала нового значения):
+       своя карта внутри (submap)  -> шестиугольник, «сюда можно войти» (Феном);
+       галочка маяка               -> круг, как были сюжеты;
+       "wide": true                -> шире своей высоты, под широкий арт (Авалон);
+       всё остальное               -> квадрат с острыми углами.
+     Персонаж — квадрат со скруглением, система — круг (см. NODE_STYLE). */
+  function worldShape(node) {
+    if (node.data.submap) return {shape: 'hexagon', aspect: 1};
+    if (node.data.beacon) return {shape: BEACON_STYLE.shape, aspect: 1};
+    return {shape: NODE_STYLE.world.shape, aspect: node.data.wide ? WIDE_ASPECT : 1};
+  }
 
-  // Картинка маркера исторически лежит в разных полях у разных файлов
-  // (markerImage у сюжета, image у остальных) — сводим в одном месте, чтобы
-  // отрисовка про это больше не знала.
   function nodeImage(node) {
     if (node.kind === 'system') return `systems/${encodeURIComponent(node.data.slug)}.svg`;
-    return node.data.markerImage || node.data.image || '';
+    return node.data.image || '';
   }
 
   function nodeTitle(node) {
     const d = node.data;
-    if (node.kind === 'story') return [d.code, d.title].filter(Boolean).join('. ');
+    if (node.kind === 'world' && d.code) return [d.code, d.title].filter(Boolean).join('. ');
     return d.title || d.name || node.id;
   }
 
   /* Подпись/иконка кнопки "перейти к родителю" (см. #charStory в
-     characters.js и #storyParent в stories.js) — зависят от ТИПА родителя в
-     графе, а не от того, кто их вызывает: маркер — это локация (Феном
-     сейчас единственный пример, но задуман как общий случай — "маркер
-     локации", см. раздел про submap в CLAUDE.md), сюжет — это сюжет. Ледо/
-     Текила привязаны НАПРЯМУЮ к Феному (маркеру, а не сюжету — своей
-     истории у них нет), и кнопка в их окне персонажа поэтому называется
-     "Локация", а не "Сюжет". Один источник правды на оба места вместо двух
-     захардкоженных подписей — привяжут в будущем персонажа или сюжет к
-     новому типу узла, кнопка сама подхватит правильный текст. */
-  // Цвет кольца и заглушки завершённого сюжета (см. isCompleted).
+     characters.js и кнопки родителя в обоих слоях окна точки) — зависят от
+     ТИПА родителя в графе, а не от того, кто их вызывает. Мировая точка с
+     маяком читается как сюжет, без маяка — как место (локация, фракция,
+     корабль: с точки зрения перехода это одно и то же). Один источник правды
+     на все места вместо захардкоженных подписей. */
+  // Цвет кольца и заглушки завершённой точки (см. isCompleted).
   const COMPLETED_COLOR = '#8a8f98';
 
   const PARENT_KIND_META = {
-    location: {icon: '📍', label: 'Локация'},
+    world: {icon: '📍', label: 'Место'},
     story: {icon: '🎬', label: 'Сюжет'},
     character: {icon: '👤', label: 'Персонаж'},
     system: {icon: '🪐', label: 'Система'},
   };
   function parentButtonMeta(node) {
     if (!node.parent) return null;
-    return PARENT_KIND_META[node.parent.kind] || PARENT_KIND_META.location;
+    const p = node.parent;
+    if (p.kind === 'world' && p.data.beacon) return PARENT_KIND_META.story;
+    return PARENT_KIND_META[p.kind] || PARENT_KIND_META.world;
   }
 
   /* Что открыть по узлу — зависит только от его типа (а для маркеров ещё и
@@ -908,31 +905,74 @@ function finishMapPick(p) {
      переход из окна сюжета к персонажу, кнопки сюжетов внутри Фенома.
      Отсюда же и одинаковый перелёт камеры везде (goToNode ниже). */
   function openNode(node, opts) {
-    if (node.kind === 'story') {
-      setStoryParentButton(parentButtonMeta(node));
-      openStory(node.data);
-      return;
-    }
     if (node.kind === 'character') {
       updateStoryButton(parentButtonMeta(node));
       openCharacter(node.data, opts);
       return;
     }
-    // Система (родитель сюжета «system:<слаг>»): её окно, камера — на точку focusId внутри.
+    // Система (родитель точки «system:<слаг>»): её окно, камера — на точку focusId внутри.
     if (node.kind === 'system') {
       openSystem(node.data.title, {focusId: opts && opts.focusId});
       return;
     }
-    // Маркер с полем submap ("Феном" сейчас единственный, но не единственно
-    // возможный — см. openSubmapNode) — не карточка с текстом, а
-    // окно-вкладыш со своей тайловой картой/картинкой.
-    if (node.kind === 'location' && node.data.submap) { openSubmapNode(node); return; }
-    const titleHtml = node.data.title ? `<div class="modal-title">${escapeHtml(node.data.title)}</div>` : '';
-    const textHtml = node.data.text ? `<div>${escapeHtml(node.data.text).replace(/\n/g, '<br>')}</div>` : '';
-    // Локация без своей карты (сейчас это события) — карточка; владельцу в ней кнопка правки.
-    const editHtml = canEditNodes() ? '<div class="modal-edit-row"><button type="button" class="editor-btn" data-node-edit>✏️ Правка</button></div>' : '';
-    openModal(titleHtml + textHtml + editHtml);
-    document.querySelector('#modalContent [data-node-edit]')?.addEventListener('click', () => showNodeEditor(node));
+    openWorldNode(node);
+  }
+
+  /* Всё, что окно должно показать про точку. Собирается ЗАНОВО при каждом
+     открытии — состав детей и аватары меняются через редактор, а окон всего
+     два на весь проект и они переиспользуются (баг 14.09.2026, когда вкладки
+     Фенома оставались висеть в окне Авалона, был ровно про это). */
+  function worldView(node) {
+    const chars = node.children.filter(c => c.kind === 'character' && c.onMap !== false);
+    const kids = node.children.filter(c => c.kind === 'world' && c.onMap !== false);
+    const d = node.data;
+    return {
+      id: node.id,
+      code: d.code || '',
+      title: d.title || node.id,
+      description: d.description || '',
+      images: Array.isArray(d.images) ? d.images : [],
+      beacon: !!d.beacon,
+      completed: isCompleted(node),
+      article: d.article && (d.article.ref || d.article.url) ? d.article : null,
+      archiveUrl: d.archiveUrl || '',
+      submap: d.submap || null,
+      parentMeta: parentButtonMeta(node),
+      canEdit: canEditNodes(),
+      // Союзы показываем только ВНУТРИ этой же точки: связь с персонажем из
+      // другого сюжета в этом окне не к месту (siblingLinks в graph.js).
+      characters: chars.map(c => ({
+        id: c.id, name: nodeTitle(c), image: c.data.image || '',
+        links: siblingLinks(c).map(other => other.id),
+      })),
+      children: kids.map(c => ({
+        id: c.id,
+        label: c.data.shortTitle || nodeTitle(c),
+        icon: c.data.beacon ? (isCompleted(c) ? '✅' : '🎬') : '📍',
+      })),
+    };
+  }
+
+  /* Мировая точка открывается в одном из двух слоёв (см. js/node-window.js):
+     обычно в нижнем, но если нижний уже занят ДРУГОЙ точкой — в верхнем,
+     поверх неё. Так «сюжет из окна Фенома» ложится на Феном, а не вместо
+     него, и закрытие возвращает ровно туда, откуда пришли. */
+  function openWorldNode(node) {
+    const handlers = {
+      onCharacter: (id) => { const c = graphById.get(id); if (c) goToNode(c, true); },
+      onChild: (id) => { const c = graphById.get(id); if (c) goToNode(c, true); },
+    };
+    const view = worldView(node);
+    const lower = openWorldNodeCurrent;
+    if (isPhenomOpen() && lower && lower.id !== node.id) {
+      openStoryNodeCurrent = node;
+      openStory(view, handlers);
+    } else {
+      openWorldNodeCurrent = node;
+      if (isStoryOpen()) closeStory();
+      if (view.submap) prepareSubmap(node);
+      openWorldWindow(view, handlers);
+    }
   }
 
   /* Открывает submap-окно ЛЮБОГО маркера с полем "submap" в markers.json
@@ -965,37 +1005,21 @@ function finishMapPick(p) {
     return result;
   }
 
-  // Какая локация сейчас открыта в окне-вкладыше — для кнопки «✏️ Правка» (#phenomEdit).
-  let openSubmapNodeCurrent = null;
+  /* Какие точки открыты сейчас в нижнем и верхнем слоях — для кнопок
+     «✏️ Правка» и перехода к родителю. */
+  let openWorldNodeCurrent = null;
+  let openStoryNodeCurrent = null;
+  // Граф по id — окну точки нужно уметь перейти к ребёнку/персонажу по одному id.
+  let graphById = new Map();
 
-  function openSubmapNode(node) {
-    openSubmapNodeCurrent = node;
+  // Персонажи внутри тайловой карты — только для точки со своей картой.
+  function prepareSubmap(node) {
     const mapChars = collectSubmapCharacters(node);
     const byId = new Map(mapChars.map(c => [c.id, c]));
     setSubmapCharacters(
       mapChars.map(c => ({id: c.id, name: nodeTitle(c), image: c.data.image || '', x: c.data.submapX, y: c.data.submapY})),
       (id) => { const c = byId.get(id); if (c) openNode(c); }
     );
-    // Вкладки сюжетов, привязанных ИМЕННО к ЭТОЙ локации (её прямые
-    // дети-сюжеты) — пересчитываются заново при КАЖДОМ открытии, а не один
-    // раз для Фенома при загрузке страницы (баг, найденный игроком
-    // 14.09.2026): #phenomToolbar общий на ВСЕ локации с submap, и старый
-    // код (wirePhenomWindow, звал setPhenomChildren только один раз для
-    // "phenome") оставлял вкладки Фенома висеть в окне любой другой
-    // локации, например "Кольца Авалона". Тот же принцип, что и у
-    // персонажей чуть выше — берём из node.children при каждом open, а не
-    // регистрируем один раз на старте.
-    const storyChildren = node.children.filter(child => child.kind === 'story');
-    const storyById = new Map(storyChildren.map(c => [c.id, c]));
-    setPhenomChildren(
-      storyChildren.map(child => ({
-        id: child.id,
-        label: child.data.shortTitle || nodeTitle(child),
-        icon: isCompleted(child) ? '✅' : '🎬',
-      })),
-      (id) => { const target = storyById.get(id); if (target) goToNode(target, true); }
-    );
-    openSubmap(node.data.submap);
   }
 
   // Точке без маркера на карте (onMap: false, см. js/graph.js) лететь некуда —
@@ -1040,28 +1064,14 @@ function finishMapPick(p) {
   /* Как выглядит маркер точки — форма, цвета, картинка, маяк. Одно и то же для
      маркера на карте, значка у подписи системы и маркера внутри окна системы. */
   function nodeIconOptions(node) {
-    const style = NODE_STYLE[node.kind] || NODE_STYLE.location;
-    // "role": "event" в markers.json — старые/второстепенные локации
-    // (остались от версии карты до Феном/сюжетов/персонажей): ромб вместо
-    // круга, размер уже уменьшен в graph.js (EVENT_LOCATION_SIZE). Цвета
-    // пока те же, что у обычной локации — задача была только про форму
-    // и размер, не про цвет.
-    const isEventLocation = node.kind === 'location' && node.data.role === 'event';
-    // "border" в markers.json (необязательное, только для локаций) —
-    // явная форма конкретной локации вместо обычного круга: "wide-square"
-    // у "Кольца Авалона", "hexagon" у Фенома (см. LOCATION_BORDER выше).
-    // "role": "event" проверяется ПЕРВЫМ и даёт ромб независимо от border —
-    // это другая категория (второстепенные фракции), а не альтернативная
-    // форма локации.
-    let shape = style.shape, aspect = 1;
-    if (isEventLocation) {
-      shape = 'event-square';
-    } else if (node.kind === 'location' && node.data.border) {
-      const border = LOCATION_BORDER[node.data.border];
-      if (border) { shape = border.shape; aspect = border.aspect; }
-    }
+    // Точка с маяком берёт «сюжетные» цвета — круг, золотое кольцо, лиловая
+    // заглушка: галочка маяка это единственное, что осталось от прежнего
+    // отдельного типа «сюжет» (23.09.2026).
+    const withBeacon = node.kind === 'world' && node.data.beacon;
+    const style = withBeacon ? BEACON_STYLE : (NODE_STYLE[node.kind] || NODE_STYLE.world);
+    const form = node.kind === 'world' ? worldShape(node) : {shape: style.shape, aspect: 1};
     return {
-      image: nodeImage(node), shape, aspect,
+      image: nodeImage(node), shape: form.shape, aspect: form.aspect,
       // Мини-карта системы вписывается в кружок целиком и превращается в
       // тёмное пятно — приближаем её арт внутри маркера (20.09.2026, по
       // просьбе игрока: должно быть видно центральную звезду и её подпись).
@@ -1069,9 +1079,9 @@ function finishMapPick(p) {
       dotFill: isCompleted(node) ? COMPLETED_COLOR : (node.data.color || style.dotFill),
       dotStroke: style.dotStroke,
       ringColor: isCompleted(node) ? COMPLETED_COLOR : (node.data.color || style.ringColor),
-      // Завершённый сюжет (completed в stories.json) — без маяка и серый:
-      // зовёт «сюда, тут идёт игра» только то, что ещё идёт.
-      beacon: node.kind === 'story' && !isCompleted(node) ? (node.data.color || style.ringColor) : null,
+      // Завершённая точка — без маяка и серая: зовёт «сюда, тут идёт игра»
+      // только то, что ещё идёт.
+      beacon: withBeacon && !isCompleted(node) ? (node.data.color || style.ringColor) : null,
     };
   }
 
@@ -1107,27 +1117,11 @@ function finishMapPick(p) {
   }
 
   function isCompleted(node) {
-    return node.kind === 'story' && node.data.completed === true;
+    return node.kind === 'world' && node.data.completed === true;
   }
 
-  /* Окно сюжета показывает своих персонажей рядом маркеров-квадратов (см.
-     openStory в js/stories.js). Прокидываем туда не сами объекты из JSON, а
-     короткую выжимку — включая то, кто с кем в союзе, чтобы связи были видны
-     не только на карте. siblingLinks даёт союзников ВНУТРИ этого же сюжета:
-     союз с персонажем из другого сюжета в этом окне показывать незачем. */
   function wireStoryWindows(graph) {
-    graph.forEach(node => {
-      if (node.kind !== 'story') return;
-      node.data.__characters = node.children
-        .filter(child => child.kind === 'character')
-        .map(child => ({
-          id: child.id,
-          name: child.data.name || '',
-          image: child.data.image || '',
-          links: siblingLinks(child).map(other => other.id),
-        }));
-    });
-    // instant: true — переход из уже открытого окна сюжета (тап по кружку
+    // instant: true — переход из уже открытого окна точки (тап по портрету
     // персонажа), карта позади него не видна, долгий перелёт ни к чему.
     setCharacterNavigator(id => {
       const node = graph.get(id);
@@ -1183,9 +1177,9 @@ function finishMapPick(p) {
   const SYSTEM_FOCUS_SHARE = 0.35;
 
   function systemChildIcon(child) {
-    if (child.kind === 'story') return isCompleted(child) ? '✅' : '🎬';
     if (child.kind === 'character') return '👤';
-    return child.data.role === 'event' ? '🔶' : '📍';
+    if (child.data.beacon) return isCompleted(child) ? '✅' : '🎬';
+    return '📍';
   }
 
   function hasSystemPlace(node) {
@@ -1785,28 +1779,27 @@ function finishMapPick(p) {
   // Все системы с картой — для «Привязки» в редакторе сюжета/локации.
   let systemChoices = [];
 
-  /* Три файла грузятся параллельно, но раскладка считается, только когда
-     приехали все: связи ходят МЕЖДУ файлами (персонаж -> сюжет -> Феном), и
+  /* Оба файла грузятся параллельно, но раскладка считается, только когда
+     приехали оба: связи ходят МЕЖДУ файлами (персонаж -> сюжет -> Феном), и
      по части графа позиции посчитать нельзя. Раньше маркеры фракций
      рисовались сразу, не дожидаясь остальных — теперь так нельзя. */
   const graphReady = Promise.all([
-    loadJsonList(MARKERS_PATH),
-    loadJsonList(STORIES_PATH),
+    loadJsonList(WORLD_PATH),
     loadJsonList(CHARACTERS_PATH),
     namesPromise,
     manifestPromise,
-  ]).then(([markers, stories, characters, names, readySlugs]) => {
+  ]).then(([world, characters, names, readySlugs]) => {
     // Свои отправленные, но ещё не доехавшие до GitHub Pages правки редактора
     // (js/editor.js) — поверх скачанных файлов и ДО раскладки: новая привязка
     // или место должны попасть в расчёт позиций.
-    const pendingShown = applyPendingEdits({location: markers, story: stories, character: characters});
+    const pendingShown = applyPendingEdits({world, character: characters});
     const anchors = collectSystemAnchors(names, readySlugs);
     systemChoices = [...anchors.values()]
       .map(a => ({id: 'system:' + a.slug, title: a.title}))
       .sort((a, b) => a.title.localeCompare(b.title, 'ru'));
     // Узлами графа становятся только системы, к которым что-то привязано:
     // остальные в режиме нод были бы пустыми кружками.
-    const used = new Set([...markers, ...stories, ...characters]
+    const used = new Set([...world, ...characters]
       .map(item => item && typeof item.parent === 'string' && item.parent.startsWith('system:') ? item.parent.slice(7) : null)
       .filter(Boolean));
     const systems = [...used].filter(slug => anchors.has(slug)).map(slug => {
@@ -1814,11 +1807,11 @@ function finishMapPick(p) {
       return {id: 'system:' + slug, slug, title: a.title, x: a.x, y: a.y};
     });
     const graph = buildNodes([
-      {kind: 'location', items: markers},
-      {kind: 'story', items: stories},
+      {kind: 'world', items: world},
       {kind: 'character', items: characters},
       {kind: 'system', items: systems},
     ]);
+    graphById = graph;
 
     /* Обе раскладки считаются тут же, одна за другой, и обе замораживаются.
        Порядок важен только тем, что вторая перезаписывает x/y — поэтому
@@ -1969,7 +1962,7 @@ function finishMapPick(p) {
       },
       pickOnSubmap(char, locationNode, onPick) {
         closeLayers();
-        openSubmapNode(locationNode);
+        openWorldNode(locationNode);
         showPickBanner(`🏙 Тапни, где на карте «${nodeTitle(locationNode)}» стоит ${char.name || 'персонаж'}`);
         const done = () => { if (isPhenomOpen()) closePhenom(); reopen(char); };
         // Третий путь, кроме тапа и «Отмены»: окно закрыли ✕/«назад» —
@@ -1979,16 +1972,12 @@ function finishMapPick(p) {
       },
     });
 
-    // «✏️ Правка» у сюжета и у локации с картой — только владельцу группы.
-    const storyEdit = document.getElementById('storyEdit');
-    const phenomEdit = document.getElementById('phenomEdit');
-    storyEdit.hidden = phenomEdit.hidden = !canEditNodes();
-    storyEdit.addEventListener('click', () => {
-      const story = getOpenStory();
-      if (story) showNodeEditor(graph.get(story.id));
+    // «✏️ Правка» в обоих слоях окна точки — только владельцу группы.
+    document.getElementById('storyEdit').addEventListener('click', () => {
+      if (openStoryNodeCurrent) showNodeEditor(openStoryNodeCurrent);
     });
-    phenomEdit.addEventListener('click', () => {
-      if (openSubmapNodeCurrent) showNodeEditor(openSubmapNodeCurrent);
+    document.getElementById('phenomEdit').addEventListener('click', () => {
+      if (openWorldNodeCurrent) showNodeEditor(openWorldNodeCurrent);
     });
   }
 
@@ -2011,24 +2000,24 @@ function finishMapPick(p) {
     goToNode(node.parent, true);
   });
 
-  /* Кнопка "Сюжет"/"Локация" в панели сюжета — зеркало #charStory выше, для
-     сюжета, привязанного к своему родителю (обычно маркер-локация вроде
-     Фенома, но общий случай — см. parentButtonMeta). closeStory() тут НЕ
-     закрывает родителя — если сюжет был открыт вкладкой ИЗ окна локации
-     (см. setPhenomChildren в js/phenom.js), локация всё это время оставалась
-     открытой позади и просто снова становится видна; если сюжет открыт сам
-     по себе (клик по его собственному маркеру на карте), goToNode ниже
-     откроет локацию заново. */
-  document.getElementById('storyParent').addEventListener('click', async () => {
-    const story = getOpenStory();
-    if (!story) return;
-    const graph = await graphReady;
-    const node = graph.get(story.id);
-    if (!node || !node.parent) return;
-    closeStory();
-    // У системы — камера на маркер этого сюжета внутри неё.
-    goToNode(node.parent, true, {focusId: node.id});
-  });
+  /* Кнопка перехода к родителю в обоих слоях окна точки — зеркало #charStory
+     выше. Закрываем только СВОЙ слой: если точка была открыта вкладкой из
+     окна родителя, тот всё это время оставался открытым позади и просто снова
+     становится виден; если точка открыта сама по себе (тап по её маркеру на
+     карте), goToNode откроет родителя заново. */
+  function wireParentButton(btnId, getNode, closeSelf) {
+    document.getElementById(btnId).addEventListener('click', async () => {
+      const node = getNode();
+      if (!node) return;
+      await graphReady;
+      if (!node.parent) return;
+      closeSelf();
+      // У системы — камера на маркер этой точки внутри неё.
+      goToNode(node.parent, true, {focusId: node.id});
+    });
+  }
+  wireParentButton('storyParent', () => openStoryNodeCurrent, closeStory);
+  wireParentButton('phenomParent', () => openWorldNodeCurrent, closePhenom);
 
   // Все входы в Феном ведут через один и тот же перелёт камеры (focusAndOpen
   // выше), что и клик по маркеру "phenome" на карте: кнопка 🚀 в углу карты и

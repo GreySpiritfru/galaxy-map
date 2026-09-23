@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=124';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=125';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -49,9 +49,10 @@ const FIELD_LABELS = {
     x: 'Место на карте', y: 'Место на карте', submapX: 'Место на карте локации', submapY: 'Место на карте локации',
   },
   node: {
-    title: 'Название', shortTitle: 'Короткое название', code: 'Номер', archiveUrl: 'Архив', color: 'Цвет',
-    completed: 'Статус',
-    role: 'Тип', parent: 'Привязка', links: 'Связи', x: 'Место на карте', y: 'Место на карте',
+    title: 'Название', shortTitle: 'Короткое название', code: 'Номер',
+    articleUrl: 'Статья', archiveUrl: 'Архив', color: 'Цвет',
+    beacon: 'Маяк', completed: 'Статус', wide: 'Ширина маркера',
+    parent: 'Привязка', links: 'Связи', x: 'Место на карте', y: 'Место на карте',
     systemX: 'Место в системе', systemY: 'Место в системе',
   },
 };
@@ -103,19 +104,20 @@ function fieldsOf(kind, d) {
       submapY: typeof d.submapY === 'number' ? d.submapY : null,
     };
   }
-  // Место внутри системы — у сюжета и локации с "parent": "system:<слаг>".
+  // Место внутри системы — у точки с "parent": "system:<слаг>".
   const inSystem = {
     systemX: typeof d.systemX === 'number' ? d.systemX : null,
     systemY: typeof d.systemY === 'number' ? d.systemY : null,
   };
-  if (kind === 'story') {
-    return {
-      title: d.title || '', ...common, ...inSystem,
-      shortTitle: d.shortTitle || '', code: d.code || '', archiveUrl: d.archiveUrl || '', color: d.color || '',
-      completed: d.completed === true,
-    };
-  }
-  return {title: d.title || '', ...common, ...inSystem, role: d.role === 'event' ? 'event' : ''};
+  /* Мировая точка — один набор полей на все точки (23.09.2026): локация,
+     фракция, корабль и сюжет отличаются только тем, что заполнено. */
+  return {
+    title: d.title || '', ...common, ...inSystem,
+    shortTitle: d.shortTitle || '', code: d.code || '',
+    archiveUrl: d.archiveUrl || '', articleUrl: (d.article && d.article.url) || '',
+    color: d.color || '',
+    beacon: d.beacon === true, completed: d.completed === true, wide: d.wide === true,
+  };
 }
 
 /* ============================================================
@@ -180,9 +182,8 @@ function rememberPending(kind, id, before, set) {
   pendingNow.set(kind + ':' + id, entry);
 }
 
-/* lists — {location: markers, story: stories, character: characters}, прямо
-   скачанные массивы: правки пишутся в них на месте. Возвращает, сколько точек
-   показано с ещё не доехавшими правками. */
+/* lists — {world, character}, прямо скачанные массивы: правки пишутся в них
+   на месте. Возвращает, сколько точек показано с ещё не доехавшими правками. */
 export function applyPendingEdits(lists) {
   const now = Date.now();
   const keep = [];
@@ -198,7 +199,8 @@ export function applyPendingEdits(lists) {
     Object.entries(entry.fields).forEach(([key, f]) => {
       if (!f || !(key in current) || same(current[key], f.to)) return;
       if (!Array.isArray(f.before) || !f.before.some(v => same(v, current[key]))) return;
-      if (f.to === null || (key === 'role' && !f.to)) delete item[key];
+      // Пустое значение = поля в файле нет (так же пишет и бот).
+      if (f.to === null || f.to === false || f.to === '') delete item[key];
       else item[key] = Array.isArray(f.to) ? [...f.to] : f.to;
       fields[key] = f;
     });
@@ -363,7 +365,7 @@ function nodeLabel(node) {
 // Полное название — для списка и заголовков, где места хватает.
 function fullTitle(node) {
   const d = node.data;
-  if (node.kind === 'story') return [d.code, d.title].filter(Boolean).join('. ') || node.id;
+  if (node.kind === 'world' && d.code) return [d.code, d.title].filter(Boolean).join('. ') || node.id;
   return d.title || d.name || node.id;
 }
 
@@ -420,17 +422,15 @@ export function showEditorList() {
   }
   const sections = [['Персонажи', chars]];
   if (canEditNodes()) {
-    sections.push(
-      ['Сюжеты', nodes.filter(n => n.kind === 'story').sort(byTitle)],
-      ['Локации', nodes.filter(n => n.kind === 'location' && n.data.role !== 'event').sort(byTitle)],
-      ['События', nodes.filter(n => n.kind === 'location' && n.data.role === 'event').sort(byTitle)],
-    );
+    // Мировые точки — одним списком: делить их на «сюжеты/локации/события»
+    // больше незачем, это одна и та же точка с разными галочками (23.09.2026).
+    sections.push(['Точки на карте', nodes.filter(n => n.kind === 'world').sort(byTitle)]);
   }
   const total = sections.reduce((sum, [, list]) => sum + list.length, 0);
 
   const row = (n) => {
     const title = fullTitle(n);
-    const image = n.data.markerImage || n.data.image || '';
+    const image = n.data.image || '';
     const sub = n.kind === 'character' ? (n.parent ? fullTitle(n.parent) : 'отдельно на карте') : '';
     const pending = pendingNow.has(n.kind + ':' + n.id);
     return `<button type="button" class="editor-item" data-id="${escapeHtml(n.id)}" data-search="${escapeHtml(normalizeName(title))}">
@@ -490,7 +490,7 @@ function submapLocationFor(draft) {
   const seen = new Set();
   while (node && !seen.has(node)) {
     seen.add(node);
-    if (node.kind === 'location' && node.data.submap && node.data.submap.type === 'dzi') return node;
+    if (node.kind === 'world' && node.data.submap && node.data.submap.type === 'dzi') return node;
     node = node.parent;
   }
   return null;
@@ -502,12 +502,9 @@ export function showEditor(char) {
   const graph = hooks.graph;
   const selfNode = graph.get(char.id);
 
-  const parents = [...graph.values()].filter(n => (n.kind === 'story' || n.kind === 'location') && n.onMap !== false);
-  const stories = parents.filter(n => n.kind === 'story');
-  // "role": "event" в markers.json — это события (ромбы на карте: Гроксы,
-  // Терране и т.п.), а не локации, — отдельной группой.
-  const events = parents.filter(n => n.kind === 'location' && n.data.role === 'event');
-  const locations = parents.filter(n => n.kind === 'location' && n.data.role !== 'event');
+  // Привязать персонажа можно к любой мировой точке: делить их в списке на
+  // сюжеты/локации/события больше незачем (23.09.2026).
+  const parents = [...graph.values()].filter(n => n.kind === 'world' && n.onMap !== false);
   const option = (n) => `<option value="${escapeHtml(n.id)}"${draft.parent === n.id ? ' selected' : ''}>${escapeHtml(nodeLabel(n))}</option>`;
 
   // Союз двусторонний (см. graph.js): если связь записана у ДРУГОГО
@@ -577,9 +574,7 @@ export function showEditor(char) {
         <label class="editor-field">Где персонаж
           <select name="parent">
             <option value=""${draft.parent ? '' : ' selected'}>— Отдельно, своё место на карте —</option>
-            ${stories.length ? `<optgroup label="Сюжеты">${stories.map(option).join('')}</optgroup>` : ''}
-            ${locations.length ? `<optgroup label="Локации">${locations.map(option).join('')}</optgroup>` : ''}
-            ${events.length ? `<optgroup label="События">${events.map(option).join('')}</optgroup>` : ''}
+            ${parents.map(option).join('')}
           </select>
         </label>
         ${place}
@@ -712,73 +707,73 @@ function resetDelete(form) {
 }
 
 /* ============================================================
-   Сюжеты, локации и события — только владелец группы (mine=*).
-   Данные — stories.json и markers.json («role»: «event» = событие).
+   Мировая точка — одна форма на все точки world.json, только владелец группы
+   (mine=*). Локация, фракция, корабль и сюжет больше не разные сущности с
+   разными формами (23.09.2026, по просьбе игрока «привести к общему
+   знаменателю»): это одна точка, а разница — в том, что заполнено.
+   Галочка «маяк» отвечает ровно за одно — точка мигает на карте.
 
    Описание и картинку форма НЕ отправляет сама: sendData ограничен 4096
-   байтами, а описание сюжета бывает длиннее (у «Переворота» ~5 КБ в UTF-8).
+   байтами, а описание бывает длиннее (у «Переворота» ~5 КБ в UTF-8).
    Кнопки «Изменить описание»/«Сменить картинку» закрывают карту (сохранив
    заодно поля формы), и бот ждёт текст или фото следующим сообщением в личке.
    ============================================================ */
 export function showNodeEditor(node) {
-  if (!hooks || !canEditNodes() || !node || (node.kind !== 'story' && node.kind !== 'location')) return;
+  if (!hooks || !canEditNodes() || !node || node.kind !== 'world') return;
   const draft = draftFor(node.kind, node.data);
   const graph = hooks.graph;
-  const isStory = node.kind === 'story';
-  const kindLabel = isStory ? 'Сюжет' : (draft.role === 'event' ? 'Событие' : 'Локация');
   const submap = node.data.submap;
-  // Где описание вообще показывается: у сюжета, у события/локации без своей
-  // карты (карточка) и у локации-«info» (текст в окне, как у Авалона). У
-  // локации с тайловой картой (Феном) описание — статья справочника.
-  const hasText = isStory || !submap || submap.type === 'info';
+  // У точки со своей картой (Феном) описание — статья справочника, а не текст
+  // в окне: окно занято тайлами.
+  const hasText = !submap;
 
   // Привязать к себе или к своему же потомку нельзя — получится цикл.
   const descendants = new Set();
   (function collect(n) { n.children.forEach(ch => { descendants.add(ch.id); collect(ch); }); })(node);
   const targets = [...graph.values()].filter(n =>
-    (n.kind === 'story' || n.kind === 'location') && n.id !== node.id && !descendants.has(n.id));
+    n.kind === 'world' && n.id !== node.id && !descendants.has(n.id));
   const groups = [
-    ['Сюжеты', targets.filter(n => n.kind === 'story')],
-    ['Локации', targets.filter(n => n.kind === 'location' && n.data.role !== 'event')],
-    ['События', targets.filter(n => n.kind === 'location' && n.data.role === 'event')],
+    ['Точки на карте', targets],
     // Системы с картой (systems/manifest.json) — не точки графа, а список из map.js.
     ['Системы', (hooks.systems || []).map(s => ({id: s.id, data: {title: '🪐 ' + s.title}}))],
   ];
   const option = (n) => `<option value="${escapeHtml(n.id)}"${draft.parent === n.id ? ' selected' : ''}>${escapeHtml(nodeLabel(n))}</option>`;
   const system = draft.parent.startsWith('system:') ? (hooks.systems || []).find(s => s.id === draft.parent) : null;
-  const linkTargets = [...graph.values()].filter(n => (n.kind === 'story' || n.kind === 'location') && n.id !== node.id);
+  const linkTargets = [...graph.values()].filter(n => n.kind === 'world' && n.id !== node.id);
   const incoming = new Set(node.links.map(n => n.id));
   draft.links.forEach(id => incoming.delete(id));
 
-  const image = isStory ? (node.data.markerImage || (node.data.images || [])[0] || '') : (node.data.image || '');
+  const image = node.data.image || (node.data.images || [])[0] || '';
   const input = (name, label, max, extra = '') =>
     `<label class="editor-field">${label}<input name="${name}" maxlength="${max}" value="${escapeHtml(draft[name])}" ${extra}></label>`;
 
   openIframeModal('about:blank', null);
   modalContent.innerHTML = `
     <form class="editor" autocomplete="off">
-      <div class="editor-title">✏️ ${escapeHtml(kindLabel)}: ${escapeHtml(node.data.title || node.id)}</div>
+      <div class="editor-title">✏️ Точка: ${escapeHtml(node.data.title || node.id)}</div>
       ${pendingHint(node.kind, node.id)}
 
       <fieldset class="editor-section">
         <legend>Основное</legend>
         ${input('title', 'Название', TITLE_MAX)}
-        ${isStory ? `
-          ${input('shortTitle', 'Короткое название (для вкладки в окне локации)', SHORT_TITLE_MAX)}
-          ${input('code', 'Номер (например 2 или К.3)', CODE_MAX)}
-          ${input('archiveUrl', 'Ссылка на архив', URL_MAX, 'type="url" placeholder="https://…"')}
-          ${input('color', 'Цвет маркера (пусто — по умолчанию)', COLOR_MAX, 'placeholder="#ffd76a"')}
-          <label class="editor-check">
-            <input type="checkbox" name="completed"${draft.completed ? ' checked' : ''}>
-            <span>Сюжет завершён <small>— маркер станет серым и без маяка</small></span>
-          </label>
-        ` : (submap ? '' : `
-          <label class="editor-field">Тип
-            <select name="role">
-              <option value=""${draft.role ? '' : ' selected'}>Локация</option>
-              <option value="event"${draft.role === 'event' ? ' selected' : ''}>Событие (квадрат)</option>
-            </select>
-          </label>`)}
+        ${input('shortTitle', 'Короткое название (для вкладки в окне родителя)', SHORT_TITLE_MAX)}
+        ${input('code', 'Номер (например 2 или К.3)', CODE_MAX)}
+        ${input('articleUrl', 'Ссылка на статью', URL_MAX, 'type="url" placeholder="https://…"')}
+        ${input('archiveUrl', 'Ссылка на архив', URL_MAX, 'type="url" placeholder="https://…"')}
+        ${input('color', 'Цвет маркера (пусто — по умолчанию)', COLOR_MAX, 'placeholder="#ffd76a"')}
+        <label class="editor-check">
+          <input type="checkbox" name="beacon"${draft.beacon ? ' checked' : ''}>
+          <span>Сюжет <small>— маркер мигает маяком и зовёт к себе</small></span>
+        </label>
+        <label class="editor-check">
+          <input type="checkbox" name="completed"${draft.completed ? ' checked' : ''}>
+          <span>Завершено <small>— маркер станет серым и без маяка</small></span>
+        </label>
+        ${submap ? '' : `
+        <label class="editor-check">
+          <input type="checkbox" name="wide"${draft.wide ? ' checked' : ''}>
+          <span>Широкий маркер <small>— под горизонтальный арт</small></span>
+        </label>`}
       </fieldset>
 
       <fieldset class="editor-section">
@@ -789,7 +784,7 @@ export function showNodeEditor(node) {
             <span>${escapeHtml((node.data.title || '?').trim().charAt(0).toUpperCase())}</span>
           </div>
           <div>
-            <div class="editor-hint">Окно закроется, бот попросит прислать ${hasText ? 'текст или фото' : 'фото'} в личку. Правки формы сохранятся заодно.${hasText ? ' Текущее описание бот пришлёт — его можно скопировать и поправить.' : ' Описание этой локации — статья справочника.'}</div>
+            <div class="editor-hint">Окно закроется, бот попросит прислать ${hasText ? 'текст или фото' : 'фото'} в личку. Правки формы сохранятся заодно.${hasText ? ' Текущее описание бот пришлёт — его можно скопировать и поправить.' : ' Описание этой точки — статья справочника.'}</div>
             ${hasText ? '<button type="button" class="editor-btn" data-act="text">📝 Изменить описание</button>' : ''}
             <button type="button" class="editor-btn" data-act="image">🖼 Сменить картинку</button>
           </div>
@@ -839,16 +834,19 @@ export function showNodeEditor(node) {
   const {say, report} = statusHelpers(form);
   wireLinks(form, draft, say, 'связей');
 
+  const CHECKS = ['beacon', 'completed', 'wide'];
   form.addEventListener('input', (e) => {
     const el = e.target;
-    if (el.type === 'checkbox' && el.name === 'completed') draft.completed = el.checked;
+    if (el.type === 'checkbox' && CHECKS.includes(el.name)) draft[el.name] = el.checked;
     else if (el.name !== 'links' && el.name in draft) draft[el.name] = el.value.trim();
     syncClosingConfirmation();
   });
   // Старые WebView не шлют input у чекбоксов — только change.
-  form.querySelector('input[name="completed"]')?.addEventListener('change', (e) => {
-    draft.completed = e.target.checked;
-    syncClosingConfirmation();
+  CHECKS.forEach(name => {
+    form.querySelector(`input[name="${name}"]`)?.addEventListener('change', (e) => {
+      draft[name] = e.target.checked;
+      syncClosingConfirmation();
+    });
   });
   form.querySelector('select[name="parent"]').addEventListener('change', () => {
     // Место внутри системы имеет смысл только у точки в системе.
@@ -859,8 +857,9 @@ export function showNodeEditor(node) {
 
   const problemOf = (set) => {
     if ('title' in set && !set.title) return 'Название не может быть пустым.';
-    const problem = textProblem(node.kind, set, ['title', 'shortTitle', 'code', 'archiveUrl'], ['title', 'shortTitle']);
+    const problem = textProblem(node.kind, set, ['title', 'shortTitle', 'code', 'archiveUrl', 'articleUrl'], ['title', 'shortTitle']);
     if (problem) return problem;
+    if (set.articleUrl && !/^https:\/\/\S+$/i.test(set.articleUrl)) return 'Ссылка на статью должна начинаться с https:// и быть без пробелов.';
     if (set.archiveUrl && !/^https:\/\/\S+$/i.test(set.archiveUrl)) return 'Ссылка на архив должна начинаться с https:// и быть без пробелов.';
     if (set.color && !/^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\))$/i.test(set.color)) return 'Цвет: например #ffd76a (или пусто — цвет по умолчанию).';
     return '';
