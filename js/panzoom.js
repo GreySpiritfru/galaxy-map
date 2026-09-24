@@ -10,6 +10,21 @@ export function createPanZoom(svg, opts) {
   const zoomInLimit = opts.zoomInLimit ?? 0.02;  // насколько можно приблизить
   const boundsPad = opts.boundsPad ?? 0.15;      // запас за краями карты при панорамировании (п.2)
   const onClick = opts.onClick || null;          // (svgPoint, domEvent) => void, для калибровки/т.п.
+  /* (viewBox) => void, вызывается на КАЖДОЕ изменение кадра, то есть каждый
+     кадр перетаскивания/щипка/перелёта. Поэтому обработчик обязан быть
+     дешёвым и сам решать, надо ли ему вообще трогать DOM (см. syncDetailLevel
+     в js/map.js — он сравнивает булев признак и выходит, пока тот не менялся). */
+  const onViewBox = opts.onViewBox || null;
+  /* Ограничивать панорамирование по ВИДИМОЙ области, а не по viewBox.
+
+     viewBox у нас квадратный, а экран — нет: `meet` вписывает квадрат по
+     короткой стороне, и по длинной видно больше, чем сам viewBox. На
+     телефоне 414×896 при кадре 272 единицы на экране 272×588 единиц карты.
+     Старое ограничение держало в границах только квадрат, поэтому по длинной
+     стороне камеру можно было увести так, что полэкрана занимала маска.
+     Включено только у карты галактики (24.09.2026) — у вида системы своя
+     геометрия, его не трогали. */
+  const clampVisible = !!opts.clampVisible;
 
   svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
@@ -40,6 +55,7 @@ export function createPanZoom(svg, opts) {
   function setViewBox(v) {
     cur = v;
     svg.setAttribute('viewBox', `${v.x} ${v.y} ${v.w} ${v.h}`);
+    if (onViewBox) onViewBox(cur);
   }
 
   /* Пока viewBox меняется каждый кадр (перетаскивание, щипок, перелёт камеры),
@@ -58,10 +74,33 @@ export function createPanZoom(svg, opts) {
     svg.classList.toggle('panning', busyDrag || busyPinch || busyAnim);
   }
 
+  /* Размер панели в пикселях — кэшем, а не чтением в каждом кадре: clampViewBox
+     зовётся на каждом кадре жеста сразу после смены viewBox, и чтение геометрии
+     там означало бы принудительный пересчёт всей сцены (та же грабля, что с
+     затуханием карты, см. CLAUDE.md). */
+  let paneW = svg.clientWidth || 0, paneH = svg.clientHeight || 0;
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => { paneW = svg.clientWidth || 0; paneH = svg.clientHeight || 0; }).observe(svg);
+  }
+
+  // Центр отрезка длиной size держим внутри [lo, hi]; не влезает целиком —
+  // ставим посередине (так на полном отдалении телефон видит карту по центру).
+  function clampCenter(c, size, lo, hi) {
+    if (size >= hi - lo) return (lo + hi) / 2;
+    return Math.max(lo + size / 2, Math.min(hi - size / 2, c));
+  }
+
   function clampViewBox(v) {
     let w = Math.max(minW, Math.min(maxW, v.w));
     let h = v.h * (w / v.w);
     let x = v.x, y = v.y;
+    if (clampVisible && paneW && paneH) {
+      // Масштаб у meet один на обе оси и задаётся короткой стороной экрана.
+      const scale = Math.min(paneW / w, paneH / h);
+      const cx = clampCenter(x + w / 2, paneW / scale, boundX0, boundX1);
+      const cy = clampCenter(y + h / 2, paneH / scale, boundY0, boundY1);
+      return {x: cx - w / 2, y: cy - h / 2, w, h};
+    }
     if (x < boundX0) x = boundX0;
     if (x + w > boundX1) x = boundX1 - w;
     if (y < boundY0) y = boundY0;

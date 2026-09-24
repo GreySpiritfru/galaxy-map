@@ -8,8 +8,9 @@
    (маркеры персонажей квадратные со скруглением, чтобы отличались от круглых
    маркеров фракций и сюжетов).
    ============================================================ */
-import { openIframeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=125';
-import { canEdit, showEditor } from './editor.js?v=125';
+import { openIframeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=129';
+import { canEdit, showEditor } from './editor.js?v=129';
+import { setTabIcon } from './node-window.js?v=129';
 
 const charToolbar = document.getElementById('charToolbar');
 const sheetBtn = document.getElementById('charSheet');
@@ -99,6 +100,7 @@ rollsBtn.addEventListener('click', () => {
 export function updateStoryButton(meta) {
   storyBtn.style.display = meta ? '' : 'none';
   if (!meta) return;
-  storyBtn.querySelector('.tabbar-btn-icon').textContent = meta.icon;
+  // Значок — арт самого сюжета/места, а не смайлик (setTabIcon в node-window.js).
+  setTabIcon(storyBtn.querySelector('.tabbar-btn-icon'), meta);
   storyBtn.querySelector('.tabbar-btn-label').textContent = meta.label;
 }

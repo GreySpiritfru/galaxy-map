@@ -972,6 +972,39 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   font-size: 19px;
   line-height: 1;
 }
+
+/* Арт точки вместо смайлика на кнопке-переходе (24.09.2026, setTabIcon в
+   js/node-window.js). Размер — ровно тот же, что у смайлика рядом, иначе ряд
+   вкладок прыгал бы по высоте в зависимости от того, у какой точки есть
+   картинка. Форма повторяет форму маркера на карте, цвет рамки ставится
+   инлайном из цвета его кольца. */
+.tab-node-icon {
+  display: block;
+  /* Крупнее строки эмодзи рядом (19px) — по просьбе игрока: арт маркера это
+     содержательная часть кнопки, а не украшение, и в 19 px он не читался.
+     Ряд от этого подрастает на 6 px, подписи и высота ячеек не меняются. */
+  width: 25px;
+  height: 25px;
+  object-fit: cover;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,0.6);
+  /* Та же защита от меню «сохранить картинку», что у портретов персонажей. */
+  pointer-events: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+.tab-node-icon.shape-square { border-radius: 30%; }        /* персонаж */
+.tab-node-icon.shape-event-square { border-radius: 2px; }  /* обычная мировая точка */
+.tab-node-icon.shape-circle { border-radius: 50%; }        /* точка с маяком */
+/* Шестиугольник «плоским верхом» — те же вершины, что у makeIconShape в
+   js/map.js. Рамку снимаем: clip-path срезал бы её по контуру прямоугольника. */
+.tab-node-icon.shape-hexagon {
+  border: none;
+  clip-path: polygon(100% 50%, 75% 93.3%, 25% 93.3%, 0 50%, 25% 6.7%, 75% 6.7%);
+}
+/* Завершённая точка — как её маркер на карте: обесцвечена (значок ✅ при
+   наличии картинки не показать, а признак терять не хочется). */
+.tab-node-icon.is-done { filter: grayscale(1); opacity: 0.75; }
 .tabbar-btn-label {
   font-size: 10px;
   font-weight: 600;
@@ -992,9 +1025,30 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   display: flex;
   flex: 1.8 1 0;
   min-width: 0;
+  /* Общая подложка на обе половины (24.09.2026, по замечанию игрока: «не
+     кажется, что это что-то единое» — читалось как две обычные кнопки,
+     случайно разделённые чертой). Теперь единое — сама ячейка, а черта внутри
+     неё только делит её надвое. */
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  align-self: center;
 }
+/* Половинки прижаты друг к другу: свой горизонтальный отступ им почти не
+   нужен, ячейку и так держит подложка. */
+.tabbar-split .tabbar-btn { padding-left: 0; padding-right: 0; }
 .tabbar-split .tabbar-btn + .tabbar-btn {
-  border-left: 1px solid rgba(255,255,255,0.15);
+  position: relative;
+}
+/* Черта не на всю высоту ряда, а по центру — так же, как у ✕ (см. выше):
+   полная черта визуально разрезала ячейку на две отдельные. */
+.tabbar-split .tabbar-btn + .tabbar-btn::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 22%;
+  bottom: 22%;
+  width: 1px;
+  background: rgba(255,255,255,0.18);
 }
 @keyframes loreBarIn {
   from { transform: translateY(-100%); opacity: 0; }
@@ -1464,6 +1518,34 @@ svg.nodes-mode.far-links .map-thread.far { display: inline; }
 .hotspot.nodes-only { display: none; }
 svg.nodes-mode.far-links .map-thread.nodes-only,
 svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
+
+/* Уровень детализации карты (24.09.2026, DETAIL_WIDTH в js/map.js): персонажи
+   и нити к ним появляются только на кадре, где их уже видно — на общем виде
+   это 3-пиксельные точки, которые нельзя ни разглядеть, ни нажать. Вместо них
+   у родителя счётчик «+N».
+
+   ⚠️ :not(.nodes-mode) обязательно — в режиме нод свой кадр и свои размеры,
+   там персонажи 45 px и прятать их не за что. */
+.svg-widget svg.detail-far:not(.nodes-mode) .map-node-detail,
+.svg-widget svg.detail-far:not(.nodes-mode) .map-thread.detail { display: none; }
+
+.map-detail-badge {
+  display: none;
+  pointer-events: none;
+  fill: #AFEEEE;
+  font-weight: 600;
+  dominant-baseline: central;
+  /* Обводка цветом фона под самими цифрами: счётчик висит поверх карты, где
+     под ним может оказаться что угодно — подпись, гиперлейн, светлая
+     туманность. paint-order кладёт обводку ПОД заливку, иначе она съела бы
+     тонкие цифры.
+     ⚠️ stroke-width здесь НЕТ сознательно: её ставит атрибутом
+     scaleDetailBadges в js/map.js вместе с размером шрифта, а правило css
+     оказалось бы сильнее атрибута и заморозило бы толщину. */
+  stroke: #0b0b10;
+  paint-order: stroke;
+}
+.svg-widget svg.detail-far:not(.nodes-mode) .map-detail-badge { display: inline; }
 
 /* Значки у подписи системы (renderSystemBadges в js/map.js) — как значки справа
    от названия системы в Stellaris. Маяк у значка мельче и спокойнее, чем у

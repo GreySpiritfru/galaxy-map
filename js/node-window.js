@@ -14,7 +14,7 @@
    стекинг в CLAUDE.md). Рисует их обоих этот файл, хозяева слоёв — phenom.js
    (нижний, он же умеет тайловую карту) и stories.js (верхний).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=125';
+import { escapeHtml } from './modal.js?v=129';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любой
 // точки, поэтому не в данных, а константой здесь.
@@ -103,6 +103,33 @@ export function renderNodeContent(container, view, onCharacter) {
   });
 }
 
+/* Значок кнопки-перехода — арт САМОЙ точки, к которой она ведёт, а не родовой
+   смайлик (24.09.2026, по предложению игрока). Кнопка «Сюжет» у персонажа
+   показывает картинку этого сюжета, вкладка ребёнка — его картинку: тот же
+   визуальный язык, что у портретов персонажей в окне и у маркеров на карте,
+   так что «куда я попаду» видно ещё до нажатия.
+
+   Форма повторяет форму маркера на карте (meta.shape приходит из worldShape в
+   js/map.js), цвет рамки — цвет его кольца.
+
+   ⚠️ Смайлик остаётся ЗАПАСНЫМ вариантом, а не убирается: у точки может не
+   быть картинки вообще, путь может оказаться битым (тогда откатываемся по
+   событию error, как createMapIcon на карте), а у системы картинка есть, но
+   это карта всей системы — в кружке 19 px она читается тёмным пятном (ровно
+   поэтому в режиме нод ей понадобился SYSTEM_ART_ZOOM). */
+export function setTabIcon(span, meta) {
+  if (!span || !meta) return;
+  span.textContent = '';
+  if (!meta.image) { span.textContent = meta.icon || ''; return; }
+  const img = document.createElement('img');
+  img.className = 'tab-node-icon shape-' + (meta.shape || 'circle') + (meta.done ? ' is-done' : '');
+  img.alt = '';
+  if (meta.ring) img.style.borderColor = meta.ring;
+  img.addEventListener('error', () => { span.textContent = meta.icon || ''; });
+  img.src = meta.image;
+  span.appendChild(img);
+}
+
 /* Кнопки ряда-таббара. refs — элементы конкретного слоя (у каждого свои id в
    разметке), view — та же точка, handlers — что делать по нажатию. Кнопка,
    которой у точки нет содержимого, прячется целиком: пустых кнопок в ряду
@@ -113,7 +140,7 @@ export function applyNodeToolbar(refs, view, handlers) {
   // Переход к родителю: подпись и иконка приходят из map.js (PARENT_KIND_META).
   show(refs.parent, !!view.parentMeta);
   if (refs.parent && view.parentMeta) {
-    refs.parent.querySelector('.tabbar-btn-icon').textContent = view.parentMeta.icon;
+    setTabIcon(refs.parent.querySelector('.tabbar-btn-icon'), view.parentMeta);
     refs.parent.querySelector('.tabbar-btn-label').textContent = view.parentMeta.label;
   }
 
@@ -158,7 +185,7 @@ export function applyNodeToolbar(refs, view, handlers) {
       const btn = document.createElement('button');
       btn.className = 'tabbar-btn phenom-story-tab';
       btn.innerHTML = '<span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>';
-      btn.querySelector('.tabbar-btn-icon').textContent = item.icon;
+      setTabIcon(btn.querySelector('.tabbar-btn-icon'), item);
       btn.querySelector('.tabbar-btn-label').textContent = item.label;
       btn.title = item.label;
       btn.addEventListener('click', () => handlers.onChild && handlers.onChild(item.id));

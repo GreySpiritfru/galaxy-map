@@ -1,14 +1,15 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=125';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=125';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=125';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=125';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=125';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=125';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=125';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=125';
+import { createPanZoom } from './panzoom.js?v=129';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=129';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=129';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=129';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=129';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=129';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=129';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=129';
+import { setTabIcon } from './node-window.js?v=129';
 
 const SVG_PATH = 'map.svg';
 
@@ -97,6 +98,10 @@ function finishMapPick(p) {
   }
   classifyPoliticalOverlay();
 
+  // Слой детализации (syncDetailLevel ниже) заводится только после загрузки
+  // графа, а кадр меняется уже сейчас — стартовым кадром (fitStartFrame).
+  // Без этого флага onViewBox полез бы в ещё не объявленные переменные.
+  let detailReady = false;
   const pz = createPanZoom(svg, {
     zoomOutLimit: 1,     // нельзя отдалиться дальше исходного вида карты — П.2
     /* Доля исходной ширины, ближе которой не подпускаем. Было 0.02 — это ~12
@@ -109,11 +114,40 @@ function finishMapPick(p) {
        focusOn() начнёт упираться в него и перестанет долетать куда надо. */
     zoomInLimit: 0.07,
     boundsPad: 0.2,      // запас побольше, чтобы можно было докрутить камеру до самых крайних систем
+    // Уровень детализации: мелкие маркеры появляются только на близком кадре,
+    // см. syncDetailLevel ниже. Вызывается каждый кадр жеста — там дёшево.
+    onViewBox: (vb) => { if (detailReady) syncDetailLevel(vb); },
+    // Границы — по тому, что реально видно на экране, а не по квадрату кадра
+    // (см. clampVisible в panzoom.js): на вытянутом телефоне иначе можно было
+    // увести камеру так, что полэкрана занимала маска.
+    clampVisible: true,
     onClick: (p) => {
       if (mapPickHandler) { finishMapPick(p); return; }
       if (calibMode) showCalib(p.x, p.y);
     }
   });
+
+  /* Стартовый кадр — под форму экрана, а не квадрат (24.09.2026).
+
+     viewBox карты квадратный, а `meet` вписывает его по КОРОТКОЙ стороне
+     экрана. На телефоне это ширина: на 414×896 карта занимала 46% экрана,
+     остальное — маска сверху и снизу, а маркеры были вдвое мельче, чем на
+     компьютере при том же кадре (замер, см. CLAUDE.md, «Стартовый кадр»).
+
+     Теперь кадр при открытии подбирается так, чтобы карта заняла экран
+     целиком по длинной стороне: на телефоне видна середина галактики на всю
+     высоту, края — прокруткой. Отдалиться до всей галактики разом можно
+     по-прежнему (zoomOutLimit не менялся) — это уже выбор игрока, а не то,
+     что он видит первым.
+     На квадратном экране кадр не меняется вовсе, на широком мониторе —
+     немного (срезается край по высоте вместо полос по бокам). */
+  (function fitStartFrame() {
+    const core = pz.getInitialViewBox();
+    const W = container.clientWidth, H = container.clientHeight;
+    if (!W || !H) return;
+    const w = core.w * Math.min(W, H) / Math.max(W, H);
+    pz.focusOn(core.x + core.w / 2, core.y + core.h / 2, w, 0);
+  })();
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
      Чисто визуальное украшение по краям: это фон, а не игровые данные —
@@ -892,11 +926,37 @@ function finishMapPick(p) {
     character: {icon: '👤', label: 'Персонаж'},
     system: {icon: '🪐', label: 'Система'},
   };
+  /* Дополняет подпись кнопки-перехода артом САМОЙ точки, к которой она ведёт
+     (24.09.2026, по предложению игрока): картинка, форма её маркера и цвет её
+     кольца. Рисует это setTabIcon в js/node-window.js, он же откатывается на
+     смайлик, если картинки нет или путь битый.
+
+     ⚠️ Система картинку НЕ отдаёт: у неё «картинка» — это карта всей системы,
+     и в значке 19 px она превращается в тёмное пятно (та же причина, по
+     которой в режиме нод ей понадобился SYSTEM_ART_ZOOM). Там остаётся 🪐. */
+  function tabIconOf(node, base) {
+    const withBeacon = node.kind === 'world' && node.data.beacon;
+    const style = withBeacon ? BEACON_STYLE : (NODE_STYLE[node.kind] || NODE_STYLE.world);
+    const form = node.kind === 'world' ? worldShape(node) : {shape: style.shape};
+    const done = isCompleted(node);
+    return {
+      ...base,
+      image: node.kind === 'system' ? '' : nodeImage(node),
+      shape: form.shape,
+      ring: done ? COMPLETED_COLOR : (node.data.color || style.ringColor),
+      done,
+    };
+  }
+
   function parentButtonMeta(node) {
     if (!node.parent) return null;
     const p = node.parent;
-    if (p.kind === 'world' && p.data.beacon) return PARENT_KIND_META.story;
-    return PARENT_KIND_META[p.kind] || PARENT_KIND_META.world;
+    const base = (p.kind === 'world' && p.data.beacon)
+      ? PARENT_KIND_META.story
+      : (PARENT_KIND_META[p.kind] || PARENT_KIND_META.world);
+    // ⚠️ Новым объектом: PARENT_KIND_META — общая таблица на весь проект,
+    // дописывать арт конкретной точки прямо в неё нельзя.
+    return tabIconOf(p, base);
   }
 
   /* Что открыть по узлу — зависит только от его типа (а для маркеров ещё и
@@ -945,7 +1005,7 @@ function finishMapPick(p) {
         id: c.id, name: nodeTitle(c), image: c.data.image || '',
         links: siblingLinks(c).map(other => other.id),
       })),
-      children: kids.map(c => ({
+      children: kids.map(c => tabIconOf(c, {
         id: c.id,
         label: c.data.shortTitle || nodeTitle(c),
         icon: c.data.beacon ? (isCompleted(c) ? '✅' : '🎬') : '📍',
@@ -1050,8 +1110,11 @@ function finishMapPick(p) {
       // .far — союз между точками на разных концах карты (MAP_LINK_REACH в
       // graph.js): на карте такая нить не рисуется, только в режиме нод.
       // .nodes-only — нить к системе или точке внутри неё (на карте их нет).
+      // .detail — нить, у которой хотя бы один конец персонаж: на общем виде
+      // персонажа нет, и нить вела бы в пустоту (см. DETAIL_WIDTH ниже).
+      const detail = t.a.kind === 'character' || t.b.kind === 'character';
       line.setAttribute('class', (t.kind === 'link' ? `map-thread link${t.far ? ' far' : ''}` : 'map-thread')
-        + (t.nodesOnly ? ' nodes-only' : ''));
+        + (t.nodesOnly ? ' nodes-only' : '') + (detail ? ' detail' : ''));
       // Координаты не проставляем здесь: нить знает только СВОИ УЗЛЫ (t.a/t.b,
       // см. buildThreads в graph.js), а конкретные числа ставит
       // applyGraphPositions() — и при первой отрисовке, и в каждом кадре
@@ -1113,11 +1176,154 @@ function finishMapPick(p) {
       if (isCompleted(node)) node.__el.classList.add('map-node-completed');
       // Система и всё внутри неё — только в нодах (на карте вместо них значки у подписи).
       if (node.mapHidden) node.__el.classList.add('nodes-only');
+      // Персонаж виден только на близком кадре — см. DETAIL_WIDTH ниже.
+      if (node.kind === 'character') node.__el.classList.add('map-node-detail');
     });
   }
 
   function isCompleted(node) {
     return node.kind === 'world' && node.data.completed === true;
+  }
+
+  /* ============================================================
+     Уровень детализации карты (24.09.2026, v=129)
+
+     Замер общего вида (кадр 588 единиц, панель 754 px): 27 маркеров в кадре,
+     медиана размера 3.8 px, медианный просвет до соседа 1.2 px. Из этих 27
+     двадцать два — персонажи (2.42 единицы = 3.1 px): их нельзя ни
+     разглядеть, ни попасть по ним пальцем, но место они занимают и просвет у
+     соседей съедают. Убрать их с общего вида — 13 маркеров вместо 35.
+
+     Поэтому персонажи (и нити к ним) показываются только на кадре не шире
+     DETAIL_WIDTH, а на общем виде вместо них у родителя счётчик «+N» — та же
+     мысль, что у значков рядом с подписями систем (renderSystemBadges):
+     «тут есть ещё, приблизься».
+
+     ⚠️ Порог обязан быть ЗАМЕТНО больше кадров, на которые камера встаёт
+     сама: FOCUS_WIDTH (80) при тапе по маркеру и LOCATE_WIDTH (160) при
+     долгом нажатии. Иначе игрок прилетал бы к персонажу, которого в этот
+     момент не видно.
+     ⚠️ Режима нод это не касается вообще — там свой кадр и свои размеры
+     (см. :not(.nodes-mode) в css/styles.css).
+     ⚠️ Персонаж БЕЗ родителя (корневой, стоит на своих x/y) на общем виде
+     просто пропадёт, и счётчик ему повесить некуда — сейчас таких нет, но
+     если появятся, придётся решать отдельно.
+     ============================================================ */
+  /* ⚠️ Порог — НЕ фиксированное число единиц (так было в первой версии, 180).
+     Масштаб карты задаёт КОРОТКАЯ сторона панели: viewBox квадратный и
+     вписывается целиком (`preserveAspectRatio="xMidYMid meet"`), поэтому
+     px на единицу = min(ширина, высота) / ширина кадра. Замерено: на
+     414×896 это 0.704, на 760×800 — 1.29, то есть при ОДНОМ И ТОМ ЖЕ кадре
+     маркер на телефоне вдвое мельче, чем на компьютере. Фиксированные 180
+     единиц означали «персонаж появляется при 11 px» на компьютере и
+     «при 5.6 px» на телефоне — на телефоне порог не работал вовсе.
+
+     Поэтому считаем наоборот: персонаж показывается, когда он ДОРОС до
+     DETAIL_MIN_PX на экране. Ширина кадра из этого выводится (`detailWidth`)
+     и пересчитывается вместе с размером панели.
+
+     ⚠️ Нижняя граница — кадр, на который камера встаёт САМА при тапе по
+     маркеру (FOCUS_WIDTH). Она главнее: если бы порог оказался уже него,
+     игрок прилетал бы к персонажу, которого в этот момент не видно. На
+     телефоне срабатывает именно она (88 единиц против 45 «по пикселям»), на
+     компьютере — пиксельная (92). То есть на обоих устройствах персонажи
+     появляются примерно на кадре тапа, как и просил игрок. */
+  const DETAIL_MIN_PX = 22;
+  const DETAIL_FOCUS_MARGIN = 1.1;
+  let charUnitSize = 2.42;   // реальный размер берётся из графа, см. graphReady
+  let detailWidth = FOCUS_WIDTH * DETAIL_FOCUS_MARGIN;
+
+  /* Высота цифр счётчика — в ПИКСЕЛЯХ ЭКРАНА, а не в единицах карты.
+     Первая версия считала её долей размера маркера-родителя: на общем виде
+     «+9» у «Переворота» вышло 2 px, «+2» у Фенома 5 px — то есть счётчик,
+     придуманный как замена невидимым маркерам, сам был невидим. Это не
+     часть сцены, а подпись к ней, и вести себя она должна как подпись. */
+  const DETAIL_BADGE_PX = 10;
+  let detailFar = null;
+  let detailBadges = [];
+  let badgeUnits = 0;
+
+  function computeDetailWidth() {
+    const byPixels = paneMin ? charUnitSize * paneMin / DETAIL_MIN_PX : 0;
+    detailWidth = Math.max(FOCUS_WIDTH * DETAIL_FOCUS_MARGIN, byPixels);
+  }
+
+  function syncDetailLevel(vb) {
+    const far = vb.w > detailWidth;
+    // Вызывается на КАЖДОМ кадре жеста, поэтому класс трогаем только в тот
+    // единственный кадр, где кадр реально пересёк порог.
+    if (far !== detailFar) {
+      detailFar = far;
+      svg.classList.toggle('detail-far', far);
+    }
+    if (far) scaleDetailBadges(vb);
+  }
+
+  /* Короткая сторона панели в пикселях. viewBox квадратный и вписывается
+     целиком (preserveAspectRatio meet), значит масштаб задаёт именно она.
+     ⚠️ Меряется у КОНТЕЙНЕРА и кэшируется, а не читается каждый кадр: у
+     самого <svg> clientWidth вообще 0 (размер ему даёт css контейнера), а
+     чтение геометрии в кадре, где только что поменялся viewBox, — это
+     принудительный пересчёт всей сцены, ровно то, на чём мы уже обжигались
+     на затухании карты (грабли в разделе про режим нод). */
+  let paneMin = 0;
+  function measurePane() {
+    paneMin = Math.min(container.clientWidth || 0, container.clientHeight || 0);
+    badgeUnits = 0;
+    computeDetailWidth();
+    // Порог переехал вместе с размером панели — пересчитываем и сам признак,
+    // иначе после поворота телефона слой детализации остался бы от прежнего.
+    if (detailFar !== null) syncDetailLevel(pz.getViewBox());
+  }
+  window.addEventListener('resize', measurePane);
+
+  function scaleDetailBadges(vb) {
+    if (!paneMin || !detailBadges.length) return;
+    const size = DETAIL_BADGE_PX * vb.w / paneMin;
+    // Щипок/колесо меняют кадр на доли процента за кадр — переписывать
+    // атрибуты на каждое такое изменение незачем.
+    if (badgeUnits && Math.abs(size - badgeUnits) < badgeUnits * 0.03) return;
+    badgeUnits = size;
+    detailBadges.forEach(({el, half, top}) => {
+      el.setAttribute('font-size', size);
+      // ⚠️ Толщина обводки — атрибутом, и в css её НЕТ: правило таблицы стилей
+      // сильнее атрибута-презентации, и счётчик остался бы с фиксированной
+      // обводкой при плавающем размере шрифта (та же грабля, что с нитями
+      // в окне системы).
+      el.setAttribute('stroke-width', size * 0.14);
+      el.setAttribute('x', half + size * 0.2);
+      el.setAttribute('y', -(top + size * 0.25));
+    });
+  }
+
+  /* Сколько персонажей прячется ПОД этой точкой — вся ветка вниз, а не только
+     прямые дети: персонаж персонажа скрыт так же. Ребёнок-НЕ-персонаж виден
+     сам и получит собственный счётчик, поэтому вглубь него не идём. */
+  function hiddenCharCount(node) {
+    let n = 0;
+    node.children.forEach(c => {
+      if (c.onMap === false || c.kind !== 'character') return;
+      n += 1 + hiddenCharCount(c);
+    });
+    return n;
+  }
+
+  function renderDetailBadges(nodes) {
+    detailBadges = [];
+    nodes.forEach(node => {
+      if (!node.__el || node.kind === 'character' || node.mapHidden) return;
+      const count = hiddenCharCount(node);
+      if (!count) return;
+      const t = document.createElementNS(ns, 'text');
+      // map-label-major — чтобы счётчик не мигал на каждом перетаскивании
+      // вместе с мелкими подписями карты (см. .panning в css).
+      t.setAttribute('class', 'map-detail-badge map-label-major');
+      t.textContent = `+${count}`;
+      node.__el.appendChild(t);
+      // Размер и место ставит scaleDetailBadges — они зависят от кадра.
+      detailBadges.push({el: t, half: node.size * (node.aspect || 1) / 2, top: node.size / 2});
+    });
+    badgeUnits = 0;
   }
 
   function wireStoryWindows(graph) {
@@ -1197,7 +1403,7 @@ function finishMapPick(p) {
     setSystemDecorator(({slug, svg: sysSvg, pz: sysPz, focusId}) => {
       const sysNode = graph.get('system:' + slug);
       const inside = sysNode ? sysNode.children.filter(c => c.onMap !== false) : [];
-      setSystemTabs(inside.map(c => ({id: c.id, icon: systemChildIcon(c), label: c.data.shortTitle || nodeTitle(c)})), (id) => {
+      setSystemTabs(inside.map(c => tabIconOf(c, {id: c.id, icon: systemChildIcon(c), label: c.data.shortTitle || nodeTitle(c)})), (id) => {
         const node = graph.get(id);
         if (!node) return;
         focusIn(getOpenSystem(), node, 0);
@@ -1580,7 +1786,12 @@ function finishMapPick(p) {
     if (toNodes) {
       await setViewMode('nodes', false, {x: node.graphX, y: node.graphY, w: graphViewWidth() * LOCATE_NODES_ZOOM});
     } else {
-      await setViewMode(savedMapMode(), false, {x: node.mapX, y: node.mapY, w: LOCATE_WIDTH});
+      /* ⚠️ Кадр «видно окрестности» шире порога детализации, а персонаж на
+         таком кадре скрыт (см. detailWidth выше) — кольцо пульсировало бы
+         вокруг пустого места. Для скрываемых точек подлетаем ровно настолько,
+         чтобы маркер уже был на экране. */
+      const w = node.kind === 'character' ? Math.min(LOCATE_WIDTH, detailWidth * 0.85) : LOCATE_WIDTH;
+      await setViewMode(savedMapMode(), false, {x: node.mapX, y: node.mapY, w});
     }
     if ((viewMode === 'nodes') !== toNodes || !node.__el) return;
     const ring = document.createElementNS(ns, 'circle');
@@ -1835,7 +2046,19 @@ function finishMapPick(p) {
     renderThreads(threads);
     renderNodes([...graph.values()]);
     graphNodes = [...graph.values()].filter(n => n.onMap && n.__el);
+    renderDetailBadges(graphNodes);
+    // Размер персонажа в единицах карты берём из графа, а не константой: он
+    // считается от размера родителя (см. BASE_SIZE/55% в js/graph.js), и от
+    // него же зависит, на каком кадре персонаж дорастает до DETAIL_MIN_PX.
+    // Самый мелкий — значит порог годится для всех.
+    const charSizes = [...graph.values()].filter(n => n.kind === 'character').map(n => n.size);
+    if (charSizes.length) charUnitSize = Math.min(...charSizes);
+    measurePane();
     applyGraphPositions();
+    // Все кадры до этой строки (стартовый в том числе) прошли мимо слоя
+    // детализации — он ещё не был готов. Первое состояние ставим руками.
+    detailReady = true;
+    syncDetailLevel(pz.getViewBox());
     wireStoryWindows(graph);
     wireSystemWindows(graph);
     wireEditor(graph);
@@ -2045,6 +2268,17 @@ function finishMapPick(p) {
   document.getElementById('refPhenomMap').addEventListener('click', () => {
     closeModal();
     gotoPhenomOnMap(true);
+  });
+
+  /* Значок этой половины — арт самого Фенома, как и у всех остальных кнопок,
+     ведущих к точке (setTabIcon, 24.09.2026). Ставится ОТСЮДА, а не в
+     разметке: #refToolbar живёт отдельно от графа, а картинка и форма маркера
+     есть только в нём. Не доехал граф — в index.html остаётся 🚀. */
+  graphReady.then(graph => {
+    const phenom = graph.get('phenome');
+    if (!phenom) return;
+    const icon = document.querySelector('#refPhenomMap .tabbar-btn-icon');
+    setTabIcon(icon, tabIconOf(phenom, {icon: '🚀'}));
   });
 
   /* --- П.3: клик по названию системы (реальные <text> из экспорта StellarMaps) ---

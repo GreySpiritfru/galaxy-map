@@ -1,8 +1,9 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=125';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=125';
+import { createPanZoom } from './panzoom.js?v=129';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=129';
+import { setTabIcon } from './node-window.js?v=129';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -111,7 +112,9 @@ export function setSystemTabs(items, onSelect) {
     const btn = document.createElement('button');
     btn.className = 'tabbar-btn system-child-tab';
     btn.innerHTML = '<span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>';
-    btn.querySelector('.tabbar-btn-icon').textContent = item.icon;
+    // Значок вкладки — арт самой точки (setTabIcon в node-window.js), смайлик
+    // из item.icon остаётся запасным вариантом.
+    setTabIcon(btn.querySelector('.tabbar-btn-icon'), item);
     btn.querySelector('.tabbar-btn-label').textContent = item.label;
     btn.title = item.label;
     btn.addEventListener('click', () => {
