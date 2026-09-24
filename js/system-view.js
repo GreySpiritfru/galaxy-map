@@ -1,9 +1,9 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=133';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=133';
-import { renderNodeLinks } from './node-window.js?v=133';
+import { createPanZoom } from './panzoom.js?v=141';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=141';
+import { renderNodeLinks } from './node-window.js?v=141';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -12,6 +12,19 @@ const systemLoreBtn = document.getElementById('systemLore');
 const systemLoreLabel = systemLoreBtn.querySelector('.tabbar-btn-label');
 const systemToolbarEl = document.querySelector('.system-toolbar');
 const systemLinks = document.getElementById('systemLinks');
+
+/* Ряд переходов прилегает к панели системы вплотную — одна плашка (css
+   `.system-toolbar + .system-links`). Высота панели зависит от шрифта
+   устройства, поэтому низ панели меряется, а не вписан числом; −1 px —
+   нахлёст, чтобы на дробной высоте не светилась щель. Панель, пристыкованная
+   к статье расы, живёт в модале — её размеры тут ни при чём. */
+if (window.ResizeObserver && systemToolbarEl) {
+  new ResizeObserver(() => {
+    if (systemToolbarEl.parentElement !== systemOverlay || !systemToolbarEl.offsetHeight) return;
+    systemOverlay.style.setProperty('--system-toolbar-bottom',
+      (systemToolbarEl.offsetTop + systemToolbarEl.offsetHeight - 1) + 'px');
+  }).observe(systemToolbarEl);
+}
 
 // "Карта системы" <-> "Контролирующая раса" — переключение между вкладками
 // НИКОГДА не пересоздаёт саму карту: #systemContainer (SVG + пан/зум) не
@@ -109,7 +122,9 @@ export function getOpenSystem() { return current; }
 /* Что внутри системы: [{id, label, image, shape, …}] → onSelect(id).
    С 24.09.2026 это не вкладки в панели, а ряд переходов под ней — та же схема,
    что в окне точки (renderNodeLinks в node-window.js): сверху действия
-   («Карта системы», «Раса»), снизу — куда отсюда можно перейти. */
+   («Карта системы», «Раса»), снизу — куда отсюда можно перейти.
+   По умолчанию ряд здесь СВЁРНУТ (идея игрока): эти точки и так видны
+   маркерами на карте системы, а развёрнутый ряд закрывает её верх. */
 export function setSystemTabs(items, onSelect) {
   renderNodeLinks(systemLinks, {children: items || []}, {
     onChild: (id) => {
@@ -118,7 +133,7 @@ export function setSystemTabs(items, onSelect) {
       showSystemMap();
       if (onSelect) onSelect(id);
     },
-  });
+  }, {fold: 'system', foldedByDefault: true});
 }
 
 // Выбор места тапом внутри системы — для редактора (map.js, pickInSystem).

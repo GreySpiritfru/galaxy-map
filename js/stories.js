@@ -13,14 +13,13 @@
    — js/phenom.js (он же умеет тайловую карту), верхний — этот. Оба вместе
    дают вложенность локация -> точка -> персонаж, см. CLAUDE.md.
    ============================================================ */
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=133';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=141';
 
 const storyOverlay = document.getElementById('storyOverlay');
 const storyContent = document.getElementById('storyContent');
 const storyLinks = document.getElementById('storyLinks');
 const refs = {
   toolbar: document.getElementById('storyToolbar'),
-  parent: document.getElementById('storyParent'),
   article: document.getElementById('storyArticle'),
   archive: document.getElementById('storyArchive'),
   index: document.getElementById('storyTelegram'),
@@ -29,8 +28,7 @@ const refs = {
 let storyArmed = false;
 
 // Точка, чьё окно открыто сейчас (view из map.js, см. worldView). Нужна
-// снаружи: кнопка «Правка» и переход к родителю живут в map.js — там есть и
-// граф, и камера.
+// снаружи: кнопка «Правка» живёт в map.js — там есть и граф, и камера.
 let currentNode = null;
 export function getOpenStory() { return currentNode; }
 
@@ -48,6 +46,7 @@ export function openStory(view, handlers) {
   // Окно персонажа открывается ПОВЕРХ этого (модал выше по z-index), поэтому
   // закрытие анкеты возвращает сюда же, без повторного перехода через карту.
   renderNodeLinks(storyLinks, view, {
+    onParent: handlers && handlers.onParent,
     onChild: handlers && handlers.onChild,
     onCharacter: (id) => { if (goToCharacter) goToCharacter(id); },
   });

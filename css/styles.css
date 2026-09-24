@@ -963,7 +963,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 }
 /* Черта справа от ✕/↩ (игрок, 15.09.2026): без видимой границы палец
    промахивался мимо крестика и попадал в соседнюю вкладку. Псевдоэлемент, а
-   не border-right — черта не на всю высоту ряда, как в .tabbar-split. */
+   не border-right — черта не на всю высоту ряда, а по центру. */
 .tabbar .toolbar-close-btn::after {
   content: "";
   position: absolute;
@@ -1171,6 +1171,69 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   background: rgba(12,12,18,0.8);
 }
 .node-links.system-links .node-links-all { border-radius: 0 0 14px 14px; }
+/* Ряд переходов и панель системы — ОДНА плашка (просьба игрока: отдельно они
+   выглядели двумя разными панелями). Ряд прилегает к панели вплотную, фон
+   общий, между ними только тонкая линия. Работает, пока панель не
+   пристыкована к статье расы (тогда она уже не сосед ряда). */
+.system-toolbar:has(+ .system-links:not([hidden])) {
+  border-radius: 14px 14px 0 0;
+  box-shadow: none;
+}
+.system-toolbar + .node-links.system-links {
+  top: var(--system-toolbar-bottom, 74px);
+  border-top: 1px solid rgba(255,255,255,0.07);
+  border-radius: 0 0 14px 14px;
+  background: rgba(12,12,18,0.62);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+
+/* Родитель — первым в ряду, с «↑» в углу маркера: это шаг вверх по дереву,
+   а не ещё один ребёнок. */
+.link-chip--parent .link-chip-slot { position: relative; }
+.link-chip--parent .link-chip-slot::after {
+  content: '↑';
+  position: absolute;
+  right: -6px;
+  top: -2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #12121a;
+  border: 1px solid rgba(255,255,255,0.35);
+  color: #fff;
+  font: 700 11px/14px sans-serif;
+  text-align: center;
+}
+
+/* Язычок «свернуть/развернуть» под рядом (renderNodeLinks). В свёрнутом виде
+   от ряда остаётся только он. */
+.node-links-toggle {
+  display: block;
+  margin: 0 auto;
+  padding: 0 14px;
+  height: 16px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: rgba(255,255,255,0.55);
+  font: 600 11px/16px sans-serif;
+  cursor: pointer;
+}
+.node-links-toggle:hover { color: #AFEEEE; }
+.node-links.folded { padding-top: 3px; padding-bottom: 3px; }
+.node-links.folded .node-links-row,
+.node-links.folded .node-links-all { display: none; }
+.node-links.folded .node-links-toggle { height: 18px; line-height: 18px; }
+
+/* Своя карта точки — вид поверх описания (openSubmapView в js/phenom.js).
+   На карте нет ряда переходов, на описании нет 👥: это разные задачи, и
+   вместе они дублировали персонажей и отнимали у карты место. */
+.phenom-overlay.map-view .node-links { display: none; }
+.phenom-overlay:not(.map-view) .phenom-char-nav { display: none; }
+
+/* Маркер Фенома на кнопке в углу карты вместо 🚀 — переход к точке. */
+.corner-node-icon { width: 20px; height: 20px; font-size: 11px; border-width: 1px; }
 .tabbar-btn-label {
   font-size: 10px;
   font-weight: 600;
@@ -1184,38 +1247,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   color: #AFEEEE;
 }
 
-/* Двойная вкладка: две половинки в одной ячейке двойной ширины, разделённые
-   тонкой чертой — читается как одна тема ("Феном"), но с двумя действиями
-   (статья про него / переход на его карту). */
-.tabbar-split {
-  display: flex;
-  flex: 1.8 1 0;
-  min-width: 0;
-  /* Общая подложка на обе половины (24.09.2026, по замечанию игрока: «не
-     кажется, что это что-то единое» — читалось как две обычные кнопки,
-     случайно разделённые чертой). Теперь единое — сама ячейка, а черта внутри
-     неё только делит её надвое. */
-  background: rgba(255,255,255,0.06);
-  border-radius: 10px;
-  align-self: center;
-}
-/* Половинки прижаты друг к другу: свой горизонтальный отступ им почти не
-   нужен, ячейку и так держит подложка. */
-.tabbar-split .tabbar-btn { padding-left: 0; padding-right: 0; }
-.tabbar-split .tabbar-btn + .tabbar-btn {
-  position: relative;
-}
-/* Черта не на всю высоту ряда, а по центру — так же, как у ✕ (см. выше):
-   полная черта визуально разрезала ячейку на две отдельные. */
-.tabbar-split .tabbar-btn + .tabbar-btn::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 22%;
-  bottom: 22%;
-  width: 1px;
-  background: rgba(255,255,255,0.18);
-}
+/* Двойной вкладки «Феном | Карта» (.tabbar-split) больше нет (24.09.2026):
+   справочник — только статьи, вход в точку Феном — кнопка в углу карты. */
 @keyframes loreBarIn {
   from { transform: translateY(-100%); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
@@ -1404,6 +1437,44 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   -webkit-user-select: text;
   user-select: text;
 }
+
+/* Статья Teletype телом окна (renderNodeContent, 24.09.2026). Прокручивает
+   её сам iframe, у контейнера своего скролла и полей нет. Надпись видна,
+   пока статья грузится, — iframe ложится поверх неё. */
+/* ⚠️ Без своего display: иначе он перебил бы атрибут hidden, и на своей
+   карте точки (Феном) статья оставалась поверх карты (баг v=140). */
+.story-content.is-article {
+  position: relative;
+  padding: 0;
+  overflow: hidden;
+}
+.story-content.is-article::before {
+  content: 'Загружаю статью…';
+  position: absolute;
+  inset: 40% 0 auto;
+  text-align: center;
+  color: rgba(255,255,255,0.4);
+  font-size: 13px;
+}
+/* У верхнего слоя контейнер в потоке (не absolute, как у нижнего), поэтому
+   position:relative выше ему не мешает; у нижнего его перебивает absolute. */
+.phenom-info-content.is-article { position: absolute; }
+/* Верхняя плашка Teletype («teletype · О Teletype · Войти») уходит под
+   панель окна — как в справочнике, где её закрывает пристыкованная шторка.
+   У Teletype она position:fixed высотой 51 px (50 + линия, замер 24.09.2026),
+   поэтому фрейм просто сдвинут вверх на её высоту и обрезан контейнером.
+   Поменяет Teletype высоту шапки — поправить --teletype-bar здесь. */
+.node-article-frame {
+  --teletype-bar: 52px;
+  position: absolute;
+  left: 0;
+  top: calc(-1 * var(--teletype-bar));
+  width: 100%;
+  height: calc(100% + var(--teletype-bar));
+  border: 0;
+}
+.node-article-link { margin-top: 14px; }
+.node-article-link a { color: #AFEEEE; }
 
 /* Кнопка "персонажи на карте Феном" (слева сверху над самой картой, а не в
    общем таб-баре — это навигация ВНУТРИ карты, а не смена вкладки окна) и её

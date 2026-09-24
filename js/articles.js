@@ -7,7 +7,7 @@
    "Магический лор" пока заглушка — заменить на настоящую статью, когда
    будет готова.
    ============================================================ */
-import { openIframeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=133';
+import { openIframeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=141';
 
 export const REF_ARTICLES = {
   phenom: 'https://teletype.in/@greyspirit/4tRzyNaVfEQ#fvQz',
@@ -20,6 +20,11 @@ export const REF_ARTICLES = {
   avalon: 'https://teletype.in/@greyspirit/SEOWfJxAewY#e5M4',
 };
 
+/* ⚠️ Справочник — только статьи (24.09.2026, решение игрока). Ссылок из
+   статьи в точку карты тут нет и не надо: связь идёт в одну сторону —
+   кнопкой «Статья» в окне точки. Пробовали ряд маркеров под шторкой (точки,
+   у которых article.ref = эта статья) — он дублировал оглавление самой
+   статьи (раздел «Кольцо Авалона» внутри «Магии») и выглядел лишним. */
 const refToolbarEl = document.getElementById('refToolbar');
 
 export function openRefArticle(id) {

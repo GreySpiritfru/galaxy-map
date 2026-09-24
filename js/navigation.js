@@ -38,14 +38,17 @@
    вложенность считается по ТИПАМ слоёв (модал/сюжет/локация/система), а не
    по конкретным id узлов, этого достаточно для всех текущих сценариев.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=133';
-import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=133';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=133';
-import { closeStory, isStoryOpen } from './stories.js?v=133';
+import { closeModal, isArticleOpen } from './modal.js?v=141';
+import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=141';
+import { closePhenom, isPhenomOpen, isSubmapViewOpen, closeSubmapView } from './phenom.js?v=141';
+import { closeStory, isStoryOpen } from './stories.js?v=141';
 
 function depth() {
   let d = 0;
   if (isPhenomOpen()) d++;
+  // Своя карта точки — вид ПОВЕРХ её описания (24.09.2026): отдельный уровень,
+  // чтобы ✕ на ней превращался в ↩ и возвращал к описанию, а не закрывал всё.
+  if (isSubmapViewOpen()) d++;
   if (isStoryOpen()) d++;
   if (isSystemOpen()) d++;
   if (isArticleOpen()) d++;
@@ -70,6 +73,7 @@ function depth() {
 function closeTop() {
   if (isArticleOpen()) { if (isSystemLoreOpen()) showSystemMap(); else closeModal(); return; }
   if (isStoryOpen()) { closeStory(); return; }
+  if (isSubmapViewOpen()) { closeSubmapView(); return; }
   if (isPhenomOpen()) { closePhenom(); return; }
   if (isSystemOpen()) { closeSystem(); return; }
 }
@@ -203,8 +207,9 @@ function sync() {
 
    Причина: MutationObserver батчит только то, что случилось в ОДНОМ
    микрозадачном чекпоинте. А переходы-замены вида "закрыть статью и открыть
-   вместо неё окно локации" (#refPhenomMap в js/map.js: closeModal(), затем
-   асинхронный gotoPhenomOnMap с await внутри) раскладываются на ДВЕ разные
+   вместо неё окно локации" (тогда — половинка «Карта» в справочнике, убрана
+   24.09.2026: closeModal(), затем асинхронный переход с await внутри)
+   раскладываются на ДВЕ разные
    задачи — и observer честно срабатывал дважды: сначала видел глубину 0 и
    звал history.back(), потом видел глубину 1 и звал pushState(). Между этими
    двумя вызовами болтался ещё не выполненный traversal от back(), и итоговый

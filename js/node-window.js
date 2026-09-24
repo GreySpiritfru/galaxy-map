@@ -14,7 +14,8 @@
    стекинг в CLAUDE.md). Рисует их обоих этот файл, хозяева слоёв — phenom.js
    (нижний, он же умеет тайловую карту) и stories.js (верхний).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=133';
+import { escapeHtml } from './modal.js?v=141';
+import { REF_ARTICLES } from './articles.js?v=141';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любой
 // точки, поэтому не в данных, а константой здесь.
@@ -48,6 +49,17 @@ function groupByLinks(chars) {
   return groups;
 }
 
+/* Статья точки, которую можно показать ПРЯМО В ОКНЕ (24.09.2026, эксперимент
+   на Авалоне по идее игрока): статья справочника (article.ref) или ссылка на
+   Teletype. Другие сайты в iframe обычно не пускают (X-Frame-Options) —
+   у них статья остаётся ссылкой под описанием. */
+export function embeddedArticleUrl(view) {
+  const art = view && view.article;
+  if (!art) return '';
+  if (art.ref) return REF_ARTICLES[art.ref] || '';
+  return /^https:\/\/teletype\.in\//i.test(art.url || '') ? art.url : '';
+}
+
 /* Содержимое окна: баннеры, заголовок, описание в сворачиваемой цитате. Всё
    необязательное — точка объявляет только то, что у неё есть.
 
@@ -55,6 +67,29 @@ function groupByLinks(chars) {
    детьми-точками — в ряду переходов под панелью (renderNodeLinks ниже).
    Раньше ряд портретов жил внутри текста и уезжал вместе с ним. */
 export function renderNodeContent(container, view) {
+  /* Есть статья — она и есть тело окна: базовая вкладка «Статья» открыта
+     сразу, описание из world.json не показывается (оно остаётся запасным
+     вариантом на случай, если статьи нет). Своё название и обложка у статьи
+     есть, баннеры и заголовок над ней не дублируем. */
+  const articleUrl = embeddedArticleUrl(view);
+  container.classList.toggle('is-article', !!articleUrl);
+  if (articleUrl) {
+    /* ⚠️ Без loading="lazy": с ним Teletype не прокручивает к якорю раздела
+       (#e5M4 у Авалона — раздел внутри «Магии»), статья открывается с начала.
+       Проверено: тот же адрес без lazy сразу встаёт на «Кольцо Авалона». */
+    // Та же статья уже открыта (вернулись к точке через ↑ или «назад») — не
+    // перезагружаем: игрок остаётся там, где читал.
+    const old = container.querySelector('iframe.node-article-frame');
+    if (old && old.dataset.src === articleUrl) return;
+    container.innerHTML = `<iframe class="node-article-frame" src="${escapeHtml(articleUrl)}"></iframe>`;
+    container.firstElementChild.dataset.src = articleUrl;
+    return;
+  }
+  const art = view.article;
+  const linkHtml = art && art.url
+    ? `<p class="node-article-link"><a href="${escapeHtml(art.url)}" target="_blank" rel="noopener">📖 ${escapeHtml(art.label || 'Статья')} ↗</a></p>`
+    : '';
+
   const imagesHtml = (Array.isArray(view.images) ? view.images : [])
     .map(src => `<img class="story-banner-img" src="${escapeHtml(src)}" alt="" loading="lazy">`)
     .join('');
@@ -72,6 +107,7 @@ export function renderNodeContent(container, view) {
     ${imagesHtml}
     <div class="story-title">${codeHtml}${escapeHtml(view.title || '')}${doneHtml}</div>
     ${descHtml}
+    ${linkHtml}
   `;
 }
 
@@ -149,14 +185,22 @@ export function setParentButton(btn, meta) {
 
    ⚠️ Точки идут первыми не только ради вида: при пятнадцати персонажах места
    иначе ушли бы под «+N».
+
+   Дополнено тем же днём: самым первым — РОДИТЕЛЬ (переехал сюда из панели
+   действий, значок ↑ на маркере), внутри групп закреплённые (pinned) идут
+   вперёд, а под рядом — язычок «свернуть» (в окне системы ряд по умолчанию
+   свёрнут).
    ============================================================ */
 const LINK_GAP = 10; // = gap у .node-links-row в css
 
-function linkChip(item, onTap) {
+function linkChip(item, onTap, extraClass) {
   const btn = document.createElement('button');
   btn.type = 'button';
-  btn.className = 'link-chip link-chip--' + (item.kind === 'character' ? 'char' : 'point');
-  btn.title = item.name || item.label || '';
+  btn.className = 'link-chip link-chip--' + (item.kind === 'character' ? 'char' : 'point')
+    + (extraClass ? ' ' + extraClass : '');
+  btn.title = item.kindLabel
+    ? `${item.kindLabel}: ${item.name || item.label}`
+    : (item.name || item.label || '');
   const slot = document.createElement('span');
   slot.className = 'link-chip-slot';
   slot.appendChild(markerEl(item, 'link-chip-marker'));
@@ -168,36 +212,50 @@ function linkChip(item, onTap) {
   return btn;
 }
 
-// Точки и персонажи — готовые элементы ряда; группа союзников — один элемент
-// (её нельзя разрывать «+N» посередине). data-count — сколько переходов внутри.
+/* Закреплённые (галочка «Закрепить» в редакторе, поле pinned) — вперёд, в
+   остальном порядок из данных. Раскладка жадная и идёт слева, поэтому первые
+   под «+N» не уходят. У персонажей закреплённый тянет вперёд всю свою группу
+   союзников — groupByLinks собирает группы в порядке первого участника. */
+const pinnedFirst = (list) => [...list.filter(i => i.pinned), ...list.filter(i => !i.pinned)];
+
+function parentChip(parent, go) {
+  return linkChip(parent, go.parent, 'link-chip--parent');
+}
+
+// Родитель, точки и персонажи — готовые элементы ряда; группа союзников — один
+// элемент (её нельзя разрывать «+N» посередине). data-count — сколько
+// переходов внутри. Между непустыми частями — разделители.
 function linkItems(view, go) {
-  const points = Array.isArray(view.children) ? view.children : [];
-  const chars = Array.isArray(view.characters) ? view.characters : [];
-  const items = points.map(p => {
-    const el = linkChip(p, go.point);
-    el.dataset.count = 1;
-    return el;
-  });
-  if (points.length && chars.length) {
-    const div = document.createElement('span');
-    div.className = 'link-divider';
-    div.dataset.count = 0;
-    items.push(div);
+  const parent = view.parentMeta && view.parentMeta.id ? view.parentMeta : null;
+  const points = pinnedFirst(Array.isArray(view.children) ? view.children : []);
+  const chars = pinnedFirst(Array.isArray(view.characters) ? view.characters : []);
+  const parts = [];
+  if (parent) parts.push([parentChip(parent, go)]);
+  if (points.length) parts.push(points.map(p => linkChip(p, go.point)));
+  if (chars.length) {
+    parts.push(groupByLinks(chars).map(group => {
+      if (group.length === 1) return linkChip(group[0], go.char);
+      const box = document.createElement('span');
+      box.className = 'link-group';
+      box.dataset.count = group.length;
+      group.forEach(c => box.appendChild(linkChip(c, go.char)));
+      return box;
+    }));
   }
-  groupByLinks(chars).forEach(group => {
-    if (group.length === 1) {
-      const el = linkChip(group[0], go.char);
-      el.dataset.count = 1;
-      items.push(el);
-      return;
+  const items = [];
+  parts.forEach((part, k) => {
+    if (k) {
+      const div = document.createElement('span');
+      div.className = 'link-divider';
+      div.dataset.count = 0;
+      items.push(div);
     }
-    const box = document.createElement('span');
-    box.className = 'link-group';
-    box.dataset.count = group.length;
-    group.forEach(c => box.appendChild(linkChip(c, go.char)));
-    items.push(box);
+    part.forEach(el => {
+      if (!el.dataset.count) el.dataset.count = 1;
+      items.push(el);
+    });
   });
-  return {items, points, chars};
+  return {items, parent, points, chars};
 }
 
 /* Прячет в ряду всё, что не влезает, и показывает «+N». false — ряд ещё не
@@ -245,17 +303,40 @@ function fitLinks(row, more) {
 const liveRows = new Set();
 window.addEventListener('resize', () => liveRows.forEach(fn => fn()));
 
-export function renderNodeLinks(el, view, handlers) {
+/* Свёрнут ли ряд — своя память у каждого вида окна (24.09.2026, идея игрока):
+   в окне системы ряд по умолчанию закрыт (точки и так видны на её карте
+   маркерами), в окне точки — открыт. Выбор игрока запоминается на устройстве.
+   Хранилище может быть недоступно (приватный режим) — тогда просто умолчание. */
+const FOLD_KEY = 'galaxyMapLinksFolded';
+function readFold(kind, fallback) {
+  try {
+    const v = JSON.parse(localStorage.getItem(FOLD_KEY) || '{}')[kind];
+    return typeof v === 'boolean' ? v : fallback;
+  } catch (e) { return fallback; }
+}
+function writeFold(kind, folded) {
+  try {
+    const all = JSON.parse(localStorage.getItem(FOLD_KEY) || '{}');
+    all[kind] = folded;
+    localStorage.setItem(FOLD_KEY, JSON.stringify(all));
+  } catch (e) { /* не запомнили — не страшно */ }
+}
+
+/* opts.fold — вид окна для памяти свёрнутости ('point' | 'system'),
+   opts.foldedByDefault — умолчание для него. */
+export function renderNodeLinks(el, view, handlers, opts) {
   if (!el) return;
+  const fold = (opts && opts.fold) || 'point';
   el.textContent = '';
   el.classList.remove('expanded');
   if (el.__refit) { liveRows.delete(el.__refit); el.__refit = null; }
   const collapse = () => el.classList.remove('expanded');
   const go = {
+    parent: () => { collapse(); if (handlers.onParent) handlers.onParent(); },
     point: (id) => { collapse(); if (handlers.onChild) handlers.onChild(id); },
     char: (id) => { collapse(); if (handlers.onCharacter) handlers.onCharacter(id); },
   };
-  const {items, points, chars} = linkItems(view, go);
+  const {items, parent, points, chars} = linkItems(view, go);
   el.hidden = !items.length;
   if (!items.length) return;
 
@@ -283,16 +364,43 @@ export function renderNodeLinks(el, view, handlers) {
     list.forEach(i => wrap.appendChild(i));
     all.append(h, wrap);
   };
+  if (parent) section('Входит в', [parentChip(parent, go)]);
   section('Места и сюжеты', points.map(p => linkChip(p, go.point)));
   section('Персонажи', linkItems({characters: chars}, go).items);
 
-  el.append(row, all);
+  /* Язычок под рядом: свернуть / развернуть. В свёрнутом виде от ряда
+     остаётся только он — со счётчиком, чтобы было видно, что там что-то есть. */
+  const total = (parent ? 1 : 0) + points.length + chars.length;
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'node-links-toggle';
+  const paint = () => {
+    const folded = el.classList.contains('folded');
+    toggle.textContent = folded ? `▾ Переходы · ${total}` : '▴';
+    toggle.setAttribute('aria-expanded', String(!folded));
+    toggle.title = folded ? 'Показать переходы' : 'Свернуть переходы';
+  };
+  toggle.addEventListener('click', () => {
+    const folded = !el.classList.contains('folded');
+    el.classList.toggle('folded', folded);
+    collapse();
+    writeFold(fold, folded);
+    paint();
+    if (!folded && el.__refit) el.__refit(); // пока был свёрнут, ширины не было
+  });
+  el.classList.toggle('folded', readFold(fold, !!(opts && opts.foldedByDefault)));
+  paint();
+
+  el.append(row, all, toggle);
 
   // Раскладка — только когда у ряда есть ширина: окно системы до открытия
   // вообще display:none. Несколько кадров подождать и сдаться — лучше показать
   // всё без «+N», чем зависнуть.
   let tries = 0;
-  const refit = () => { if (!fitLinks(row, more) && ++tries < 20) requestAnimationFrame(refit); };
+  const refit = () => {
+    if (el.classList.contains('folded')) return; // развернут — пересчитается
+    if (!fitLinks(row, more) && ++tries < 20) requestAnimationFrame(refit);
+  };
   el.__refit = () => { tries = 0; refit(); };
   liveRows.add(el.__refit);
   refit();
@@ -305,31 +413,28 @@ export function renderNodeLinks(el, view, handlers) {
 export function applyNodeToolbar(refs, view, handlers) {
   const show = (el, on) => { if (el) el.style.display = on ? '' : 'none'; };
 
-  // Переход к родителю: его маркер и его название (как кнопка «назад» в iOS,
-  // на которой написано, куда вернёшься). Тип — во всплывающей подсказке.
-  show(refs.parent, !!view.parentMeta);
-  if (refs.parent && view.parentMeta) setParentButton(refs.parent, view.parentMeta);
+  /* ⚠️ Кнопки родителя в панели больше нет (24.09.2026): родитель — тоже
+     точка, и по правилу «форма маркера — переход» он первым стоит в ряду
+     переходов (renderNodeLinks). В окне персонажа (#charStory) кнопка
+     осталась: там ряда переходов нет, окно — статья в iframe. */
 
   /* Статья. Два источника: "ref" — статья-справочник из js/articles.js
      (открывает общий обработчик по data-ref), "url" — любая внешняя ссылка.
      Раньше это умела только локация с submap, теперь — любая точка. */
+  /* Базовая вкладка окна (24.09.2026, эксперимент на Авалоне): «Статья», если
+     статью можно показать прямо в окне, иначе «Описание». Она есть у КАЖДОЙ
+     точки и подсвечена, пока открыто тело окна, — как «Карта системы» в окне
+     системы. Раньше «Статья» открывала справочник поверх окна.
+     Клик по ней — вернуться к телу окна со своей карты (phenom.js вешает
+     onclick сам); в верхнем слое своей карты нет, клик ничего не делает. */
   const art = view.article;
-  show(refs.article, !!art);
-  if (refs.article && art) {
-    /* Подпись фиксированная — «Статья», а название из данных уходит во
-       всплывающую подсказку (24.09.2026). Раньше подписью было само название
-       («Описание Фенома») — и на 375 px его обрезало уже при трёх ячейках.
-       Панель действий должна быть одинаковой у всех точек, это часть смысла
-       разделения «сверху действия, снизу переходы». */
-    refs.article.querySelector('.tabbar-btn-label').textContent = 'Статья';
-    refs.article.title = art.label || 'Статья';
-    if (art.ref) {
-      refs.article.dataset.ref = art.ref;
-      refs.article.onclick = null; // дальше сработает общий обработчик [data-ref]
-    } else {
-      delete refs.article.dataset.ref;
-      refs.article.onclick = () => window.open(art.url, '_blank', 'noopener');
-    }
+  if (refs.article) {
+    const inline = !!embeddedArticleUrl(view);
+    show(refs.article, true);
+    refs.article.querySelector('.tabbar-btn-label').textContent = inline ? 'Статья' : 'Описание';
+    refs.article.title = inline ? (art.label || 'Статья') : 'Описание';
+    refs.article.classList.add('active');
+    refs.article.onclick = null;
   }
 
   show(refs.archive, !!view.archiveUrl);

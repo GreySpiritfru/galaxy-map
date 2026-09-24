@@ -1,15 +1,15 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=133';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=133';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=133';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=133';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=133';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=133';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=133';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=133';
-import { setTabIcon } from './node-window.js?v=133';
+import { createPanZoom } from './panzoom.js?v=141';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=141';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=141';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=141';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=141';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=141';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=141';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=141';
+import { markerEl } from './node-window.js?v=141';
 
 const SVG_PATH = 'map.svg';
 
@@ -951,8 +951,8 @@ function finishMapPick(p) {
   };
   /* Дополняет подпись кнопки-перехода артом САМОЙ точки, к которой она ведёт
      (24.09.2026, по предложению игрока): картинка, форма её маркера и цвет её
-     кольца. Рисует это setTabIcon в js/node-window.js, он же откатывается на
-     смайлик, если картинки нет или путь битый.
+     кольца. Рисует это markerEl в js/node-window.js, он же без картинки (или
+     с битой) рисует ту же форму с первой буквой.
 
      ⚠️ Система картинку НЕ отдаёт: у неё «картинка» — это карта всей системы,
      и в значке 19 px она превращается в тёмное пятно (та же причина, по
@@ -981,6 +981,7 @@ function finishMapPick(p) {
       letter: (name.trim().charAt(0) || '?').toUpperCase(),
       kind: node.kind,
       done: isCompleted(node),
+      pinned: node.data.pinned === true,
     };
   }
 
@@ -994,7 +995,7 @@ function finishMapPick(p) {
        подсказку (24.09.2026): маркер уже говорит, что это за точка, а имя —
        куда именно вернёшься. ⚠️ Новым объектом: PARENT_KIND_META — общая
        таблица на весь проект, дописывать в неё конкретную точку нельзя. */
-    return tabIconOf(p, {icon: base.icon, kindLabel: base.label});
+    return tabIconOf(p, {id: p.id, icon: base.icon, kindLabel: base.label});
   }
 
   /* Что открыть по узлу — зависит только от его типа (а для маркеров ещё и
@@ -1051,6 +1052,15 @@ function finishMapPick(p) {
      поверх неё. Так «сюжет из окна Фенома» ложится на Феном, а не вместо
      него, и закрытие возвращает ровно туда, откуда пришли. */
   function openWorldNode(node) {
+    /* Переход к родителю (первый в ряду переходов). Закрываем только СВОЙ
+       слой: если точка открыта из окна родителя, тот всё это время лежал
+       позади и просто снова виден; если сама по себе (тап по маркеру),
+       goToNode откроет родителя заново. У системы — камера на эту точку. */
+    const toParent = (closeSelf) => () => {
+      if (!node.parent) return;
+      closeSelf();
+      goToNode(node.parent, true, {focusId: node.id});
+    };
     const handlers = {
       onCharacter: (id) => { const c = graphById.get(id); if (c) goToNode(c, true); },
       onChild: (id) => { const c = graphById.get(id); if (c) goToNode(c, true); },
@@ -1059,8 +1069,9 @@ function finishMapPick(p) {
     const lower = openWorldNodeCurrent;
     if (isPhenomOpen() && lower && lower.id !== node.id) {
       openStoryNodeCurrent = node;
-      openStory(view, handlers);
+      openStory(view, {...handlers, onParent: toParent(closeStory)});
     } else {
+      handlers.onParent = toParent(closePhenom);
       openWorldNodeCurrent = node;
       if (isStoryOpen()) closeStory();
       if (view.submap) prepareSubmap(node);
@@ -1220,7 +1231,7 @@ function finishMapPick(p) {
   }
 
   /* ============================================================
-     Уровень детализации карты (24.09.2026, v=133)
+     Уровень детализации карты (24.09.2026, v=135)
 
      Замер общего вида (кадр 588 единиц, панель 754 px): 27 маркеров в кадре,
      медиана размера 3.8 px, медианный просвет до соседа 1.2 px. Из этих 27
@@ -2197,6 +2208,8 @@ function finishMapPick(p) {
       pickOnSubmap(char, locationNode, onPick) {
         closeLayers();
         openWorldNode(locationNode);
+        // Окно точки теперь открывается описанием, а место выбирают на её карте.
+        openSubmapView();
         showPickBanner(`🏙 Тапни, где на карте «${nodeTitle(locationNode)}» стоит ${char.name || 'персонаж'}`);
         const done = () => { if (isPhenomOpen()) closePhenom(); reopen(char); };
         // Третий путь, кроме тапа и «Отмены»: окно закрыли ✕/«назад» —
@@ -2218,8 +2231,8 @@ function finishMapPick(p) {
   /* Кнопка "Сюжет"/"Локация" в панели персонажа: уводит к его родителю в
      графе (сюжет либо, как у Ледо/Текила, сам Феном-маркер напрямую — см.
      parentButtonMeta выше). Обработчик живёт здесь, а не в characters.js,
-     потому что тут есть и граф, и камера — ровно так же сделан переход
-     "Карта" у Фенома (#refPhenomMap ниже) и #storyParent чуть ниже. */
+     потому что тут есть и граф, и камера — ровно так же сделан переход к
+     родителю в ряду переходов окна точки (onParent в openWorldNode). */
   document.getElementById('charStory').addEventListener('click', async () => {
     const char = getOpenCharacter();
     if (!char) return;
@@ -2234,62 +2247,29 @@ function finishMapPick(p) {
     goToNode(node.parent, true);
   });
 
-  /* Кнопка перехода к родителю в обоих слоях окна точки — зеркало #charStory
-     выше. Закрываем только СВОЙ слой: если точка была открыта вкладкой из
-     окна родителя, тот всё это время оставался открытым позади и просто снова
-     становится виден; если точка открыта сама по себе (тап по её маркеру на
-     карте), goToNode откроет родителя заново. */
-  function wireParentButton(btnId, getNode, closeSelf) {
-    document.getElementById(btnId).addEventListener('click', async () => {
-      const node = getNode();
-      if (!node) return;
-      await graphReady;
-      if (!node.parent) return;
-      closeSelf();
-      // У системы — камера на маркер этой точки внутри неё.
-      goToNode(node.parent, true, {focusId: node.id});
-    });
-  }
-  wireParentButton('storyParent', () => openStoryNodeCurrent, closeStory);
-  wireParentButton('phenomParent', () => openWorldNodeCurrent, closePhenom);
-
-  // Все входы в Феном ведут через один и тот же перелёт камеры (focusAndOpen
-  // выше), что и клик по маркеру "phenome" на карте: кнопка 🚀 в углу карты и
-  // правая половина двойной вкладки "Феном" внутри статьи. Координаты маркера
-  // берём из графа (узел "phenome"), а не хардкодим — чтобы не разъезжались
-  // при переносе маркера. instant пробрасывается снаружи: кнопка в углу карты
-  // видит саму карту (перелёт нужен), а переход из уже открытой статьи —
-  // нет (см. #refPhenomMap ниже).
-  async function gotoPhenomOnMap(instant) {
+  /* Кнопка «Феном» в углу карты ведёт в точку Феном — тем же перелётом
+     камеры, что и тап по её маркеру (instant: false — карта тут видна).
+     С 24.09.2026 это обычное окно точки (описание и переходы), своя карта
+     Фенома — кнопкой «🗺️ Карта» уже внутри него. Координаты — из графа, а не
+     вписаны числами, чтобы не разъехаться при переносе маркера; нет узла
+     "phenome" — молча ничего (ловится глазами, как рассинхрон манифеста). */
+  document.getElementById('gotoPhenom').addEventListener('click', async () => {
     const graph = await graphReady;
     const phenom = graph.get('phenome');
-    // Маркера "phenome" нет в markers.json — тот же рассинхрон, что и с
-    // манифестом систем: молча ничего не делаем, ловится глазами.
-    if (phenom) goToNode(phenom, instant);
-  }
-
-  // Кнопка в углу карты — тут камера ДЕЙСТВИТЕЛЬНО видна (обычная галактика,
-  // ничего поверх неё не открыто), перелёт нужен взаправду.
-  document.getElementById('gotoPhenom').addEventListener('click', () => gotoPhenomOnMap(false));
-
-  // Правая половина вкладки "Феном" в таб-баре статей: уводит из статьи в само
-  // место. Статью перед этим закрываем — иначе она так и осталась бы висеть
-  // поверх окна Феном (модал статей выше него по z-index, см. грабли №7).
-  // instant: true — уходим из уже открытой статьи, карта позади неё не видна.
-  document.getElementById('refPhenomMap').addEventListener('click', () => {
-    closeModal();
-    gotoPhenomOnMap(true);
+    if (phenom) goToNode(phenom, false);
   });
 
-  /* Значок этой половины — арт самого Фенома, как и у всех остальных кнопок,
-     ведущих к точке (setTabIcon, 24.09.2026). Ставится ОТСЮДА, а не в
-     разметке: #refToolbar живёт отдельно от графа, а картинка и форма маркера
-     есть только в нём. Не доехал граф — в index.html остаётся 🚀. */
   graphReady.then(graph => {
+    /* Значок кнопки в углу — маркер Фенома, а не 🚀: это переход к точке, а
+       переходы рисуются формой маркера (правило 24.09.2026). Ставится отсюда:
+       картинка и форма есть только в графе. Не доехал граф — остаётся 🚀. */
     const phenom = graph.get('phenome');
-    if (!phenom) return;
-    const icon = document.querySelector('#refPhenomMap .tabbar-btn-icon');
-    setTabIcon(icon, tabIconOf(phenom, {icon: '🚀'}));
+    const cornerIcon = document.querySelector('#gotoPhenom > [aria-hidden]');
+    if (phenom && cornerIcon) {
+      const m = markerEl(tabIconOf(phenom, {}), 'corner-node-icon');
+      m.setAttribute('aria-hidden', 'true');
+      cornerIcon.replaceWith(m);
+    }
   });
 
   /* --- П.3: клик по названию системы (реальные <text> из экспорта StellarMaps) ---

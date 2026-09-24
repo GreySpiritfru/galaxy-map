@@ -21,8 +21,8 @@
    точка без своей карты — это просто точка, и текст ей рисует тот же общий
    код, что и всем остальным. characters.json привязывает персонажей к любой
    точке с тайловой картой через submapX/submapY (см. ниже). */
-import { closeModal, escapeHtml } from './modal.js?v=133';
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=133';
+import { closeModal, escapeHtml } from './modal.js?v=141';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=141';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже
@@ -108,7 +108,6 @@ function ensurePhenomViewer() {
    случайно. Что показать в ряду, решает общий js/node-window.js. */
 const refs = {
   toolbar: document.getElementById('phenomToolbar'),
-  parent: document.getElementById('phenomParent'),
   article: document.getElementById('phenomDescriptionTab'),
   archive: document.getElementById('phenomArchive'),
   index: document.getElementById('phenomTelegram'),
@@ -276,25 +275,75 @@ let phenomArmed = false;
    OpenSeadragon с нуля; тот же 'open'-обработчик сам подхватит новый зум и
    перерисует маркеры персонажей. */
 export function openWorldWindow(view, handlers) {
-  const submap = view.submap || null;
-  const changed = phenomViewer && currentSubmap && submap && currentSubmap.source !== submap.source;
-  currentSubmap = submap;
+  currentSubmap = view.submap || null;
+  showBase();
   phenomOverlay.classList.add('open');
   applyNodeToolbar(refs, view, handlers || {});
+  refs.article.onclick = () => closeSubmapView(); // со своей карты — к телу окна
   renderNodeLinks(phenomLinks, view, handlers || {});
-  phenomViewerEl.hidden = !submap;
-  phenomInfoContent.hidden = !!submap;
-  if (!submap) {
-    phenomCharNav.hidden = true;
-    renderNodeContent(phenomInfoContent, view);
-  } else if (changed) {
-    phenomViewer.open(submap.source);
-  } else {
-    ensurePhenomViewer();
-  }
+  phenomMapTab.hidden = !currentSubmap;
+  renderNodeContent(phenomInfoContent, view);
   phenomArmed = false;
   setTimeout(() => { phenomArmed = true; }, 300);
 }
+
+/* ============================================================
+   Своя карта точки — ВИД поверх её описания, а не её окно (24.09.2026).
+
+   До этого точка с полем submap (Феном) открывалась сразу картой, а у
+   остальных точек было описание — Феном был единственной точкой с другим
+   окном, и из-за этого его «статья» и «карта» жили в разных местах
+   (статья — вкладкой в окне, карта — половинкой вкладки справочника). Теперь
+   у любой точки одно и то же базовое окно (описание + ряд переходов), а своя
+   карта — кнопка «🗺️ Карта» в панели, у тех, у кого она есть.
+
+   Для навигации это отдельный уровень (isSubmapViewOpen в depth() js/
+   navigation.js): ✕ превращается в ↩ и возвращает к описанию — ровно так же,
+   как закрытие статьи, открытой поверх окна.
+
+   На карте ряда переходов нет, а на описании нет 👥: переходы к детям и
+   список персонажей на карте — разные задачи, и показывать их разом значило
+   дублировать персонажей (замечание игрока про Ледо и Текилу) и отнимать у
+   карты место.
+   ============================================================ */
+const phenomMapTab = document.getElementById('phenomMapTab');
+let openedSource = null; // какой .dzi сейчас загружен во viewer
+
+function showBase() {
+  phenomOverlay.classList.remove('map-view');
+  phenomMapTab.classList.remove('active');
+  refs.article.classList.add('active'); // базовая вкладка — «Статья»/«Описание»
+  phenomViewerEl.hidden = true;
+  phenomInfoContent.hidden = false;
+}
+
+export function openSubmapView() {
+  if (!currentSubmap || !isPhenomOpen()) return;
+  phenomOverlay.classList.add('map-view');
+  phenomMapTab.classList.add('active');
+  refs.article.classList.remove('active');
+  phenomInfoContent.hidden = true;
+  // Сначала показать контейнер, потом создавать viewer: OpenSeadragon,
+  // созданный в скрытом элементе, считает свой размер нулевым.
+  phenomViewerEl.hidden = false;
+  if (!phenomViewer) ensurePhenomViewer();
+  else if (openedSource !== currentSubmap.source) phenomViewer.open(currentSubmap.source);
+  openedSource = currentSubmap.source;
+}
+
+export function closeSubmapView() {
+  if (!isSubmapViewOpen()) return;
+  showBase();
+}
+
+export function isSubmapViewOpen() {
+  return isPhenomOpen() && phenomOverlay.classList.contains('map-view');
+}
+
+phenomMapTab.addEventListener('click', () => {
+  if (isSubmapViewOpen()) closeSubmapView();
+  else openSubmapView();
+});
 
 // Открыто ли окно-вкладыш сейчас — нужно снаружи (js/navigation.js) для
 // единого "шага назад" (ESC/Telegram BackButton/history браузера).
@@ -305,6 +354,7 @@ export function isPhenomOpen() {
 export function closePhenom() {
   closeModal(); // если поверх открыто "Описание Феном" — не оставлять его висеть над картой
   phenomOverlay.classList.remove('open');
+  showBase();
   // Закрыли, не выбрав место для редактора, — отменяем выбор, иначе полоска
   // «тапни, где стоит…» висела бы над картой, а следующий тап по Феному
   // молча записал бы координату.

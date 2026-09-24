@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=133';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=141';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -51,7 +51,7 @@ const FIELD_LABELS = {
   node: {
     title: 'Название', shortTitle: 'Короткое название', code: 'Номер',
     articleUrl: 'Статья', archiveUrl: 'Архив', color: 'Цвет',
-    beacon: 'Маяк', completed: 'Статус', wide: 'Ширина маркера',
+    beacon: 'Маяк', completed: 'Статус', wide: 'Ширина маркера', pinned: 'Закреплено',
     parent: 'Привязка', links: 'Связи', x: 'Место на карте', y: 'Место на карте',
     systemX: 'Место в системе', systemY: 'Место в системе',
   },
@@ -117,6 +117,7 @@ function fieldsOf(kind, d) {
     archiveUrl: d.archiveUrl || '', articleUrl: (d.article && d.article.url) || '',
     color: d.color || '',
     beacon: d.beacon === true, completed: d.completed === true, wide: d.wide === true,
+    pinned: d.pinned === true,
   };
 }
 
@@ -774,6 +775,10 @@ export function showNodeEditor(node) {
           <input type="checkbox" name="wide"${draft.wide ? ' checked' : ''}>
           <span>Широкий маркер <small>— под горизонтальный арт</small></span>
         </label>`}
+        <label class="editor-check">
+          <input type="checkbox" name="pinned"${draft.pinned ? ' checked' : ''}>
+          <span>Закрепить <small>— первой в ряду переходов у родителя, не уходит под «+N»</small></span>
+        </label>
       </fieldset>
 
       <fieldset class="editor-section">
@@ -834,7 +839,7 @@ export function showNodeEditor(node) {
   const {say, report} = statusHelpers(form);
   wireLinks(form, draft, say, 'связей');
 
-  const CHECKS = ['beacon', 'completed', 'wide'];
+  const CHECKS = ['beacon', 'completed', 'wide', 'pinned'];
   form.addEventListener('input', (e) => {
     const el = e.target;
     if (el.type === 'checkbox' && CHECKS.includes(el.name)) draft[el.name] = el.checked;

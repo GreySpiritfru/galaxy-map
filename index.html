@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=133" />
+  <link rel="stylesheet" href="css/styles.css?v=141" />
 </head>
 <body>
 
@@ -78,18 +78,13 @@
      .phenom-toolbar. Наполнение и клики — см. REF_ARTICLES в js/articles.js. -->
 <div class="ref-toolbar lore-toolbar tabbar" id="refToolbar">
   <button class="toolbar-close-btn" id="refToolbarClose" aria-label="Закрыть">✕</button>
-  <!-- Феном занимает двойную ячейку и разделён надвое: левая половина —
-       статья про него (как у остальных вкладок), правая — переход в само
-       место, на карту корабля-города (закрывает статью, наводит камеру на
-       маркер и открывает окно Феном, см. #refPhenomMap в js/map.js). -->
-  <div class="tabbar-split">
-    <button class="tabbar-btn" data-ref="phenom">
-      <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Феном</span>
-    </button>
-    <button class="tabbar-btn" id="refPhenomMap" title="Перейти на карту Фенома">
-      <span class="tabbar-btn-icon" aria-hidden="true">🚀</span><span class="tabbar-btn-label">Карта</span>
-    </button>
-  </div>
+  <!-- Справочник — только статьи, ссылок на точки карты здесь нет (24.09.2026):
+       связь статья↔точка идёт в одну сторону — кнопкой «Статья» в окне точки.
+       Быстрый вход в точку Феном — кнопка в углу карты. Была двойная ячейка
+       «Феном | Карта», её правая половина вела в саму точку. -->
+  <button class="tabbar-btn" data-ref="phenom">
+    <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Феном</span>
+  </button>
   <button class="tabbar-btn" data-ref="races">
     <span class="tabbar-btn-icon" aria-hidden="true">🧬</span><span class="tabbar-btn-label">Расы</span>
   </button>
@@ -180,19 +175,23 @@
 <div class="phenom-overlay" id="phenomOverlay">
   <div class="phenom-card" id="phenomCard">
     <!-- Панель ДЕЙСТВИЙ окна точки — тот же таб-бар, что у статей и вида
-         системы (.tabbar, грабли №12). Состав фиксирован: ✕, родитель,
-         статья, правка, архив, сюжеты; пустые кнопки прячутся
-         (applyNodeToolbar в js/node-window.js). Переходы к детям — НЕ здесь,
+         системы (.tabbar, грабли №12). Состав фиксирован: ✕, карта, статья,
+         правка, архив, сюжеты; пустые кнопки прячутся (applyNodeToolbar в
+         js/node-window.js). Переходы к точкам — родителю и детям — НЕ здесь,
          а в ряду #phenomLinks ниже (24.09.2026). -->
     <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
       <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть">✕</button>
-      <!-- Иконка/подпись ставятся в map.js по типу родителя (PARENT_KIND_META);
-           кнопка прячется, если родителя нет. -->
-      <button class="tabbar-btn" id="phenomParent">
-        <span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>
-      </button>
-      <button class="tabbar-btn" id="phenomDescriptionTab" data-ref="phenom">
+      <!-- Базовая вкладка — тело окна: статья Teletype прямо в окне или
+           описание, если статьи нет (applyNodeToolbar в js/node-window.js).
+           Подсвечена, пока открыто тело. -->
+      <button class="tabbar-btn active" id="phenomDescriptionTab">
         <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Статья</span>
+      </button>
+      <!-- Своя карта точки (поле submap, сейчас у Фенома) — ВИД поверх
+           тела окна: ✕ превращается в ↩ и возвращает к нему
+           (openSubmapView в js/phenom.js). -->
+      <button class="tabbar-btn" id="phenomMapTab" hidden>
+        <span class="tabbar-btn-icon" aria-hidden="true">🗺️</span><span class="tabbar-btn-label">Карта</span>
       </button>
       <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
       <button class="tabbar-btn" id="phenomEdit" hidden>
@@ -205,8 +204,9 @@
         <span class="tabbar-btn-icon" aria-hidden="true">📜</span><span class="tabbar-btn-label">Сюжеты</span>
       </button>
     </div>
-    <!-- Ряд переходов к детям точки: места/сюжеты, потом персонажи, лишнее
-         под «+N». Наполняет renderNodeLinks в js/node-window.js. -->
+    <!-- Ряд переходов: родитель, места/сюжеты, персонажи, лишнее под «+N»,
+         под рядом язычок «свернуть». Наполняет renderNodeLinks в
+         js/node-window.js. -->
     <div class="node-links" id="phenomLinks" hidden></div>
     <div class="phenom-content" id="phenomContent">
       <!-- Персонажи, привязанные прямо к самой карте Феном (submapX/submapY в
@@ -243,15 +243,9 @@
   <div class="phenom-card" id="storyCard">
     <div class="phenom-toolbar lore-toolbar tabbar" id="storyToolbar">
       <button class="toolbar-close-btn" id="storyClose" aria-label="Закрыть">✕</button>
-      <!-- Иконка/подпись НЕ зашиты — как и #charStory, ставятся в map.js по
-           типу родителя узла в графе (PARENT_KIND_META): "Локация" для
-           Феном/маркера, "Сюжет" для другого сюжета. Прячется, если
-           родителя нет. -->
-      <button class="tabbar-btn" id="storyParent">
-        <span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>
-      </button>
-      <!-- Статья точки: data-ref (статья-справочник) или внешняя ссылка,
-           см. applyNodeToolbar в js/node-window.js. -->
+      <!-- Родителя тут нет — он первым в ряду переходов #storyLinks. -->
+      <!-- Базовая вкладка — тело окна (статья или описание), см.
+           applyNodeToolbar в js/node-window.js. -->
       <button class="tabbar-btn" id="storyArticle">
         <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Статья</span>
       </button>
@@ -271,6 +265,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=133"></script>
+<script type="module" src="js/main.js?v=141"></script>
 </body>
 </html>
