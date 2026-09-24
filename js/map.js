@@ -1,15 +1,15 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=145';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=145';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=145';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=145';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=145';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=145';
-import { openCharacter, closeCharacter } from './characters.js?v=145';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=145';
-import { markerEl } from './node-window.js?v=145';
+import { createPanZoom } from './panzoom.js?v=146';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=146';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=146';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=146';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=146';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=146';
+import { openCharacter, closeCharacter } from './characters.js?v=146';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=146';
+import { markerEl } from './node-window.js?v=146';
 
 const SVG_PATH = 'map.svg';
 

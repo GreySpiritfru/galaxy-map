@@ -12,9 +12,9 @@
    Данные — characters.json, что показать (view) собирает map.js: там граф,
    камера и переходы.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=145';
-import { canEdit, showEditor } from './editor.js?v=145';
-import { renderFrame, renderNodeLinks } from './node-window.js?v=145';
+import { escapeHtml } from './modal.js?v=146';
+import { canEdit, showEditor } from './editor.js?v=146';
+import { renderFrame, renderNodeLinks } from './node-window.js?v=146';
 
 const overlay = document.getElementById('charOverlay');
 const content = document.getElementById('charContent');
@@ -95,8 +95,9 @@ notesBtn.addEventListener('click', () => {
    в группе «/d20+3 Гил'ви взламывает дверь сл15». Бросок сразу сохраняется
    на сервере, а в rolls.json репозитория уходит пачкой раз в 20 минут —
    поэтому свежий бросок видно в чате сразу, а здесь — с задержкой.
-   Формат: {"characters": {id: [{t, d, r, m?, s, dc?, o?, a?, l?}, …]}},
-   новые первыми; o — crit / critfail / success / fail.
+   Формат: {"characters": {id: [{t, d, r, m?, s, dc?, o?, a?}, …]}},
+   новые первыми; o — crit / critfail / success / fail. Ссылок на сообщения
+   в чате нет сознательно: группа закрытая, а rolls.json публичный.
    ============================================================ */
 const ROLLS_URL = 'rolls.json';
 let rollsCache = null; // {at, data}
@@ -130,15 +131,13 @@ function rollRow(r) {
   const o = OUTCOME[r.o];
   const verdict = o ? `<span class="roll-verdict ${o[2]}">${o[0]} ${o[1]}${r.dc ? ` · сл ${escapeHtml(r.dc)}` : ''}</span>`
     : (r.dc ? `<span class="roll-verdict">сл ${escapeHtml(r.dc)}</span>` : '');
-  const link = /^https:\/\/t\.me\//.test(r.l || '')
-    ? `<a class="roll-link" href="${escapeHtml(r.l)}" target="_blank" rel="noopener" title="Сообщение в чате">↗</a>` : '';
   return `<li class="roll${o ? ' ' + o[2] : ''}">
       <div class="roll-total">${escapeHtml(r.s)}</div>
       <div class="roll-body">
         <div class="roll-action">${r.a ? escapeHtml(r.a) : '<span class="roll-muted">без описания</span>'}</div>
         <div class="roll-meta">${escapeHtml(r.d || '')}: [${escapeHtml(dice)}]${escapeHtml(mod)} ${verdict}</div>
       </div>
-      <div class="roll-side"><span class="roll-date">${rollDate(r.t)}</span>${link}</div>
+      <div class="roll-side"><span class="roll-date">${rollDate(r.t)}</span></div>
     </li>`;
 }
 
