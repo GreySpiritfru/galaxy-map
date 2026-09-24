@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=141" />
+  <link rel="stylesheet" href="css/styles.css?v=145" />
 </head>
 <body>
 
@@ -99,35 +99,6 @@
   </button>
 </div>
 
-<!-- Панель персонажа. Механизм тот же, что у #refToolbar: сама по себе нигде
-     не показывается, а пристыковывается внутрь #modalCard через
-     openIframeModal. Отличие в наполнении — это не переход между статьями, а
-     вкладки одного персонажа: анкета (Teletype), связанный сюжет, заметки и
-     броски. Логика — js/characters.js, данные — characters.json. -->
-<div class="ref-toolbar lore-toolbar tabbar" id="charToolbar">
-  <button class="toolbar-close-btn" id="charToolbarClose" aria-label="Закрыть">✕</button>
-  <button class="tabbar-btn" id="charSheet">
-    <span class="tabbar-btn-icon" aria-hidden="true">📋</span><span class="tabbar-btn-label">Анкета</span>
-  </button>
-  <!-- Иконка/подпись НЕ зашиты — ставятся в map.js по типу родителя узла в
-       графе (PARENT_KIND_META): "Локация" для маркера (например, Ледо/Текила
-       привязаны прямо к Феному), "Сюжет" для сюжета. Кнопка целиком прячется,
-       если родителя нет вообще. -->
-  <button class="tabbar-btn" id="charStory">
-    <span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>
-  </button>
-  <!-- Только у своих персонажей в карте, открытой из лички бота — js/editor.js. -->
-  <button class="tabbar-btn" id="charEdit" hidden>
-    <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
-  </button>
-  <button class="tabbar-btn" id="charNotes">
-    <span class="tabbar-btn-icon" aria-hidden="true">📝</span><span class="tabbar-btn-label">Заметки</span>
-  </button>
-  <button class="tabbar-btn" id="charRolls">
-    <span class="tabbar-btn-icon" aria-hidden="true">🎲</span><span class="tabbar-btn-label">Броски</span>
-  </button>
-</div>
-
 <!-- Полоска «тапни, где стоит персонаж» — выбор места в редакторе (js/editor.js,
      pickOnMap/pickOnSubmap в js/map.js). Поверх и карты галактики, и окна локации. -->
 <div class="pick-banner" id="pickBanner" hidden>
@@ -179,7 +150,8 @@
          правка, архив, сюжеты; пустые кнопки прячутся (applyNodeToolbar в
          js/node-window.js). Переходы к точкам — родителю и детям — НЕ здесь,
          а в ряду #phenomLinks ниже (24.09.2026). -->
-    <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
+    <div class="node-head">
+      <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
       <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть">✕</button>
       <!-- Базовая вкладка — тело окна: статья Teletype прямо в окне или
            описание, если статьи нет (applyNodeToolbar в js/node-window.js).
@@ -208,6 +180,7 @@
          под рядом язычок «свернуть». Наполняет renderNodeLinks в
          js/node-window.js. -->
     <div class="node-links" id="phenomLinks" hidden></div>
+    </div>
     <div class="phenom-content" id="phenomContent">
       <!-- Персонажи, привязанные прямо к самой карте Феном (submapX/submapY в
            characters.json) — кнопка слева сверху над картой открывает их
@@ -241,7 +214,8 @@
      единственное место в проекте, которое ещё не было на общем стиле. -->
 <div class="phenom-overlay story-overlay" id="storyOverlay">
   <div class="phenom-card" id="storyCard">
-    <div class="phenom-toolbar lore-toolbar tabbar" id="storyToolbar">
+    <div class="node-head">
+      <div class="phenom-toolbar lore-toolbar tabbar" id="storyToolbar">
       <button class="toolbar-close-btn" id="storyClose" aria-label="Закрыть">✕</button>
       <!-- Родителя тут нет — он первым в ряду переходов #storyLinks. -->
       <!-- Базовая вкладка — тело окна (статья или описание), см.
@@ -261,10 +235,43 @@
       </button>
     </div>
     <div class="node-links" id="storyLinks" hidden></div>
+    </div>
     <div class="phenom-content story-content" id="storyContent"></div>
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=141"></script>
+<!-- Окно персонажа (24.09.2026) — третий слой ТОГО ЖЕ окна точки, что и два
+     выше: панель действий, ряд переходов (↑ родитель, союзники), тело — анкета.
+     Раньше это была статья в общем модале с пристыкованной шторкой; теперь
+     модал остался только редактору, справочнику и статье расы. Слой свой, а
+     не общий с сюжетом: персонаж открывается ПОВЕРХ окна своего сюжета
+     (Феном → сюжет → персонаж). Логика — js/characters.js. -->
+<div class="phenom-overlay story-overlay char-overlay" id="charOverlay">
+  <div class="phenom-card" id="charCard">
+    <div class="node-head">
+      <div class="phenom-toolbar lore-toolbar tabbar" id="charToolbar">
+      <button class="toolbar-close-btn" id="charToolbarClose" aria-label="Закрыть">✕</button>
+      <!-- Базовая вкладка — тело окна: анкета. -->
+      <button class="tabbar-btn active" id="charSheet">
+        <span class="tabbar-btn-icon" aria-hidden="true">📋</span><span class="tabbar-btn-label">Анкета</span>
+      </button>
+      <!-- Только у своих персонажей в карте, открытой из лички бота — js/editor.js. -->
+      <button class="tabbar-btn" id="charEdit" hidden>
+        <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
+      </button>
+      <button class="tabbar-btn" id="charNotes">
+        <span class="tabbar-btn-icon" aria-hidden="true">📝</span><span class="tabbar-btn-label">Заметки</span>
+      </button>
+      <button class="tabbar-btn" id="charRolls">
+        <span class="tabbar-btn-icon" aria-hidden="true">🎲</span><span class="tabbar-btn-label">Броски</span>
+      </button>
+    </div>
+    <div class="node-links" id="charLinks" hidden></div>
+    </div>
+    <div class="phenom-content story-content" id="charContent"></div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js?v=145"></script>
 </body>
 </html>

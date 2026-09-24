@@ -1,15 +1,15 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=141';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=141';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=141';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=141';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=141';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=141';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=141';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=141';
-import { markerEl } from './node-window.js?v=141';
+import { createPanZoom } from './panzoom.js?v=145';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=145';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=145';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=145';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=145';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=145';
+import { openCharacter, closeCharacter } from './characters.js?v=145';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=145';
+import { markerEl } from './node-window.js?v=145';
 
 const SVG_PATH = 'map.svg';
 
@@ -934,9 +934,8 @@ function finishMapPick(p) {
     return d.title || d.name || node.id;
   }
 
-  /* Подпись/иконка кнопки "перейти к родителю" (см. #charStory в
-     characters.js и кнопки родителя в обоих слоях окна точки) — зависят от
-     ТИПА родителя в графе, а не от того, кто их вызывает. Мировая точка с
+  /* Тип родителя для подсказки у чипа ↑ в ряду переходов (во всех трёх
+     слоях окна) — зависит от ТИПА родителя в графе, а не от того, кто спрашивает. Мировая точка с
      маяком читается как сюжет, без маяка — как место (локация, фракция,
      корабль: с точки зрения перехода это одно и то же). Один источник правды
      на все места вместо захардкоженных подписей. */
@@ -1005,8 +1004,7 @@ function finishMapPick(p) {
      Отсюда же и одинаковый перелёт камеры везде (goToNode ниже). */
   function openNode(node, opts) {
     if (node.kind === 'character') {
-      updateStoryButton(parentButtonMeta(node));
-      openCharacter(node.data, opts);
+      openCharacterNode(node, opts);
       return;
     }
     // Система (родитель точки «system:<слаг>»): её окно, камера — на точку focusId внутри.
@@ -1045,6 +1043,28 @@ function finishMapPick(p) {
       })),
       children: kids.map(c => tabIconOf(c, {id: c.id})),
     };
+  }
+
+  /* Окно персонажа (24.09.2026) — то же окно точки, третий слой. В ряду
+     переходов: ↑ родитель и союзники (все его links, не только из того же
+     сюжета: в окне САМОГО персонажа союз с кем угодно к месту). Союзник —
+     замена в том же слое, родитель — закрыть свой слой и перейти к нему (если
+     его окно лежит позади, оно просто снова станет видно). */
+  function openCharacterNode(node, opts) {
+    const allies = (node.links || []).filter(n => n.onMap !== false);
+    const view = {
+      char: node.data,
+      parentMeta: parentButtonMeta(node),
+      characters: allies.filter(n => n.kind === 'character').map(n => tabIconOf(n, {id: n.id})),
+      children: allies.filter(n => n.kind !== 'character').map(n => tabIconOf(n, {id: n.id})),
+    };
+    const go = (id) => { const n = graphById.get(id); if (n) goToNode(n, true); };
+    openCharacter(view, {
+      onParent: () => { if (!node.parent) return; closeCharacter(); goToNode(node.parent, true, {focusId: node.id}); },
+      onCharacter: go,
+      // Точка открывается в нижних слоях — окно персонажа над ней надо снять.
+      onChild: (id) => { closeCharacter(); go(id); },
+    }, opts);
   }
 
   /* Мировая точка открывается в одном из двух слоёв (см. js/node-window.js):
@@ -2144,6 +2164,7 @@ function finishMapPick(p) {
     };
     const closeLayers = () => {
       closeModal();
+      closeCharacter();
       closeStory();
     };
     /* Место выбирается на pointerup (panzoom) / отпускании пальца (OpenSeadragon),
@@ -2227,25 +2248,6 @@ function finishMapPick(p) {
       if (openWorldNodeCurrent) showNodeEditor(openWorldNodeCurrent);
     });
   }
-
-  /* Кнопка "Сюжет"/"Локация" в панели персонажа: уводит к его родителю в
-     графе (сюжет либо, как у Ледо/Текила, сам Феном-маркер напрямую — см.
-     parentButtonMeta выше). Обработчик живёт здесь, а не в characters.js,
-     потому что тут есть и граф, и камера — ровно так же сделан переход к
-     родителю в ряду переходов окна точки (onParent в openWorldNode). */
-  document.getElementById('charStory').addEventListener('click', async () => {
-    const char = getOpenCharacter();
-    if (!char) return;
-    const graph = await graphReady;
-    const node = graph.get(char.id);
-    if (!node || !node.parent) return; // родителя нет/удалили — молча ничего не делаем
-    closeModal(); // иначе анкета останется висеть поверх окна родителя
-    // instant: true — родитель либо уже открыт под нами (тогда это просто
-    // переоткроет тот же самый экран, идемпотентно), либо карта позади не
-    // видна в любом случае (мы были внутри окна персонажа) — перелёт ни к
-    // чему в обоих случаях.
-    goToNode(node.parent, true);
-  });
 
   /* Кнопка «Феном» в углу карты ведёт в точку Феном — тем же перелётом
      камеры, что и тап по её маркеру (instant: false — карта тут видна).

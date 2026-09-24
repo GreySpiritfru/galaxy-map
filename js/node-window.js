@@ -8,14 +8,15 @@
    просто пропускает пустое: нет баннеров — нет картинок, нет архива — нет
    кнопки, нет детей-персонажей — нет их ряда.
 
-   ⚠️ Физически окон по-прежнему ДВА (#phenomOverlay и #storyOverlay) — это не
-   дубль, а два СЛОЯ: точка, открытая из окна своего родителя, должна лечь
+   ⚠️ Физически окон ТРИ (#phenomOverlay, #storyOverlay, #charOverlay) — это
+   не дубль, а СЛОИ: точка, открытая из окна своего родителя, должна лечь
    поверх него, а не вместо (локация -> сюжет -> персонаж, см. раздел про
-   стекинг в CLAUDE.md). Рисует их обоих этот файл, хозяева слоёв — phenom.js
-   (нижний, он же умеет тайловую карту) и stories.js (верхний).
+   стекинг в CLAUDE.md). Рисует их этот файл, хозяева слоёв — phenom.js
+   (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
+   (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=141';
-import { REF_ARTICLES } from './articles.js?v=141';
+import { escapeHtml } from './modal.js?v=145';
+import { REF_ARTICLES } from './articles.js?v=145';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любой
 // точки, поэтому не в данных, а константой здесь.
@@ -60,6 +61,22 @@ export function embeddedArticleUrl(view) {
   return /^https:\/\/teletype\.in\//i.test(art.url || '') ? art.url : '';
 }
 
+/* Страница (статья точки, анкета персонажа) телом окна. Общая для всех слоёв.
+   ⚠️ Без loading="lazy": с ним Teletype не прокручивает к якорю раздела
+   (#e5M4 у Авалона — раздел внутри «Магии»), статья открывается с начала.
+   Та же страница уже открыта (вернулись через ↑ или «назад») — не
+   перезагружаем: игрок остаётся там, где читал.
+   is-teletype — у Teletype сверху своя плашка, она уезжает под панель окна
+   (css .node-article-frame.is-teletype); у telegra.ph/graph.org её нет. */
+export function renderFrame(container, url) {
+  container.classList.add('is-article');
+  const old = container.querySelector('iframe.node-article-frame');
+  if (old && old.dataset.src === url) return;
+  const teletype = /^https:\/\/teletype\.in\//i.test(url);
+  container.innerHTML = `<iframe class="node-article-frame${teletype ? ' is-teletype' : ''}" src="${escapeHtml(url)}"></iframe>`;
+  container.firstElementChild.dataset.src = url;
+}
+
 /* Содержимое окна: баннеры, заголовок, описание в сворачиваемой цитате. Всё
    необязательное — точка объявляет только то, что у неё есть.
 
@@ -72,19 +89,8 @@ export function renderNodeContent(container, view) {
      вариантом на случай, если статьи нет). Своё название и обложка у статьи
      есть, баннеры и заголовок над ней не дублируем. */
   const articleUrl = embeddedArticleUrl(view);
-  container.classList.toggle('is-article', !!articleUrl);
-  if (articleUrl) {
-    /* ⚠️ Без loading="lazy": с ним Teletype не прокручивает к якорю раздела
-       (#e5M4 у Авалона — раздел внутри «Магии»), статья открывается с начала.
-       Проверено: тот же адрес без lazy сразу встаёт на «Кольцо Авалона». */
-    // Та же статья уже открыта (вернулись к точке через ↑ или «назад») — не
-    // перезагружаем: игрок остаётся там, где читал.
-    const old = container.querySelector('iframe.node-article-frame');
-    if (old && old.dataset.src === articleUrl) return;
-    container.innerHTML = `<iframe class="node-article-frame" src="${escapeHtml(articleUrl)}"></iframe>`;
-    container.firstElementChild.dataset.src = articleUrl;
-    return;
-  }
+  container.classList.remove('is-article');
+  if (articleUrl) { renderFrame(container, articleUrl); return; }
   const art = view.article;
   const linkHtml = art && art.url
     ? `<p class="node-article-link"><a href="${escapeHtml(art.url)}" target="_blank" rel="noopener">📖 ${escapeHtml(art.label || 'Статья')} ↗</a></p>`
@@ -158,40 +164,29 @@ export function markerEl(meta, extraClass) {
   return el;
 }
 
-// Кнопка родителя: маркер + название; тип родителя («Сюжет», «Место») — в
-// подсказке. Общая для окна точки и окна персонажа (js/characters.js).
-export function setParentButton(btn, meta) {
-  setTabIcon(btn.querySelector('.tabbar-btn-icon'), meta);
-  btn.querySelector('.tabbar-btn-label').textContent = meta.label;
-  btn.title = meta.kindLabel ? `${meta.kindLabel}: ${meta.name || meta.label}` : (meta.name || meta.label);
-}
 
 /* ============================================================
-   Ряд переходов под панелью окна (24.09.2026).
+   Шторка переходов под панелью окна (24.09.2026).
 
-   Две разные вещи раньше жили вперемешку: панель сверху держала и действия
-   над открытой точкой (статья, архив, правка), и переходы к её детям-точкам
-   (вкладками), а персонажи-дети были отдельным рядом портретов внутри текста.
-   Вкладки детей сжимали панель: замер на 375 px — при двух детях уже две
-   подписи обрезаны, при пяти ячейка 43 px (меньше пальца), при восьми 27 px.
+   Что тут: все переходы к точкам — ↑ родитель (значок ↑ на маркере), места и
+   сюжеты, персонажи (союзники — одной группой в пунктирной рамке, как нить
+   между ними на карте). Закреплённые (pinned) внутри своих групп — вперёд.
+   Сверху в панели — только действия (эмодзи — действие, маркер — точка).
 
-   Теперь: сверху только действия (состав фиксирован), здесь — все переходы к
-   детям. Две группы в одном ряду: сначала места и сюжеты (крупнее, как на
-   карте родитель крупнее своих персонажей), разделитель, потом персонажи
-   (союзники — одной группой в пунктирной рамке, как нить между ними на
-   карте). Ряд всегда в ОДНУ строку: что не влезло — под «+N», который
-   раскрывает полный список по группам. Горизонтальная прокрутка сознательно
-   не взята — игрок однажды её уже отверг на панелях.
+   Как устроено (идея игрока, вторая версия того же дня): маркеры лежат с
+   переносом строк, а видна только верхняя часть — «шторка» выдвигается за
+   язычок под плашкой на нужную высоту: скрыто → один ряд → два → … → все.
+   Потянуть — высота идёт за пальцем/мышью и при отпускании встаёт ровно на
+   границу ряда. Нажать — следующая ступень по кругу. На язычке — сколько
+   маркеров ещё спрятано.
+   Раньше (v=127–143): ряд в одну строку, лишнее под чипом «+N», который
+   раскрывал отдельный список по разделам, и отдельный язычок «свернуть» —
+   три органа управления на одну задачу. Горизонтальную прокрутку игрок
+   отверг ещё раньше.
 
    ⚠️ Точки идут первыми не только ради вида: при пятнадцати персонажах места
-   иначе ушли бы под «+N».
-
-   Дополнено тем же днём: самым первым — РОДИТЕЛЬ (переехал сюда из панели
-   действий, значок ↑ на маркере), внутри групп закреплённые (pinned) идут
-   вперёд, а под рядом — язычок «свернуть» (в окне системы ряд по умолчанию
-   свёрнут).
+   оказались бы во втором-третьем ряду.
    ============================================================ */
-const LINK_GAP = 10; // = gap у .node-links-row в css
 
 function linkChip(item, onTap, extraClass) {
   const btn = document.createElement('button');
@@ -213,24 +208,20 @@ function linkChip(item, onTap, extraClass) {
 }
 
 /* Закреплённые (галочка «Закрепить» в редакторе, поле pinned) — вперёд, в
-   остальном порядок из данных. Раскладка жадная и идёт слева, поэтому первые
-   под «+N» не уходят. У персонажей закреплённый тянет вперёд всю свою группу
-   союзников — groupByLinks собирает группы в порядке первого участника. */
+   остальном порядок из данных. У персонажей закреплённый тянет вперёд всю
+   свою группу союзников — groupByLinks собирает группы в порядке первого
+   участника. */
 const pinnedFirst = (list) => [...list.filter(i => i.pinned), ...list.filter(i => !i.pinned)];
 
-function parentChip(parent, go) {
-  return linkChip(parent, go.parent, 'link-chip--parent');
-}
-
-// Родитель, точки и персонажи — готовые элементы ряда; группа союзников — один
-// элемент (её нельзя разрывать «+N» посередине). data-count — сколько
-// переходов внутри. Между непустыми частями — разделители.
+// Родитель, точки и персонажи — готовые элементы шторки; группа союзников —
+// один элемент (не рвётся между рядами). data-count — сколько переходов
+// внутри. Между непустыми частями — разделители.
 function linkItems(view, go) {
   const parent = view.parentMeta && view.parentMeta.id ? view.parentMeta : null;
   const points = pinnedFirst(Array.isArray(view.children) ? view.children : []);
   const chars = pinnedFirst(Array.isArray(view.characters) ? view.characters : []);
   const parts = [];
-  if (parent) parts.push([parentChip(parent, go)]);
+  if (parent) parts.push([linkChip(parent, go.parent, 'link-chip--parent')]);
   if (points.length) parts.push(points.map(p => linkChip(p, go.point)));
   if (chars.length) {
     parts.push(groupByLinks(chars).map(group => {
@@ -255,152 +246,208 @@ function linkItems(view, go) {
       items.push(el);
     });
   });
-  return {items, parent, points, chars};
+  const total = (parent ? 1 : 0) + points.length + chars.length;
+  return {items, total};
 }
 
-/* Прячет в ряду всё, что не влезает, и показывает «+N». false — ряд ещё не
-   разложен (окно системы до открытия — display:none), надо повторить. */
-function fitLinks(row, more) {
-  const items = [...row.children].filter(c => c !== more);
-  items.forEach(i => { i.hidden = false; });
-  more.hidden = true;
-  const W = row.clientWidth;
-  if (!W) return false;
-  if (row.scrollWidth <= W + 1) return true;
-  more.hidden = false;
-  /* Ширины меряем ДО того, как что-то прятать, и дальше считаем сами: не
-     влезший элемент пропускается, а следующий пробует встать на его место.
-     Иначе широкая группа союзников посреди ряда уносила бы под «+N» и всех
-     одиночек за собой, оставив полряда пустым (замер на «Бездне»: 80 px из
-     332 пропадали). Порядок внутри ряда от этого может чуть поменяться — не
-     страшно, полный список под «+N» всё равно показывает всех по порядку. */
-  const pad = parseFloat(getComputedStyle(row).paddingLeft) || 0;
-  const widths = items.map(i => {
-    const cs = getComputedStyle(i);
-    return i.offsetWidth + (parseFloat(cs.marginLeft) || 0) + (parseFloat(cs.marginRight) || 0);
+/* Ступени шторки — высоты, на которых она встаёт: 0 (скрыта), низ первого
+   ряда, второго, …, всё. Последняя ступень не выше SHADE_MAX_SHARE экрана —
+   дальше шторка прокручивается внутри себя. null — ширины ещё нет (окно
+   системы до открытия — display:none). */
+const SHADE_MAX_SHARE = 0.55;
+function shadeStops(grid) {
+  if (!grid.clientWidth) return null;
+  const pad = parseFloat(getComputedStyle(grid).paddingBottom) || 0;
+  // Ряды — по верхнему краю элементов (в сетке align-items: flex-start,
+  // у всех элементов ряда он общий); низ ряда — самый низкий из них.
+  const lines = [];
+  [...grid.children].forEach(i => {
+    if (i.classList.contains('link-divider')) return;
+    const top = i.offsetTop;
+    const bottom = top + i.offsetHeight;
+    const line = lines.find(l => Math.abs(l.top - top) < 4);
+    if (line) line.bottom = Math.max(line.bottom, bottom);
+    else lines.push({top, bottom});
   });
-  const limit = W - pad - more.offsetWidth - LINK_GAP;
-  let x = pad, hiddenCount = 0;
-  items.forEach((i, k) => {
-    // Разделитель ставим только если за ним влезет хоть кто-то (проверка ниже).
-    if (x + widths[k] <= limit) { x += widths[k] + LINK_GAP; return; }
-    i.hidden = true;
-    hiddenCount += Number(i.dataset.count || 0);
-  });
-  // Разделитель последним видимым элементом — висел бы ни к чему.
-  const visible = items.filter(i => !i.hidden);
-  const last = visible[visible.length - 1];
-  if (last && last.classList.contains('link-divider')) last.hidden = true;
-  // Под «+N» не ушло ни одного перехода (спрятался разве что разделитель) —
-  // «+0» не показываем.
-  if (!hiddenCount) { more.hidden = true; return true; }
-  more.querySelector('.link-chip-caption').textContent = 'ещё';
-  more.querySelector('.link-more-n').textContent = '+' + hiddenCount;
-  return true;
+  lines.sort((a, b) => a.top - b.top);
+  const bottoms = lines.map(l => Math.ceil(l.bottom + pad));
+  const full = grid.scrollHeight;
+  const cap = Math.round(window.innerHeight * SHADE_MAX_SHARE);
+  const stops = [0, ...bottoms.filter(b => b < full - 4 && b < cap)];
+  stops.push(Math.min(full, cap));
+  return stops;
 }
 
-// Ряды, которые надо переложить при повороте экрана.
+// Сколько переходов ниже видимой высоты шторки (для счётчика на язычке).
+function hiddenBelow(grid, height) {
+  let n = 0;
+  [...grid.children].forEach(i => {
+    if (i.offsetTop + i.offsetHeight > height + 1) n += Number(i.dataset.count || 0);
+  });
+  return n;
+}
+
+// Шторки, которые надо переложить при повороте экрана.
 const liveRows = new Set();
 window.addEventListener('resize', () => liveRows.forEach(fn => fn()));
 
-/* Свёрнут ли ряд — своя память у каждого вида окна (24.09.2026, идея игрока):
-   в окне системы ряд по умолчанию закрыт (точки и так видны на её карте
-   маркерами), в окне точки — открыт. Выбор игрока запоминается на устройстве.
-   Хранилище может быть недоступно (приватный режим) — тогда просто умолчание. */
-const FOLD_KEY = 'galaxyMapLinksFolded';
-function readFold(kind, fallback) {
+/* На какой ступени шторка — своя память у каждого вида окна: в окне системы
+   по умолчанию скрыта (точки и так видны на её карте маркерами), в окне точки
+   — один ряд. Храним номер ступени, последнюю — как 'all' (рядов у разных
+   точек разное число). Хранилище недоступно (приватный режим) — умолчание. */
+const SHADE_KEY = 'galaxyMapLinksShade';
+function readShade(kind, fallback) {
   try {
-    const v = JSON.parse(localStorage.getItem(FOLD_KEY) || '{}')[kind];
-    return typeof v === 'boolean' ? v : fallback;
+    const v = JSON.parse(localStorage.getItem(SHADE_KEY) || '{}')[kind];
+    return (typeof v === 'number' || v === 'all') ? v : fallback;
   } catch (e) { return fallback; }
 }
-function writeFold(kind, folded) {
+function writeShade(kind, level) {
   try {
-    const all = JSON.parse(localStorage.getItem(FOLD_KEY) || '{}');
-    all[kind] = folded;
-    localStorage.setItem(FOLD_KEY, JSON.stringify(all));
+    const all = JSON.parse(localStorage.getItem(SHADE_KEY) || '{}');
+    all[kind] = level;
+    localStorage.setItem(SHADE_KEY, JSON.stringify(all));
   } catch (e) { /* не запомнили — не страшно */ }
 }
 
-/* opts.fold — вид окна для памяти свёрнутости ('point' | 'system'),
-   opts.foldedByDefault — умолчание для него. */
+/* Плашка окна (панель + шторка) лежит ПОВЕРХ тела, а тело отступает на её
+   высоту (--head-h на карточке). Пока шторку тянут или она доезжает до
+   ступени, отступ не трогаем: иначе текст и статья перекладывались бы
+   каждый кадр. Выставляется один раз, когда шторка встала. */
+const headObservers = new WeakSet();
+function syncHead(card) {
+  const head = card && card.querySelector(':scope > .node-head');
+  if (!head || head.classList.contains('is-moving')) return;
+  card.style.setProperty('--head-h', head.offsetHeight + 'px');
+}
+document.querySelectorAll('.phenom-card').forEach(card => {
+  const head = card.querySelector(':scope > .node-head');
+  if (!head || !window.ResizeObserver || headObservers.has(head)) return;
+  headObservers.add(head);
+  new ResizeObserver(() => syncHead(card)).observe(head);
+});
+
+/* opts.fold — вид окна для памяти ступени ('point' | 'system'),
+   opts.foldedByDefault — по умолчанию скрыта. */
 export function renderNodeLinks(el, view, handlers, opts) {
   if (!el) return;
-  const fold = (opts && opts.fold) || 'point';
+  const kind = (opts && opts.fold) || 'point';
   el.textContent = '';
-  el.classList.remove('expanded');
   if (el.__refit) { liveRows.delete(el.__refit); el.__refit = null; }
-  const collapse = () => el.classList.remove('expanded');
   const go = {
-    parent: () => { collapse(); if (handlers.onParent) handlers.onParent(); },
-    point: (id) => { collapse(); if (handlers.onChild) handlers.onChild(id); },
-    char: (id) => { collapse(); if (handlers.onCharacter) handlers.onCharacter(id); },
+    parent: () => { if (handlers.onParent) handlers.onParent(); },
+    point: (id) => { if (handlers.onChild) handlers.onChild(id); },
+    char: (id) => { if (handlers.onCharacter) handlers.onCharacter(id); },
   };
-  const {items, parent, points, chars} = linkItems(view, go);
+  const {items, total} = linkItems(view, go);
   el.hidden = !items.length;
   if (!items.length) return;
 
-  const row = document.createElement('div');
-  row.className = 'node-links-row';
-  items.forEach(i => row.appendChild(i));
+  // Окно (видимая часть шторки) и сетка маркеров с переносом внутри него.
+  const shade = document.createElement('div');
+  shade.className = 'node-links-row';
+  const grid = document.createElement('div');
+  grid.className = 'node-links-grid';
+  items.forEach(i => grid.appendChild(i));
+  shade.appendChild(grid);
 
-  const more = document.createElement('button');
-  more.type = 'button';
-  more.className = 'link-chip link-chip--more';
-  more.innerHTML = '<span class="link-chip-slot"><span class="node-marker link-more-n"></span></span><span class="link-chip-caption"></span>';
-  more.addEventListener('click', () => el.classList.toggle('expanded'));
-  row.appendChild(more);
-
-  // Полный список под «+N» — те же чипы, по группам, с переносом строк.
-  const all = document.createElement('div');
-  all.className = 'node-links-all';
-  const section = (title, list) => {
-    if (!list.length) return;
-    const h = document.createElement('div');
-    h.className = 'node-links-heading';
-    h.textContent = title;
-    const wrap = document.createElement('div');
-    wrap.className = 'node-links-wrap';
-    list.forEach(i => wrap.appendChild(i));
-    all.append(h, wrap);
-  };
-  if (parent) section('Входит в', [parentChip(parent, go)]);
-  section('Места и сюжеты', points.map(p => linkChip(p, go.point)));
-  section('Персонажи', linkItems({characters: chars}, go).items);
-
-  /* Язычок под рядом: свернуть / развернуть. В свёрнутом виде от ряда
-     остаётся только он — со счётчиком, чтобы было видно, что там что-то есть. */
-  const total = (parent ? 1 : 0) + points.length + chars.length;
   const toggle = document.createElement('button');
   toggle.type = 'button';
   toggle.className = 'node-links-toggle';
+  toggle.title = 'Потяни или нажми, чтобы открыть больше';
+  el.append(shade, toggle);
+
+  const card = el.closest('.phenom-card');
+  const head = el.closest('.node-head');
+  let stops = [0];
+  let level = 0;
+  let height = 0;
+
   const paint = () => {
-    const folded = el.classList.contains('folded');
-    toggle.textContent = folded ? `▾ Переходы · ${total}` : '▴';
-    toggle.setAttribute('aria-expanded', String(!folded));
-    toggle.title = folded ? 'Показать переходы' : 'Свернуть переходы';
+    const n = hiddenBelow(grid, height);
+    toggle.textContent = height <= 0 ? `▾ ${total}` : (n ? `▾ +${n}` : '▴');
+    toggle.setAttribute('aria-expanded', String(height > 0));
+    el.classList.toggle('folded', height <= 0);
+    // Всё не влезло даже на последней ступени — дальше крутится внутри.
+    shade.classList.toggle('scrolls', level === stops.length - 1 && grid.scrollHeight > height + 1);
   };
-  toggle.addEventListener('click', () => {
-    const folded = !el.classList.contains('folded');
-    el.classList.toggle('folded', folded);
-    collapse();
-    writeFold(fold, folded);
+  // Встать на ступень (animate — плавно, иначе сразу).
+  const setLevel = (k, animate) => {
+    level = Math.max(0, Math.min(k, stops.length - 1));
+    height = stops[level];
+    if (head && animate) head.classList.add('is-moving');
+    shade.classList.toggle('animate', !!animate);
+    shade.style.height = height + 'px';
     paint();
-    if (!folded && el.__refit) el.__refit(); // пока был свёрнут, ширины не было
+    if (!animate) { if (card) syncHead(card); return; }
+    // Отступ тела — когда шторка доехала (страховка таймером, если transitionend не придёт).
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      if (head) head.classList.remove('is-moving');
+      if (card) syncHead(card);
+    };
+    shade.addEventListener('transitionend', finish, {once: true});
+    setTimeout(finish, 320);
+  };
+  const saveLevel = () => writeShade(kind, level === stops.length - 1 && level > 0 ? 'all' : level);
+
+  // Тянуть или нажать — один жест: сдвиг больше SHADE_DRAG_PX — это тяга.
+  const SHADE_DRAG_PX = 4;
+  let drag = null;
+  toggle.addEventListener('pointerdown', (e) => {
+    drag = {id: e.pointerId, y: e.clientY, h: height, moved: false};
+    try { toggle.setPointerCapture(e.pointerId); } catch (err) { /* не критично */ }
   });
-  el.classList.toggle('folded', readFold(fold, !!(opts && opts.foldedByDefault)));
-  paint();
+  toggle.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dy = e.clientY - drag.y;
+    if (!drag.moved && Math.abs(dy) < SHADE_DRAG_PX) return;
+    if (!drag.moved) {
+      drag.moved = true;
+      if (head) head.classList.add('is-moving');
+      shade.classList.remove('animate');
+    }
+    height = Math.max(0, Math.min(drag.h + dy, stops[stops.length - 1]));
+    shade.style.height = height + 'px';
+    paint();
+  });
+  const release = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const moved = drag.moved;
+    drag = null;
+    if (moved) {
+      // Ближайшая ступень к тому месту, где отпустили.
+      let best = 0;
+      stops.forEach((s, k) => { if (Math.abs(s - height) < Math.abs(stops[best] - height)) best = k; });
+      setLevel(best, true);
+    } else {
+      setLevel((level + 1) % stops.length, true); // нажатие — следующая ступень по кругу
+    }
+    saveLevel();
+  };
+  toggle.addEventListener('pointerup', release);
+  toggle.addEventListener('pointercancel', release);
+  // Клик с клавиатуры (Enter/пробел) — тоже следующая ступень.
+  toggle.addEventListener('click', (e) => {
+    if (e.detail !== 0) return; // мышь/палец уже обработаны в pointerup
+    setLevel((level + 1) % stops.length, true);
+    saveLevel();
+  });
 
-  el.append(row, all, toggle);
-
-  // Раскладка — только когда у ряда есть ширина: окно системы до открытия
-  // вообще display:none. Несколько кадров подождать и сдаться — лучше показать
-  // всё без «+N», чем зависнуть.
+  // Раскладка — когда у шторки есть ширина: окно системы до открытия вообще
+  // display:none. Несколько кадров подождать и сдаться.
+  const saved = readShade(kind, opts && opts.foldedByDefault ? 0 : 1);
   let tries = 0;
   const refit = () => {
-    if (el.classList.contains('folded')) return; // развернут — пересчитается
-    if (!fitLinks(row, more) && ++tries < 20) requestAnimationFrame(refit);
+    const s = shadeStops(grid);
+    if (!s) { if (++tries < 20) requestAnimationFrame(refit); return; }
+    stops = s;
+    setLevel(saved === 'all' ? stops.length - 1 : saved, false);
   };
+  shade.style.height = '0px';
+  paint();
   el.__refit = () => { tries = 0; refit(); };
   liveRows.add(el.__refit);
   refit();
@@ -415,8 +462,8 @@ export function applyNodeToolbar(refs, view, handlers) {
 
   /* ⚠️ Кнопки родителя в панели больше нет (24.09.2026): родитель — тоже
      точка, и по правилу «форма маркера — переход» он первым стоит в ряду
-     переходов (renderNodeLinks). В окне персонажа (#charStory) кнопка
-     осталась: там ряда переходов нет, окно — статья в iframe. */
+     переходов (renderNodeLinks). У персонажа так же — его окно с 24.09.2026
+     тоже общее (js/characters.js). */
 
   /* Статья. Два источника: "ref" — статья-справочник из js/articles.js
      (открывает общий обработчик по data-ref), "url" — любая внешняя ссылка.

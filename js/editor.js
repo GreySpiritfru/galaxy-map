@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=141';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=145';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -538,6 +538,9 @@ export function showEditor(char) {
        </div>`
     : '';
 
+  // Форма — в полноэкранном модале поверх окна персонажа, как у точки
+  // (24.09.2026; раньше писалась прямо в модал анкеты, где жило само окно).
+  openIframeModal('about:blank', null);
   modalContent.innerHTML = `
     <form class="editor" autocomplete="off">
       <div class="editor-title">✏️ ${escapeHtml(char.name || char.id)}</div>

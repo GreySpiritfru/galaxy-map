@@ -38,18 +38,22 @@
    вложенность считается по ТИПАМ слоёв (модал/сюжет/локация/система), а не
    по конкретным id узлов, этого достаточно для всех текущих сценариев.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=141';
-import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=141';
-import { closePhenom, isPhenomOpen, isSubmapViewOpen, closeSubmapView } from './phenom.js?v=141';
-import { closeStory, isStoryOpen } from './stories.js?v=141';
+import { closeModal, isArticleOpen } from './modal.js?v=145';
+import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=145';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=145';
+import { closeStory, isStoryOpen } from './stories.js?v=145';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=145';
 
 function depth() {
   let d = 0;
   if (isPhenomOpen()) d++;
-  // Своя карта точки — вид ПОВЕРХ её описания (24.09.2026): отдельный уровень,
-  // чтобы ✕ на ней превращался в ↩ и возвращал к описанию, а не закрывал всё.
-  if (isSubmapViewOpen()) d++;
+  /* Своя карта точки (Феном) — ВКЛАДКА того же окна, а не уровень: ✕ на ней
+     закрывает окно, как на «Статье» (игрок, 24.09.2026: «панель одна и та
+     же, возврат тут не нужен»). Так же устроены вкладки окна системы. В v=134
+     карта считалась отдельным уровнем и ✕ превращался в ↩. */
   if (isStoryOpen()) d++;
+  // Персонаж с 24.09.2026 — третий слой окна точки (#charOverlay), а не модал.
+  if (isCharacterOpen()) d++;
   if (isSystemOpen()) d++;
   if (isArticleOpen()) d++;
   return d;
@@ -72,8 +76,8 @@ function depth() {
    самый нижний слой. */
 function closeTop() {
   if (isArticleOpen()) { if (isSystemLoreOpen()) showSystemMap(); else closeModal(); return; }
+  if (isCharacterOpen()) { closeCharacter(); return; }
   if (isStoryOpen()) { closeStory(); return; }
-  if (isSubmapViewOpen()) { closeSubmapView(); return; }
   if (isPhenomOpen()) { closePhenom(); return; }
   if (isSystemOpen()) { closeSystem(); return; }
 }
@@ -233,6 +237,6 @@ function scheduleSync() {
 // даёт один sync(), а не два, и если итоговая глубина не изменилась —
 // история вообще не трогается.
 const observer = new MutationObserver(scheduleSync);
-['modalBackdrop', 'systemOverlay', 'phenomOverlay', 'storyOverlay'].forEach(id => {
+['modalBackdrop', 'systemOverlay', 'phenomOverlay', 'storyOverlay', 'charOverlay'].forEach(id => {
   observer.observe(document.getElementById(id), { attributes: true, attributeFilter: ['class'] });
 });

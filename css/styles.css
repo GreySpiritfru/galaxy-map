@@ -92,9 +92,8 @@ html, body {
   display: none;
 }
 
-/* Вкладка-заглушка в окне персонажа ("Заметки"/"Броски") — показывается на
-   месте iframe с анкетой, поэтому должна сама занять всю карточку и покрасить
-   фон: у .modal-card--iframe фон прозрачный, его задаёт содержимое. */
+/* Вкладка-заглушка в окне персонажа ("Заметки"/"Броски") — телом окна на
+   месте анкеты (#charContent, общий слой окна точки с 24.09.2026). */
 .char-stub {
   display: flex;
   flex-direction: column;
@@ -102,15 +101,75 @@ html, body {
   justify-content: center;
   gap: 10px;
   width: 100%;
-  height: 100%;
+  min-height: 50vh; /* отступ под плашку даёт само тело окна (.story-content) */
   box-sizing: border-box;
-  padding: 80px 24px 24px;
-  background: #0e0e14;
+  padding: 24px;
   color: rgba(255,255,255,0.65);
   font-family: sans-serif;
   font-size: 14px;
   text-align: center;
 }
+.char-stub code, .rolls-hint code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: rgba(255,255,255,0.08);
+  color: #AFEEEE;
+  font-size: 12px;
+}
+
+/* Вкладка «Броски» у персонажа (js/characters.js, бот — dice_rolls.py). */
+.rolls { padding: 4px 0 12px; }
+.rolls-summary {
+  margin-bottom: 10px;
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+}
+.rolls-list { list-style: none; margin: 0; padding: 0; }
+.roll {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+/* Итог броска — крупно слева, как на кубике. */
+.roll-total {
+  flex: 0 0 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  font: 700 18px/1 sans-serif;
+  color: #fff;
+}
+.roll.is-crit .roll-total { border-color: #ffd76a; color: #ffd76a; background: rgba(255,215,106,0.12); }
+.roll.is-critfail .roll-total { border-color: #ff6b6b; color: #ff8a8a; background: rgba(255,107,107,0.12); }
+.roll.is-success .roll-total { border-color: rgba(120,220,150,0.6); }
+.roll.is-fail .roll-total { border-color: rgba(255,120,120,0.45); }
+.roll-body { flex: 1; min-width: 0; }
+.roll-action { color: #fff; font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+.roll-muted { color: rgba(255,255,255,0.4); font-style: italic; }
+.roll-meta { margin-top: 2px; color: rgba(255,255,255,0.55); font-size: 12px; }
+.roll-verdict { margin-left: 4px; white-space: nowrap; }
+.roll-verdict.is-crit { color: #ffd76a; }
+.roll-verdict.is-critfail { color: #ff8a8a; }
+.roll-verdict.is-success { color: #8fe0a6; }
+.roll-verdict.is-fail { color: #ff9a9a; }
+.roll-side {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  color: rgba(255,255,255,0.45);
+  font-size: 11px;
+}
+.roll-link { color: #AFEEEE; text-decoration: none; font-size: 15px; }
+.rolls-hint { margin-top: 14px; color: rgba(255,255,255,0.5); font-size: 12px; line-height: 1.5; }
+
 .char-stub-title {
   font-size: 18px;
   font-weight: 700;
@@ -851,19 +910,23 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
    содержимому" (родитель схлопывался у'же, чем требовалось для полных
    подписей). Заодно так панель выглядит как настоящий таб-бар Telegram, а не
    как плотный кластер кнопок в углу. */
+/* Та же форма, что у панели окна точки и шторки статьи (24.09.2026, общий вид
+   всех окон): на всю ширину, прилегает к верху, снизу скругление 16 px.
+   Раньше — отдельная плашка с отступами 12 px. */
 .system-toolbar {
   position: absolute;
-  left: 12px;
-  right: 12px;
-  top: 12px;
+  left: 0;
+  right: 0;
+  top: 0;
   z-index: 210;
   display: flex;
   flex-wrap: nowrap;
   gap: 8px;
   background: rgba(12,12,18,0.62);
   backdrop-filter: blur(10px);
-  border-radius: 14px;
-  padding: 6px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-radius: 0 0 16px 16px;
+  padding: 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.35);
 }
 
@@ -1040,37 +1103,42 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
    игрока: арт это содержательная часть кнопки, в 19 px он не читался. */
 .tab-node-icon { width: 25px; height: 25px; font-size: 12px; }
 
-/* ===== Ряд переходов под панелью окна (24.09.2026, renderNodeLinks) =====
-   Сверху панель ДЕЙСТВИЙ (фиксированный состав), здесь — ПЕРЕХОДЫ к детям:
-   места и сюжеты, разделитель, персонажи. Одна строка, лишнее под «+N».
-   Не прокручивается вместе с текстом окна — это отдельный ребёнок карточки
-   между панелью и содержимым. */
+/* ===== Шторка переходов под панелью окна (24.09.2026, renderNodeLinks) =====
+   Сверху панель ДЕЙСТВИЙ (фиксированный состав), здесь — ПЕРЕХОДЫ к точкам:
+   ↑ родитель, места и сюжеты, персонажи. Маркеры лежат с переносом строк, а
+   видна верхняя часть — шторка выдвигается язычком на ступень (ряд, два, все),
+   см. js/node-window.js. Язычок висит ПОД плашкой и места в ней не занимает. */
 .node-links {
   position: relative;
   flex: 0 0 auto;
-  padding: 6px 10px 4px;
-  background: rgba(255,255,255,0.02);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 0 10px;
 }
 .node-links[hidden] { display: none; }
-/* Всё, что спрятал «+N», — атрибутом hidden; у чипов свой display:flex, и без
-   !important атрибут бы не сработал. */
+/* У чипов свой display:flex — без !important атрибут hidden бы не сработал. */
 .node-links [hidden] { display: none !important; }
+/* Окно шторки: высоту задаёт JS (ступень или палец), лишнее обрезается. */
 .node-links-row {
-  position: relative; /* offsetLeft чипов считается от ряда — см. fitLinks */
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;              /* = LINK_GAP в js/node-window.js */
-  padding: 3px;           /* место под пунктир группы союзников (outline) */
+  position: relative;
   overflow: hidden;
+  height: 0;
+}
+.node-links-row.animate { transition: height 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+.node-links-row.scrolls { overflow-y: auto; overscroll-behavior: contain; }
+.node-links-grid {
+  position: relative; /* offsetTop элементов — от сетки (ступени в JS) */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start; /* верх у элементов ряда общий — по нему JS делит ряды */
+  gap: 6px 8px;
+  padding: 4px 3px 6px; /* 3 px по бокам — место под пунктир группы (outline) */
 }
 .link-chip {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  width: 54px;
+  gap: 2px;
+  width: 50px;
   padding: 0;
   border: none;
   background: none;
@@ -1081,7 +1149,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 /* Ячейка маркера одной высоты у всех — маркеры разного размера стоят по
    центру, подписи на одной линии. */
 .link-chip-slot {
-  height: 42px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1098,14 +1166,15 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 }
 /* Места и сюжеты крупнее персонажей — как на карте родитель крупнее своих
    детей. Размер различается с одного взгляда лучше, чем радиус углов: обычная
-   точка и персонаж — оба квадраты, разница только в скруглении. */
-.link-chip--point .link-chip-marker { width: 42px; height: 42px; font-size: 17px; }
-.link-chip--char .link-chip-marker { width: 34px; height: 34px; font-size: 14px; }
+   точка и персонаж — оба квадраты, разница только в скруглении. Мельче, чем
+   было (42/34), — по просьбе игрока плашка должна быть компактной. */
+.link-chip--point .link-chip-marker { width: 36px; height: 36px; font-size: 15px; }
+.link-chip--char .link-chip-marker { width: 30px; height: 30px; font-size: 13px; }
 .link-divider {
   flex: 0 0 auto;
   align-self: stretch;
   width: 1px;
-  margin: 4px 0 16px;
+  margin: 3px 0 14px;
   background: rgba(255,255,255,0.16);
 }
 /* Союзники — одной группой, как пунктирная нить между ними на карте.
@@ -1114,121 +1183,95 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 .link-group {
   flex: 0 0 auto;
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin: 0 3px;
   border-radius: 12px;
   outline: 1px dashed rgba(255,215,106,0.5);
   outline-offset: 2px;
 }
-.link-more-n {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  border-color: rgba(255,255,255,0.3);
-  background: rgba(255,255,255,0.06);
-  color: #fff;
-  font-size: 12px;
-}
-.node-links.expanded .link-more-n { border-color: #AFEEEE; background: rgba(175,238,238,0.18); }
-/* Полный список под «+N» — выпадает поверх содержимого окна, по группам. */
-.node-links-all {
-  display: none;
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 100%;
-  z-index: 20;
-  max-height: 55vh;
-  overflow-y: auto;
-  padding: 4px 12px 12px;
-  background: #12121a;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  box-shadow: 0 12px 24px rgba(0,0,0,0.5);
-}
-.node-links.expanded .node-links-all { display: block; }
-.node-links-heading {
-  margin: 8px 0 6px;
-  font-family: sans-serif;
-  font-size: 11px;
-  color: rgba(255,255,255,0.5);
-}
-.node-links-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 3px;
-}
-/* В окне системы панели нет карточки — ряд висит отдельной плашкой под её
-   таб-баром, в том же стиле. */
-.node-links.system-links {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  top: 74px;
-  z-index: 210;
-  border: none;
-  border-radius: 14px;
-  background: rgba(12,12,18,0.8);
-}
-.node-links.system-links .node-links-all { border-radius: 0 0 14px 14px; }
-/* Ряд переходов и панель системы — ОДНА плашка (просьба игрока: отдельно они
-   выглядели двумя разными панелями). Ряд прилегает к панели вплотную, фон
-   общий, между ними только тонкая линия. Работает, пока панель не
-   пристыкована к статье расы (тогда она уже не сосед ряда). */
-.system-toolbar:has(+ .system-links:not([hidden])) {
-  border-radius: 14px 14px 0 0;
-  box-shadow: none;
-}
-.system-toolbar + .node-links.system-links {
-  top: var(--system-toolbar-bottom, 74px);
-  border-top: 1px solid rgba(255,255,255,0.07);
-  border-radius: 0 0 14px 14px;
-  background: rgba(12,12,18,0.62);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-}
 
-/* Родитель — первым в ряду, с «↑» в углу маркера: это шаг вверх по дереву,
-   а не ещё один ребёнок. */
+/* Родитель — первым, с «↑» в углу маркера: это шаг вверх по дереву, а не
+   ещё один ребёнок. */
 .link-chip--parent .link-chip-slot { position: relative; }
 .link-chip--parent .link-chip-slot::after {
   content: '↑';
   position: absolute;
   right: -6px;
   top: -2px;
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   border-radius: 50%;
   background: #12121a;
   border: 1px solid rgba(255,255,255,0.35);
   color: #fff;
-  font: 700 11px/14px sans-serif;
+  font: 700 10px/13px sans-serif;
   text-align: center;
 }
 
-/* Язычок «свернуть/развернуть» под рядом (renderNodeLinks). В свёрнутом виде
-   от ряда остаётся только он. */
+/* Язычок шторки — висит ПОД плашкой (top: 100%), полупрозрачный, в плашке
+   места не занимает (игрок: «огромная полоска без наполнения»). Тянуть —
+   мышью и пальцем, поэтому touch-action: none. */
 .node-links-toggle {
-  display: block;
-  margin: 0 auto;
-  padding: 0 14px;
-  height: 16px;
-  border: none;
-  border-radius: 8px;
-  background: none;
-  color: rgba(255,255,255,0.55);
-  font: 600 11px/16px sans-serif;
-  cursor: pointer;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  min-width: 44px;
+  height: 20px;
+  padding: 0 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  background: rgba(12,12,18,0.62);
+  backdrop-filter: blur(8px);
+  color: rgba(255,255,255,0.7);
+  font: 600 11px/19px sans-serif;
+  white-space: nowrap;
+  cursor: ns-resize;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 .node-links-toggle:hover { color: #AFEEEE; }
-.node-links.folded { padding-top: 3px; padding-bottom: 3px; }
-.node-links.folded .node-links-row,
-.node-links.folded .node-links-all { display: none; }
-.node-links.folded .node-links-toggle { height: 18px; line-height: 18px; }
 
-/* Своя карта точки — вид поверх описания (openSubmapView в js/phenom.js).
-   На карте нет ряда переходов, на описании нет 👥: это разные задачи, и
-   вместе они дублировали персонажей и отнимали у карты место. */
+/* В окне системы карточки нет — шторка висит отдельной плашкой под её
+   таб-баром, вплотную (одна плашка с ним, просьба игрока). */
+.node-links.system-links {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--system-toolbar-bottom, 74px);
+  z-index: 210;
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-radius: 0 0 16px 16px;
+  background: rgba(12,12,18,0.62);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
+/* Шторка скрыта — от неё остаётся только язычок под панелью. */
+.node-links.system-links.folded {
+  border: none;
+  background: none;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+.node-links.system-links > .node-links-row {
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+}
+/* Панель и открытая шторка — одна плашка: скругление и тень уходят на шторку.
+   Работает, пока панель не пристыкована к статье расы (тогда она не сосед). */
+.system-toolbar:has(+ .system-links:not([hidden]):not(.folded)) {
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Своя карта точки — вкладка окна (openSubmapView в js/phenom.js). На карте
+   шторки нет, на описании нет 👥: это разные задачи, и вместе они
+   дублировали персонажей и отнимали у карты место. */
 .phenom-overlay.map-view .node-links { display: none; }
 .phenom-overlay:not(.map-view) .phenom-char-nav { display: none; }
 
@@ -1324,18 +1367,20 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   padding: 0 30px;
 }
 
-/* ===== Всплывающее окно "Корабль-город Феном" =====
-   В отличие от .system-overlay (полноэкранный, закрывает карту галактики),
-   это окно-вкладыш поверх карты: карта остаётся под ним, видна и затемнена
-   по краям за пределами карточки (~90% экрана). */
+/* ===== Окно точки (три слоя: #phenomOverlay, #storyOverlay, #charOverlay) =====
+   С 24.09.2026 — на ВЕСЬ экран, как было окно персонажа (решение игрока):
+   поля вокруг карточки на телефоне съедали ~10% экрана ради «тапнуть мимо —
+   закрыть», которым почти никто не пользуется; назад — ✕/↩, «назад» Telegram
+   и ↑ в ряду переходов. Раньше: карточка с полями 5vh/5vw и скруглением. */
 .phenom-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  /* Слабее, чем было (0.6): поверх ещё полупрозрачные края самого окна. */
+  background: rgba(0,0,0,0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5vh 5vw;
+  padding: 0;
   box-sizing: border-box;
   z-index: 250;
   opacity: 0;
@@ -1350,17 +1395,39 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   visibility: visible;
   pointer-events: auto;
 }
+/* Фон окна: колонка текста (--window-column, 760 px) по центру почти
+   непрозрачная, к краям экрана — полупрозрачный (0.6), сквозь него видна
+   затемнённая карта (идея игрока). Переход идёт от края колонки до края
+   экрана, поэтому заметен на любом широком экране; на телефоне колонка шире
+   экрана, и фон ровный 0.94.
+   ⚠️ Неподвижный градиент — одна композиция. mask-image на карточке с
+   iframe сознательно НЕ взят: он заводит поверхность под всю карточку
+   (грабли №17). Размытие есть только у плашки сверху (.node-head), как у
+   шторки статей. */
 .phenom-card {
+  --window-column: 760px;
+  position: relative;
   width: 100%;
   height: 100%;
-  background: #0e0e14;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 18px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  background: linear-gradient(90deg,
+    rgba(14,14,20,0.6) 0,
+    rgba(14,14,20,0.94) calc(50% - var(--window-column) / 2),
+    rgba(14,14,20,0.94) calc(50% + var(--window-column) / 2),
+    rgba(14,14,20,0.6) 100%);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   transform-origin: center center;
+  transition: visibility 0s;
+}
+/* Окна лежат слоями (Феном → сюжет → персонаж). Раз края полупрозрачные,
+   нижнее окно под верхним просвечивало бы — прячем его, когда верхнее уже
+   проявилось (задержка = время появления), а возвращаем сразу. */
+body:has(#storyOverlay.open) #phenomOverlay > .phenom-card,
+body:has(#charOverlay.open) #phenomOverlay > .phenom-card,
+body:has(#charOverlay.open) #storyOverlay > .phenom-card {
+  visibility: hidden;
+  transition-delay: 0.24s;
 }
 /* Появление окна точки (24.09.2026, переделано по замечанию игрока).
 
@@ -1387,9 +1454,25 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 @media (prefers-reduced-motion: reduce) {
   .phenom-overlay.open .phenom-card { animation: none; }
 }
-/* Ряд не переносится на новую строку, а скроллится по горизонтали —
-   см. подробное обоснование у .lore-toolbar.compact выше; тот же приём
-   тут нужен и без пристыковки статьи, у самого окна Феном/сюжета. */
+/* Плашка окна (.node-head: панель действий + шторка переходов) — как шторка
+   статей (.lore-toolbar.compact): на всю ширину, полупрозрачная с размытием,
+   снизу скругление 16 px, лежит ПОВЕРХ тела. Тело отступает на её высоту —
+   --head-h, его ставит js/node-window.js (syncHead) и не трогает, пока
+   шторку тянут. Текст описания прокручивается под плашкой, статья/анкета
+   начинается сразу под ней. (24.09.2026, по образцу статей — просьба игрока.) */
+.node-head {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  background: rgba(12,12,18,0.62);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+}
 .phenom-toolbar {
   flex: 0 0 auto;
   display: flex;
@@ -1399,9 +1482,35 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   scrollbar-width: none;
   gap: 8px;
   padding: 10px;
-  background: rgba(255,255,255,0.03);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: none;
 }
+/* Шторка — колонкой по центру, как текст: на широком экране чипы не
+   прилипают к левому краю монитора. Между панелью и открытой шторкой —
+   тонкая линия. */
+.node-head > .node-links > .node-links-row {
+  max-width: var(--window-column);
+  margin-left: auto;
+  margin-right: auto;
+}
+.node-head > .node-links:not(.folded) { border-top: 1px solid rgba(255,255,255,0.06); }
+/* Тело — во всю карточку, под плашкой; отступ сверху = её высота. */
+.phenom-card > .phenom-content { flex: 1; }
+.phenom-card > .story-content:not(.is-article),
+.phenom-info-content:not(.is-article) {
+  padding-top: calc(var(--head-h, 120px) + 12px);
+}
+/* Текст описания — колонкой по центру (строка на весь монитор не читается);
+   на телефоне колонка шире экрана, остаются обычные поля 20 px. Проценты в
+   padding считаются от ширины родителя — то есть окна. */
+.story-content:not(.is-article) {
+  padding-left: max(20px, calc(50% - var(--window-column, 760px) / 2 + 20px));
+  padding-right: max(20px, calc(50% - var(--window-column, 760px) / 2 + 20px));
+}
+/* Своя карта точки (Феном) — на непрозрачном фоне: по бокам от картинки
+   иначе просвечивала бы карта галактики. */
+.phenom-viewer { background: #0e0e14; }
+/* Персонаж — третий, самый верхний слой окна точки (под модалом 300). */
+.char-overlay { z-index: 252; }
 .phenom-toolbar::-webkit-scrollbar { display: none; }
 /* Меню окна Феном переведено на .tabbar (как статьи и вид системы, см.
    грабли №12): кнопки делят ширину поровну через flex:1 1 0, поэтому зазор
@@ -1413,7 +1522,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   min-height: 0;
   overflow: hidden;
   position: relative;
-  background: #0e0e14;
+  background: transparent; /* фон — у карточки (градиент к краям) */
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
@@ -1449,7 +1558,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   overflow: hidden;
 }
 .story-content.is-article::before {
-  content: 'Загружаю статью…';
+  content: 'Загрузка…'; /* статья точки или анкета персонажа */
   position: absolute;
   inset: 40% 0 auto;
   text-align: center;
@@ -1464,15 +1573,21 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
    У Teletype она position:fixed высотой 51 px (50 + линия, замер 24.09.2026),
    поэтому фрейм просто сдвинут вверх на её высоту и обрезан контейнером.
    Поменяет Teletype высоту шапки — поправить --teletype-bar здесь. */
+/* Страница начинается под плашкой окна: её верхние 16 px уходят под
+   скругление (как статья под шторкой справочника), у Teletype — ещё и его
+   плашка. */
 .node-article-frame {
-  --teletype-bar: 52px;
+  --teletype-bar: 0px;
+  --frame-top: calc(var(--head-h, 120px) - 16px - var(--teletype-bar));
   position: absolute;
   left: 0;
-  top: calc(-1 * var(--teletype-bar));
+  top: var(--frame-top);
   width: 100%;
-  height: calc(100% + var(--teletype-bar));
+  height: calc(100% - var(--frame-top));
   border: 0;
 }
+/* Только у Teletype: у анкет на telegra.ph/graph.org такой плашки нет. */
+.node-article-frame.is-teletype { --teletype-bar: 52px; }
 .node-article-link { margin-top: 14px; }
 .node-article-link a { color: #AFEEEE; }
 
@@ -1482,7 +1597,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
    сверху, чтобы не перекрывать крестик закрытия при узком экране. */
 .phenom-char-nav {
   position: absolute;
-  top: 10px;
+  top: calc(var(--head-h, 60px) + 10px); /* под плашкой окна */
   left: 10px;
   z-index: 5;
   touch-action: auto; /* .phenom-content целиком touch-action:none — кнопке и списку нужны обычные тапы/скролл */
@@ -1879,7 +1994,7 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 @media (max-width: 600px) {
   .svg-controls { right: 8px; top: 8px; }
   .svg-controls button { padding: 6px 8px; min-width: 40px; min-height: 40px; }
-  .phenom-overlay { padding: 3vh 3vw; }
+  /* Окно точки — на весь экран и на телефоне (24.09.2026), полей тут нет. */
   /* Вкладок в таб-баре статей шесть (у Фенома двойная ячейка), и самая
      длинная подпись — "Галактика" — на 375px упирается в свою ячейку и
      обрезается многоточием. Поджимаем зазоры и боковые отступы: этого
