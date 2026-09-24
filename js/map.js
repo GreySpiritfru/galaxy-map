@@ -1,15 +1,15 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=129';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=129';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=129';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=129';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=129';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=129';
-import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=129';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=129';
-import { setTabIcon } from './node-window.js?v=129';
+import { createPanZoom } from './panzoom.js?v=133';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=133';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=133';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler } from './phenom.js?v=133';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=133';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=133';
+import { openCharacter, getOpenCharacter, updateStoryButton } from './characters.js?v=133';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=133';
+import { setTabIcon } from './node-window.js?v=133';
 
 const SVG_PATH = 'map.svg';
 
@@ -667,12 +667,35 @@ function finishMapPick(p) {
      без всякой пользы. Обычный тап по маркеру НА ВИДИМОЙ карте (галактика
      открыта, ничего поверх неё нет) — единственный случай, где перелёт
      нужен взаправду, и там instant не передаётся (см. вызовы ниже). */
+  /* Окно открывается НЕ по окончании перелёта, а на этой доле его времени
+     (24.09.2026). Перелёт идёт по easeInOutCubic: к 55% времени камера
+     прошла ~70% пути, дальше — медленный «доезд», которого под окном почти не
+     видно (карточка закрывает ~90% экрана). Раньше окно ждало конца перелёта
+     (650 мс) и потом ещё 550 мс вырастало — 1.2 с от тапа до готового окна;
+     теперь ~360 + 240 = 0.6 с. Перелёт при этом доезжает сам, под окном, так
+     что после закрытия камера стоит ровно на точке, как и раньше.
+     ⚠️ Открытие — по таймеру, а не по onDone перелёта: так оно не зависит от
+     requestAnimationFrame, который в фоне и на слабых устройствах тормозят
+     (раньше ради этого был ещё и страховочный таймер). */
+  const FOCUS_OPEN_SHARE = 0.55;
   function focusAndOpen(x, y, openFn, instant) {
     if (instant) { pz.focusOn(x, y, FOCUS_WIDTH, 0); openFn(); return; }
-    let opened = false;
-    const openOnce = () => { if (!opened) { opened = true; openFn(); } };
-    pz.focusOn(x, y, FOCUS_WIDTH, FOCUS_PAN_DURATION, openOnce);
-    setTimeout(openOnce, FOCUS_PAN_DURATION + 250);
+    pz.focusOn(x, y, FOCUS_WIDTH, FOCUS_PAN_DURATION);
+    setTimeout(openFn, FOCUS_PAN_DURATION * FOCUS_OPEN_SHARE);
+  }
+
+  /* Отклик на тап: кольцо расходится от маркера в тот же кадр, что и нажатие,
+     до того как камера тронулась (.map-tap-ring в css). Без него первые
+     сотни миллисекунд перелёта ощущались как «нажал — ничего не происходит». */
+  function tapPulse(node) {
+    const ring = document.createElementNS(ns, 'circle');
+    ring.setAttribute('class', 'map-tap-ring');
+    ring.setAttribute('cx', node.x);
+    ring.setAttribute('cy', node.y);
+    ring.setAttribute('r', (viewMode === 'nodes' ? node.graphSize : node.size) * 0.6);
+    graphLayer.appendChild(ring);
+    // По таймеру, а не по animationend: при prefers-reduced-motion анимации нет.
+    setTimeout(() => ring.remove(), 500);
   }
 
   // Рисует одну точку-иконку (картинка с кольцом или, если картинки нет/не
@@ -934,17 +957,30 @@ function finishMapPick(p) {
      ⚠️ Система картинку НЕ отдаёт: у неё «картинка» — это карта всей системы,
      и в значке 19 px она превращается в тёмное пятно (та же причина, по
      которой в режиме нод ей понадобился SYSTEM_ART_ZOOM). Там остаётся 🪐. */
+  // Короткое имя для подписи под маркером/на кнопке: в ячейку влезает пара слов.
+  function shortName(node) {
+    const d = node.data;
+    return d.shortTitle || d.title || d.name || node.id;
+  }
+
+  /* Всё, что нужно маркеру точки в HTML (markerEl в js/node-window.js): берётся
+     из ТОГО ЖЕ nodeIconOptions, что рисует маркер на карте, — форма, цвет
+     кольца, цвет заглушки, картинка. Отдельной таблицы «как точка выглядит в
+     окне» нет и заводить не надо: иначе окно и карта разъедутся. */
   function tabIconOf(node, base) {
-    const withBeacon = node.kind === 'world' && node.data.beacon;
-    const style = withBeacon ? BEACON_STYLE : (NODE_STYLE[node.kind] || NODE_STYLE.world);
-    const form = node.kind === 'world' ? worldShape(node) : {shape: style.shape};
-    const done = isCompleted(node);
+    const o = nodeIconOptions(node);
+    const name = shortName(node);
     return {
+      label: name,
       ...base,
-      image: node.kind === 'system' ? '' : nodeImage(node),
-      shape: form.shape,
-      ring: done ? COMPLETED_COLOR : (node.data.color || style.ringColor),
-      done,
+      name: node.kind === 'world' ? nodeTitle(node) : name,
+      image: node.kind === 'system' ? '' : o.image,
+      shape: o.shape,
+      ring: o.ringColor,
+      fill: o.dotFill,
+      letter: (name.trim().charAt(0) || '?').toUpperCase(),
+      kind: node.kind,
+      done: isCompleted(node),
     };
   }
 
@@ -954,9 +990,11 @@ function finishMapPick(p) {
     const base = (p.kind === 'world' && p.data.beacon)
       ? PARENT_KIND_META.story
       : (PARENT_KIND_META[p.kind] || PARENT_KIND_META.world);
-    // ⚠️ Новым объектом: PARENT_KIND_META — общая таблица на весь проект,
-    // дописывать арт конкретной точки прямо в неё нельзя.
-    return tabIconOf(p, base);
+    /* На кнопке — название родителя («Бездна»), а тип («Сюжет») уходит в
+       подсказку (24.09.2026): маркер уже говорит, что это за точка, а имя —
+       куда именно вернёшься. ⚠️ Новым объектом: PARENT_KIND_META — общая
+       таблица на весь проект, дописывать в неё конкретную точку нельзя. */
+    return tabIconOf(p, {icon: base.icon, kindLabel: base.label});
   }
 
   /* Что открыть по узлу — зависит только от его типа (а для маркеров ещё и
@@ -1001,15 +1039,10 @@ function finishMapPick(p) {
       canEdit: canEditNodes(),
       // Союзы показываем только ВНУТРИ этой же точки: связь с персонажем из
       // другого сюжета в этом окне не к месту (siblingLinks в graph.js).
-      characters: chars.map(c => ({
-        id: c.id, name: nodeTitle(c), image: c.data.image || '',
-        links: siblingLinks(c).map(other => other.id),
+      characters: chars.map(c => tabIconOf(c, {
+        id: c.id, links: siblingLinks(c).map(other => other.id),
       })),
-      children: kids.map(c => tabIconOf(c, {
-        id: c.id,
-        label: c.data.shortTitle || nodeTitle(c),
-        icon: c.data.beacon ? (isCompleted(c) ? '✅' : '🎬') : '📍',
-      })),
+      children: kids.map(c => tabIconOf(c, {id: c.id})),
     };
   }
 
@@ -1162,6 +1195,7 @@ function finishMapPick(p) {
         onTap: () => {
           if (mapPickHandler) { finishMapPick({x: node.x, y: node.y}); return; }
           if (calibMode) { showCalib(node.x, node.y); return; }
+          tapPulse(node);
           goToNode(node);
         },
         // Долгое нажатие — переход между нодами и картой прямо к этому маркеру
@@ -1186,7 +1220,7 @@ function finishMapPick(p) {
   }
 
   /* ============================================================
-     Уровень детализации карты (24.09.2026, v=129)
+     Уровень детализации карты (24.09.2026, v=133)
 
      Замер общего вида (кадр 588 единиц, панель 754 px): 27 маркеров в кадре,
      медиана размера 3.8 px, медианный просвет до соседа 1.2 px. Из этих 27
@@ -1233,15 +1267,16 @@ function finishMapPick(p) {
   let charUnitSize = 2.42;   // реальный размер берётся из графа, см. graphReady
   let detailWidth = FOCUS_WIDTH * DETAIL_FOCUS_MARGIN;
 
-  /* Высота цифр счётчика — в ПИКСЕЛЯХ ЭКРАНА, а не в единицах карты.
-     Первая версия считала её долей размера маркера-родителя: на общем виде
-     «+9» у «Переворота» вышло 2 px, «+2» у Фенома 5 px — то есть счётчик,
-     придуманный как замена невидимым маркерам, сам был невидим. Это не
-     часть сцены, а подпись к ней, и вести себя она должна как подпись. */
-  const DETAIL_BADGE_PX = 10;
+  /* Высота цифр счётчика — доля размера маркера-родителя, в ЕДИНИЦАХ КАРТЫ:
+     счётчик масштабируется вместе с маркером, как его часть.
+     ⚠️ Была версия с постоянным размером на экране (10 px на любом зуме) —
+     отказались по замечанию игрока (24.09.2026): при отдалении маркеры
+     мельчали, а цифры нет, и на общем виде «+9» оказывался крупнее самих
+     маркеров и мешал обзору. На общем виде цифра почти не читается — это
+     осознанно: она там декорация «тут есть ещё», читается она на подлёте
+     (на пороге детализации «+9» у «Переворота» — около 10 px). */
+  const DETAIL_BADGE_FONT = 0.5;
   let detailFar = null;
-  let detailBadges = [];
-  let badgeUnits = 0;
 
   function computeDetailWidth() {
     const byPixels = paneMin ? charUnitSize * paneMin / DETAIL_MIN_PX : 0;
@@ -1256,7 +1291,6 @@ function finishMapPick(p) {
       detailFar = far;
       svg.classList.toggle('detail-far', far);
     }
-    if (far) scaleDetailBadges(vb);
   }
 
   /* Короткая сторона панели в пикселях. viewBox квадратный и вписывается
@@ -1269,32 +1303,12 @@ function finishMapPick(p) {
   let paneMin = 0;
   function measurePane() {
     paneMin = Math.min(container.clientWidth || 0, container.clientHeight || 0);
-    badgeUnits = 0;
     computeDetailWidth();
     // Порог переехал вместе с размером панели — пересчитываем и сам признак,
     // иначе после поворота телефона слой детализации остался бы от прежнего.
     if (detailFar !== null) syncDetailLevel(pz.getViewBox());
   }
   window.addEventListener('resize', measurePane);
-
-  function scaleDetailBadges(vb) {
-    if (!paneMin || !detailBadges.length) return;
-    const size = DETAIL_BADGE_PX * vb.w / paneMin;
-    // Щипок/колесо меняют кадр на доли процента за кадр — переписывать
-    // атрибуты на каждое такое изменение незачем.
-    if (badgeUnits && Math.abs(size - badgeUnits) < badgeUnits * 0.03) return;
-    badgeUnits = size;
-    detailBadges.forEach(({el, half, top}) => {
-      el.setAttribute('font-size', size);
-      // ⚠️ Толщина обводки — атрибутом, и в css её НЕТ: правило таблицы стилей
-      // сильнее атрибута-презентации, и счётчик остался бы с фиксированной
-      // обводкой при плавающем размере шрифта (та же грабля, что с нитями
-      // в окне системы).
-      el.setAttribute('stroke-width', size * 0.14);
-      el.setAttribute('x', half + size * 0.2);
-      el.setAttribute('y', -(top + size * 0.25));
-    });
-  }
 
   /* Сколько персонажей прячется ПОД этой точкой — вся ветка вниз, а не только
      прямые дети: персонаж персонажа скрыт так же. Ребёнок-НЕ-персонаж виден
@@ -1309,21 +1323,24 @@ function finishMapPick(p) {
   }
 
   function renderDetailBadges(nodes) {
-    detailBadges = [];
     nodes.forEach(node => {
       if (!node.__el || node.kind === 'character' || node.mapHidden) return;
       const count = hiddenCharCount(node);
       if (!count) return;
+      const size = node.size * DETAIL_BADGE_FONT;
       const t = document.createElementNS(ns, 'text');
       // map-label-major — чтобы счётчик не мигал на каждом перетаскивании
       // вместе с мелкими подписями карты (см. .panning в css).
       t.setAttribute('class', 'map-detail-badge map-label-major');
+      t.setAttribute('font-size', size);
+      // ⚠️ Толщина обводки — атрибутом, в css её нет: правило таблицы стилей
+      // сильнее атрибута-презентации (та же грабля, что с нитями в окне системы).
+      t.setAttribute('stroke-width', size * 0.14);
+      t.setAttribute('x', node.size * (node.aspect || 1) / 2 + size * 0.2);
+      t.setAttribute('y', -(node.size / 2 + size * 0.25));
       t.textContent = `+${count}`;
       node.__el.appendChild(t);
-      // Размер и место ставит scaleDetailBadges — они зависят от кадра.
-      detailBadges.push({el: t, half: node.size * (node.aspect || 1) / 2, top: node.size / 2});
     });
-    badgeUnits = 0;
   }
 
   function wireStoryWindows(graph) {
@@ -1382,12 +1399,6 @@ function finishMapPick(p) {
   // Ширина кадра (доля всей системы), на которую камера подлетает к маркеру.
   const SYSTEM_FOCUS_SHARE = 0.35;
 
-  function systemChildIcon(child) {
-    if (child.kind === 'character') return '👤';
-    if (child.data.beacon) return isCompleted(child) ? '✅' : '🎬';
-    return '📍';
-  }
-
   function hasSystemPlace(node) {
     return typeof node.data.systemX === 'number' && typeof node.data.systemY === 'number';
   }
@@ -1403,7 +1414,7 @@ function finishMapPick(p) {
     setSystemDecorator(({slug, svg: sysSvg, pz: sysPz, focusId}) => {
       const sysNode = graph.get('system:' + slug);
       const inside = sysNode ? sysNode.children.filter(c => c.onMap !== false) : [];
-      setSystemTabs(inside.map(c => tabIconOf(c, {id: c.id, icon: systemChildIcon(c), label: c.data.shortTitle || nodeTitle(c)})), (id) => {
+      setSystemTabs(inside.map(c => tabIconOf(c, {id: c.id})), (id) => {
         const node = graph.get(id);
         if (!node) return;
         focusIn(getOpenSystem(), node, 0);

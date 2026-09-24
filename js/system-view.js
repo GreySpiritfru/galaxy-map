@@ -1,9 +1,9 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=129';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=129';
-import { setTabIcon } from './node-window.js?v=129';
+import { createPanZoom } from './panzoom.js?v=133';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=133';
+import { renderNodeLinks } from './node-window.js?v=133';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -11,6 +11,7 @@ const systemMapTab = document.getElementById('systemMapTab');
 const systemLoreBtn = document.getElementById('systemLore');
 const systemLoreLabel = systemLoreBtn.querySelector('.tabbar-btn-label');
 const systemToolbarEl = document.querySelector('.system-toolbar');
+const systemLinks = document.getElementById('systemLinks');
 
 // "Карта системы" <-> "Контролирующая раса" — переключение между вкладками
 // НИКОГДА не пересоздаёт саму карту: #systemContainer (SVG + пан/зум) не
@@ -105,25 +106,18 @@ export function setSystemDecorator(fn) { systemDecorator = fn; }
 let current = null;
 export function getOpenSystem() { return current; }
 
-// Вкладки того, что внутри системы: [{id, icon, label}] → onSelect(id).
+/* Что внутри системы: [{id, label, image, shape, …}] → onSelect(id).
+   С 24.09.2026 это не вкладки в панели, а ряд переходов под ней — та же схема,
+   что в окне точки (renderNodeLinks в node-window.js): сверху действия
+   («Карта системы», «Раса»), снизу — куда отсюда можно перейти. */
 export function setSystemTabs(items, onSelect) {
-  systemToolbarEl.querySelectorAll('.system-child-tab').forEach(el => el.remove());
-  items.forEach(item => {
-    const btn = document.createElement('button');
-    btn.className = 'tabbar-btn system-child-tab';
-    btn.innerHTML = '<span class="tabbar-btn-icon" aria-hidden="true"></span><span class="tabbar-btn-label"></span>';
-    // Значок вкладки — арт самой точки (setTabIcon в node-window.js), смайлик
-    // из item.icon остаётся запасным вариантом.
-    setTabIcon(btn.querySelector('.tabbar-btn-icon'), item);
-    btn.querySelector('.tabbar-btn-label').textContent = item.label;
-    btn.title = item.label;
-    btn.addEventListener('click', () => {
-      // Статья расы пристыкована к этому же ряду — сначала закрыть её, иначе
-      // окно сюжета откроется ПОД ней (модал выше по z-index).
+  renderNodeLinks(systemLinks, {children: items || []}, {
+    onChild: (id) => {
+      // Статья расы пристыкована к панели — сначала закрыть её, иначе окно
+      // точки откроется ПОД ней (модал выше по z-index).
       showSystemMap();
-      onSelect(item.id);
-    });
-    systemToolbarEl.appendChild(btn);
+      if (onSelect) onSelect(id);
+    },
   });
 }
 

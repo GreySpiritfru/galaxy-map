@@ -359,7 +359,17 @@ export function createPanZoom(svg, opts) {
       const newH = newW * aspect;
       const target = clampViewBox({x: x - newW/2, y: y - newH/2, w: newW, h: newH});
       if (duration) animateViewBox(target, duration, onDone);
-      else { setViewBox(target); if (onDone) onDone(); }
+      else {
+        /* ⚠️ Мгновенная постановка обязана гасить незаконченный перелёт:
+           иначе его следующий кадр перезаписал бы только что поставленную
+           камеру. Раньше это не проявлялось — окно открывалось, когда
+           перелёт уже закончен. С 24.09.2026 окно открывается раньше (см.
+           FOCUS_OPEN_SHARE в js/map.js), и тап по вкладке в первые ~300 мс
+           уводил бы камеру к прежней точке, а не к выбранной. */
+        cancelAnim();
+        setViewBox(target);
+        if (onDone) onDone();
+      }
     },
     getViewBox: () => ({...cur}),
     getInitialViewBox: () => ({...initialViewBox}),

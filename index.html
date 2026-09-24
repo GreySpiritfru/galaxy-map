@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=129" />
+  <link rel="stylesheet" href="css/styles.css?v=133" />
 </head>
 <body>
 
@@ -169,6 +169,8 @@
       <span class="tabbar-btn-icon" aria-hidden="true">👑</span><span class="tabbar-btn-label">Контролирующая раса</span>
     </button>
   </div>
+  <!-- Точки внутри системы — тот же ряд переходов, что в окне точки. -->
+  <div class="node-links system-links" id="systemLinks" hidden></div>
   <div id="systemContainer" style="position:absolute; inset:0; touch-action:none;"></div>
 </div>
 
@@ -177,14 +179,11 @@
      (тайлы + OpenSeadragon, см. js/phenom.js). -->
 <div class="phenom-overlay" id="phenomOverlay">
   <div class="phenom-card" id="phenomCard">
-    <!-- Меню окна локации — тот же таб-бар, что у статей-справочников и вида
-         системы (.tabbar, см. грабли №12). В разметке только крестик и
-         кнопка "Описание <локации>" (#phenomDescriptionTab — data-ref и
-         подпись подставляются под КОНКРЕТНУЮ локацию при каждом открытии,
-         см. setPhenomDescriptionTab в js/phenom.js, дефолт — Феном); вкладки
-         привязанных сюжетов дописываются СЮДА ЖЕ из графа связей
-         (setPhenomChildren в js/phenom.js) — руками их добавлять не надо,
-         привязка живёт в stories.json. -->
+    <!-- Панель ДЕЙСТВИЙ окна точки — тот же таб-бар, что у статей и вида
+         системы (.tabbar, грабли №12). Состав фиксирован: ✕, родитель,
+         статья, правка, архив, сюжеты; пустые кнопки прячутся
+         (applyNodeToolbar в js/node-window.js). Переходы к детям — НЕ здесь,
+         а в ряду #phenomLinks ниже (24.09.2026). -->
     <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
       <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть">✕</button>
       <!-- Иконка/подпись ставятся в map.js по типу родителя (PARENT_KIND_META);
@@ -206,6 +205,9 @@
         <span class="tabbar-btn-icon" aria-hidden="true">📜</span><span class="tabbar-btn-label">Сюжеты</span>
       </button>
     </div>
+    <!-- Ряд переходов к детям точки: места/сюжеты, потом персонажи, лишнее
+         под «+N». Наполняет renderNodeLinks в js/node-window.js. -->
+    <div class="node-links" id="phenomLinks" hidden></div>
     <div class="phenom-content" id="phenomContent">
       <!-- Персонажи, привязанные прямо к самой карте Феном (submapX/submapY в
            characters.json) — кнопка слева сверху над картой открывает их
@@ -264,10 +266,11 @@
         <span class="tabbar-btn-icon" aria-hidden="true">📜</span><span class="tabbar-btn-label">Сюжеты</span>
       </button>
     </div>
+    <div class="node-links" id="storyLinks" hidden></div>
     <div class="phenom-content story-content" id="storyContent"></div>
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=129"></script>
+<script type="module" src="js/main.js?v=133"></script>
 </body>
 </html>

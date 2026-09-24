@@ -13,10 +13,11 @@
    — js/phenom.js (он же умеет тайловую карту), верхний — этот. Оба вместе
    дают вложенность локация -> точка -> персонаж, см. CLAUDE.md.
    ============================================================ */
-import { renderNodeContent, applyNodeToolbar } from './node-window.js?v=129';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=133';
 
 const storyOverlay = document.getElementById('storyOverlay');
 const storyContent = document.getElementById('storyContent');
+const storyLinks = document.getElementById('storyLinks');
 const refs = {
   toolbar: document.getElementById('storyToolbar'),
   parent: document.getElementById('storyParent'),
@@ -42,8 +43,14 @@ export function setCharacterNavigator(fn) { goToCharacter = fn; }
 
 export function openStory(view, handlers) {
   currentNode = view;
-  renderNodeContent(storyContent, view, (id) => { if (goToCharacter) goToCharacter(id); });
+  renderNodeContent(storyContent, view);
   applyNodeToolbar(refs, view, handlers || {});
+  // Окно персонажа открывается ПОВЕРХ этого (модал выше по z-index), поэтому
+  // закрытие анкеты возвращает сюда же, без повторного перехода через карту.
+  renderNodeLinks(storyLinks, view, {
+    onChild: handlers && handlers.onChild,
+    onCharacter: (id) => { if (goToCharacter) goToCharacter(id); },
+  });
   storyOverlay.classList.add('open');
   // Та же защита от «хвоста» клика по маркеру, что и у нижнего слоя с модалом:
   // без неё синтетический клик, идущий следом за тапом, тут же закрывал бы

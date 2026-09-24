@@ -21,12 +21,14 @@
    точка без своей карты — это просто точка, и текст ей рисует тот же общий
    код, что и всем остальным. characters.json привязывает персонажей к любой
    точке с тайловой картой через submapX/submapY (см. ниже). */
-import { closeModal, escapeHtml } from './modal.js?v=129';
-import { renderNodeContent, applyNodeToolbar } from './node-window.js?v=129';
+import { closeModal, escapeHtml } from './modal.js?v=133';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=133';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже
 const phenomInfoContent = document.getElementById('phenomInfoContent');
+// Ряд переходов к детям окна (renderNodeLinks в node-window.js).
+const phenomLinks = document.getElementById('phenomLinks');
 let phenomViewer = null;
 let currentSubmap = null; // {type, source, initialZoom} — конфиг из markers.json, с которым сейчас открыт viewer
 
@@ -279,11 +281,12 @@ export function openWorldWindow(view, handlers) {
   currentSubmap = submap;
   phenomOverlay.classList.add('open');
   applyNodeToolbar(refs, view, handlers || {});
+  renderNodeLinks(phenomLinks, view, handlers || {});
   phenomViewerEl.hidden = !submap;
   phenomInfoContent.hidden = !!submap;
   if (!submap) {
     phenomCharNav.hidden = true;
-    renderNodeContent(phenomInfoContent, view, (id) => handlers && handlers.onCharacter && handlers.onCharacter(id));
+    renderNodeContent(phenomInfoContent, view);
   } else if (changed) {
     phenomViewer.open(submap.source);
   } else {
