@@ -5,7 +5,8 @@
    игрока, к сайту/репозиторию отношения не имеет) кнопка мягко пульсирует,
    чтобы её было видно, но не мигает резко и не лезет с окном сама.
    ============================================================ */
-import { openModal } from './modal.js?v=149';
+import { openModal, closeModal } from './modal.js?v=155';
+import { startTour, tourSeen } from './tour.js?v=155';
 
 const ONBOARDING_SEEN_KEY = 'galaxyMapOnboardingSeen';
 const helpBtn = document.getElementById('helpBtn');
@@ -22,6 +23,8 @@ function showOnboarding() {
     <div class="help">
       <img class="help-logo" src="images/logo.jpg" alt="Феном">
       <div class="modal-title">Как пользоваться картой</div>
+      <!-- Обучение по шагам (js/tour.js): пульсирует, пока его ни разу не запускали. -->
+      <button type="button" class="help-tour-btn${tourSeen() ? '' : ' pulse'}" id="helpTourBtn">🎓 Пройти обучение</button>
 
       <div class="help-section">
         <div class="help-heading">🧭 Перемещение</div>
@@ -39,6 +42,7 @@ function showOnboarding() {
           <li><b>Феном</b> — окно корабля-города; его собственная карта — кнопкой 🗺️ «Карта» внутри.</li>
           <li>📖 <b>Справочник</b> — статьи о галактике, расах, магии и технике.</li>
           <li><b>Ноды</b> — граф связей, <b>Карта</b> — с границами фракций, <b>Графика</b> — без границ.</li>
+          <li>▦ (в нодах) — разложить все точки по разделам: где открыт набор, какие сюжеты идут, локации, архив. Персонажи — рядом со своей точкой.</li>
           <li>🏷️ — меньше подписей, если карта тормозит.</li>
         </ul>
       </div>
@@ -74,6 +78,10 @@ function showOnboarding() {
 
 helpBtn.addEventListener('click', () => {
   showOnboarding();
+  document.getElementById('helpTourBtn')?.addEventListener('click', () => {
+    closeModal();
+    startTour();
+  });
   helpBtn.classList.remove('pulse');
   try { localStorage.setItem(ONBOARDING_SEEN_KEY, '1'); } catch (e) {}
 });

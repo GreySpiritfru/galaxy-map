@@ -12,9 +12,9 @@
    Данные — characters.json, что показать (view) собирает map.js: там граф,
    камера и переходы.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=149';
-import { canEdit, showEditor } from './editor.js?v=149';
-import { renderFrame, renderNodeLinks } from './node-window.js?v=149';
+import { escapeHtml } from './modal.js?v=155';
+import { canEdit, showEditor } from './editor.js?v=155';
+import { renderFrame, renderNodeLinks } from './node-window.js?v=155';
 
 const overlay = document.getElementById('charOverlay');
 const content = document.getElementById('charContent');

@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=149" />
+  <link rel="stylesheet" href="css/styles.css?v=155" />
 </head>
 <body>
 
@@ -61,6 +61,9 @@
          .svg-controls — колонка с align-items:flex-end, поэтому обе кнопки
          встают у правого края на любой ширине экрана. -->
     <button id="labelsToggle" class="map-tool-btn" title="Показывать только готовые системы (быстрее на слабых устройствах)">🏷️</button>
+    <!-- ▦ — ноды по разделам (js/sections.js, v=150). Видна только в режиме нод,
+         на месте 🏷️ (та в нодах не нужна), см. updateViewModeUi в js/map.js. -->
+    <button id="sortToggle" class="map-tool-btn" title="Ноды по разделам" hidden>▦</button>
     <button id="helpBtn" class="map-tool-btn" title="Как пользоваться картой">?</button>
   </div>
   <div class="calib-panel" id="calibPanel"></div>
@@ -272,6 +275,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=149"></script>
+<script type="module" src="js/main.js?v=155"></script>
 </body>
 </html>

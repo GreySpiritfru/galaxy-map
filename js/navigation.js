@@ -38,14 +38,18 @@
    вложенность считается по ТИПАМ слоёв (модал/сюжет/локация/система), а не
    по конкретным id узлов, этого достаточно для всех текущих сценариев.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=149';
-import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=149';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=149';
-import { closeStory, isStoryOpen } from './stories.js?v=149';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=149';
+import { closeModal, isArticleOpen } from './modal.js?v=155';
+import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=155';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=155';
+import { closeStory, isStoryOpen } from './stories.js?v=155';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=155';
+import { closeTour, isTourOpen } from './tour.js?v=155';
 
 function depth() {
   let d = 0;
+  // Обучение (js/tour.js, v=155) — самый верхний слой: «назад» и Esc
+  // закрывают сначала его, а не окно, которое тур открыл под собой.
+  if (isTourOpen()) d++;
   if (isPhenomOpen()) d++;
   /* Своя карта точки (Феном) — ВКЛАДКА того же окна, а не уровень: ✕ на ней
      закрывает окно, как на «Статье» (игрок, 24.09.2026: «панель одна и та
@@ -75,6 +79,7 @@ function depth() {
    статья расы (isSystemLoreOpen), а сама система закрывается последней, как
    самый нижний слой. */
 function closeTop() {
+  if (isTourOpen()) { closeTour(); return; }
   if (isArticleOpen()) { if (isSystemLoreOpen()) showSystemMap(); else closeModal(); return; }
   if (isCharacterOpen()) { closeCharacter(); return; }
   if (isStoryOpen()) { closeStory(); return; }
@@ -237,6 +242,6 @@ function scheduleSync() {
 // даёт один sync(), а не два, и если итоговая глубина не изменилась —
 // история вообще не трогается.
 const observer = new MutationObserver(scheduleSync);
-['modalBackdrop', 'systemOverlay', 'phenomOverlay', 'storyOverlay', 'charOverlay'].forEach(id => {
+['modalBackdrop', 'systemOverlay', 'phenomOverlay', 'storyOverlay', 'charOverlay', 'tourOverlay'].forEach(id => {
   observer.observe(document.getElementById(id), { attributes: true, attributeFilter: ['class'] });
 });

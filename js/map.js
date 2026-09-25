@@ -1,15 +1,17 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=149';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=149';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=149';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=149';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=149';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=149';
-import { openCharacter, closeCharacter } from './characters.js?v=149';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=149';
-import { markerEl } from './node-window.js?v=149';
+import { createPanZoom } from './panzoom.js?v=155';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=155';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=155';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=155';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=155';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=155';
+import { openCharacter, closeCharacter } from './characters.js?v=155';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=155';
+import { markerEl } from './node-window.js?v=155';
+import { layoutSections, renderSections } from './sections.js?v=155';
+import { registerTourHooks, startTour } from './tour.js?v=155';
 
 const SVG_PATH = 'map.svg';
 
@@ -692,7 +694,7 @@ function finishMapPick(p) {
     ring.setAttribute('class', 'map-tap-ring');
     ring.setAttribute('cx', node.x);
     ring.setAttribute('cy', node.y);
-    ring.setAttribute('r', (viewMode === 'nodes' ? node.graphSize : node.size) * 0.6);
+    ring.setAttribute('r', (viewMode === 'nodes' ? nodesPlace(node).size : node.size) * 0.6);
     graphLayer.appendChild(ring);
     // По таймеру, а не по animationend: при prefers-reduced-motion анимации нет.
     setTimeout(() => ring.remove(), 500);
@@ -1670,6 +1672,60 @@ function finishMapPick(p) {
   let graphNodes = [], graphThreads = [];
   let graphViewBox = {width: 0, height: 0}, graphViewCenter = {x: 0, y: 0};
 
+  /* Ноды по разделам (25.09.2026, js/sections.js) — вторая раскладка ВНУТРИ
+     режима нод: 'graph' (кластеры, как было) или 'sections' (ячейки с
+     подписями). Переключает кнопка ▦ (на месте 🏷️, которая в нодах не нужна).
+     Выбор запоминается. Координаты — sectionX/sectionY, заморожены так же,
+     как graphX/graphY. */
+  const NODES_ARRANGEMENT_KEY = 'galaxyMapNodesArrangement';
+  let nodesArrangement = 'graph';
+  try { if (localStorage.getItem(NODES_ARRANGEMENT_KEY) === 'sections') nodesArrangement = 'sections'; } catch (e) {}
+  let sectionsLayout = null;
+  const sortToggle = document.getElementById('sortToggle');
+
+  // Где узел стоит в режиме нод при текущей раскладке и какого он там размера.
+  function nodesPlace(n) {
+    if (nodesArrangement === 'sections' && typeof n.sectionX === 'number') {
+      return {x: n.sectionX, y: n.sectionY, size: n.sectionSize};
+    }
+    return {x: n.graphX, y: n.graphY, size: n.graphSize};
+  }
+
+  /* Кадр для разделов. Всё целиком помещается — как у графа. Не помещается
+     (на телефоне разделы выходят длинной колонкой) — по ширине, прижав к
+     верху: сверху «Набор открыт», его и должно быть видно первым, остальное
+     листается пальцем. Иначе маркеры стали бы мельче пальца. */
+  const SECTIONS_MARGIN_PX = 10;
+  const SECTIONS_MAX_CHAR_PX = 40;
+  function sectionsCamera() {
+    const L = sectionsLayout;
+    const sw = svg.clientWidth || 1, sh = svg.clientHeight || 1;
+    /* Сверху справа — кнопки угла карты (Феном, Справочник, переключатель,
+       ▦, ?). Верхний раздел под ними не читался бы, поэтому раскладка
+       начинается ниже их нижнего края. */
+    const controls = document.getElementById('controls');
+    const svgTop = svg.getBoundingClientRect().top;
+    const reserve = controls ? Math.max(0, controls.getBoundingClientRect().bottom - svgTop) + SECTIONS_MARGIN_PX : SECTIONS_MARGIN_PX;
+    const m = SECTIONS_MARGIN_PX;
+    // px на единицу: по ширине и «чтобы влезло всё под кнопками». Раскладка
+    // узкая (персонажи колонками), и на широком экране «по ширине» раздуло
+    // бы маркеры — персонаж не крупнее SECTIONS_MAX_CHAR_PX.
+    const kWidth = Math.min((sw - 2 * m) / L.width, SECTIONS_MAX_CHAR_PX / (L.charSize || 4.5));
+    const kAll = Math.min(kWidth, Math.max(1, sh - reserve - m) / L.height);
+    // Целиком не влезает без заметного уменьшения — по ширине, остальное листается.
+    const k = kAll >= kWidth / 1.25 ? kAll : kWidth;
+    const spare = Math.max(0, (sh - reserve - m) - L.height * k);
+    const topPx = reserve + spare / 2;
+    // viewBox квадратный и вписан по короткой стороне: ширина кадра = она / k.
+    // Центр кадра — центр экрана; верх раскладки должен попасть на topPx.
+    return {x: graphViewCenter.x, y: L.top + (sh / 2 - topPx) / k, w: Math.min(sw, sh) / k};
+  }
+  function nodesCamera() {
+    return nodesArrangement === 'sections' && sectionsLayout && sectionsLayout.width
+      ? sectionsCamera()
+      : {x: graphViewCenter.x, y: graphViewCenter.y, w: graphViewWidth()};
+  }
+
   /* Ширина кадра, при которой кластер целиком помещается на ЭТОМ экране.
 
      Тонкость в том, что viewBox карты квадратный, а preserveAspectRatio у нас
@@ -1689,6 +1745,7 @@ function finishMapPick(p) {
   let savedMapView = null;   // куда вернуть камеру при возврате на карту
   let viewTweenId = null;
   let viewTransition = 0;    // токен текущего перехода, см. setViewMode
+  let viewBusyUntil = 0;     // до какого момента идёт переход карта <-> ноды
 
   /* Единственное место, которое пишет позиции в DOM. Вызывается и при первой
      отрисовке, и в каждом кадре перелёта между режимами. Маркер — это <g> с
@@ -1803,7 +1860,14 @@ function finishMapPick(p) {
        так же, как и в "Карте". */
     const onMapView = viewMode !== 'nodes';
     if (calibToggle) calibToggle.disabled = !onMapView;
-    labelsToggle.disabled = !onMapView;
+    // 🏷️ в нодах не нужна — на её месте ▦ (раскладка по разделам), угол
+    // карты не меняет размер при переключении режима.
+    labelsToggle.hidden = !onMapView;
+    if (sortToggle) {
+      sortToggle.hidden = onMapView;
+      sortToggle.classList.toggle('active', nodesArrangement === 'sections');
+      sortToggle.title = nodesArrangement === 'sections' ? 'Ноды: граф связей' : 'Ноды по разделам';
+    }
     if (!onMapView && calibMode) {
       calibMode = false;
       calibToggle?.classList.remove('active');
@@ -1827,7 +1891,9 @@ function finishMapPick(p) {
     try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium'); } catch (e) {}
     const toNodes = viewMode !== 'nodes';
     if (toNodes) {
-      await setViewMode('nodes', false, {x: node.graphX, y: node.graphY, w: graphViewWidth() * LOCATE_NODES_ZOOM});
+      const p = nodesPlace(node);
+      const w = nodesArrangement === 'sections' ? nodesCamera().w : graphViewWidth() * LOCATE_NODES_ZOOM;
+      await setViewMode('nodes', false, {x: p.x, y: p.y, w});
     } else {
       /* ⚠️ Кадр «видно окрестности» шире порога детализации, а персонаж на
          таком кадре скрыт (см. detailWidth выше) — кольцо пульсировало бы
@@ -1841,7 +1907,7 @@ function finishMapPick(p) {
     ring.setAttribute('class', 'map-locate-ring');
     ring.setAttribute('cx', node.x);
     ring.setAttribute('cy', node.y);
-    ring.setAttribute('r', (toNodes ? node.graphSize : node.size) * 0.75);
+    ring.setAttribute('r', (toNodes ? nodesPlace(node).size : node.size) * 0.75);
     ring.style.animationIterationCount = LOCATE_PULSES;
     graphLayer.appendChild(ring);
     // По таймеру, а не по animationend: при prefers-reduced-motion анимации нет
@@ -1887,20 +1953,27 @@ function finishMapPick(p) {
     try { localStorage.setItem(VIEW_MODE_KEY, mode); } catch (e) {}
 
     graphNodes.forEach(n => {
-      n.targetX = toNodes ? n.graphX : n.mapX;
-      n.targetY = toNodes ? n.graphY : n.mapY;
+      const p = toNodes ? nodesPlace(n) : null;
+      n.targetX = toNodes ? p.x : n.mapX;
+      n.targetY = toNodes ? p.y : n.mapY;
       // Укрупнение мелких узлов в режиме нод — масштабом группы, а не
       // перерисовкой иконки (см. renderNodes). У локаций выходит ровно 1.
-      n.targetScale = toNodes ? n.graphSize / n.size : 1;
+      n.targetScale = toNodes ? p.size / n.size : 1;
     });
 
     const target = focus || (toNodes
-      ? {x: graphViewCenter.x, y: graphViewCenter.y, w: graphViewWidth()}
+      ? nodesCamera()
       : {x: savedMapView.x + savedMapView.w / 2, y: savedMapView.y + savedMapView.h / 2, w: savedMapView.w});
+
+    // Разделы: нити прячутся сразу, рамки и подписи — после перелёта (css).
+    const toSections = toNodes && nodesArrangement === 'sections';
+    svg.classList.toggle('sections-mode', toSections);
+    svg.classList.remove('sections-shown');
 
     if (instant) {
       graphNodes.forEach(n => { n.x = n.targetX; n.y = n.targetY; n.viewScale = n.targetScale; });
       applyGraphPositions();
+      svg.classList.toggle('sections-shown', toSections);
       svg.classList.toggle('nodes-mode', toNodes);
       graphBackdrop.style.display = toNodes ? 'block' : 'none';
       graphBackdrop.style.opacity = toNodes ? '1' : '0';
@@ -1920,6 +1993,7 @@ function finishMapPick(p) {
        отложенные шаги досрабатывали бы поверх новой. */
     const token = ++viewTransition;
     const alive = () => token === viewTransition;
+    viewBusyUntil = performance.now() + VIEW_TWEEN_DURATION + 50;
 
     /* Узлы едут ВЕСЬ переход целиком, а камера — только вторую его половину,
        ту, где карта уже скрыта. Это и даёт совмещение: затухание карты идёт
@@ -1946,6 +2020,7 @@ function finishMapPick(p) {
       svg.classList.add('nodes-mode');
       pz.focusOn(target.x, target.y, target.w, CAMERA_DURATION);
       await nodesDone;
+      if (alive() && toSections) svg.classList.add('sections-shown');
     } else {
       // Обратный порядок: сначала камера по пустому SVG...
       pz.focusOn(target.x, target.y, target.w, CAMERA_DURATION);
@@ -1961,6 +2036,42 @@ function finishMapPick(p) {
 
   viewSwitchBtns.forEach(btn => {
     btn.addEventListener('click', () => setViewMode(btn.dataset.view, false));
+  });
+
+  /* ▦ — смена раскладки ВНУТРИ режима нод: граф <-> разделы. Карта уже скрыта,
+     поэтому узлы и камера едут одновременно, без тактов затухания.
+     ⚠️ Пока идёт переход карта <-> ноды, кнопка не срабатывает: новый перелёт
+     узлов оборвал бы старый, и его промис не разрешился бы никогда — переход
+     в ноды так и застрял бы без .nodes-mode. */
+  let arrangeToken = 0;
+  async function setNodesArrangement(arr, instant) {
+    nodesArrangement = arr;
+    try { localStorage.setItem(NODES_ARRANGEMENT_KEY, arr); } catch (e) {}
+    updateViewModeUi();
+    if (viewMode !== 'nodes' || !graphNodes.length) return;
+    const token = ++arrangeToken;
+    const toSections = arr === 'sections';
+    svg.classList.toggle('sections-mode', toSections);
+    svg.classList.remove('sections-shown');
+    graphNodes.forEach(n => {
+      const p = nodesPlace(n);
+      n.targetX = p.x; n.targetY = p.y; n.targetScale = p.size / n.size;
+    });
+    const cam = nodesCamera();
+    if (instant) {
+      graphNodes.forEach(n => { n.x = n.targetX; n.y = n.targetY; n.viewScale = n.targetScale; });
+      applyGraphPositions();
+      pz.focusOn(cam.x, cam.y, cam.w, 0);
+      svg.classList.toggle('sections-shown', toSections);
+      return;
+    }
+    pz.focusOn(cam.x, cam.y, cam.w, VIEW_TWEEN_DURATION);
+    await new Promise(res => tweenToTargets(VIEW_TWEEN_DURATION, res));
+    if (token === arrangeToken && toSections && viewMode === 'nodes') svg.classList.add('sections-shown');
+  }
+  sortToggle?.addEventListener('click', () => {
+    if (performance.now() < viewBusyUntil) return;
+    setNodesArrangement(nodesArrangement === 'sections' ? 'graph' : 'sections', false);
   });
 
   const MANIFEST_PATH = 'systems/manifest.json';
@@ -2082,11 +2193,17 @@ function finishMapPick(p) {
     graphViewBox = layoutGraphView(graph, graphViewCenter.x, graphViewCenter.y,
       (svg.clientWidth || 1) / (svg.clientHeight || 1));
     graph.forEach(n => { n.graphX = n.x; n.graphY = n.y; });
+    // Третья раскладка — по разделам (js/sections.js). В x/y она не пишет,
+    // только в sectionX/sectionY, и заодно помечает, какие нити в ней видны.
+    sectionsLayout = layoutSections(graph, threads, graphViewCenter.x, graphViewCenter.y, svg.clientWidth || 0);
 
     graph.forEach(n => { n.x = n.mapX; n.y = n.mapY; n.viewScale = 1; });
 
     graphThreads = threads;
+    // Рамки и подписи разделов — под нитями и маркерами, сразу над звёздным фоном.
+    graphLayer.insertBefore(renderSections(sectionsLayout), graphBackdrop.nextSibling);
     renderThreads(threads);
+    threads.forEach(t => { if (t.sectionKeep && t.__el) t.__el.classList.add('section-keep'); });
     renderNodes([...graph.values()]);
     graphNodes = [...graph.values()].filter(n => n.onMap && n.__el);
     renderDetailBadges(graphNodes);
@@ -2106,6 +2223,40 @@ function finishMapPick(p) {
     wireSystemWindows(graph);
     wireEditor(graph);
     if (pendingShown) showPendingToast();
+
+    /* Обучение (js/tour.js) управляет картой только через эти крючки. Сюжет
+       для показа — первый с набором, иначе первый идущий. */
+    const tourPlot = () => graphNodes.find(n => n.kind === 'world' && !isCompleted(n)
+        && typeof n.data.recruit === 'string' && n.data.recruit.trim())
+      || graphNodes.find(n => n.kind === 'world' && n.data.beacon && !isCompleted(n)) || null;
+    registerTourHooks({
+      // Ноды по разделам — с анимацией, промис разрешается, когда всё встало.
+      showSections: async () => {
+        if (viewMode === 'nodes') {
+          if (nodesArrangement !== 'sections') await setNodesArrangement('sections', false);
+        } else {
+          nodesArrangement = 'sections';
+          try { localStorage.setItem(NODES_ARRANGEMENT_KEY, 'sections'); } catch (e) {}
+          await setViewMode('nodes', false);
+        }
+      },
+      sectionFrame: (key) => graphLayer.querySelector(key
+        ? `.section-frame-fill[data-section="${key}"]` : '.section-frame-fill'),
+      // Сюжет вместе с его персонажами (подложка группы в разделах); нет
+      // персонажей — сам маркер без колец маяка.
+      plotEl: () => {
+        const n = tourPlot();
+        if (!n) return null;
+        return graphLayer.querySelector(`.section-group[data-owner="${CSS.escape(n.id)}"]`)
+          || n.__el?.querySelector('.hotspot-hit') || n.__el || null;
+      },
+      openPlot: async () => {
+        const n = tourPlot();
+        if (!n) return;
+        if (isStoryOpen() || isPhenomOpen()) return; // уже открыт с прошлого шага
+        goToNode(n);
+      },
+    });
 
     // Сохранённый режим применяем без анимации: страница только что
     // открылась, перелетать не от чего.
@@ -2131,6 +2282,15 @@ function finishMapPick(p) {
     const params = new URLSearchParams(location.search);
     const id = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param)
       || params.get('tgWebAppStartParam') || params.get('open') || '';
+    /* startapp=sections (?open=sections) — сразу ноды по разделам: для кнопки
+       «Сюжеты и набор» в канале. Точки с таким id нет и быть не должно. */
+    // startapp=tour (?open=tour) — сразу обучение: для кнопки в канале.
+    if (id === 'tour') { startTour(); return; }
+    if (id === 'sections') {
+      if (viewMode === 'nodes') setNodesArrangement('sections', true);
+      else { nodesArrangement = 'sections'; setViewMode('nodes', true); }
+      return;
+    }
     const node = /^[A-Za-z0-9_-]{1,64}$/.test(id) ? graph.get(id) : null;
     if (!node || node.kind === 'system') return;
     goToNode(node);

@@ -49,8 +49,10 @@ html, body {
    в первую очередь для Firefox: в нём SVG-текст рендерится заметно медленнее,
    чем в Chromium, и на телефоне карта ощутимо подлагивает — при том что в
    Telegram Mini App и в Chrome та же карта едет плавно. */
-.svg-widget svg.panning text:not(.map-label-major),
-.svg-widget svg.labels-minimal text:not(.map-label-major) {
+/* Подписи нод по разделам (.section-label/.section-title) не прячем: их ~40,
+   а без них раздел при перетаскивании превращался бы в безымянные квадраты. */
+.svg-widget svg.panning text:not(.map-label-major):not(.section-label):not(.section-title),
+.svg-widget svg.labels-minimal text:not(.map-label-major):not(.section-label):not(.section-title) {
   display: none;
 }
 
@@ -746,6 +748,9 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   opacity: 0.35;
   cursor: default;
 }
+/* 🏷️ и ▦ сменяют друг друга по атрибуту hidden (updateViewModeUi): свой
+   display у кнопок иначе перебил бы его. */
+.svg-controls button[hidden] { display: none; }
 
 /* 🏷️ и "?" под переключателем режима — квадраты высотой с ряд переключателя
    (38px), одинаковые на телефоне и компьютере. Специфичность
@@ -1928,6 +1933,57 @@ svg.nodes-mode.far-links .map-thread.far { display: inline; }
 svg.nodes-mode.far-links .map-thread.nodes-only,
 svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 
+/* Ноды по разделам (25.09.2026, js/sections.js). Рамки и подписи видны только
+   ПОСЛЕ перелёта (.sections-shown) — стоят на конечных местах, во время
+   перелёта маркеры ещё не там. Нити в разделах — только союзы внутри группы
+   (.section-keep); прячем их с начала перелёта (.sections-mode), иначе
+   нити к родителю тянулись бы поперёк всех разделов. */
+.sections-layer { display: none; pointer-events: none; }
+.svg-widget svg.nodes-mode.sections-shown .sections-layer { display: inline; }
+.svg-widget svg.nodes-mode.sections-mode .map-thread:not(.section-keep) { display: none; }
+/* Рамка раздела: заливка — отдельный rect, обводка — путь с разрывом под
+   заголовком (заголовок стоит в верхней линии, v=153). */
+.section-frame-fill { fill: rgba(255,255,255,0.03); }
+.section-frame-fill.is-gold { fill: rgba(255,215,106,0.05); }
+.section-frame-fill.is-dim { fill: rgba(255,255,255,0.02); }
+.section-frame {
+  fill: none;
+  stroke: rgba(175,238,238,0.28);
+  stroke-width: 0.22;
+}
+.section-frame.is-gold { stroke: rgba(255,215,106,0.55); }
+.section-frame.is-dim { stroke: rgba(255,255,255,0.16); }
+.section-title {
+  fill: #AFEEEE;
+  font-weight: 700;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+.section-title.is-gold { fill: #ffd76a; }
+.section-title.is-dim { fill: rgba(255,255,255,0.5); }
+.section-group {
+  fill: rgba(255,255,255,0.035);
+  stroke: rgba(255,255,255,0.08);
+  stroke-width: 0.15;
+}
+.section-label {
+  fill: rgba(255,255,255,0.82);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+.section-label.is-dim { fill: rgba(255,255,255,0.45); }
+/* Скобки связей между точками слева от разделов (v=151): семья «родитель +
+   дети-точки» — сплошная, союз двух точек — золотой пунктир, ● — родитель. */
+.section-bracket {
+  stroke: rgba(175,238,238,0.6);
+  stroke-width: 0.28;
+  stroke-linecap: round;
+  fill: none;
+}
+.section-bracket.is-link {
+  stroke: rgba(255,215,106,0.6);
+  stroke-dasharray: 0.7 0.7;
+}
+.section-bracket-dot { fill: #AFEEEE; }
+
 /* Уровень детализации карты (24.09.2026, DETAIL_WIDTH в js/map.js): персонажи
    и нити к ним появляются только на кадре, где их уже видно — на общем виде
    это 3-пиксельные точки, которые нельзя ни разглядеть, ни нажать. Вместо них
@@ -2057,3 +2113,163 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   .tabbar-btn { padding: 4px 1px; }
 }
 
+
+
+/* ============================================================
+   Обучение по шагам (js/tour.js, v=155). Слой выше всего (модал 300,
+   полоска выбора места 320). Затемнение — box-shadow выреза на весь экран:
+   один элемент, без SVG-масок и фильтров; вырез плавно переезжает между
+   шагами. Сам оверлей ловит все тапы — карту под ним трогать нельзя,
+   управление только кнопками карточки.
+   ============================================================ */
+.tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: none;
+  /* Оверлей — прямо в body, шрифт карты (.svg-widget) ему не достаётся. */
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+.tour-overlay button { font-family: inherit; }
+.tour-overlay.open { display: block; }
+.tour-hole {
+  position: fixed;
+  border-radius: 12px;
+  box-shadow: 0 0 0 200vmax rgba(0,0,0,0.66);
+  outline: 2px solid rgba(255,215,106,0.85);
+  outline-offset: 0;
+  transition: left 0.35s ease, top 0.35s ease, width 0.35s ease, height 0.35s ease, opacity 0.2s;
+  pointer-events: none;
+}
+/* Без цели (введение, финал) — сплошное затемнение: нулевой вырез в центре. */
+.tour-hole.is-empty {
+  left: 50% !important;
+  top: 50% !important;
+  width: 0 !important;
+  height: 0 !important;
+  outline-color: transparent;
+}
+@keyframes tourArrowDown {
+  0%, 100% { transform: translate(-50%, 0); }
+  50%      { transform: translate(-50%, 7px); }
+}
+@keyframes tourArrowUp {
+  0%, 100% { transform: translate(-50%, 0) rotate(180deg); }
+  50%      { transform: translate(-50%, -7px) rotate(180deg); }
+}
+.tour-arrow {
+  position: fixed;
+  width: 0;
+  height: 0;
+  border-left: 12px solid transparent;
+  border-right: 12px solid transparent;
+  border-top: 18px solid #ffd76a;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+  opacity: 0;
+  transition: opacity 0.2s;
+  animation: tourArrowDown 1s ease-in-out infinite;
+  pointer-events: none;
+}
+.tour-arrow.up { animation-name: tourArrowUp; }
+.tour-arrow.show { opacity: 1; }
+.tour-card {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  max-width: 440px;
+  margin: 0 auto;
+  max-height: 70vh;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 16px 16px 12px;
+  border-radius: 14px;
+  background: #16161f;
+  border: 1px solid rgba(175,238,238,0.25);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.45;
+  transition: opacity 0.2s;
+}
+.tour-card.is-busy { opacity: 0; pointer-events: none; }
+.tour-card.at-top { top: calc(12px + env(safe-area-inset-top, 0px)); }
+.tour-card.at-bottom { bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+.tour-card.at-center { top: 50%; transform: translateY(-50%); }
+.tour-count {
+  color: rgba(255,255,255,0.45);
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+.tour-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #ffd76a;
+  margin-bottom: 8px;
+}
+.tour-text p { margin: 0 0 8px; }
+.tour-text b { color: #AFEEEE; }
+.tour-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.tour-tab, .tour-link, .tour-btn {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.8);
+  border-radius: 8px;
+  padding: 7px 11px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tour-tab.active {
+  background: rgba(175,238,238,0.2);
+  border-color: rgba(175,238,238,0.55);
+  color: #AFEEEE;
+}
+.tour-links {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 4px 0 6px;
+}
+.tour-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.tour-spacer { flex: 1; }
+.tour-btn--ghost { background: transparent; }
+.tour-btn--primary {
+  background: #AFEEEE;
+  border-color: #AFEEEE;
+  color: #0b0b10;
+}
+
+/* Кнопка «Пройти обучение» в подсказке «?». Пульсирует, пока обучение ни
+   разу не запускали (то же «дыхание», что у самой кнопки «?»). */
+.help-tour-btn {
+  display: block;
+  width: 100%;
+  margin: 6px 0 4px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,215,106,0.6);
+  background: rgba(255,215,106,0.12);
+  color: #ffd76a;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+@keyframes tourBtnPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,106,0.5); }
+  50%      { box-shadow: 0 0 0 8px rgba(255,215,106,0); }
+}
+.help-tour-btn.pulse { animation: tourBtnPulse 2.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .tour-arrow, .help-tour-btn.pulse { animation: none; }
+  .tour-hole { transition: none; }
+}
