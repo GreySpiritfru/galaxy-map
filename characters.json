@@ -298,20 +298,6 @@
     "y": -40
   },
   {
-    "id": "adamask",
-    "name": "Адамаск",
-    "race": "Терран",
-    "role": "Учёный",
-    "player": "",
-    "sheetUrl": "https://teletype.in/@greyspirit/dXGmGxIcE7V",
-    "parent": "kreyser-gorizont",
-    "links": [],
-    "image": "images/adamask.jpg",
-    "color": "",
-    "x": -200,
-    "y": -40
-  },
-  {
     "id": "ledo-plazac",
     "name": "Ледо Плазац",
     "race": "Терран",
