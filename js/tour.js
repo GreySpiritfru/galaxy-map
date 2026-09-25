@@ -18,12 +18,12 @@
    ⚠️ Тексты — черновик из инфоканала (введение, «Что такое Феном», анкета),
    игрок обещал поправить. Править прямо здесь, в INTRO_TABS и STEPS.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=156';
-import { closeStory, isStoryOpen } from './stories.js?v=156';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=156';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=156';
-import { closeSystem, isSystemOpen } from './system-view.js?v=156';
-import { quoteHtml, initQuotes } from './quotes.js?v=156';
+import { closeModal, isArticleOpen } from './modal.js?v=158';
+import { closeStory, isStoryOpen } from './stories.js?v=158';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=158';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=158';
+import { closeSystem, isSystemOpen } from './system-view.js?v=158';
+import { quoteHtml, initQuotes } from './quotes.js?v=158';
 
 const TOUR_SEEN_KEY = 'galaxyMapTourSeen';
 const LINKS = {
@@ -64,7 +64,7 @@ const INTRO_TABS = [
   {title: '1. О ролевой', html: `
     <div class="tour-badge">🚀 Основан в 2011 году — нам уже 15 лет</div>
     <p><b>ЦМО «Феном»</b> — текстовая ролевая, объединяющая космос, фантастику, магию и технологии в одной галактике.</p>
-    <p>Вместо единой компании планируются связанные сюжеты, посвящённые своей теме и жанру: исследованию систем, запутанным детективам, магическим баталиям, выживанию в пустыне или даже повседневности на курорте. Со временем случившееся превращается в лор.</p>
+    <p>Вместо единой компании у нас планируются связанные сюжеты, посвящённые своей теме и жанру: исследованию систем, запутанным детективам, магическим баталиям, выживанию в пустыне или даже повседневности на курорте. Со временем случившееся превращается в лор.</p>
     <p>Мы предлагаем идеи друг другу, становимся ведущими собственных историй, играем обычные будни, если хотим отдохнуть от сложных сюжетов, либо присоединяемся к уже идущим приключениям. Наши персонажи могут путешествовать между сюжетами, постепенно развиваться, менять взгляды на мир, общаться за чашечкой кофе, либо сражаться за свою жизнь, если так складывается их судьба.</p>`},
   {title: '2. Про Феном', html: `
     <p><b>ЦМО «Феном»</b> — идея социальной площадки и точки интереса. Сокращение появилось из названия: «Центр Межгалактического Общения», чем является огромный космический корабль Феном, совмещающий в себе эпичную таверну и город для миллионов существ. Это чудо путешествует по звёздам, попадая в самые разные миры и проблемные ситуации. Вы можете исследовать его бесконечные улочки, либо попробовать в местном баре фирменный напиток «Жижа», разливаемый только на Феноме.</p>
@@ -87,37 +87,38 @@ const STEPS = [
   {kind: 'intro'},
   {
     prepare: async h => { closeWindows(); await h.showSections(); },
-    target: h => h.sectionFrame('recruit') || h.sectionFrame(),
+    // Весь каталог целиком (игрок: «выделять сразу всю таблицу»).
+    target: h => h.sectionsLayer(),
     title: 'Все маркеры — по каталогу',
-    text: 'Это режим «Ноды», кнопка ▦ справа вверху раскладывает маркеры по разделам. Сверху — <b>сюжеты, куда сейчас набирают игроков</b>, ниже — идущие сюжеты, локации, базовые маркеры, системы и архив.',
+    text: 'Это режим «Ноды». Кнопка ▦ справа вверху раскладывает маркеры по разделам. В самом верху расположены <b>сюжеты, куда сейчас набирают игроков</b>, а ниже — локации, базовые маркеры, системы и архив маркеров.',
   },
   {
     prepare: async h => { closeWindows(); await h.showSections(); },
     target: h => h.plotEl(),
     optional: true,
     title: 'Сюжет',
-    text: 'Круг с золотым кольцом — сюжет. Рядом — персонажи, которые в нём играют, пунктир — союзники. Линия слева связывает маркеры, которые зависят друг от друга или находятся рядом: например, сюжет, идущий на Феноме, и сам Феном.',
+    text: 'Круг с золотыми кольцами — сюжет. Рядом стоят персонажи, которые в нём играют. Пунктир между персонажами — соигроки: персонажи, которых связывает общая история. Линия слева связывает маркеры, которые зависят друг от друга или находятся поблизости: например, сюжет, идущий на Феноме, и сам Феном.',
   },
   {
     prepare: async h => { await h.showSections(); await h.openPlot(); },
     target: () => topCard('.node-recruit') || topCard('.story-title'),
     optional: true,
     title: 'Окно сюжета',
-    text: 'Тап по маркеру открывает его описание. Плашка <b>«Набор открыт»</b> — кого сейчас ищут. В архиве хранятся все посты сюжета.',
+    text: 'Тап по маркеру открывает его описание. Плашка <b>«Набор открыт»</b> — кого сейчас ищут.',
   },
   {
     prepare: async h => { await h.showSections(); await h.openPlot(); },
     target: () => topCard('.node-head'),
     optional: true,
     title: 'Панель окна',
-    text: 'На верхней панели — маркеры: ↑ то, к чему маркер привязан, и персонажи, которые находятся в этом сюжете или локации. Язычок снизу открывает их списком. ✕ или «назад» — закрыть.',
+    text: 'На верхней панели также отображены маркеры, которые прикреплены к этому сюжету или находятся в локации.<br>В архиве хранятся все посты сюжета.',
   },
   {
     // Про 🏷️ — поэтому на карту: в нодах на её месте ▦.
     prepare: async h => { closeWindows(); await h.showMap(); },
     target: () => document.getElementById('controls'),
     title: 'Переходы',
-    text: '<b>Справочник</b> — статьи о мире: расы, магия, техника, описание галактики и Фенома. Под ним — переключатель карт и каталога нод.<br>🏷️ — меньше несгенерированных систем, если карта тормозит: останутся только бирюзовые, на которые можно нажать и перейти в саму систему.',
+    text: '<b>Справочник</b> — статьи о мире: расы, магия, техника, описание галактики и Фенома. Ниже — переключатель карт и каталога нод.<br>🏷️ — меньше несгенерированных систем, если карта тормозит: останутся только бирюзовые, на которые можно нажать и перейти в саму систему.',
   },
   {kind: 'finish'},
 ];
@@ -214,9 +215,14 @@ async function go(i, dir) {
   if (my !== token) return;
   const el = step.target ? step.target(hooks) : null;
   if (!el && step.optional) { go(i + dir, dir); return; }
-  const rect = el ? el.getBoundingClientRect() : null;
-  placeHole(rect && rect.width ? rect : null);
+  const r = el ? el.getBoundingClientRect() : null;
+  // Цель целиком за экраном (или без размера) — шаг без выреза, а не полоска у края.
+  const onScreen = r && r.width && r.bottom > 0 && r.top < window.innerHeight;
+  const rect = onScreen ? r : null;
+  // Сначала карточка (она выбирает половину экрана), потом вырез — чтобы
+  // большой вырез (весь каталог) обрезать по её краю, а не прятать под ней.
   renderCard(step, rect);
+  placeHole(rect, card.getBoundingClientRect());
   card.classList.remove('is-busy');
 }
 
@@ -257,7 +263,8 @@ function renderCard(step, rect) {
       <div class="tour-title">${step.title}</div>`;
     text = `<p>${step.text}</p>`;
   }
-  const nextLabel = last ? 'Готово' : (step.kind === 'intro' ? 'К карте и сюжетам →' : 'Далее');
+  // «5.» — продолжение нумерации вкладок 1–4 (игрок: «чтобы было понятнее»).
+  const nextLabel = last ? 'Готово' : (step.kind === 'intro' ? '5. К карте и сюжетам →' : 'Далее');
   card.innerHTML = `
     <div class="tour-head">${head}</div>
     <div class="tour-text">${text}</div>
@@ -270,26 +277,39 @@ function renderCard(step, rect) {
   initQuotes(card);
 
   // Карточка — на свободной от выреза половине экрана.
+  // Считаем по видимой части цели; большая цель (весь каталог) — карточка
+  // снизу, вырез обрежется по её краю (placeHole).
   const vh = window.innerHeight;
-  const holeMid = rect ? rect.top + rect.height / 2 : vh / 2;
-  card.classList.toggle('at-top', !!rect && holeMid > vh * 0.55);
-  card.classList.toggle('at-bottom', !!rect && holeMid <= vh * 0.55);
+  const visTop = rect ? Math.max(0, rect.top) : 0, visBottom = rect ? Math.min(vh, rect.bottom) : vh;
+  const big = !!rect && visBottom - visTop > vh * 0.45;
+  const holeMid = (visTop + visBottom) / 2;
+  card.classList.toggle('at-top', !!rect && !big && holeMid > vh * 0.55);
+  card.classList.toggle('at-bottom', !!rect && (big || holeMid <= vh * 0.55));
   card.classList.toggle('at-center', !rect);
 }
 
 // Вырез с запасом 6 px, не шире экрана. null — сплошное затемнение.
-function placeHole(rect) {
+function placeHole(rect, cardRect) {
   if (!rect) {
     hole.classList.add('is-empty');
     arrow.classList.remove('show');
     return;
   }
   const pad = 6, vw = window.innerWidth, vh = window.innerHeight;
-  const x = Math.max(4, rect.left - pad), y = Math.max(4, rect.top - pad);
+  const x = Math.max(4, rect.left - pad);
+  let y = Math.max(4, rect.top - pad);
   const w = Math.min(vw - 4, rect.right + pad) - x;
-  const h = Math.min(vh - 4, rect.bottom + pad) - y;
+  let bottom = Math.min(vh - 4, rect.bottom + pad);
+  // Не заходим под карточку: цель выше неё — режем низ, ниже — верх.
+  if (cardRect && cardRect.height) {
+    if (cardRect.top > y && bottom > cardRect.top - 10) bottom = cardRect.top - 10;
+    if (cardRect.bottom < bottom && y < cardRect.bottom + 10) y = cardRect.bottom + 10;
+  }
+  const h = Math.max(20, bottom - y);
   hole.classList.remove('is-empty');
   Object.assign(hole.style, {left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px'});
+  // Вырез на полэкрана и больше (весь каталог) и так виден — стрелка лишняя.
+  if (h > vh * 0.35) { arrow.classList.remove('show'); return; }
   // Стрелка — со стороны карточки: вырез в верхней половине — стрелка под
   // ним, смотрит вверх; в нижней — над ним, смотрит вниз.
   const below = y + h / 2 <= vh * 0.55;

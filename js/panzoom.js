@@ -344,6 +344,22 @@ export function createPanZoom(svg, opts) {
   });
 
   return {
+    /* Перетаскивание карты, начатое НЕ на самой карте (на кнопке угла поверх
+       неё, v=158, замечание игрока: зацепил пальцем «Справочник» — карта не
+       двигается). Вызывающий сам следит за пальцем и отдаёт смещение от
+       точки нажатия; математика та же, что у обычного драга выше. */
+    externalPan: () => {
+      cancelAnim();
+      const start = {...cur};
+      busyDrag = true; refreshBusy();
+      return {
+        move: (dx, dy) => {
+          const rs = Math.min((svg.clientWidth || 1) / start.w, (svg.clientHeight || 1) / start.h);
+          setViewBox(clampViewBox({x: start.x - dx / rs, y: start.y - dy / rs, w: start.w, h: start.h}));
+        },
+        end: () => { busyDrag = false; refreshBusy(); },
+      };
+    },
     zoomIn: () => { cancelAnim(); zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1.25); },
     zoomOut: () => { cancelAnim(); zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1/1.25); },
     reset: () => { cancelAnim(); setViewBox({...initialViewBox}); },

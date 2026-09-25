@@ -636,7 +636,18 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   align-items: flex-end;
   gap: 8px;
   z-index: 20;
+  /* Жест с кнопок угла двигает карту (v=158, см. controlsEl в js/map.js):
+     без touch-action: none телефон забирал бы жест себе (pointercancel), а
+     выделение текста на кнопках на компьютере обрывало перетаскивание. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
+/* Рамка фокуса после клика мышью (оранжевая у Chrome) не нужна — только при
+   навигации с клавиатуры, и в цветах карты. */
+.svg-controls button:focus { outline: none; }
+.svg-controls button:focus-visible { outline: 2px solid rgba(175,238,238,0.7); outline-offset: 1px; }
 
 .svg-controls button {
   background: rgba(255,255,255,0.08);

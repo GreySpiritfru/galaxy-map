@@ -1,17 +1,17 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=156';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=156';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=156';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=156';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=156';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=156';
-import { openCharacter, closeCharacter } from './characters.js?v=156';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=156';
-import { markerEl } from './node-window.js?v=156';
-import { layoutSections, renderSections } from './sections.js?v=156';
-import { registerTourHooks, startTour } from './tour.js?v=156';
+import { createPanZoom } from './panzoom.js?v=158';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=158';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=158';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=158';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=158';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=158';
+import { openCharacter, closeCharacter } from './characters.js?v=158';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=158';
+import { markerEl } from './node-window.js?v=158';
+import { layoutSections, renderSections } from './sections.js?v=158';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=158';
 
 const SVG_PATH = 'map.svg';
 
@@ -611,6 +611,42 @@ function finishMapPick(p) {
     svg.classList.toggle('labels-minimal', on);
     labelsToggle.classList.toggle('active', on);
   }
+  /* Жест, начатый на кнопках угла (Феном, Справочник, Ноды/Карта/Графика,
+     🏷️/▦, ?), двигает карту (v=158, замечание игрока: «случайно зацепил —
+     и карта не двигается»). Пока палец не уехал на DRAG_SLOP_PX — это тап по
+     кнопке; уехал — перетаскивание карты, а клик кнопки после отпускания
+     гасится. В css у угла touch-action: none (иначе браузер забрал бы жест
+     себе и прислал pointercancel) и user-select: none (на компьютере текст
+     кнопок выделялся, и карта переставала тащиться). */
+  const DRAG_SLOP_PX = 8;
+  const controlsEl = document.getElementById('controls');
+  controlsEl?.addEventListener('pointerdown', (e) => {
+    if (e.button && e.button !== 0) return;
+    const id = e.pointerId, sx = e.clientX, sy = e.clientY;
+    let pan = null;
+    const move = (ev) => {
+      if (ev.pointerId !== id) return;
+      const dx = ev.clientX - sx, dy = ev.clientY - sy;
+      if (!pan && Math.hypot(dx, dy) > DRAG_SLOP_PX) pan = pz.externalPan();
+      if (pan) { ev.preventDefault(); pan.move(dx, dy); }
+    };
+    const stop = (ev) => {
+      if (ev.pointerId !== id) return;
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+      if (!pan) return;
+      pan.end();
+      // Отпустили над кнопкой — её click не должен сработать.
+      const eat = (ce) => { ce.stopPropagation(); ce.preventDefault(); };
+      window.addEventListener('click', eat, {capture: true, once: true});
+      setTimeout(() => window.removeEventListener('click', eat, {capture: true}), 350);
+    };
+    window.addEventListener('pointermove', move, {passive: false});
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+  });
+
   labelsToggle.addEventListener('click', () => {
     const on = !svg.classList.contains('labels-minimal');
     applyLabelsMinimal(on);
@@ -1699,7 +1735,8 @@ function finishMapPick(p) {
   const SECTIONS_MAX_CHAR_PX = 40;
   function sectionsCamera() {
     const L = sectionsLayout;
-    const sw = svg.clientWidth || 1, sh = svg.clientHeight || 1;
+    // Нулевой размер бывает у скрытой вкладки/панели — тогда размер окна.
+    const sw = svg.clientWidth || window.innerWidth || 1, sh = svg.clientHeight || window.innerHeight || 1;
     /* Сверху справа — кнопки угла карты (Феном, Справочник, переключатель,
        ▦, ?). Верхний раздел под ними не читался бы, поэтому раскладка
        начинается ниже их нижнего края. */
@@ -2195,7 +2232,7 @@ function finishMapPick(p) {
     graph.forEach(n => { n.graphX = n.x; n.graphY = n.y; });
     // Третья раскладка — по разделам (js/sections.js). В x/y она не пишет,
     // только в sectionX/sectionY, и заодно помечает, какие нити в ней видны.
-    sectionsLayout = layoutSections(graph, threads, graphViewCenter.x, graphViewCenter.y, svg.clientWidth || 0);
+    sectionsLayout = layoutSections(graph, threads, graphViewCenter.x, graphViewCenter.y, svg.clientWidth || window.innerWidth || 0);
 
     graph.forEach(n => { n.x = n.mapX; n.y = n.mapY; n.viewScale = 1; });
 
@@ -2244,6 +2281,7 @@ function finishMapPick(p) {
       showMap: async () => {
         if (viewMode === 'nodes') await setViewMode(savedMapMode(), false);
       },
+      sectionsLayer: () => graphLayer.querySelector('.sections-layer'),
       sectionFrame: (key) => graphLayer.querySelector(key
         ? `.section-frame-fill[data-section="${key}"]` : '.section-frame-fill'),
       // Сюжет вместе с его персонажами (подложка группы в разделах); нет
@@ -2284,12 +2322,20 @@ function finishMapPick(p) {
   function openFromLink(graph) {
     const tg = window.Telegram && window.Telegram.WebApp;
     const params = new URLSearchParams(location.search);
-    const id = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param)
+    let id = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param)
       || params.get('tgWebAppStartParam') || params.get('open') || '';
     /* startapp=sections (?open=sections) — сразу ноды по разделам: для кнопки
        «Сюжеты и набор» в канале. Точки с таким id нет и быть не должно. */
     // startapp=tour (?open=tour) — сразу обучение: для кнопки в канале.
     if (id === 'tour') { startTour(); return; }
+    /* startapp=welcome — ссылка для рекламы (v=157): обучение только при
+       ПЕРВОМ заходе с этого устройства (отметка galaxyMapTourSeen ставится
+       при запуске тура), дальше та же ссылка ведёт сразу в каталог — иначе
+       обучение вылезало бы при каждом переходе по ссылке из поста. */
+    if (id === 'welcome') {
+      if (!tourSeen()) { startTour(); return; }
+      id = 'sections';
+    }
     if (id === 'sections') {
       if (viewMode === 'nodes') setNodesArrangement('sections', true);
       else { nodesArrangement = 'sections'; setViewMode('nodes', true); }

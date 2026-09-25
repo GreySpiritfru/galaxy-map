@@ -44,7 +44,10 @@ const PROFILES = {
     cellGapY: 1.3,        // под подписью до следующего ряда
     ownerGap: 1.2,        // от точки до сетки её персонажей
     itemGapX: 2.6, itemGapY: 2.2,
-    pad: 2.4, padTop: 2.2, padBottom: 1.4, titleFont: 2.3, sectionGap: 2.8,
+    /* padBottom = padTop − 0.5 + 0.4 (v=158): подложка группы начинается на
+       0.5 выше маркеров и кончается на 0.4 ниже подписей — так просвет от
+       подложки до рамки снизу равен верхнему (игрок: «снизу меньше»). */
+    pad: 2.4, padTop: 2.2, padBottom: 2.1, titleFont: 2.3, sectionGap: 2.8,
     laneStep: 2.2, laneGap: 1.4,   // скобки: шаг дорожек и зазор до рамок
     /* Маркер персонажа при кадре «по ширине» — не мельче этого (px). Без
        ограничения подбор под форму экрана брал широкую раскладку (высокая
@@ -62,7 +65,7 @@ const PROFILES = {
     cellGapY: 0.8,
     ownerGap: 1.0,
     itemGapX: 1.8, itemGapY: 1.1,
-    pad: 1.5, padTop: 1.7, padBottom: 0.9, titleFont: 1.9, sectionGap: 2.2,
+    pad: 1.5, padTop: 1.7, padBottom: 1.6, titleFont: 1.9, sectionGap: 2.2,
     laneStep: 1.8, laneGap: 1.1,
     minCharPx: 26,
     // 5, а не 4: сетка уже — камера по ширине крупнее, и колонка на 375×812
@@ -76,7 +79,7 @@ let P = PROFILES.normal;
 const WIDTH_MIN = 30, WIDTH_MAX = 170;
 
 const SECTIONS = [
-  {key: 'recruit', title: '📣 Набор открыт', accent: 'gold'},
+  {key: 'recruit', title: 'Набор открыт', accent: 'gold'},
   {key: 'active', title: 'Сюжеты идут'},
   {key: 'locations', title: 'Локации'},
   {key: 'markers', title: 'Базовые маркеры'},
