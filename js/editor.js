@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=146';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=149';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -34,6 +34,8 @@ const TITLE_MAX = 80;
 const SHORT_TITLE_MAX = 30;
 const CODE_MAX = 10;
 const COLOR_MAX = 40;
+// Набор игроков у точки (плашка над описанием). Продублирован в map_editor.py.
+const RECRUIT_MAX = 300;
 // Больше sendData не примет.
 const SEND_MAX_BYTES = 4096;
 
@@ -52,6 +54,7 @@ const FIELD_LABELS = {
     title: 'Название', shortTitle: 'Короткое название', code: 'Номер',
     articleUrl: 'Статья', archiveUrl: 'Архив', color: 'Цвет',
     beacon: 'Маяк', completed: 'Статус', wide: 'Ширина маркера', pinned: 'Закреплено',
+    location: 'Локация', recruit: 'Набор',
     parent: 'Привязка', links: 'Связи', x: 'Место на карте', y: 'Место на карте',
     systemX: 'Место в системе', systemY: 'Место в системе',
   },
@@ -117,7 +120,8 @@ function fieldsOf(kind, d) {
     archiveUrl: d.archiveUrl || '', articleUrl: (d.article && d.article.url) || '',
     color: d.color || '',
     beacon: d.beacon === true, completed: d.completed === true, wide: d.wide === true,
-    pinned: d.pinned === true,
+    pinned: d.pinned === true, location: d.location === true,
+    recruit: d.recruit || '',
   };
 }
 
@@ -780,8 +784,20 @@ export function showNodeEditor(node) {
         </label>`}
         <label class="editor-check">
           <input type="checkbox" name="pinned"${draft.pinned ? ' checked' : ''}>
-          <span>Закрепить <small>— первой в ряду переходов у родителя, не уходит под «+N»</small></span>
+          <span>Закрепить <small>— первой в ряду переходов у родителя</small></span>
         </label>
+        <label class="editor-check">
+          <input type="checkbox" name="location"${draft.location ? ' checked' : ''}>
+          <span>Локация <small>— в нодах по разделам стоит среди локаций, а не базовых маркеров</small></span>
+        </label>
+      </fieldset>
+
+      <fieldset class="editor-section">
+        <legend>Набор игроков</legend>
+        <label class="editor-field">Кого ищем
+          <textarea name="recruit" maxlength="${RECRUIT_MAX}" rows="3" placeholder="Например: 2 места на сторону администрации — дипломат, охрана">${escapeHtml(draft.recruit)}</textarea>
+        </label>
+        <div class="editor-hint">Плашка «Набор открыт» в окне точки над описанием. Пусто — набора нет. У завершённой не показывается.</div>
       </fieldset>
 
       <fieldset class="editor-section">
@@ -842,7 +858,7 @@ export function showNodeEditor(node) {
   const {say, report} = statusHelpers(form);
   wireLinks(form, draft, say, 'связей');
 
-  const CHECKS = ['beacon', 'completed', 'wide', 'pinned'];
+  const CHECKS = ['beacon', 'completed', 'wide', 'pinned', 'location'];
   form.addEventListener('input', (e) => {
     const el = e.target;
     if (el.type === 'checkbox' && CHECKS.includes(el.name)) draft[el.name] = el.checked;
@@ -865,7 +881,7 @@ export function showNodeEditor(node) {
 
   const problemOf = (set) => {
     if ('title' in set && !set.title) return 'Название не может быть пустым.';
-    const problem = textProblem(node.kind, set, ['title', 'shortTitle', 'code', 'archiveUrl', 'articleUrl'], ['title', 'shortTitle']);
+    const problem = textProblem(node.kind, set, ['title', 'shortTitle', 'code', 'archiveUrl', 'articleUrl', 'recruit'], ['title', 'shortTitle', 'recruit']);
     if (problem) return problem;
     if (set.articleUrl && !/^https:\/\/\S+$/i.test(set.articleUrl)) return 'Ссылка на статью должна начинаться с https:// и быть без пробелов.';
     if (set.archiveUrl && !/^https:\/\/\S+$/i.test(set.archiveUrl)) return 'Ссылка на архив должна начинаться с https:// и быть без пробелов.';

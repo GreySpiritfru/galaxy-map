@@ -15,8 +15,8 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=146';
-import { REF_ARTICLES } from './articles.js?v=146';
+import { escapeHtml } from './modal.js?v=149';
+import { REF_ARTICLES } from './articles.js?v=149';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любой
 // точки, поэтому не в данных, а константой здесь.
@@ -77,8 +77,21 @@ export function renderFrame(container, url) {
   container.firstElementChild.dataset.src = url;
 }
 
-/* Содержимое окна: баннеры, заголовок, описание в сворачиваемой цитате. Всё
-   необязательное — точка объявляет только то, что у неё есть.
+/* Набор игроков (поле recruit, 25.09.2026) — плашка «Набор открыт» над
+   описанием: первое, что новичок видит в окне сюжета. У завершённой точки
+   не показывается, даже если поле забыли очистить. floating — поверх статьи
+   (iframe) внизу окна, со своим ✕: встроить её в чужую страницу нельзя. */
+function recruitHtml(view, floating) {
+  if (!view.recruit || view.completed) return '';
+  return `<div class="node-recruit${floating ? ' is-floating' : ''}">
+      ${floating ? '<button type="button" class="node-recruit-close" aria-label="Скрыть">✕</button>' : ''}
+      <div class="node-recruit-head">📣 Набор открыт</div>
+      <div class="node-recruit-body">${escapeHtml(view.recruit).replace(/\n/g, '<br>')}</div>
+    </div>`;
+}
+
+/* Содержимое окна: баннеры, заголовок, набор, описание в сворачиваемой
+   цитате. Всё необязательное — точка объявляет только то, что у неё есть.
 
    ⚠️ Ряда персонажей тут больше нет (24.09.2026): персонажи-дети вместе с
    детьми-точками — в ряду переходов под панелью (renderNodeLinks ниже).
@@ -90,7 +103,19 @@ export function renderNodeContent(container, view) {
      есть, баннеры и заголовок над ней не дублируем. */
   const articleUrl = embeddedArticleUrl(view);
   container.classList.remove('is-article');
-  if (articleUrl) { renderFrame(container, articleUrl); return; }
+  if (articleUrl) {
+    renderFrame(container, articleUrl);
+    // Фрейм мог остаться от прошлого открытия (renderFrame его не трогает),
+    // а плашка — нет: набор могли поменять.
+    container.querySelector('.node-recruit')?.remove();
+    const recruit = recruitHtml(view, true);
+    if (recruit) {
+      container.insertAdjacentHTML('beforeend', recruit);
+      const plaque = container.lastElementChild;
+      plaque.querySelector('.node-recruit-close').onclick = () => plaque.remove();
+    }
+    return;
+  }
   const art = view.article;
   const linkHtml = art && art.url
     ? `<p class="node-article-link"><a href="${escapeHtml(art.url)}" target="_blank" rel="noopener">📖 ${escapeHtml(art.label || 'Статья')} ↗</a></p>`
@@ -112,6 +137,7 @@ export function renderNodeContent(container, view) {
   container.innerHTML = `
     ${imagesHtml}
     <div class="story-title">${codeHtml}${escapeHtml(view.title || '')}${doneHtml}</div>
+    ${recruitHtml(view, false)}
     ${descHtml}
     ${linkHtml}
   `;

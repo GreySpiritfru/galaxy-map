@@ -217,7 +217,8 @@ html, body {
   font-size: 12px;
 }
 .editor-field input,
-.editor-field select {
+.editor-field select,
+.editor-field textarea {
   width: 100%;
   box-sizing: border-box;
   padding: 9px 10px;
@@ -226,6 +227,11 @@ html, body {
   background: rgba(255,255,255,0.06);
   color: #fff;
   font-size: 15px; /* ≥15px — иначе iOS зумит страницу при фокусе */
+}
+.editor-field textarea {
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.4;
 }
 .editor-field select option,
 .editor-field select optgroup { background: #1a1a22; }
@@ -1579,6 +1585,10 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   --teletype-bar: 0px;
   --frame-top: calc(var(--head-h, 120px) - 16px - var(--teletype-bar));
   position: absolute;
+  /* Во всю ширину. Колонкой 760 с прозрачными краями пробовали (v=147) и
+     откатили (v=148): на телефоне статья всё равно на весь экран, а страницу
+     Teletype прозрачной не сделать — чужой сайт со своим фоном. Вернуться к
+     этому — когда будет своя копия статей (зеркало), там фон наш. */
   left: 0;
   top: var(--frame-top);
   width: 100%;
@@ -1587,6 +1597,51 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
 }
 /* Только у Teletype: у анкет на telegra.ph/graph.org такой плашки нет. */
 .node-article-frame.is-teletype { --teletype-bar: 52px; }
+/* Набор игроков (поле recruit, 25.09.2026) — золотой, как маяк сюжета на
+   карте: «сюда зовут». В тексте окна — над описанием; поверх статьи
+   (iframe) — внизу окна, со своим ✕. */
+.node-recruit {
+  position: relative;
+  border: 1px solid rgba(255, 215, 106, 0.55);
+  background: rgba(255, 215, 106, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 0 0 14px;
+}
+.node-recruit-head {
+  font-weight: 700;
+  color: #ffd76a;
+  margin-bottom: 4px;
+}
+.node-recruit-body {
+  font-size: 14px;
+  line-height: 1.45;
+}
+.node-recruit.is-floating {
+  position: absolute;
+  z-index: 2;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  max-width: 736px;
+  margin: 0 auto;
+  padding-right: 40px;
+  background: rgba(28, 24, 12, 0.94);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+}
+.node-recruit-close {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  font-size: 15px;
+  cursor: pointer;
+}
 .node-article-link { margin-top: 14px; }
 .node-article-link a { color: #AFEEEE; }
 

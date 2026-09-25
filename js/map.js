@@ -1,15 +1,15 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=146';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=146';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=146';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=146';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=146';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=146';
-import { openCharacter, closeCharacter } from './characters.js?v=146';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=146';
-import { markerEl } from './node-window.js?v=146';
+import { createPanZoom } from './panzoom.js?v=149';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=149';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=149';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=149';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=149';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=149';
+import { openCharacter, closeCharacter } from './characters.js?v=149';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=149';
+import { markerEl } from './node-window.js?v=149';
 
 const SVG_PATH = 'map.svg';
 
@@ -1028,6 +1028,7 @@ function finishMapPick(p) {
       code: d.code || '',
       title: d.title || node.id,
       description: d.description || '',
+      recruit: typeof d.recruit === 'string' ? d.recruit.trim() : '',
       images: Array.isArray(d.images) ? d.images : [],
       beacon: !!d.beacon,
       completed: isCompleted(node),
