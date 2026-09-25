@@ -21,8 +21,8 @@
    точка без своей карты — это просто точка, и текст ей рисует тот же общий
    код, что и всем остальным. characters.json привязывает персонажей к любой
    точке с тайловой картой через submapX/submapY (см. ниже). */
-import { closeModal, escapeHtml } from './modal.js?v=155';
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=155';
+import { closeModal, escapeHtml } from './modal.js?v=156';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=156';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже

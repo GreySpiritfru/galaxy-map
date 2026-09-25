@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=155';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=156';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';

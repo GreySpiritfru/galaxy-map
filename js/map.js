@@ -1,17 +1,17 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=155';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=155';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=155';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=155';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=155';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=155';
-import { openCharacter, closeCharacter } from './characters.js?v=155';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=155';
-import { markerEl } from './node-window.js?v=155';
-import { layoutSections, renderSections } from './sections.js?v=155';
-import { registerTourHooks, startTour } from './tour.js?v=155';
+import { createPanZoom } from './panzoom.js?v=156';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=156';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=156';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=156';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=156';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=156';
+import { openCharacter, closeCharacter } from './characters.js?v=156';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=156';
+import { markerEl } from './node-window.js?v=156';
+import { layoutSections, renderSections } from './sections.js?v=156';
+import { registerTourHooks, startTour } from './tour.js?v=156';
 
 const SVG_PATH = 'map.svg';
 
@@ -2239,6 +2239,10 @@ function finishMapPick(p) {
           try { localStorage.setItem(NODES_ARRANGEMENT_KEY, 'sections'); } catch (e) {}
           await setViewMode('nodes', false);
         }
+      },
+      // Обратно на карту (ту, с которой ушли в ноды) — для шага про 🏷️.
+      showMap: async () => {
+        if (viewMode === 'nodes') await setViewMode(savedMapMode(), false);
       },
       sectionFrame: (key) => graphLayer.querySelector(key
         ? `.section-frame-fill[data-section="${key}"]` : '.section-frame-fill'),
