@@ -1,17 +1,17 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=158';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=158';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=158';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=158';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=158';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=158';
-import { openCharacter, closeCharacter } from './characters.js?v=158';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=158';
-import { markerEl } from './node-window.js?v=158';
-import { layoutSections, renderSections } from './sections.js?v=158';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=158';
+import { createPanZoom } from './panzoom.js?v=164';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=164';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=164';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=164';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=164';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=164';
+import { openCharacter, closeCharacter } from './characters.js?v=164';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=164';
+import { markerEl } from './node-window.js?v=164';
+import { layoutSections, renderSections } from './sections.js?v=164';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=164';
 
 const SVG_PATH = 'map.svg';
 
@@ -70,7 +70,9 @@ function finishMapPick(p) {
        - заливка территории — `fill="<цвет>"`, filter пуст или отсутствует;
        - светящийся контур — тот же цвет в `stroke`, `fill="none"`,
          `filter="url(#fade)"` (те самые 82 blur-фильтра, грабли №18);
-       - пунктирные линии секторов ВНУТРИ территории — `stroke-dasharray="3 3"`.
+       - пунктирные линии секторов ВНУТРИ территории — `stroke-dasharray="3 3"`
+         (в нашем map.svg — уже разложенные на штрихи, с `data-sector`, см.
+         tools/trim-sector-dashes.py).
      Гиперлейны (тонкая белая линия, `filter=""`, но `fill="none"` — сплошной
      штрих без цвета) под эти условия не попадают и остаются нетронутыми, как
      и подписи систем (Tahoma) — эта функция трогает только `<path>`.
@@ -88,7 +90,9 @@ function finishMapPick(p) {
       const filter = p.getAttribute('filter');
       const fill = p.getAttribute('fill');
       const isBorderGlow = (filter || '').includes('fade');
-      const isSectorDash = p.getAttribute('stroke-dasharray') === '3 3';
+      // Пунктир секторов после tools/trim-sector-dashes.py — сплошные линии
+      // из готовых штрихов, без stroke-dasharray, с меткой data-sector.
+      const isSectorDash = p.getAttribute('stroke-dasharray') === '3 3' || p.hasAttribute('data-sector');
       const isSolidFill = (filter === '' || filter === null)
         && fill && fill !== 'none' && fill !== 'rgba(0,0,0,0.5)';
       if (isBorderGlow || isSectorDash || isSolidFill) p.classList.add('map-political');
@@ -104,6 +108,8 @@ function finishMapPick(p) {
   // графа, а кадр меняется уже сейчас — стартовым кадром (fitStartFrame).
   // Без этого флага onViewBox полез бы в ещё не объявленные переменные.
   let detailReady = false;
+  // То же для подписей систем по читаемости (syncLabelLod ниже).
+  let labelLodReady = false;
   const pz = createPanZoom(svg, {
     zoomOutLimit: 1,     // нельзя отдалиться дальше исходного вида карты — П.2
     /* Доля исходной ширины, ближе которой не подпускаем. Было 0.02 — это ~12
@@ -118,11 +124,17 @@ function finishMapPick(p) {
     boundsPad: 0.2,      // запас побольше, чтобы можно было докрутить камеру до самых крайних систем
     // Уровень детализации: мелкие маркеры появляются только на близком кадре,
     // см. syncDetailLevel ниже. Вызывается каждый кадр жеста — там дёшево.
-    onViewBox: (vb) => { if (detailReady) syncDetailLevel(vb); },
+    onViewBox: (vb) => {
+      if (detailReady) syncDetailLevel(vb);
+      if (labelLodReady) syncLabelLod(vb);
+    },
     // Границы — по тому, что реально видно на экране, а не по квадрату кадра
     // (см. clampVisible в panzoom.js): на вытянутом телефоне иначе можно было
     // увести камеру так, что полэкрана занимала маска.
     clampVisible: true,
+    // Промахи мимо маркера (panzoom.js): мишень рядом / приближение. При
+    // выборе места и калибровке тап по пустому месту — само действие.
+    tapAssist: () => !mapPickHandler && !calibMode,
     onClick: (p) => {
       if (mapPickHandler) { finishMapPick(p); return; }
       if (calibMode) showCalib(p.x, p.y);
@@ -150,6 +162,11 @@ function finishMapPick(p) {
     const w = core.w * Math.min(W, H) / Math.max(W, H);
     pz.focusOn(core.x + core.w / 2, core.y + core.h / 2, w, 0);
   })();
+
+  // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
+  if (new URLSearchParams(location.search).has('fps')) {
+    import('./fps.js?v=164').then(m => m.startFpsMeter(svg)).catch(() => {});
+  }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
      Чисто визуальное украшение по краям: это фон, а не игровые данные —
@@ -815,10 +832,10 @@ function finishMapPick(p) {
      ⚠️ Производительность (грабли №15/17): анимируются только transform,
      opacity и stroke-dashoffset у простых фигур, БЕЗ фильтров и без opacity
      на больших группах. Обводка — vector-effect: non-scaling-stroke, иначе при
-     scale(3) кольцо на подлёте становилось втрое толще. На время жеста
-     (.panning), в режиме экономии (🏷️) и при prefers-reduced-motion анимация
-     останавливается — см. CSS. pointer-events: none — маяк не расширяет зону
-     тапа по маркеру. */
+     scale(3) кольцо на подлёте становилось втрое толще. Видны всегда, и во
+     время жеста (v=161); при prefers-reduced-motion — одно неподвижное
+     кольцо, см. CSS. pointer-events: none — маяк не расширяет зону тапа по
+     маркеру. */
   const BEACON_RINGS = 3;
   function addStoryBeacon(g, iconSize, color) {
     const beacon = document.createElementNS(ns, 'g');
@@ -1377,8 +1394,78 @@ function finishMapPick(p) {
     // Порог переехал вместе с размером панели — пересчитываем и сам признак,
     // иначе после поворота телефона слой детализации остался бы от прежнего.
     if (detailFar !== null) syncDetailLevel(pz.getViewBox());
+    if (labelLodReady) syncLabelLod(pz.getViewBox());
   }
   window.addEventListener('resize', measurePane);
+
+  /* Подписи систем — по читаемости (26.09.2026, v=161, идея игрока).
+
+     Все ~1600 подписей систем в экспорте StellarMaps одного кегля — 3 единицы
+     карты. На общем виде телефона это 4–5 px на экране, на максимальном
+     отдалении компьютера — 4–6: прочитать нельзя, а место и кадр они
+     занимают (на общем виде мелкие подписи — ~20% стоимости кадра, см.
+     «Производительность» в CLAUDE.md). Поэтому мелкие подписи
+     (`.map-label-minor`) видны, только когда буквы доросли до LABEL_SHOW_PX,
+     и плавно гаснут/проявляются (css, `.labels-far`; как именно и почему
+     тень подписей заменена обводкой — там же). Названия фракций и
+     бирюзовые подписи готовых систем (`.map-label-major`) видны всегда —
+     по ним видно, что где и что можно открыть.
+
+     Порог в пикселях, а не в ширине кадра — по той же причине, что у слоя
+     детализации выше: масштаб задаёт короткая сторона панели. Разные числа
+     для пальца и мыши: телефон держат ближе и экран у него плотнее; на
+     мониторе нужно крупнее. Скрываются подписи на полпикселя раньше, чем
+     появляются, — иначе на самой границе они мигали бы от каждого движения.
+
+     ⚠️ Первая версия (6 / 6.5 px, opacity на КАЖДОЙ подписи) лагала при
+     отдалении (замечание игрока). Замер (Edge без окна, 1250×625, варианты
+     вперемешку): сами подписи на экране — +1.5 мс на кадр при зуме и
+     панораме, дорогим было УГАСАНИЕ — opacity у 668 подписей = 668 слоёв,
+     12–13 мс на кадр все 0.35 с, как раз в момент отдаления. Поэтому:
+     - мелкие подписи собраны в ОДНУ группу (`.map-labels-minor`), гаснут
+       fill-/stroke-opacity группы (наследуются, слоёв нет); тень подписей
+       заменена обводкой, иначе она оставалась чёрными полосами — см. css;
+     - порог выше (7 / 8 px): буквы действительно читаются, и появляются
+       подписи, когда их на экране уже меньше.
+     Отсекать подписи за краем экрана вручную («как в играх») проверяли — не
+     помогает (−0.8 мс): браузер и так не рисует то, чего не видно. Раскладка
+     шрифта при смене масштаба — <1 мс, text-rendering: geometricPrecision
+     ничего не даёт. */
+  const LABEL_UNITS = 3;
+  const LABEL_SHOW_PX = matchMedia('(pointer: coarse)').matches ? 7 : 8;
+  const LABEL_HIDE_PX = LABEL_SHOW_PX - 0.5;
+  let labelsFar = null;
+  function syncLabelLod(vb) {
+    if (!paneMin) return;
+    const px = LABEL_UNITS * paneMin / vb.w;
+    const far = labelsFar ? px < LABEL_SHOW_PX : px < LABEL_HIDE_PX;
+    if (far !== labelsFar) {
+      labelsFar = far;
+      svg.classList.toggle('labels-far', far);
+    }
+  }
+  // Мелкие — все подписи систем, кроме названий фракций (Impact/крупные) —
+  // тот же признак, что в setupSystemLabels. Готовые системы setupSystemLabels
+  // позже вынет из группы и переведёт в major. Собираем сразу, до первой
+  // отрисовки, чтобы на телефоне подписи не мелькнули и не погасли на старте.
+  // Группа встаёт перед названиями фракций: в экспорте подписи шли вперемешку
+  // со значками звёзд, теперь лежат над ними (как и положено подписям), но
+  // по-прежнему под маской краёв и маркерами.
+  const minorLabels = document.createElementNS(ns, 'g');
+  minorLabels.setAttribute('class', 'map-labels-minor');
+  const minorTexts = [...svg.querySelectorAll('text[font-family]')].filter(t =>
+    t.getAttribute('font-family') !== 'Impact' && parseFloat(t.getAttribute('font-size') || '0') < 4.5);
+  if (minorTexts.length) {
+    const host = minorTexts[0].parentNode;
+    host.insertBefore(minorLabels, host.querySelector(':scope > text[font-family="Impact"]'));
+    minorTexts.forEach(t => {
+      t.classList.add('map-label-minor');
+      if (t.parentNode === host) minorLabels.appendChild(t);
+    });
+  }
+  measurePane();
+  labelLodReady = true;
+  syncLabelLod(pz.getViewBox());
 
   /* Сколько персонажей прячется ПОД этой точкой — вся ветка вниз, а не только
      прямые дети: персонаж персонажа скрыт так же. Ребёнок-НЕ-персонаж виден
@@ -2540,7 +2627,10 @@ function finishMapPick(p) {
       labelsBySlug.get(slug).push(textEl);
 
       textEl.setAttribute('fill', '#AFEEEE'); // подсветка готовых систем
-      textEl.classList.add('map-label-major'); // готовые системы тоже не прячем при перетаскивании
+      textEl.classList.add('map-label-major'); // видна всегда: и в 🏷️, и на общем виде
+      textEl.classList.remove('map-label-minor');
+      // Из гаснущей группы мелких — рядом с ней, тем же слоем.
+      if (textEl.parentNode === minorLabels) minorLabels.parentNode.insertBefore(textEl, minorLabels);
       textEl.style.cursor = 'pointer';
 
       // невидимая область побольше самого текста — легче попасть пальцем

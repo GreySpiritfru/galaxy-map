@@ -1,9 +1,9 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=158';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=158';
-import { renderNodeLinks } from './node-window.js?v=158';
+import { createPanZoom } from './panzoom.js?v=164';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=164';
+import { renderNodeLinks } from './node-window.js?v=164';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -286,6 +286,8 @@ export async function openSystem(name, opts = {}) {
          единиц в кадре, планета занимает седьмую часть экрана. */
       zoomInLimit: 0.05,
       boundsPad: 0,
+      // Промахи мимо маркера — как на карте галактики (panzoom.js).
+      tapAssist: () => !systemPickHandler,
       onClick: (p) => { trySystemPick(p); },
     });
     current.svg = innerSvg;

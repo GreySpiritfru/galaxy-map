@@ -34,26 +34,66 @@ html, body {
   text-rendering: optimizeSpeed;
 }
 
-/* Пока палец/мышь ведёт карту (класс .panning вешает createPanZoom), мелкие
-   подписи систем не рисуем. Это самая дорогая часть кадра: их ~1600, каждая
-   перерисовывается при любом изменении viewBox, то есть на каждом кадре
-   перетаскивания. Замер: 28 мс на кадр было, 14.4 мс без подписей.
-   Остаются видимыми названия фракций и готовых систем (.map-label-major,
-   несколько десятков штук) — по ним видно, куда едешь, а стоят они копейки.
-   Отпустил палец — класс снимается, подписи возвращаются мгновенно.
-   Только для карты галактики: вид системы лёгкий, там прятать нечего.
+/* Кнопка 🏷️ (.labels-minimal): мелкие подписи систем не рисуем вовсе — выбор
+   игрока, живёт между заходами (localStorage, см. labelsToggle в js/map.js).
+   Подписи — самая дорогая часть кадра: их ~1600, и каждая перерисовывается
+   при любом изменении viewBox. Остаются названия фракций и готовых систем
+   (.map-label-major, несколько десятков) и подписи нод по разделам.
 
-   Тот же приём переиспользован кнопкой 🏷️ в меню "⋯" (.labels-minimal) —
-   там это уже не на время жеста, а насовсем: выбор игрока, который остаётся
-   между заходами (localStorage, см. labelsToggle в js/map.js). Нужно это
-   в первую очередь для Firefox: в нём SVG-текст рендерится заметно медленнее,
-   чем в Chromium, и на телефоне карта ощутимо подлагивает — при том что в
-   Telegram Mini App и в Chrome та же карта едет плавно. */
-/* Подписи нод по разделам (.section-label/.section-title) не прячем: их ~40,
-   а без них раздел при перетаскивании превращался бы в безымянные квадраты. */
-.svg-widget svg.panning text:not(.map-label-major):not(.section-label):not(.section-title),
+   ⚠️ На время жеста (.panning) подписи больше НЕ прячутся (v=161, решение
+   игрока): мигание текста на каждом движении раздражало, а кому тормозит
+   (Firefox на телефоне рисует SVG на процессоре) — есть 🏷️. Раньше
+   `.panning text:not(.map-label-major)` стоял здесь же, замер тогда был
+   28 мс на кадр с подписями против 14.4 без. */
 .svg-widget svg.labels-minimal text:not(.map-label-major):not(.section-label):not(.section-title) {
   display: none;
+}
+
+/* Подписи систем по читаемости (v=161, syncLabelLod в js/map.js): на общем
+   виде, где буквы мельче порога, мелкие подписи (группа
+   `.map-labels-minor`) гаснут, при приближении — проявляются.
+
+   Как гасить — перепробовано (замеры покадрово):
+   - opacity у каждой из 668 подписей — 668 слоёв, 12–13 мс на кадр всё
+     угасание, лагало при отдалении;
+   - opacity у группы — вся группа в отдельный слой, 30–75 мс на кадр;
+   - fill-opacity у группы — дёшево (во время зума ≈ без анимации), но у
+     подписей экспорта была `text-shadow: black 0 0 3px`, и Chrome её рисует:
+     буквы гасли, тени оставались чёрными полосами (скриншот игрока, v=162).
+   Поэтому (v=164) тень заменена тонкой обводкой (ниже) — она гаснет вместе
+   с буквами через наследуемые fill-opacity/stroke-opacity группы. Обводка
+   к тому же дешевле тени (~1 мс на кадр). display с allow-discrete
+   переключается в конце угасания и в начале проявления, стартовая
+   прозрачность — @starting-style; где не поддерживается (старые iOS) —
+   сразу, без анимации. */
+.svg-widget svg .map-labels-minor {
+  stroke-opacity: 0.85;
+  transition: fill-opacity 0.25s ease, stroke-opacity 0.25s ease, display 0.25s allow-discrete;
+}
+.svg-widget svg.labels-far .map-labels-minor {
+  fill-opacity: 0;
+  stroke-opacity: 0;
+  display: none;
+}
+@starting-style {
+  .svg-widget svg .map-labels-minor { fill-opacity: 0; stroke-opacity: 0; }
+}
+
+/* Подписи экспорта StellarMaps (у них одних есть атрибут font-family):
+   вместо размытой тени `text-shadow: black 0 0 3px` из самого экспорта —
+   тонкий чёрный контур под буквами (paint-order: stroke). Читаемость на
+   светлом ядре галактики та же (сравнивали картинкой с игроком), кадр
+   дешевле на ~1 мс, а главное — контур гаснет вместе с буквами (см. выше).
+   stroke-opacity у мелких задаёт их группа, у остальных — здесь. */
+.svg-widget svg text[font-family] {
+  text-shadow: none !important;
+  stroke: #000;
+  stroke-width: 0.45px;
+  stroke-linejoin: round;
+  paint-order: stroke;
+}
+.svg-widget svg text[font-family]:not(.map-label-minor) {
+  stroke-opacity: 0.85;
 }
 
 /* Второй тяжёлый слой — свечения/заливки территорий из самого экспорта
@@ -92,6 +132,20 @@ html, body {
       оставалась без контура. */
 .svg-widget svg.labels-minimal [filter*="fade"] {
   display: none;
+}
+
+/* Счётчик кадров для замеров на телефоне — только с ?fps=1 (js/fps.js). */
+.fps-meter {
+  position: fixed;
+  left: 8px;
+  bottom: 8px;
+  z-index: 1000;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.7);
+  color: #AFEEEE;
+  font: 12px/1.3 ui-monospace, Menlo, Consolas, monospace;
+  pointer-events: none;
 }
 
 /* Вкладка-заглушка в окне персонажа ("Заметки"/"Броски") — телом окна на
@@ -573,14 +627,15 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   100% { transform: scale(1);   opacity: 0; }
 }
 
-/* Стоп анимации: во время жеста (каждый кадр и так перерисовывается вся сцена,
-   грабли №15) и если в системе просили меньше движения. В режиме 🏷️ маяки
-   остаются (16.09.2026, по просьбе игрока): по замеру они в покое ничего не
-   стоят, а без них сюжеты на карте не найти. Прячем совсем, а не ставим на паузу — застывший
-   кадр с полупрозрачным кольцом выглядел бы как артефакт. */
-.svg-widget svg.panning .story-beacon { display: none; }
+/* Маяки видны ВСЕГДА (v=161, решение игрока): и во время жеста (раньше
+   прятались по .panning — мигали на каждом движении), и в режиме 🏷️ (с
+   16.09.2026), и при «меньше движения» в системе. В последнем случае —
+   одно неподвижное кольцо вместо сходящихся: сюжет на карте всё равно
+   видно, а анимации нет (на Android это включает «Удалить анимацию»,
+   у многих оно стоит ради скорости). */
 @media (prefers-reduced-motion: reduce) {
-  .story-beacon { display: none; }
+  .story-beacon-ring { animation: none; opacity: 0; }
+  .story-beacon-ring:first-child { opacity: 0.4; transform: scale(1.7); }
 }
 .sys-hit { pointer-events: auto; cursor: pointer; }
 
@@ -643,7 +698,13 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
+  /* Колонка шире самих кнопок (ряды разной ширины, зазоры между ними) — без
+     этого тапы в промежутках доставались контейнеру, а не карте: двойной тап
+     у кнопок угла не приближал (замечание игрока, v=160). События получают
+     только кнопки; перетаскивание с них по-прежнему ловит #controls. */
+  pointer-events: none;
 }
+.svg-controls button { pointer-events: auto; }
 /* Рамка фокуса после клика мышью (оранжевая у Chrome) не нужна — только при
    навигации с клавиатуры, и в цветах карты. */
 .svg-controls button:focus { outline: none; }

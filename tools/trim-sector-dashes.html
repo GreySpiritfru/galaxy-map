@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>trim-sector-dashes</title>
+<style>#box{position:absolute;left:0;top:0;width:200px;height:200px;visibility:hidden}</style>
+</head>
+<body>
+<div id="box"></div>
+<pre id="out"></pre>
+<script>
+/* Готовит пунктир секторов для tools/trim-sector-dashes.py — см. там, зачем.
+   Для каждого <path> с stroke-dasharray и clip-path считает штрихи заранее:
+   штрих, целиком (со всей шириной обводки) лежащий внутри контура обрезки,
+   идёт как есть; штрих у границы укорачивается с концов, пока не окажется
+   внутри. Итог — обычная линия без пунктира и без обрезки. Геометрия —
+   средствами самого браузера (getPointAtLength, isPointInFill). */
+const STEP = 0.2;      // шаг выборки по кривым и по проверке ширины, ед. карты
+const EPS = 0.01;      // запас к полуширине обводки
+const fmt = n => (+n.toFixed(3)).toString();
+
+function vertexLengths(p) {
+  // Длины до концов сегментов — чтобы углы ломаной попадали в точки как есть.
+  // Экспорт StellarMaps пишет только абсолютные M/L/C; иное — выборка по шагу.
+  const d = p.getAttribute('d');
+  const cmds = d.match(/[A-Za-z][^A-Za-z]*/g) || [];
+  if (cmds.some(c => !/^[MLC]/.test(c)) || !/^M/.test(cmds[0] || '')) return null;
+  if (cmds.filter(c => c[0] === 'M').length !== 1) return null;                 // несколько кусков
+  if (cmds[0].slice(1).trim().split(/[\s,]+/).filter(Boolean).length !== 2) return null;  // неявные L после M
+  const tmp = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  p.parentNode.appendChild(tmp);
+  const segs = [];
+  let prefix = cmds[0], prevLen = 0;
+  for (const c of cmds.slice(1)) {
+    const nums = c.slice(1).trim().split(/[\s,]+/).filter(Boolean);
+    const per = c[0] === 'L' ? 2 : 6;
+    for (let i = 0; i + per <= nums.length; i += per) {
+      prefix += c[0] + nums.slice(i, i + per).join(',');
+      tmp.setAttribute('d', prefix);
+      const len = tmp.getTotalLength();
+      segs.push({type: c[0], s0: prevLen, s1: len});
+      prevLen = len;
+    }
+  }
+  tmp.remove();
+  return segs;
+}
+
+function plan(p, root) {
+  const dashAttr = (p.getAttribute('stroke-dasharray') || '').trim();
+  if (!dashAttr || dashAttr === 'none') return null;
+  const dash = dashAttr.split(/[\s,]+/).map(Number);
+  if (dash.some(v => !(v >= 0)) || dash.every(v => v === 0)) return null;
+  const pattern = dash.length % 2 ? dash.concat(dash) : dash;
+  const period = pattern.reduce((a, b) => a + b, 0);
+  const cs = getComputedStyle(p);
+  if (cs.strokeLinecap !== 'butt') return null;          // у скруглённых концов другая геометрия
+  const hw = parseFloat(cs.strokeWidth) / 2 + EPS;
+  const off = parseFloat(p.getAttribute('stroke-dashoffset') || 0) || 0;
+  const m = (p.getAttribute('clip-path') || '').match(/url\(#([^)]+)\)/);
+  const cp = m && root.querySelector('#' + CSS.escape(m[1]));
+  if (!cp || cp.children.length !== 1 || cp.getAttribute('clipPathUnits') === 'objectBoundingBox' || cp.hasAttribute('transform')) return null;
+  const child = cp.children[0];
+  const src = child.tagName === 'use' ? root.querySelector(child.getAttribute('href') || child.getAttribute('xlink:href')) : child;
+  if (!src || typeof src.isPointInFill !== 'function' || child.hasAttribute('transform') || src.hasAttribute('transform') || p.hasAttribute('transform')) return null;
+  src.style.fillRule = getComputedStyle(child).clipRule;   // обрезка — по clip-rule, не fill-rule
+
+  const L = p.getTotalLength();
+  const at = s => p.getPointAtLength(Math.max(0, Math.min(L, s)));
+  const inside = (x, y) => src.isPointInFill(new DOMPoint(x, y));
+  const tangent = s => { const a = at(s - 0.05), b = at(s + 0.05); let tx = b.x - a.x, ty = b.y - a.y; const l = Math.hypot(tx, ty) || 1; return [tx / l, ty / l]; };
+  const sideOk = s => { const q = at(s), [tx, ty] = tangent(s); return inside(q.x - ty * hw, q.y + tx * hw) && inside(q.x + ty * hw, q.y - tx * hw); };
+  const dashOk = (a, b) => { for (let s = a; s < b; s += STEP) if (!sideOk(s)) return false; return sideOk(b); };
+  const segs = vertexLengths(p);
+  const emit = (a, b, parts) => {
+    const ss = [a];
+    if (segs) {
+      for (const g of segs) {
+        if (g.s1 <= a || g.s0 >= b) continue;
+        if (g.type === 'C') for (let s = Math.max(a, g.s0) + STEP; s < Math.min(b, g.s1); s += STEP) ss.push(s);
+        if (g.s1 > a && g.s1 < b) ss.push(g.s1);
+      }
+    } else {
+      for (let s = a + STEP; s < b; s += STEP) ss.push(s);
+    }
+    ss.push(b);
+    ss.sort((x, y) => x - y);
+    const pts = [];
+    for (const s of ss) { const q = at(s); const last = pts[pts.length - 1]; if (!last || Math.hypot(q.x - last.x, q.y - last.y) > 1e-3) pts.push(q); }
+    if (pts.length > 1) parts.push('M' + pts.map(q => fmt(q.x) + ',' + fmt(q.y)).join('L'));
+  };
+
+  const parts = [];
+  let kept = 0, trimmed = 0, dropped = 0;
+  let s = -((off % period) + period) % period, i = 0;
+  while (s < L) {
+    const len = pattern[i % pattern.length];
+    if (i % 2 === 0 && len > 0) {
+      let a = Math.max(0, s), b = Math.min(L, s + len);
+      if (b - a > 1e-4) {
+        if (dashOk(a, b)) { emit(a, b, parts); kept++; }
+        else {
+          const mid = (a + b) / 2;
+          if (!sideOk(mid)) dropped++;
+          else {
+            if (!sideOk(b)) { let lo = mid, hi = b; for (let k = 0; k < 16; k++) { const mm = (lo + hi) / 2; if (dashOk(mid, mm)) lo = mm; else hi = mm; } b = lo; }
+            if (!sideOk(a)) { let lo = a, hi = mid; for (let k = 0; k < 16; k++) { const mm = (lo + hi) / 2; if (dashOk(mm, mid)) hi = mm; else lo = mm; } a = hi; }
+            if (b - a > 0.05 && dashOk(a, b)) { emit(a, b, parts); trimmed++; } else dropped++;
+          }
+        }
+      }
+    }
+    s += len; i++;
+  }
+  return {d: parts.join(''), kept, trimmed, dropped};
+}
+
+(async () => {
+  const out = document.getElementById('out');
+  try {
+    const text = await fetch('../map.svg', {cache: 'no-store'}).then(r => r.text());
+    const doc = new DOMParser().parseFromString(text, 'image/svg+xml');
+    const svg = document.importNode(doc.documentElement, true);
+    document.getElementById('box').appendChild(svg);
+    const paths = [...svg.querySelectorAll('path[stroke-dasharray][clip-path]')];
+    const plans = paths.map(p => plan(p, svg));
+    out.textContent = JSON.stringify({ok: true, count: paths.length, plans});
+  } catch (e) {
+    out.textContent = JSON.stringify({ok: false, error: String(e && e.stack || e)});
+  }
+  document.title = 'done';
+})();
+</script>
+</body>
+</html>
