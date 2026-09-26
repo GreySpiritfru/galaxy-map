@@ -4,6 +4,7 @@
     "title": "Феном",
     "description": "Текущее расположение корабля-города Фенома.",
     "image": "images/logophenome.png",
+    "location": true,
     "article": {
       "ref": "phenom",
       "label": "Описание Фенома"
