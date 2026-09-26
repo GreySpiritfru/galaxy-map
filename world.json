@@ -134,5 +134,15 @@
     "y": -219,
     "systemX": 84,
     "systemY": -83
+  },
+  {
+    "id": "korporatsiya-kartograf",
+    "title": "Корпорация Картограф",
+    "description": "",
+    "image": "",
+    "parent": "",
+    "links": [],
+    "x": -175,
+    "y": -100
   }
 ]
