@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=165" />
+  <link rel="stylesheet" href="css/styles.css?v=166" />
 </head>
 <body>
 
@@ -156,10 +156,13 @@
     <div class="node-head">
       <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
       <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть">✕</button>
-      <!-- Базовая вкладка — тело окна: статья Teletype прямо в окне или
-           описание, если статьи нет (applyNodeToolbar в js/node-window.js).
-           Подсвечена, пока открыто тело. -->
+      <!-- Тело окна — две вкладки: «Описание» (базовая, подсвечена при
+           открытии) и «Статья» (только если у точки есть ссылка на статью),
+           applyNodeToolbar/showNodeBody в js/node-window.js. -->
       <button class="tabbar-btn active" id="phenomDescriptionTab">
+        <span class="tabbar-btn-icon" aria-hidden="true">📄</span><span class="tabbar-btn-label">Описание</span>
+      </button>
+      <button class="tabbar-btn" id="phenomArticleTab" style="display:none">
         <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Статья</span>
       </button>
       <!-- Своя карта точки (поле submap, сейчас у Фенома) — ВИД поверх
@@ -221,9 +224,11 @@
       <div class="phenom-toolbar lore-toolbar tabbar" id="storyToolbar">
       <button class="toolbar-close-btn" id="storyClose" aria-label="Закрыть">✕</button>
       <!-- Родителя тут нет — он первым в ряду переходов #storyLinks. -->
-      <!-- Базовая вкладка — тело окна (статья или описание), см.
-           applyNodeToolbar в js/node-window.js. -->
-      <button class="tabbar-btn" id="storyArticle">
+      <!-- Тело окна — «Описание» и «Статья», как у нижнего слоя. -->
+      <button class="tabbar-btn active" id="storyDescription">
+        <span class="tabbar-btn-icon" aria-hidden="true">📄</span><span class="tabbar-btn-label">Описание</span>
+      </button>
+      <button class="tabbar-btn" id="storyArticle" style="display:none">
         <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Статья</span>
       </button>
       <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
@@ -275,6 +280,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=165"></script>
+<script type="module" src="js/main.js?v=166"></script>
 </body>
 </html>

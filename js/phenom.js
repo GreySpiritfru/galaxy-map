@@ -21,8 +21,8 @@
    точка без своей карты — это просто точка, и текст ей рисует тот же общий
    код, что и всем остальным. characters.json привязывает персонажей к любой
    точке с тайловой картой через submapX/submapY (см. ниже). */
-import { closeModal, escapeHtml } from './modal.js?v=165';
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=165';
+import { closeModal, escapeHtml } from './modal.js?v=166';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=166';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже
@@ -108,7 +108,9 @@ function ensurePhenomViewer() {
    случайно. Что показать в ряду, решает общий js/node-window.js. */
 const refs = {
   toolbar: document.getElementById('phenomToolbar'),
-  article: document.getElementById('phenomDescriptionTab'),
+  desc: document.getElementById('phenomDescriptionTab'),
+  article: document.getElementById('phenomArticleTab'),
+  body: document.getElementById('phenomInfoContent'),
   archive: document.getElementById('phenomArchive'),
   index: document.getElementById('phenomTelegram'),
   edit: document.getElementById('phenomEdit'),
@@ -278,11 +280,11 @@ export function openWorldWindow(view, handlers) {
   currentSubmap = view.submap || null;
   showBase();
   phenomOverlay.classList.add('open');
-  applyNodeToolbar(refs, view, handlers || {});
-  refs.article.onclick = () => closeSubmapView(); // со своей карты — к телу окна
+  renderNodeContent(phenomInfoContent, view);
+  // «Описание»/«Статья» со своей карты — сначала уйти с карты.
+  applyNodeToolbar(refs, view, {...(handlers || {}), beforeBody: showBase});
   renderNodeLinks(phenomLinks, view, handlers || {});
   phenomMapTab.hidden = !currentSubmap;
-  renderNodeContent(phenomInfoContent, view);
   phenomArmed = false;
   setTimeout(() => { phenomArmed = true; }, 300);
 }
@@ -312,7 +314,7 @@ let openedSource = null; // какой .dzi сейчас загружен во v
 function showBase() {
   phenomOverlay.classList.remove('map-view');
   phenomMapTab.classList.remove('active');
-  refs.article.classList.add('active'); // базовая вкладка — «Статья»/«Описание»
+  // Подсветку «Описание»/«Статья» ставит showNodeBody (js/node-window.js).
   phenomViewerEl.hidden = true;
   phenomInfoContent.hidden = false;
 }
@@ -321,6 +323,7 @@ export function openSubmapView() {
   if (!currentSubmap || !isPhenomOpen()) return;
   phenomOverlay.classList.add('map-view');
   phenomMapTab.classList.add('active');
+  refs.desc.classList.remove('active');
   refs.article.classList.remove('active');
   phenomInfoContent.hidden = true;
   // Сначала показать контейнер, потом создавать viewer: OpenSeadragon,
@@ -334,6 +337,10 @@ export function openSubmapView() {
 export function closeSubmapView() {
   if (!isSubmapViewOpen()) return;
   showBase();
+  // Назад на ту вкладку тела, с которой уходили на карту.
+  const onArticle = phenomInfoContent.classList.contains('is-article');
+  refs.desc.classList.toggle('active', !onArticle);
+  refs.article.classList.toggle('active', onArticle);
 }
 
 export function isSubmapViewOpen() {

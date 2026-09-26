@@ -15,8 +15,8 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=165';
-import { REF_ARTICLES } from './articles.js?v=165';
+import { escapeHtml } from './modal.js?v=166';
+import { REF_ARTICLES } from './articles.js?v=166';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любой
 // точки, поэтому не в данных, а константой здесь.
@@ -96,31 +96,61 @@ function recruitHtml(view, floating) {
    ⚠️ Ряда персонажей тут больше нет (24.09.2026): персонажи-дети вместе с
    детьми-точками — в ряду переходов под панелью (renderNodeLinks ниже).
    Раньше ряд портретов жил внутри текста и уезжал вместе с ним. */
-export function renderNodeContent(container, view) {
-  /* Есть статья — она и есть тело окна: базовая вкладка «Статья» открыта
-     сразу, описание из world.json не показывается (оно остаётся запасным
-     вариантом на случай, если статьи нет). Своё название и обложка у статьи
-     есть, баннеры и заголовок над ней не дублируем. */
-  const articleUrl = embeddedArticleUrl(view);
-  container.classList.remove('is-article');
-  if (articleUrl) {
-    renderFrame(container, articleUrl);
-    // Фрейм мог остаться от прошлого открытия (renderFrame его не трогает),
-    // а плашка — нет: набор могли поменять.
-    container.querySelector('.node-recruit')?.remove();
-    const recruit = recruitHtml(view, true);
-    if (recruit) {
-      container.insertAdjacentHTML('beforeend', recruit);
-      const plaque = container.lastElementChild;
-      plaque.querySelector('.node-recruit-close').onclick = () => plaque.remove();
-    }
-    return;
-  }
-  const art = view.article;
-  const linkHtml = art && art.url
-    ? `<p class="node-article-link"><a href="${escapeHtml(art.url)}" target="_blank" rel="noopener">📖 ${escapeHtml(art.label || 'Статья')} ↗</a></p>`
-    : '';
+/* Тело окна — две вкладки (v=166, решение игрока): «Описание» (базовая,
+   открыта сразу) и «Статья» (есть, только если у точки задана статья).
+   v=140–165 статья, если была, ЗАМЕНЯЛА описание — описание из world.json
+   у таких точек было не увидеть вовсе.
 
+   Статья грузится только по нажатию «Статья» (раньше Teletype качался при
+   каждом открытии окна). Переключение вкладок iframe НЕ пересоздаёт — он
+   прячется атрибутом hidden (display:none не перезагружает страницу, а
+   вынимание из DOM — перезагружает): место чтения сохраняется. Возврат к той
+   же точке — тоже без перезагрузки (фрейм с тем же адресом остаётся). */
+export function renderNodeContent(container, view) {
+  const url = embeddedArticleUrl(view);
+  const frame = container.querySelector(':scope > iframe.node-article-frame');
+  [...container.children].forEach(n => { if (n !== frame || frame.dataset.src !== url) n.remove(); });
+  container.insertAdjacentHTML('afterbegin', `<div class="node-desc">${descriptionHtml(view)}</div>`);
+  // Набор поверх статьи — плашка со своим ✕ (встроить её в чужую страницу
+  // нельзя). Пересоздаётся на каждое открытие: набор могли поменять.
+  const recruit = recruitHtml(view, true);
+  if (recruit) {
+    container.insertAdjacentHTML('beforeend', recruit);
+    const plaque = container.lastElementChild;
+    plaque.hidden = true;
+    plaque.querySelector('.node-recruit-close').onclick = () => plaque.remove();
+  }
+  container.__descScroll = 0;
+}
+
+/* Показать вкладку тела: 'desc' или 'article'. Подсветка кнопок — здесь же. */
+export function showNodeBody(refs, view, which) {
+  const container = refs.body;
+  const url = embeddedArticleUrl(view);
+  const article = which === 'article' && !!url;
+  if (refs.desc) refs.desc.classList.toggle('active', !article);
+  if (refs.article) refs.article.classList.toggle('active', article);
+  if (!container) return;
+  const desc = container.querySelector(':scope > .node-desc');
+  let frame = container.querySelector(':scope > iframe.node-article-frame');
+  if (article && !frame) {
+    const teletype = /^https:\/\/teletype\.in\//i.test(url);
+    container.insertAdjacentHTML('beforeend', `<iframe class="node-article-frame${teletype ? ' is-teletype' : ''}" src="${escapeHtml(url)}"></iframe>`);
+    frame = container.lastElementChild;
+    frame.dataset.src = url;
+  }
+  // Прокрутка описания — своя, у статьи прокручивает iframe; контейнер со
+  // статьёй должен стоять в нуле, иначе фрейм уехал бы вместе с ним.
+  if (article && !container.classList.contains('is-article')) container.__descScroll = container.scrollTop;
+  container.classList.toggle('is-article', article);
+  if (desc) desc.hidden = article;
+  if (frame) frame.hidden = !article;
+  const plaque = container.querySelector(':scope > .node-recruit.is-floating');
+  if (plaque) plaque.hidden = !article;
+  container.scrollTop = article ? 0 : (container.__descScroll || 0);
+}
+
+function descriptionHtml(view) {
   const imagesHtml = (Array.isArray(view.images) ? view.images : [])
     .map(src => `<img class="story-banner-img" src="${escapeHtml(src)}" alt="" loading="lazy">`)
     .join('');
@@ -134,12 +164,11 @@ export function renderNodeContent(container, view) {
        </details>`
     : '';
 
-  container.innerHTML = `
+  return `
     ${imagesHtml}
     <div class="story-title">${codeHtml}${escapeHtml(view.title || '')}${doneHtml}</div>
     ${recruitHtml(view, false)}
     ${descHtml}
-    ${linkHtml}
   `;
 }
 
@@ -491,24 +520,29 @@ export function applyNodeToolbar(refs, view, handlers) {
      переходов (renderNodeLinks). У персонажа так же — его окно с 24.09.2026
      тоже общее (js/characters.js). */
 
-  /* Статья. Два источника: "ref" — статья-справочник из js/articles.js
-     (открывает общий обработчик по data-ref), "url" — любая внешняя ссылка.
-     Раньше это умела только локация с submap, теперь — любая точка. */
-  /* Базовая вкладка окна (24.09.2026, эксперимент на Авалоне): «Статья», если
-     статью можно показать прямо в окне, иначе «Описание». Она есть у КАЖДОЙ
-     точки и подсвечена, пока открыто тело окна, — как «Карта системы» в окне
-     системы. Раньше «Статья» открывала справочник поверх окна.
-     Клик по ней — вернуться к телу окна со своей карты (phenom.js вешает
-     onclick сам); в верхнем слое своей карты нет, клик ничего не делает. */
+  /* Статья — "ref" (статья справочника из js/articles.js) или "url".
+     v=166: «Описание» — базовая вкладка, есть у каждой точки и подсвечена при
+     открытии. «Статья» — только если в редакторе задана ссылка: Teletype и
+     статьи справочника — вкладкой в окне, другие сайты (в iframe обычно не
+     пускают) — в новой вкладке браузера. handlers.beforeBody — нижний слой
+     уходит со своей карты (phenom.js). */
   const art = view.article;
-  if (refs.article) {
-    const inline = !!embeddedArticleUrl(view);
-    show(refs.article, true);
-    refs.article.querySelector('.tabbar-btn-label').textContent = inline ? 'Статья' : 'Описание';
-    refs.article.title = inline ? (art.label || 'Статья') : 'Описание';
-    refs.article.classList.add('active');
-    refs.article.onclick = null;
+  const inline = !!embeddedArticleUrl(view);
+  const toBody = (which) => () => {
+    if (handlers.beforeBody) handlers.beforeBody();
+    showNodeBody(refs, view, which);
+  };
+  if (refs.desc) {
+    show(refs.desc, true);
+    refs.desc.onclick = toBody('desc');
   }
+  if (refs.article) {
+    show(refs.article, !!(art && (art.url || inline)));
+    refs.article.title = (art && art.label) || 'Статья';
+    refs.article.onclick = inline ? toBody('article')
+      : (art && art.url ? () => window.open(art.url, '_blank', 'noopener') : null);
+  }
+  showNodeBody(refs, view, 'desc');
 
   show(refs.archive, !!view.archiveUrl);
   if (refs.archive) {
