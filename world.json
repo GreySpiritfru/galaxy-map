@@ -87,7 +87,7 @@
     "beacon": true,
     "location": true,
     "parent": "phenome",
-    "links": [],
+    "links": ["story-1"],
     "x": -175,
     "y": -100
   },
