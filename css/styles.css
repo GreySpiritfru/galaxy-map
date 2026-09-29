@@ -23,7 +23,13 @@ html, body {
 .svg-widget {
   position: relative;
   width: 100vw;
+  /* dvh — видимая часть экрана: без адресной строки Chrome и нижней панели
+     Firefox (v=169). 100vh мобильные браузеры считают так, будто их панели
+     спрятаны, — карта была выше видимого, и панель карты внизу уходила под
+     панель браузера (скриншоты игрока). В Telegram панелей нет, там это одно
+     и то же. Первая строка — для браузеров без dvh. */
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   touch-action: none;
   background: #0b0b10;
@@ -900,6 +906,59 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 }
 #helpBtn.pulse {
   animation: helpPulse 2.4s ease-in-out infinite;
+}
+
+@media (hover: hover) {
+  .dock-item:hover,
+  .dock-round:hover { color: #fff; }
+  .dock-modes .dock-item.active:hover { color: #AFEEEE; }
+}
+
+/* Компьютер (≥ 1000 px, v=169): одна строка, подпись 14 px справа от
+   иконки, круглые инструменты — в той же строке справа, а не над панелью.
+   Подпись 10 px под иконкой — язык мобильной панели; на широком экране
+   панель в нём выглядела игрушечной, а «?»/🏷️ висели посреди карты
+   (скриншот игрока). */
+@media (min-width: 1000px) {
+  .map-dock {
+    flex-direction: row;
+    align-items: stretch;
+    gap: 10px;
+    bottom: calc(16px + var(--safe-bottom));
+  }
+  .dock-tools {
+    order: 2;
+    align-self: auto;
+    flex-direction: row;
+    gap: 10px;
+  }
+  .dock-bar { gap: 10px; }
+  .dock-item {
+    flex-direction: row;
+    gap: 9px;
+    padding: 0 18px;
+  }
+  .dock-label {
+    font-size: 14px;
+    line-height: 18px;
+    letter-spacing: 0;
+  }
+  .dock-side,
+  .dock-modes {
+    height: 52px;
+    border-radius: 18px;
+  }
+  .dock-modes .dock-item {
+    width: auto;
+    padding: 0 16px;
+  }
+  .view-lens { border-radius: 14px; }
+  .dock-round {
+    width: 52px;
+    height: 52px;
+    font-size: 19px;
+  }
+  .map-dock .dock-round .dock-svg { width: 22px; height: 22px; }
 }
 
 /* Полоса под строкой состояния в полноэкранном режиме: часы и значки
