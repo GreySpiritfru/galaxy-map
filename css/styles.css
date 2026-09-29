@@ -1696,6 +1696,25 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
 /* Шторка — колонкой по центру, как текст: на широком экране чипы не
    прилипают к левому краю монитора. Между панелью и открытой шторкой —
    тонкая линия. */
+/* Плашка уезжает при прокрутке тела (v=170, wireHeadAutoHide в
+   js/node-window.js): остаётся полоса под кнопками Telegram (--safe-top), в
+   браузере не остаётся ничего. Уезжает на высоту минус эта полоса, поэтому
+   в полосе оказался бы НИЗ плашки (ряд маркеров) — содержимое гаснет, в
+   полосе остаётся только фон. Только transform и opacity — композитинг, без
+   перерисовки тела. На своей карте точки (Феном) плашка всегда на месте. */
+.node-head { transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.node-head > * { transition: opacity 0.2s ease; }
+.phenom-card.head-hidden > .node-head {
+  transform: translateY(calc(var(--safe-top) - 100%));
+  box-shadow: none;
+}
+.phenom-card.head-hidden > .node-head > * { opacity: 0; pointer-events: none; }
+.phenom-overlay.map-view .phenom-card.head-hidden > .node-head { transform: none; }
+.phenom-overlay.map-view .phenom-card.head-hidden > .node-head > * { opacity: 1; pointer-events: auto; }
+@media (prefers-reduced-motion: reduce) {
+  .node-head,
+  .node-head > * { transition: none; }
+}
 .node-head > .node-links > .node-links-row {
   max-width: var(--window-column);
   margin-left: auto;

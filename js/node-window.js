@@ -15,8 +15,8 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=169';
-import { REF_ARTICLES } from './articles.js?v=169';
+import { escapeHtml } from './modal.js?v=170';
+import { REF_ARTICLES } from './articles.js?v=170';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любой
 // точки, поэтому не в данных, а константой здесь.
@@ -147,7 +147,12 @@ export function showNodeBody(refs, view, which) {
   if (frame) frame.hidden = !article;
   const plaque = container.querySelector(':scope > .node-recruit.is-floating');
   if (plaque) plaque.hidden = !article;
+  // Прокрутку ставим сами — уезжающая плашка не должна принять её за жест
+  // (wireHeadAutoHide); вкладку нажали на плашке — она и так видна.
+  container.__ignoreScrollUntil = performance.now() + 200;
   container.scrollTop = article ? 0 : (container.__descScroll || 0);
+  const card = container.closest('.phenom-card');
+  if (card) setHeadHidden(card, false);
 }
 
 function descriptionHtml(view) {
@@ -380,7 +385,54 @@ document.querySelectorAll('.phenom-card').forEach(card => {
   if (!head || !window.ResizeObserver || headObservers.has(head)) return;
   headObservers.add(head);
   new ResizeObserver(() => syncHead(card)).observe(head);
+  wireHeadAutoHide(card, head);
 });
+
+/* Плашка уезжает при прокрутке (v=170, выбор игрока из вариантов панелей
+   статей). Тело листают вниз — плашка (панель, шторка, язычок) уходит вверх,
+   от неё остаётся только полоса под кнопками Telegram (--safe-top, в
+   браузере — ничего); листают вверх или дошли до самого верха — возвращается.
+   Так ведут себя адресная строка Safari в iOS 26 и верхние панели Android
+   (enterAlways): вернуть плашку — просто потянуть текст вниз, без лишних
+   нажатий (пилюлю «раскрыть» игрок отверг: «нажать, потом ещё нажать»).
+   Работает только на НАШЕЙ прокрутке: описание, броски, заметки. Внутри
+   статьи Teletype или анкеты на telegra.ph (чужой iframe) браузер не даёт
+   узнать, что страницу листают, — там плашка стоит на месте (решится своей
+   копией статей). Только transform: тело и так начинается под плашкой с
+   отступом --head-h, ничего не перекладывается. */
+const HEAD_SLOP_PX = 12;         // столько px прокрутки в одну сторону — и решаем
+const HEAD_REVEAL_EDGE_PX = 40;  // компьютер: мышь у верхнего края — показать
+function setHeadHidden(card, hidden) {
+  if (card.classList.contains('head-hidden') !== hidden) card.classList.toggle('head-hidden', hidden);
+}
+function wireHeadAutoHide(card, head) {
+  const body = card.querySelector('.story-content');
+  if (!body) return;
+  let lastY = body.scrollTop, acc = 0;
+  body.addEventListener('scroll', () => {
+    const y = body.scrollTop;
+    const dy = y - lastY;
+    lastY = y;
+    // Прокрутку поставил код (вернулись с «Статьи» на «Описание») — не жест.
+    if (performance.now() < (body.__ignoreScrollUntil || 0)) { acc = 0; return; }
+    if (y <= 4) { acc = 0; setHeadHidden(card, false); return; }
+    if ((dy > 0) !== (acc > 0)) acc = 0;
+    acc += dy;
+    if (acc > HEAD_SLOP_PX) setHeadHidden(card, true);
+    else if (acc < -HEAD_SLOP_PX) setHeadHidden(card, false);
+  }, {passive: true});
+  // Сменилось содержимое тела (другая точка, анкета, броски) — плашка видна.
+  new MutationObserver(() => { lastY = body.scrollTop; acc = 0; setHeadHidden(card, false); })
+    .observe(body, {childList: true});
+  // Компьютер: мышь к верхнему краю — плашка выезжает (колесо вверх — тоже).
+  card.addEventListener('mousemove', (e) => {
+    if (!card.classList.contains('head-hidden')) return;
+    const edge = HEAD_REVEAL_EDGE_PX + (parseFloat(getComputedStyle(head).paddingTop) || 0);
+    if (e.clientY < edge) setHeadHidden(card, false);
+  });
+  // Фокус с клавиатуры внутри плашки — показать её.
+  head.addEventListener('focusin', () => setHeadHidden(card, false));
+}
 
 /* opts.fold — вид окна для памяти ступени ('point' | 'system'),
    opts.foldedByDefault — по умолчанию скрыта. */
