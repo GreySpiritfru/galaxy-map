@@ -16,55 +16,61 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=167" />
+  <link rel="stylesheet" href="css/styles.css?v=168" />
 </head>
 <body>
 
 <div class="svg-widget" id="svgWidget">
-  <div class="svg-controls" id="controls">
-    <!-- Раньше тут стопкой висели 4 отдельные кнопки статей-справочников. Теперь
-         одна 📖: она открывает "Описание галактики", а дальше по всем остальным
-         статьям ходят пристыкованным таб-баром (#refToolbar) прямо внутри
-         статьи — отдельные кнопки в углу карты для этого больше не нужны.
-         🚀 стоит слева от неё и ведёт не в статью, а в само место — карту
-         корабля-города (это навигация, а не справка, поэтому отдельной кнопкой). -->
-    <!-- .controls-main — общая колонка для 🚀/📖 и переключателя режима: оба
-         ряда растягиваются до ширины более широкого из них, поэтому Феном со
-         Справочником всегда ровно той же ширины, что и "Ноды | Карта | Графика". -->
-    <div class="controls-main">
-    <div class="controls-row">
-      <button id="gotoPhenom" class="corner-btn" title="Корабль-город Феном">
-        <span aria-hidden="true">🚀</span><span class="corner-btn-label">Феном</span>
+  <!-- Панель карты (v=168, была колонкой кнопок в правом верхнем углу —
+       246×176 px на телефоне, а в полноэкранном режиме Telegram туда же встают
+       его кнопки «✕» и «⌄ ⋮»). Теперь — плавающая панель внизу, как нижняя
+       панель Telegram: по бокам переходы (Феном — маркером, это точка;
+       Справочник), в середине переключатель режима, над правым краем —
+       круглые инструменты. Жест с любой кнопки двигает карту (#controls в
+       js/map.js), поэтому id и роль контейнера прежние. -->
+  <div class="top-scrim" aria-hidden="true"></div>
+  <div class="map-dock" id="controls">
+    <div class="dock-tools">
+      <button id="helpBtn" class="dock-round" title="Как пользоваться картой" aria-label="Как пользоваться картой">?</button>
+      <!-- 🏷️ (карта/графика) и ▦ (ноды) сменяют друг друга — инструмент
+           текущего режима, см. updateViewModeUi в js/map.js. -->
+      <button id="labelsToggle" class="dock-round" title="Меньше подписей: только готовые системы (быстрее на слабых устройствах)" aria-label="Меньше подписей">
+        <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.8 12.4V5.1c0-.7.6-1.3 1.3-1.3h7.3l8 8-8.6 8.6z"/><circle cx="8.3" cy="8.3" r="1.5"/></svg>
       </button>
-      <button id="openHandbook" class="corner-btn" data-ref="galaxy" title="Справочник">
-        <span aria-hidden="true">📖</span><span class="corner-btn-label">Справочник</span>
+      <button id="sortToggle" class="dock-round" title="Ноды по разделам" aria-label="Ноды по разделам" hidden>
+        <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.8" height="6.8" rx="1.6"/><rect x="13.2" y="4" width="6.8" height="6.8" rx="1.6"/><rect x="4" y="13.2" width="6.8" height="6.8" rx="1.6"/><rect x="13.2" y="13.2" width="6.8" height="6.8" rx="1.6"/></svg>
       </button>
     </div>
-    <!-- Переключатель режима просмотра (как слои на обычных картах), см.
-         setViewMode в js/map.js. "Карта" — обычная карта галактики (с
-         политической раскраской StellarMaps), "Ноды" — тот же граф связей,
-         собранный компактным кластером без самой карты. "Графика" (15.09.2026)
-         — та же карта и камера, что и "Карта", но со скрытой политической
-         раскраской (границы/заливка территорий, названия фракций) — см.
-         classifyPoliticalOverlay в js/map.js и .graphics-mode в
-         css/styles.css. -->
-    <div class="view-switch" id="viewSwitch" role="group" aria-label="Режим просмотра карты">
-      <button class="view-switch-btn" data-view="nodes" title="Граф связей: все точки и их связи, без самой карты">Ноды</button>
-      <button class="view-switch-btn active" data-view="map" title="Карта галактики">Карта</button>
-      <button class="view-switch-btn" data-view="graphics" title="Карта без политической раскраски — только фон, гиперлейны и названия систем">Графика</button>
+    <div class="dock-bar">
+      <!-- Значок — маркер Фенома (ставит map.js, когда готов граф; до этого 🚀). -->
+      <button id="gotoPhenom" class="dock-side dock-item" title="Корабль-город Феном">
+        <span class="dock-icon" aria-hidden="true">🚀</span><span class="dock-label">Феном</span>
+      </button>
+      <!-- Переключатель режима (как слои на обычных картах), setViewMode в
+           js/map.js: «Ноды» — граф связей без карты, «Карта» — с политической
+           раскраской StellarMaps, «Графика» — та же карта без неё. Подсветка
+           активного — «линза» .view-lens, её двигает updateViewModeUi. -->
+      <div class="dock-modes" id="viewSwitch" role="group" aria-label="Режим просмотра карты">
+        <span class="view-lens" aria-hidden="true"></span>
+        <button class="view-switch-btn dock-item" data-view="nodes" title="Граф связей: все точки и их связи, без самой карты">
+          <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7.6l8-1.2M6.8 10.1l3.9 6.3M17.3 8.2l-4.1 8.1"/><circle cx="5.5" cy="8" r="2.5"/><circle cx="18.5" cy="6" r="2.5"/><circle cx="12" cy="18.5" r="2.5"/></svg>
+          <span class="dock-label">Ноды</span>
+        </button>
+        <button class="view-switch-btn dock-item active" data-view="map" title="Карта галактики">
+          <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></svg>
+          <span class="dock-label">Карта</span>
+        </button>
+        <button class="view-switch-btn dock-item" data-view="graphics" title="Карта без политической раскраски — только фон, гиперлейны и названия систем">
+          <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a1.5 1.5 0 0 1 3 0 3 3 0 0 1-6 0 4.5 4.5 0 0 1 9 0 6 6 0 0 1-12 0"/><circle class="dock-svg-dot" cx="19.6" cy="5.4" r="1"/><circle class="dock-svg-dot" cx="4.6" cy="18.8" r="0.8"/></svg>
+          <span class="dock-label">Графика</span>
+        </button>
+      </div>
+      <!-- Один вход во все статьи: открывает «Описание галактики», дальше —
+           вкладками #refToolbar внутри статьи. -->
+      <button id="openHandbook" class="dock-side dock-item" data-ref="galaxy" title="Справочник">
+        <span class="dock-icon dock-emoji" aria-hidden="true">📖</span><span class="dock-label">Справочник</span>
+      </button>
     </div>
-    </div>
-    <!-- Меню "⋯" (зум ＋/－, сброс вида, калибровка 📍) убрано 15.09.2026: зум
-         и так жестами, а калибровка переедет в будущий редактор нод (её код в
-         js/map.js оставлен, просто без кнопки). Из меню осталась только 🏷️ —
-         отдельной кнопкой под переключателем режима, над "?".
-         .svg-controls — колонка с align-items:flex-end, поэтому обе кнопки
-         встают у правого края на любой ширине экрана. -->
-    <button id="labelsToggle" class="map-tool-btn" title="Показывать только готовые системы (быстрее на слабых устройствах)">🏷️</button>
-    <!-- ▦ — ноды по разделам (js/sections.js, v=150). Видна только в режиме нод,
-         на месте 🏷️ (та в нодах не нужна), см. updateViewModeUi в js/map.js. -->
-    <button id="sortToggle" class="map-tool-btn" title="Ноды по разделам" hidden>▦</button>
-    <button id="helpBtn" class="map-tool-btn" title="Как пользоваться картой">?</button>
   </div>
   <div class="calib-panel" id="calibPanel"></div>
   <!-- Редактор (js/editor.js): кнопка списка «что можно править» — только в
@@ -280,6 +286,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=167"></script>
+<script type="module" src="js/main.js?v=168"></script>
 </body>
 </html>

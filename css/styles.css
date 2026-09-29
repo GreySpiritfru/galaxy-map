@@ -6,6 +6,20 @@ html, body {
   overflow: hidden;
 }
 
+/* Полноэкранный режим Telegram (v=167, js/main.js): страница уходит под
+   строку состояния, а сверху поверх неё висят кнопки Telegram «✕» и «⌄ ⋮».
+   Их высоту Telegram сам пишет в переменные --tg-safe-area-inset-* (строка
+   состояния, вырез) и --tg-content-safe-area-inset-* (ряд его кнопок) —
+   telegram-web-app.js обновляет их при повороте и выходе из полноэкранного.
+   Вне полноэкранного режима, в браузере и в старом Telegram их нет — отступы
+   нулевые, всё как раньше. Снизу — системная панель (◀ ● ■ / полоска
+   жестов). */
+:root {
+  --safe-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px));
+  --safe-bottom: max(env(safe-area-inset-bottom, 0px),
+    calc(var(--tg-safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)));
+}
+
 .svg-widget {
   position: relative;
   width: 100vw;
@@ -409,7 +423,7 @@ html, body {
   position: fixed;
   left: 12px;
   right: 12px;
-  top: 12px;
+  top: calc(12px + var(--safe-top));
   z-index: 320;
   display: flex;
   align-items: center;
@@ -435,12 +449,13 @@ html, body {
   font-size: 13px;
 }
 
-/* Кнопка «✏️ Мои персонажи» / «✏️ Редактор» внизу карты — под большой палец.
-   Окна (250+) её перекрывают сами; на время выбора места прячем (.is-picking). */
+/* Кнопка «✏️ Мои персонажи» / «✏️ Редактор» внизу карты — под большой палец,
+   над панелью карты (54 px + отступ 10, v=168). Окна (250+) её перекрывают
+   сами; на время выбора места прячем (.is-picking). */
 .editor-fab {
   position: absolute;
   left: 50%;
-  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(76px + var(--safe-bottom));
   transform: translateX(-50%);
   z-index: 25;
   padding: 11px 20px;
@@ -466,7 +481,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 .editor-toast {
   position: absolute;
   left: 50%;
-  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(134px + var(--safe-bottom));
   transform: translateX(-50%);
   z-index: 25;
   width: max-content;
@@ -584,13 +599,6 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   font-size: 12px;
 }
 
-/* Включённый тумблер в меню инструментов (🏷️, 📍) — тот же "нажатый" вид,
-   что и у активной статьи в таб-баре. */
-.svg-controls button.active {
-  background: rgba(175,238,238,0.28);
-  box-shadow: inset 0 0 0 1.5px #AFEEEE;
-}
-
 .hotspot, .hotspot * { pointer-events: auto; }
 
 /* ⚠️ Сама картинка маркера событий НЕ получает (20.09.2026, нашёл игрок):
@@ -682,166 +690,204 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   .map-tap-ring { display: none; }
 }
 
-.svg-controls {
+/* ===== Панель карты (v=168) =====
+   Была колонкой в правом верхнем углу (246×176 px на 375 px экране); в
+   полноэкранном режиме Telegram туда же встают его кнопки. Теперь —
+   плавающая панель внизу, по образцу нижней панели Telegram: иконка +
+   подпись 10 px, как у таб-баров окон (.tabbar). Три куска: переход к
+   Феному (маркер — это точка) | переключатель режима | Справочник. Над
+   правым краем — круглые инструменты: «?» и инструмент текущего режима
+   (🏷️ на карте, ▦ в нодах).
+   Стекло — как у плашек окон: тёмный полупрозрачный фон с размытием. */
+.map-dock {
   position: absolute;
-  right: 12px;
-  top: 12px;
+  left: 10px;
+  right: 10px;
+  bottom: calc(10px + var(--safe-bottom));
+  z-index: 20;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 8px;
-  z-index: 20;
-  /* Жест с кнопок угла двигает карту (v=158, см. controlsEl в js/map.js):
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Жест с кнопок панели двигает карту (v=158, см. controlsEl в js/map.js):
      без touch-action: none телефон забирал бы жест себе (pointercancel), а
      выделение текста на кнопках на компьютере обрывало перетаскивание. */
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
-  /* Колонка шире самих кнопок (ряды разной ширины, зазоры между ними) — без
-     этого тапы в промежутках доставались контейнеру, а не карте: двойной тап
-     у кнопок угла не приближал (замечание игрока, v=160). События получают
-     только кнопки; перетаскивание с них по-прежнему ловит #controls. */
+  /* Промежутки между кусками отдают тап карте (двойной тап у панели
+     приближает, как и раньше у кнопок угла). События — только у кнопок и
+     капсул. */
   pointer-events: none;
 }
-.svg-controls button { pointer-events: auto; }
-/* Рамка фокуса после клика мышью (оранжевая у Chrome) не нужна — только при
-   навигации с клавиатуры, и в цветах карты. */
-.svg-controls button:focus { outline: none; }
-.svg-controls button:focus-visible { outline: 2px solid rgba(175,238,238,0.7); outline-offset: 1px; }
-
-.svg-controls button {
-  background: rgba(255,255,255,0.08);
-  color: #fff;
-  border: none;
-  padding: 8px 10px;
-  border-radius: 8px;
-  backdrop-filter: blur(6px);
-  min-width: 44px;
-  min-height: 44px;
-  font-weight: 600;
-  font-size: 16px;
+/* Шире телефона — панель по центру, своей ширины. */
+@media (min-width: 601px) {
+  .map-dock {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+  }
+}
+.map-dock button {
+  pointer-events: auto;
+  margin: 0;
+  border: 0;
+  font: inherit;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.map-dock button:focus { outline: none; }
+.map-dock button:focus-visible { outline: 2px solid rgba(175,238,238,0.7); outline-offset: 2px; }
+/* 🏷️ и ▦ сменяют друг друга по атрибуту hidden (updateViewModeUi): свой
+   display у кнопок иначе перебил бы его. */
+.map-dock [hidden] { display: none !important; }
+
+/* Общее стекло: капсулы панели и круглые инструменты. */
+.dock-side,
+.dock-modes,
+.dock-round {
+  /* 0.78: над светлым ядром галактики стекло иначе сереет, подписи тонут. */
+  background: rgba(16,16,24,0.78);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.08);
 }
 
-/* Верхний ряд угла карты: "?" + 🚀 Феном + 📖 Справочник + "⋯" (инструменты) */
-.controls-row {
+.dock-bar {
   display: flex;
+  align-items: stretch;
   gap: 8px;
 }
+/* Кнопка панели: иконка сверху, подпись снизу — как .tabbar-btn в окнах. */
+.dock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 0 6px;
+  background: none;
+  color: rgba(255,255,255,0.66);
+  transition: color 0.2s ease;
+}
+.dock-label {
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 12px;
+  letter-spacing: 0.1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.dock-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+.dock-emoji { font-size: 20px; line-height: 1; }
+/* Маркер Фенома вместо 🚀 (ставит map.js). */
+.map-dock .corner-node-icon { flex: 0 0 auto; width: 26px; height: 26px; margin: -1px 0; font-size: 12px; }
+/* Линейные иконки — цветом подписи: активный режим красится целиком.
+   ⚠️ Селектор с .map-dock обязателен: правило карты `.svg-widget svg`
+   (width/height 100%) специфичнее просто `.dock-svg` и растягивало иконки
+   на всю кнопку. */
+.map-dock .dock-svg {
+  display: block;
+  overflow: visible;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.dock-svg-dot { fill: currentColor; stroke: none; }
 
-/* Кнопки-таблетки в углу карты (🚀 Феном и 📖 Справочник) — в отличие от
-   квадратных .map-tool-btn (🏷️ и "?") у них есть текстовая подпись, которая
-   прячется на узких экранах (см. медиазапрос в конце файла). */
-/* Колонка 🚀/📖 + переключатель режима: оба ряда одной ширины (игрок,
-   15.09.2026). Ширина колонки — по более широкому ряду, второй
-   растягивается под неё за счёт flex: 1 у кнопок. */
-.controls-main {
+/* Боковые капсулы — переходы (Феном, Справочник). */
+.dock-side {
+  flex: 0 0 auto;
+  height: 54px;
+  padding: 0 12px;
+  border-radius: 20px;
+}
+.dock-side:active { color: #fff; background: rgba(34,34,46,0.82); }
+
+/* Переключатель режима — капсула с «линзой» под активным разделом. */
+.dock-modes {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  height: 54px;
+  padding: 4px;
+  box-sizing: border-box;
+  border-radius: 20px;
+}
+.dock-modes .dock-item {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  border-radius: 16px;
+}
+.dock-modes .dock-item.active { color: #AFEEEE; }
+/* Шире телефона — разделы своей ширины, а не растянутые. */
+@media (min-width: 601px) {
+  .dock-modes { flex: 0 0 auto; }
+  .dock-modes .dock-item { flex: 0 0 auto; width: 72px; }
+}
+/* Линза: положение и ширину ставит updateViewModeUi (по активной кнопке),
+   переезд — только transform/width одного элемента. Без .ready (первая
+   расстановка) — без анимации, иначе при загрузке линза выезжала бы слева. */
+.view-lens {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 0;
+  border-radius: 16px;
+  background: rgba(175,238,238,0.15);
+  box-shadow: inset 0 0 0 1px rgba(175,238,238,0.3);
+  pointer-events: none;
+}
+.view-lens.ready {
+  transition: transform 0.34s cubic-bezier(0.2, 0.9, 0.25, 1), width 0.34s cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .view-lens.ready { transition: none; }
+}
+
+/* Круглые инструменты над правым краем панели. */
+.dock-tools {
+  align-self: flex-end;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
-.controls-main .view-switch-btn { flex: 1 1 auto; }
-
-/* Размер и цвет — как у секций переключателя режима (.view-switch-btn):
-   тот же отступ, шрифт и приглушённый белый, чтобы угол читался одним блоком.
-   min-height: 0 гасит 44px из общего .svg-controls button. */
-.svg-controls .corner-btn {
+.dock-round {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: 0;
-  padding: 10px 14px;
-  font-size: 14px;
-  line-height: 18px;   /* как у .view-switch-btn: эмодзи иначе делает ряд на 2px выше */
-  font-weight: 600;
-  color: rgba(255,255,255,0.65);
-  white-space: nowrap;
+  color: rgba(255,255,255,0.72);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
 }
-
-/* Переключатель режима просмотра ("Ноды | Карта | Графика") — сегментированная
-   кнопка под 🚀/📖, как слои на обычных картах. См. setViewMode в js/map.js.
-
-   ⚠️ Почти всё тут — перебивание общего `.svg-controls button` (у него свои
-   min-width/min-height 44px, padding и фон под ОТДЕЛЬНО стоящую квадратную
-   кнопку). Секции сегментированной кнопки — не отдельные кнопки: фон, рамка и
-   скругление у них общие, на контейнере, а у самих секций только подсветка
-   активной. По той же причине отдельно гасим `.svg-controls button.active`
-   (там фон + внутренняя обводка, для сегмента это слишком громко). */
-.view-switch {
-  display: flex;
-  align-items: stretch;
-  background: rgba(255,255,255,0.08);
-  border-radius: 8px;
-  backdrop-filter: blur(6px);
-  overflow: hidden;
-}
-
-.svg-controls .view-switch-btn {
-  min-width: 0;
-  min-height: 0;
-  /* 9px, а не 10 как у 🚀/📖: по замеру высота была равной (38px), но
-     сплошной переключатель с залитой активной секцией на глаз казался выше —
-     игрок попросил ниже на 2px (36px). */
-  padding: 9px 16px;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  font-size: 14px;
-  line-height: 18px;
-  font-weight: 600;
-  color: rgba(255,255,255,0.65);
-  white-space: nowrap;
-}
-
-.svg-controls .view-switch-btn + .view-switch-btn {
-  border-left: 1px solid rgba(255,255,255,0.1);
-}
-
-.svg-controls .view-switch-btn.active {
-  background: rgba(175,238,238,0.22);
-  box-shadow: none;
+.map-dock .dock-round .dock-svg { width: 20px; height: 20px; }
+/* Включённый инструмент (🏷️ «меньше подписей», ▦ «по разделам»). */
+.dock-round.active {
   color: #AFEEEE;
-}
-
-/* "Графика" — заглушка. Отдельно от :disabled у остальных кнопок: тут это не
-   временно недоступное состояние, а раздел, которого пока просто нет. */
-.svg-controls .view-switch-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-
-/* В режиме нод 📍 (калибровка) и 🏷️ (подписи) отключены — они про саму карту,
-   которой там нет (см. updateViewModeUi в js/map.js). */
-.svg-controls button:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-/* 🏷️ и ▦ сменяют друг друга по атрибуту hidden (updateViewModeUi): свой
-   display у кнопок иначе перебил бы его. */
-.svg-controls button[hidden] { display: none; }
-
-/* 🏷️ и "?" под переключателем режима — квадраты высотой с ряд переключателя
-   (38px), одинаковые на телефоне и компьютере. Специфичность
-   .svg-controls .map-tool-btn выше, чем у .svg-controls button, поэтому
-   перебивает и мобильный размер из медиазапроса в конце файла. */
-.svg-controls .map-tool-btn {
-  width: 38px;
-  height: 38px;
-  min-width: 0;
-  min-height: 0;
-  padding: 0;
-  font-size: 16px;
-  line-height: 38px;
-}
-
-/* Был чёрным — на полупрозрачной тёмной кнопке почти не читался. Теперь тем
-   же приглушённым белым, что и подписи соседних кнопок угла. */
-#helpBtn {
-  color: rgba(255,255,255,0.65);
+  background: rgba(24,44,48,0.82);
+  box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 0 0 1.5px rgba(175,238,238,0.75);
 }
 
 /* Мягкое "дыхание" вокруг кнопки подсказки — для новых игроков, пока они
@@ -849,17 +895,31 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
    Не мигание (резкая смена видимости), а плавно расширяющееся/тающее
    кольцо — заметно, но не раздражает. */
 @keyframes helpPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(175,238,238,0.55); }
-  50%      { box-shadow: 0 0 0 9px rgba(175,238,238,0); }
+  0%, 100% { box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.08), 0 0 0 0 rgba(175,238,238,0.55); }
+  50%      { box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.08), 0 0 0 9px rgba(175,238,238,0); }
 }
 #helpBtn.pulse {
   animation: helpPulse 2.4s ease-in-out infinite;
 }
 
+/* Полоса под строкой состояния в полноэкранном режиме: часы и значки
+   Telegram белые, на светлом ядре галактики терялись бы. Вне полноэкранного
+   режима высота нулевая. */
+.top-scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--safe-top);
+  z-index: 19;
+  pointer-events: none;
+  background: linear-gradient(rgba(8,8,12,0.55), rgba(8,8,12,0));
+}
+
 .calib-panel {
   position: absolute;
   left: 12px;
-  top: 12px;
+  top: calc(12px + var(--safe-top));
   background: rgba(0,0,0,0.55);
   color: #9f9;
   padding: 8px 10px;
@@ -883,7 +943,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   align-items: center;
   justify-content: center;
   z-index: 300;
-  padding: 10vh 6vw;
+  padding: max(10vh, calc(var(--safe-top) + 12px)) 6vw max(10vh, calc(var(--safe-bottom) + 12px));
   box-sizing: border-box;
   opacity: 0;
   visibility: hidden;
@@ -1008,7 +1068,9 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255,255,255,0.08);
   border-radius: 0 0 16px 16px;
-  padding: 10px;
+  /* Сверху — под кнопками Telegram в полноэкранном режиме (--safe-top), фон
+     панели при этом уходит до края экрана. */
+  padding: calc(10px + var(--safe-top)) 10px 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.35);
 }
 
@@ -1063,7 +1125,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   inset: 0 0 auto 0;
   max-width: 100%;
   margin: 0;
-  padding: 10px;
+  padding: calc(10px + var(--safe-top)) 10px 10px;
   background: rgba(12,12,18,0.62);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -1395,7 +1457,9 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   width: 100%;
   height: 100%;
   margin: 0;
-  padding: 0;
+  /* Статья начинается под кнопками Telegram (полноэкранный режим) — иначе её
+     верх ушёл бы под шторку, ставшую выше на столько же. */
+  padding: var(--safe-top) 0 0;
   box-sizing: border-box;
   background: transparent;
   border: none;
@@ -1411,7 +1475,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 }
 .modal-card--iframe .modal-close {
   position: fixed;
-  top: 10px;
+  top: calc(10px + var(--safe-top));
   left: 10px;
   width: 42px;
   height: 42px;
@@ -1548,6 +1612,10 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   left: 0;
   right: 0;
   z-index: 3;
+  /* Полноэкранный режим Telegram: фон плашки — до края экрана, под его
+     кнопками, а наши начинаются ниже. Высота плашки (--head-h) меряется с
+     этим отступом, так что тело и статья сдвигаются сами. */
+  padding-top: var(--safe-top);
   background: rgba(12,12,18,0.62);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -1699,7 +1767,7 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   z-index: 2;
   left: 12px;
   right: 12px;
-  bottom: 12px;
+  bottom: calc(12px + var(--safe-bottom));
   max-width: 736px;
   margin: 0 auto;
   padding-right: 40px;
@@ -2174,8 +2242,6 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 }
 
 @media (max-width: 600px) {
-  .svg-controls { right: 8px; top: 8px; }
-  .svg-controls button { padding: 6px 8px; min-width: 40px; min-height: 40px; }
   /* Окно точки — на весь экран и на телефоне (24.09.2026), полей тут нет. */
   /* Вкладок в таб-баре статей шесть (у Фенома двойная ячейка), и самая
      длинная подпись — "Галактика" — на 375px упирается в свою ячейку и
@@ -2271,8 +2337,8 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   transition: opacity 0.2s;
 }
 .tour-card.is-busy { opacity: 0; pointer-events: none; }
-.tour-card.at-top { top: calc(12px + env(safe-area-inset-top, 0px)); }
-.tour-card.at-bottom { bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+.tour-card.at-top { top: calc(12px + max(var(--safe-top), env(safe-area-inset-top, 0px))); }
+.tour-card.at-bottom { bottom: calc(12px + var(--safe-bottom)); }
 .tour-card.at-center { top: 50%; transform: translateY(-50%); }
 .tour-head { flex: 0 0 auto; }
 .tour-text {

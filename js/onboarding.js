@@ -1,13 +1,13 @@
 /* ============================================================
    Краткая подсказка по управлению картой. Сама по себе НЕ открывается —
-   только по клику на кнопку "?" в углу карты. Для новых игроков (кто ещё
+   только по клику на кнопку "?" над панелью карты. Для новых игроков (кто ещё
    ни разу не нажимал — флаг в localStorage, живёт в браузере конкретного
    игрока, к сайту/репозиторию отношения не имеет) кнопка мягко пульсирует,
    чтобы её было видно, но не мигает резко и не лезет с окном сама.
    ============================================================ */
-import { openModal, closeModal } from './modal.js?v=167';
-import { startTour, tourSeen } from './tour.js?v=167';
-import { quoteHtml, initQuotes } from './quotes.js?v=167';
+import { openModal, closeModal } from './modal.js?v=168';
+import { startTour, tourSeen } from './tour.js?v=168';
+import { quoteHtml, initQuotes } from './quotes.js?v=168';
 
 const ONBOARDING_SEEN_KEY = 'galaxyMapOnboardingSeen';
 const helpBtn = document.getElementById('helpBtn');
@@ -38,7 +38,7 @@ function showOnboarding() {
       </div>
 
       <div class="help-section">
-        <div class="help-heading">🎛️ Кнопки в углу</div>
+        <div class="help-heading">🎛️ Панель внизу</div>
         ${quoteHtml(`<ul>
           <li><b>Феном</b> — окно корабля-города; его собственная карта — кнопкой 🗺️ «Карта» внутри.</li>
           <li>📖 <b>Справочник</b> — статьи о галактике, расах, магии и технике.</li>

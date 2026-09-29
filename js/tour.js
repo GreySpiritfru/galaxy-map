@@ -18,12 +18,12 @@
    ⚠️ Тексты — черновик из инфоканала (введение, «Что такое Феном», анкета),
    игрок обещал поправить. Править прямо здесь, в INTRO_TABS и STEPS.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=167';
-import { closeStory, isStoryOpen } from './stories.js?v=167';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=167';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=167';
-import { closeSystem, isSystemOpen } from './system-view.js?v=167';
-import { quoteHtml, initQuotes } from './quotes.js?v=167';
+import { closeModal, isArticleOpen } from './modal.js?v=168';
+import { closeStory, isStoryOpen } from './stories.js?v=168';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=168';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=168';
+import { closeSystem, isSystemOpen } from './system-view.js?v=168';
+import { quoteHtml, initQuotes } from './quotes.js?v=168';
 
 const TOUR_SEEN_KEY = 'galaxyMapTourSeen';
 const LINKS = {
@@ -90,7 +90,7 @@ const STEPS = [
     // Весь каталог целиком (игрок: «выделять сразу всю таблицу»).
     target: h => h.sectionsLayer(),
     title: 'Все маркеры — по каталогу',
-    text: 'Это режим «Ноды». Кнопка ▦ справа вверху раскладывает маркеры по разделам. В самом верху расположены <b>сюжеты, куда сейчас набирают игроков</b>, а ниже — локации, базовые маркеры, системы и архив маркеров.',
+    text: 'Это режим «Ноды». Кнопка ▦ справа над панелью раскладывает маркеры по разделам. В самом верху расположены <b>сюжеты, куда сейчас набирают игроков</b>, а ниже — локации, базовые маркеры, системы и архив маркеров.',
   },
   {
     prepare: async h => { closeWindows(); await h.showSections(); },
@@ -118,7 +118,7 @@ const STEPS = [
     prepare: async h => { closeWindows(); await h.showMap(); },
     target: () => document.getElementById('controls'),
     title: 'Переходы',
-    text: '<b>Справочник</b> — статьи о мире: расы, магия, техника, описание галактики и Фенома. Ниже — переключатель карт и каталога нод.<br>🏷️ — меньше несгенерированных систем, если карта тормозит: останутся только бирюзовые, на которые можно нажать и перейти в саму систему.',
+    text: '<b>Справочник</b> — статьи о мире: расы, магия, техника, описание галактики и Фенома. Рядом — переключатель карт и каталога нод.<br>🏷️ — меньше несгенерированных систем, если карта тормозит: останутся только бирюзовые, на которые можно нажать и перейти в саму систему.',
   },
   {kind: 'finish'},
 ];
@@ -251,7 +251,7 @@ function renderCard(step, rect) {
     head = '<div class="tour-title">Хочешь играть?</div>';
     text = `
       <p>Выбери сюжет с плашкой <b>«Набор открыт»</b> или приходи со своей идеей персонажа — с анкетой поможем.</p>
-      <p>Обучение можно пройти ещё раз из «?» в углу карты.</p>
+      <p>Обучение можно пройти ещё раз из «?» над панелью карты.</p>
       <div class="tour-links">
         <button type="button" class="tour-link" data-link="contacts">✉️ Связаться с нами</button>
         <button type="button" class="tour-link" data-link="form">📝 Шаблон анкеты</button>

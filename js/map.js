@@ -1,17 +1,17 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=167';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=167';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=167';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=167';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=167';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=167';
-import { openCharacter, closeCharacter } from './characters.js?v=167';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=167';
-import { markerEl } from './node-window.js?v=167';
-import { layoutSections, renderSections } from './sections.js?v=167';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=167';
+import { createPanZoom } from './panzoom.js?v=168';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=168';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=168';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=168';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=168';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=168';
+import { openCharacter, closeCharacter } from './characters.js?v=168';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=168';
+import { markerEl } from './node-window.js?v=168';
+import { layoutSections, renderSections } from './sections.js?v=168';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=168';
 
 const SVG_PATH = 'map.svg';
 
@@ -165,7 +165,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=167').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=168').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -628,11 +628,11 @@ function finishMapPick(p) {
     svg.classList.toggle('labels-minimal', on);
     labelsToggle.classList.toggle('active', on);
   }
-  /* Жест, начатый на кнопках угла (Феном, Справочник, Ноды/Карта/Графика,
-     🏷️/▦, ?), двигает карту (v=158, замечание игрока: «случайно зацепил —
+  /* Жест, начатый на кнопках панели карты (Феном, Справочник, Ноды/Карта/
+     Графика, 🏷️/▦, ?), двигает карту (v=158, замечание игрока: «случайно зацепил —
      и карта не двигается»). Пока палец не уехал на DRAG_SLOP_PX — это тап по
      кнопке; уехал — перетаскивание карты, а клик кнопки после отпускания
-     гасится. В css у угла touch-action: none (иначе браузер забрал бы жест
+     гасится. В css у панели touch-action: none (иначе браузер забрал бы жест
      себе и прислал pointercancel) и user-select: none (на компьютере текст
      кнопок выделялся, и карта переставала тащиться). */
   const DRAG_SLOP_PX = 8;
@@ -1791,6 +1791,35 @@ function finishMapPick(p) {
 
   const viewSwitch = document.getElementById('viewSwitch');
   const viewSwitchBtns = [...viewSwitch.querySelectorAll('.view-switch-btn')];
+  /* «Линза» под активным режимом в панели карты (v=168): едет к нажатому
+     разделу. Первая расстановка — без анимации (класс ready ставится после). */
+  const viewLens = viewSwitch.querySelector('.view-lens');
+  function placeViewLens() {
+    const a = viewSwitchBtns.find(b => b.classList.contains('active'));
+    if (!viewLens || !a || !a.offsetWidth) return;
+    viewLens.style.width = a.offsetWidth + 'px';
+    viewLens.style.transform = `translateX(${a.offsetLeft}px)`;
+    if (!viewLens.classList.contains('ready')) {
+      requestAnimationFrame(() => viewLens.classList.add('ready'));
+    }
+  }
+  window.addEventListener('resize', placeViewLens);
+  if (window.ResizeObserver) new ResizeObserver(placeViewLens).observe(viewSwitch);
+
+  /* Сколько экрана по вертикали занято не картой, в px: сверху — кнопки
+     Telegram в полноэкранном режиме (те же переменные, что --safe-top в css),
+     снизу — сама панель карты (без круглых инструментов над ней: они узкие,
+     у правого края). Камеры нод ставят раскладку в свободную полосу. */
+  function screenReserve() {
+    const cs = getComputedStyle(document.documentElement);
+    const px = (name) => parseFloat(cs.getPropertyValue(name)) || 0;
+    const top = px('--tg-safe-area-inset-top') + px('--tg-content-safe-area-inset-top');
+    const bar = document.querySelector('#controls .dock-bar');
+    const r = bar && bar.getBoundingClientRect();
+    const svgRect = svg.getBoundingClientRect();
+    const bottom = r && r.height ? Math.max(0, svgRect.bottom - r.top) : 0;
+    return {top, bottom};
+  }
 
   let viewMode = 'map';
   let graphNodes = [], graphThreads = [];
@@ -1825,30 +1854,36 @@ function finishMapPick(p) {
     const L = sectionsLayout;
     // Нулевой размер бывает у скрытой вкладки/панели — тогда размер окна.
     const sw = svg.clientWidth || window.innerWidth || 1, sh = svg.clientHeight || window.innerHeight || 1;
-    /* Сверху справа — кнопки угла карты (Феном, Справочник, переключатель,
-       ▦, ?). Верхний раздел под ними не читался бы, поэтому раскладка
-       начинается ниже их нижнего края. */
-    const controls = document.getElementById('controls');
-    const svgTop = svg.getBoundingClientRect().top;
-    const reserve = controls ? Math.max(0, controls.getBoundingClientRect().bottom - svgTop) + SECTIONS_MARGIN_PX : SECTIONS_MARGIN_PX;
+    /* Свободная полоса — между кнопками Telegram сверху (полноэкранный
+       режим) и панелью карты снизу (screenReserve). До v=168 сверху справа
+       стояли кнопки угла, и раскладка начиналась ниже их нижнего края. */
+    const res = screenReserve();
+    const reserve = res.top + SECTIONS_MARGIN_PX;
     const m = SECTIONS_MARGIN_PX;
-    // px на единицу: по ширине и «чтобы влезло всё под кнопками». Раскладка
-    // узкая (персонажи колонками), и на широком экране «по ширине» раздуло
-    // бы маркеры — персонаж не крупнее SECTIONS_MAX_CHAR_PX.
+    const free = Math.max(1, sh - reserve - res.bottom - m);
+    // px на единицу: по ширине и «чтобы влезло всё в свободную полосу».
+    // Раскладка узкая (персонажи колонками), и на широком экране «по ширине»
+    // раздуло бы маркеры — персонаж не крупнее SECTIONS_MAX_CHAR_PX.
     const kWidth = Math.min((sw - 2 * m) / L.width, SECTIONS_MAX_CHAR_PX / (L.charSize || 4.5));
-    const kAll = Math.min(kWidth, Math.max(1, sh - reserve - m) / L.height);
+    const kAll = Math.min(kWidth, free / L.height);
     // Целиком не влезает без заметного уменьшения — по ширине, остальное листается.
     const k = kAll >= kWidth / 1.25 ? kAll : kWidth;
-    const spare = Math.max(0, (sh - reserve - m) - L.height * k);
+    const spare = Math.max(0, free - L.height * k);
     const topPx = reserve + spare / 2;
     // viewBox квадратный и вписан по короткой стороне: ширина кадра = она / k.
     // Центр кадра — центр экрана; верх раскладки должен попасть на topPx.
     return {x: graphViewCenter.x, y: L.top + (sh / 2 - topPx) / k, w: Math.min(sw, sh) / k};
   }
   function nodesCamera() {
-    return nodesArrangement === 'sections' && sectionsLayout && sectionsLayout.width
-      ? sectionsCamera()
-      : {x: graphViewCenter.x, y: graphViewCenter.y, w: graphViewWidth()};
+    if (nodesArrangement === 'sections' && sectionsLayout && sectionsLayout.width) return sectionsCamera();
+    /* Граф — в середину свободной полосы, а не экрана: снизу панель карты,
+       сверху в полноэкранном режиме кнопки Telegram. Центр кадра — центр
+       экрана, поэтому камера сдвигается на половину разницы отступов. */
+    const w = graphViewWidth();
+    const sw = svg.clientWidth || window.innerWidth || 1, sh = svg.clientHeight || window.innerHeight || 1;
+    const res = screenReserve();
+    const k = Math.min(sw, sh) / w;
+    return {x: graphViewCenter.x, y: graphViewCenter.y - (res.top - res.bottom) / 2 / k, w};
   }
 
   /* Ширина кадра, при которой кластер целиком помещается на ЭТОМ экране.
@@ -1865,7 +1900,10 @@ function finishMapPick(p) {
      а не один раз при загрузке: экран можно повернуть. */
   function graphViewWidth() {
     const w = svg.clientWidth || 1, h = svg.clientHeight || 1;
-    return Math.max(graphViewBox.width, graphViewBox.height * (w / h)) * GRAPH_VIEW_PADDING;
+    // По высоте — только свободная полоса (без панели карты и кнопок Telegram).
+    const res = screenReserve();
+    const avail = Math.max(h * 0.5, h - res.top - res.bottom);
+    return Math.max(graphViewBox.width, graphViewBox.height * (w / avail)) * GRAPH_VIEW_PADDING;
   }
   let savedMapView = null;   // куда вернуть камеру при возврате на карту
   let viewTweenId = null;
@@ -1962,6 +2000,7 @@ function finishMapPick(p) {
 
   function updateViewModeUi() {
     viewSwitchBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewMode));
+    placeViewLens();
     // Гасит политическую раскраску StellarMaps (границы/заливки территорий,
     // названия фракций) — см. classifyPoliticalOverlay/`.map-political` выше
     // и `.graphics-mode` в css/styles.css. Камера/позиции узлов при этом не
@@ -1985,7 +2024,7 @@ function finishMapPick(p) {
        так же, как и в "Карте". */
     const onMapView = viewMode !== 'nodes';
     if (calibToggle) calibToggle.disabled = !onMapView;
-    // 🏷️ в нодах не нужна — на её месте ▦ (раскладка по разделам), угол
+    // 🏷️ в нодах не нужна — на её месте ▦ (раскладка по разделам), панель
     // карты не меняет размер при переключении режима.
     labelsToggle.hidden = !onMapView;
     if (sortToggle) {
