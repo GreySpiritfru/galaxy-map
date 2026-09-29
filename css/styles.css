@@ -1696,24 +1696,42 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
 /* Шторка — колонкой по центру, как текст: на широком экране чипы не
    прилипают к левому краю монитора. Между панелью и открытой шторкой —
    тонкая линия. */
-/* Плашка уезжает при прокрутке тела (v=170, wireHeadAutoHide в
-   js/node-window.js): остаётся полоса под кнопками Telegram (--safe-top), в
-   браузере не остаётся ничего. Уезжает на высоту минус эта полоса, поэтому
-   в полосе оказался бы НИЗ плашки (ряд маркеров) — содержимое гаснет, в
-   полосе остаётся только фон. Только transform и opacity — композитинг, без
-   перерисовки тела. На своей карте точки (Феном) плашка всегда на месте. */
-.node-head { transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.node-head > * { transition: opacity 0.2s ease; }
-.phenom-card.head-hidden > .node-head {
-  transform: translateY(calc(var(--safe-top) - 100%));
-  box-shadow: none;
+/* Плашка уезжает вслед за прокруткой тела (v=171, wireHeadAutoHide в
+   js/node-window.js; сдвиг — инлайн transform). Пока идёт прокрутка —
+   без анимации, ровно за текстом; доводка до ступени — .head-snap. Только
+   transform — композитинг, без перерисовки тела. */
+.node-head.head-snap { transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+/* Полоса под кнопками Telegram (полноэкранный режим; в браузере высота 0):
+   плашка уезжает ПОД неё. Видна, только пока плашка сдвинута, — иначе над
+   плашкой лёг бы второй слой. Плотнее плашки — как верхние панели Android,
+   которые при прокрутке заливаются плотнее.
+   ⚠️ Без backdrop-filter: с ним Chromium переставал рисовать то, что лежит
+   поверх полосы (проверка v=171), да и лишний слой размытия на прокрутке. */
+.phenom-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 4;
+  height: var(--safe-top);
+  background: rgba(12,12,18,0.93);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
-.phenom-card.head-hidden > .node-head > * { opacity: 0; pointer-events: none; }
-.phenom-overlay.map-view .phenom-card.head-hidden > .node-head { transform: none; }
-.phenom-overlay.map-view .phenom-card.head-hidden > .node-head > * { opacity: 1; pointer-events: auto; }
+.phenom-card.head-offset::before { opacity: 1; }
+.phenom-card.head-offset > .node-head { box-shadow: none; }
+/* Плашка ушла целиком — язычок шторки под ней тоже убираем. */
+.node-links-toggle { transition: opacity 0.15s ease; }
+.phenom-card.head-gone .node-links-toggle { opacity: 0; pointer-events: none; }
+/* На своей карте точки (Феном) плашка всегда на месте. */
+.phenom-overlay.map-view .phenom-card > .node-head { transform: none !important; }
+.phenom-overlay.map-view .phenom-card::before { opacity: 0; }
+.phenom-overlay.map-view .phenom-card.head-gone .node-links-toggle { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
-  .node-head,
-  .node-head > * { transition: none; }
+  .node-head.head-snap { transition: none; }
 }
 .node-head > .node-links > .node-links-row {
   max-width: var(--window-column);

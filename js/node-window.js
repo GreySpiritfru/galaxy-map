@@ -15,8 +15,8 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=170';
-import { REF_ARTICLES } from './articles.js?v=170';
+import { escapeHtml } from './modal.js?v=171';
+import { REF_ARTICLES } from './articles.js?v=171';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любой
 // точки, поэтому не в данных, а константой здесь.
@@ -148,11 +148,11 @@ export function showNodeBody(refs, view, which) {
   const plaque = container.querySelector(':scope > .node-recruit.is-floating');
   if (plaque) plaque.hidden = !article;
   // Прокрутку ставим сами — уезжающая плашка не должна принять её за жест
-  // (wireHeadAutoHide); вкладку нажали на плашке — она и так видна.
+  // (wireHeadAutoHide); вкладку нажали на плашке — пусть она будет вся.
   container.__ignoreScrollUntil = performance.now() + 200;
   container.scrollTop = article ? 0 : (container.__descScroll || 0);
   const card = container.closest('.phenom-card');
-  if (card) setHeadHidden(card, false);
+  if (card && card.__showHead) card.__showHead();
 }
 
 function descriptionHtml(view) {
@@ -388,50 +388,104 @@ document.querySelectorAll('.phenom-card').forEach(card => {
   wireHeadAutoHide(card, head);
 });
 
-/* Плашка уезжает при прокрутке (v=170, выбор игрока из вариантов панелей
-   статей). Тело листают вниз — плашка (панель, шторка, язычок) уходит вверх,
-   от неё остаётся только полоса под кнопками Telegram (--safe-top, в
-   браузере — ничего); листают вверх или дошли до самого верха — возвращается.
-   Так ведут себя адресная строка Safari в iOS 26 и верхние панели Android
-   (enterAlways): вернуть плашку — просто потянуть текст вниз, без лишних
-   нажатий (пилюлю «раскрыть» игрок отверг: «нажать, потом ещё нажать»).
+/* Плашка уезжает при прокрутке — ВСЛЕД ЗА ТЕКСТОМ (v=171; в v=170 пряталась
+   целиком по порогу, игрок: «не сразу всё, а как в Telegram — наполовинку»).
+   Плашка сдвигается ровно на столько, на сколько прокрутили тело, — как
+   шапка встроенного браузера Telegram и адресная строка Chrome: листают вниз
+   — уезжает вверх, вверх — выезжает обратно, и первым из-за края появляется
+   её НИЗ — ряд маркеров («открыть только маркеры, прокрутив чуть-чуть»).
+   Прокрутка остановилась — доезжает до ближайшей ступени: вся / только
+   маркеры (если шторка открыта хотя бы на ряд) / скрыта; спорное решает
+   направление последнего движения. Вернуть плашку — потянуть текст вниз, без
+   лишних нажатий (пилюлю «раскрыть» игрок отверг: «нажать, потом ещё нажать»).
+   В полноэкранном Telegram плашка уезжает ПОД полосу его кнопок
+   (.phenom-card::before, видна, пока плашка сдвинута), в браузере — за край.
+   ⚠️ Сдвиг не больше прокрутки тела (offset ≤ scrollTop): иначе у верха
+   текста между плашкой и первой строкой открывалась бы пустая полоса.
    Работает только на НАШЕЙ прокрутке: описание, броски, заметки. Внутри
    статьи Teletype или анкеты на telegra.ph (чужой iframe) браузер не даёт
    узнать, что страницу листают, — там плашка стоит на месте (решится своей
    копией статей). Только transform: тело и так начинается под плашкой с
    отступом --head-h, ничего не перекладывается. */
-const HEAD_SLOP_PX = 12;         // столько px прокрутки в одну сторону — и решаем
+const HEAD_SNAP_IDLE_MS = 140;   // столько тишины после прокрутки — и доводим до ступени
+const HEAD_SNAP_BIAS = 0.3;      // доля пути до следующей ступени, после которой едем к ней
 const HEAD_REVEAL_EDGE_PX = 40;  // компьютер: мышь у верхнего края — показать
-function setHeadHidden(card, hidden) {
-  if (card.classList.contains('head-hidden') !== hidden) card.classList.toggle('head-hidden', hidden);
-}
 function wireHeadAutoHide(card, head) {
   const body = card.querySelector('.story-content');
   if (!body) return;
-  let lastY = body.scrollTop, acc = 0;
+  const bar = head.querySelector(':scope > .phenom-toolbar');
+  let offset = 0, lastY = body.scrollTop, dir = 0, idle = 0;
+  // Размеры — из кэша: читать геометрию на каждом событии прокрутки нельзя.
+  let headH = 0, safeTop = 0, barH = 0;
+  const measure = () => {
+    headH = head.offsetHeight;
+    safeTop = parseFloat(getComputedStyle(head).paddingTop) || 0;
+    barH = bar ? bar.offsetHeight : 0;
+  };
+  const maxOffset = () => Math.max(0, Math.min(headH - safeTop, body.scrollTop));
+  const set = (value, animate) => {
+    offset = Math.max(0, Math.min(maxOffset(), value));
+    const shown = offset > 0.5;
+    head.classList.toggle('head-snap', !!animate);
+    head.style.transform = shown ? `translateY(${-offset}px)` : '';
+    card.classList.toggle('head-offset', shown);
+    card.classList.toggle('head-gone', shown && offset >= headH - safeTop - 0.5);
+  };
+  // Ступени: 0 — вся; barH — только маркеры (шторка открыта); низ — скрыта.
+  const snap = () => {
+    clearTimeout(idle);
+    const full = headH - safeTop;
+    const stops = [0];
+    if (full - barH > 8) stops.push(barH);
+    stops.push(full);
+    let target = full;
+    for (let i = 1; i < stops.length; i++) {
+      const a = stops[i - 1], b = stops[i];
+      if (offset > b) continue;
+      const t = (offset - a) / ((b - a) || 1);
+      target = dir > 0 ? (t > HEAD_SNAP_BIAS ? b : a) : (t < 1 - HEAD_SNAP_BIAS ? a : b);
+      break;
+    }
+    const y = body.scrollTop;
+    if (target > y) {
+      /* Сдвиг не больше прокрутки (иначе пустая полоса над текстом), а
+         ступень дальше: докручиваем текст вместе с плашкой — как большие
+         заголовки в iOS. Плашку ведёт обычное слежение за прокруткой.
+         Текста на столько не хватает — назад, к ступени поближе. */
+      if (target <= body.scrollHeight - body.clientHeight) {
+        const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+        body.scrollTo({top: target, behavior: calm ? 'auto' : 'smooth'});
+        return;
+      }
+      target = stops.filter(s => s <= y).pop() || 0;
+    }
+    set(target, true);
+  };
+  card.__showHead = () => { clearTimeout(idle); set(0, true); };
+  if (window.ResizeObserver) new ResizeObserver(() => { measure(); if (offset) set(offset); }).observe(head);
+  measure();
   body.addEventListener('scroll', () => {
     const y = body.scrollTop;
     const dy = y - lastY;
     lastY = y;
     // Прокрутку поставил код (вернулись с «Статьи» на «Описание») — не жест.
-    if (performance.now() < (body.__ignoreScrollUntil || 0)) { acc = 0; return; }
-    if (y <= 4) { acc = 0; setHeadHidden(card, false); return; }
-    if ((dy > 0) !== (acc > 0)) acc = 0;
-    acc += dy;
-    if (acc > HEAD_SLOP_PX) setHeadHidden(card, true);
-    else if (acc < -HEAD_SLOP_PX) setHeadHidden(card, false);
+    if (performance.now() < (body.__ignoreScrollUntil || 0)) return;
+    if (dy) dir = Math.sign(dy);
+    set(offset + dy, false);
+    clearTimeout(idle);
+    idle = setTimeout(snap, HEAD_SNAP_IDLE_MS);
   }, {passive: true});
-  // Сменилось содержимое тела (другая точка, анкета, броски) — плашка видна.
-  new MutationObserver(() => { lastY = body.scrollTop; acc = 0; setHeadHidden(card, false); })
+  // Где есть — конец прокрутки (с докатом) ловится сразу, без ожидания.
+  body.addEventListener('scrollend', () => { if (performance.now() >= (body.__ignoreScrollUntil || 0)) snap(); });
+  // Сменилось содержимое тела (другая точка, анкета, броски) — плашка на месте.
+  new MutationObserver(() => { clearTimeout(idle); lastY = body.scrollTop; set(0, false); })
     .observe(body, {childList: true});
   // Компьютер: мышь к верхнему краю — плашка выезжает (колесо вверх — тоже).
   card.addEventListener('mousemove', (e) => {
-    if (!card.classList.contains('head-hidden')) return;
-    const edge = HEAD_REVEAL_EDGE_PX + (parseFloat(getComputedStyle(head).paddingTop) || 0);
-    if (e.clientY < edge) setHeadHidden(card, false);
+    if (offset > 0.5 && e.clientY < HEAD_REVEAL_EDGE_PX + safeTop) card.__showHead();
   });
   // Фокус с клавиатуры внутри плашки — показать её.
-  head.addEventListener('focusin', () => setHeadHidden(card, false));
+  head.addEventListener('focusin', () => card.__showHead());
 }
 
 /* opts.fold — вид окна для памяти ступени ('point' | 'system'),
