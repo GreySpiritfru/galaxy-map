@@ -1,0 +1,318 @@
+{
+ "articles": {
+  "https://graph.org/Najto-Afetovich-06-22": {
+   "file": "articles/tg/Najto-Afetovich-06-22.json",
+   "frozen": true,
+   "hash": "2c6cf87dc6dae8ec",
+   "images": [
+    "articles/img/d0d343418f2abdb4.webp"
+   ],
+   "title": "Найто Афетович",
+   "updated": "2026-09-30"
+  },
+  "https://telegra.ph/Lira-Vetrogran-06-18": {
+   "file": "articles/tg/Lira-Vetrogran-06-18.json",
+   "frozen": true,
+   "hash": "0deee2ab3661758c",
+   "images": [
+    "articles/img/2a007cd61597724d.webp",
+    "articles/img/448eeb1db3ebb533.webp",
+    "articles/img/85ca314f2fa7f5ca.webp",
+    "articles/img/fe59b3d2d41fa892.webp"
+   ],
+   "title": "Лира Ветрогран",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@denjik12/Cat-bl2ckKeT2": {
+   "file": "articles/tt/denjik12/Cat-bl2ckKeT2.json",
+   "hash": "aa11d5fb1763714f",
+   "images": [
+    "articles/img/243e23efa62c33e4.webp"
+   ],
+   "title": "Кэт Уоллен",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@denjik12/dantecloud": {
+   "file": "articles/tt/denjik12/dantecloud.json",
+   "hash": "20b2c6e81623f683",
+   "images": [
+    "articles/img/11c607066bc6ffba.webp"
+   ],
+   "title": "Дантес Клауд",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@denjik12/wDDB1AvyJBV": {
+   "file": "articles/tt/denjik12/wDDB1AvyJBV.json",
+   "hash": "1433e6de5f0fb508",
+   "images": [
+    "articles/img/772bfe6550e07401.webp"
+   ],
+   "title": "Аллен Фокс",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@downrunner/QFIL8-27lwA": {
+   "file": "articles/tt/downrunner/QFIL8-27lwA.json",
+   "hash": "d3e88aa3073f9807",
+   "images": [
+    "articles/img/7f3d134f77692c52.webp",
+    "articles/img/7fb2e81d571ffc6e.webp",
+    "articles/img/d48933c773ab3c00.webp",
+    "articles/img/e7accdc39a903a1a.webp"
+   ],
+   "title": "Ледо Плазац",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@fox_rogue/TJwWhdVyo1Quuqu": {
+   "file": "articles/tt/fox_rogue/TJwWhdVyo1Quuqu.json",
+   "hash": "940d8d3354c27fef",
+   "images": [
+    "articles/img/b63b49ad4b17a2f6.webp"
+   ],
+   "title": "Сорэн Расский",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@fox_rogue/glWdeEYLjTe": {
+   "file": "articles/tt/fox_rogue/glWdeEYLjTe.json",
+   "hash": "0e94fb0a7895ef53",
+   "images": [
+    "articles/img/8cd72f3c4c3f5b2c.webp"
+   ],
+   "title": "Альва Мендес, \"Стил\"",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@goryaego/mii5PisF9M3": {
+   "file": "articles/tt/goryaego/mii5PisF9M3.json",
+   "hash": "a2a795d7061fc682",
+   "images": [
+    "articles/img/16c97736ec0c5cb9.webp",
+    "articles/img/3b88084c59ebd4ac.webp",
+    "articles/img/4734fb839b70c3b1.webp",
+    "articles/img/522e4bc52b7e4f2f.webp",
+    "articles/img/6b7db51e1f219744.webp",
+    "articles/img/7a3b17e6e9f79d46.webp",
+    "articles/img/8a148bb649d28faf.webp",
+    "articles/img/e25687a69ec29dc7.webp"
+   ],
+   "title": "Персео Дэ'Бран",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@gorynychego/odP5oTEqyne": {
+   "file": "articles/tt/gorynychego/odP5oTEqyne.json",
+   "hash": "b3d20c3a2d487a95",
+   "images": [
+    "articles/img/8612c04543e05ae6.webp",
+    "articles/img/8c06c0df50d66247.webp"
+   ],
+   "title": "Фефилия Флюа",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/4tRzyNaVfEQ": {
+   "file": "articles/tt/greyspirit/4tRzyNaVfEQ.json",
+   "hash": "5d1d7135bc1323a4",
+   "images": [
+    "articles/img/01951c8c8d0e43d5.webp",
+    "articles/img/0f4f5b43e23d26c5.webp",
+    "articles/img/2b821b9013e34807.webp",
+    "articles/img/40f75fe5a7ff23d9.webp",
+    "articles/img/5ce500ce6a3bf22b.webp",
+    "articles/img/62ad06c16d7559ff.webp",
+    "articles/img/68c41b9473235321.webp",
+    "articles/img/744c558111e1da83.webp",
+    "articles/img/85e994bd6af399fe.webp",
+    "articles/img/d392590ffb4c4316.webp",
+    "articles/img/e64c1a66e9c23170.webp",
+    "articles/img/ecd212dd999c8d07.webp"
+   ],
+   "title": "Районы Фенома (ред.)",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/F7zCvt_WsN1": {
+   "file": "articles/tt/greyspirit/F7zCvt_WsN1.json",
+   "hash": "9324e622c841173d",
+   "images": [
+    "articles/img/5d087fcc12f31eb8.webp"
+   ],
+   "title": "Текила Сансет",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/JVYdAjeqTbB": {
+   "file": "articles/tt/greyspirit/JVYdAjeqTbB.json",
+   "hash": "c28f36412cd5a26a",
+   "images": [
+    "articles/img/0f96ca19b9133ac9.webp"
+   ],
+   "title": "Сириус Люмен",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/LwUEi4D1U3B": {
+   "file": "articles/tt/greyspirit/LwUEi4D1U3B.json",
+   "hash": "fea0700dcce9ef5e",
+   "images": [
+    "articles/img/3d699942f7a3c83b.webp",
+    "articles/img/f240cc9352215c7a.webp"
+   ],
+   "title": "Райден",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/SEOWfJxAewY": {
+   "file": "articles/tt/greyspirit/SEOWfJxAewY.json",
+   "hash": "8926506c229e9ef1",
+   "images": [
+    "articles/img/19e801c23e62d500.webp",
+    "articles/img/7942690052e635f7.webp",
+    "articles/img/8f2c4e54c4aad59b.webp",
+    "articles/img/bf0c806b8b74547f.webp"
+   ],
+   "title": "Магический лор ЦМО “Феном”",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/b9NLqhES-bq": {
+   "file": "articles/tt/greyspirit/b9NLqhES-bq.json",
+   "hash": "6eeb7a38552f9b93",
+   "images": [
+    "articles/img/6592505a2bf39800.webp",
+    "articles/img/d125a78727188684.webp"
+   ],
+   "title": "Шелди У'окер",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/eiGqstYij3t": {
+   "file": "articles/tt/greyspirit/eiGqstYij3t.json",
+   "hash": "e6fca4878cb4c400",
+   "images": [
+    "articles/img/ca6b03b1afd31984.webp",
+    "articles/img/d83a9fb3fc882c62.webp"
+   ],
+   "title": "Кэйор",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/gf7sBYkW_di": {
+   "file": "articles/tt/greyspirit/gf7sBYkW_di.json",
+   "hash": "82c7462b390bcb37",
+   "images": [
+    "articles/img/1a0333424b326721.webp",
+    "articles/img/26ef6a612fd965df.webp"
+   ],
+   "title": "Технологии и экономика вселенной Фенома",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/hbJFOFvQszP": {
+   "file": "articles/tt/greyspirit/hbJFOFvQszP.json",
+   "hash": "379ee7b538b1b1ca",
+   "images": [
+    "articles/img/cea3316f05647d1d.webp"
+   ],
+   "title": "Спирит",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/nyJlLLF0Nv3": {
+   "file": "articles/tt/greyspirit/nyJlLLF0Nv3.json",
+   "hash": "3fee207d72aea0ed",
+   "images": [
+    "articles/img/e1dbb8c1479f2824.webp"
+   ],
+   "title": "Мина Вульпина",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/q9p6GSXr59j": {
+   "file": "articles/tt/greyspirit/q9p6GSXr59j.json",
+   "hash": "6585f6cbbb3874cb",
+   "images": [
+    "articles/img/0d389be505326e93.webp",
+    "articles/img/395f3583b804c227.webp",
+    "articles/img/d705a9f43092a995.webp",
+    "articles/img/db574550a50d27fc.webp"
+   ],
+   "title": "Изида",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/toTVpow7sb1": {
+   "file": "articles/tt/greyspirit/toTVpow7sb1.json",
+   "hash": "fa962926468a5346",
+   "images": [
+    "articles/img/38c5d97b90360306.webp",
+    "articles/img/8eb50cffa8644cba.webp",
+    "articles/img/a9cc3ef599644363.webp"
+   ],
+   "title": "Описание галактики (ред.)",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/xbugnhuaVbR": {
+   "file": "articles/tt/greyspirit/xbugnhuaVbR.json",
+   "hash": "5e73df1269f390c9",
+   "images": [
+    "articles/img/8ce2698184a9639b.webp"
+   ],
+   "title": "Локи Альтерейн",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@greyspirit/y7G2E4B490h": {
+   "file": "articles/tt/greyspirit/y7G2E4B490h.json",
+   "hash": "6f8d37c195297124",
+   "images": [
+    "articles/img/0263297aaa5e12cf.webp",
+    "articles/img/06e8e31b27fd04c8.webp",
+    "articles/img/11849e20c7a3d22b.webp",
+    "articles/img/1858a41bc8888d31.webp",
+    "articles/img/1d36b94f0683b082.webp",
+    "articles/img/1eec236bfa77a7b3.webp",
+    "articles/img/31fb88402fc5a056.webp",
+    "articles/img/419d747d29a3bb16.webp",
+    "articles/img/495b98b74d56c3b6.webp",
+    "articles/img/4ef8ca0ec0686ace.webp",
+    "articles/img/522e4bc52b7e4f2f.webp",
+    "articles/img/5b03b857b2cd6115.webp",
+    "articles/img/5b3d1ecb2b37e540.webp",
+    "articles/img/64fa0faba2291c1a.webp",
+    "articles/img/699f4a4ed72ac4d4.webp",
+    "articles/img/6bafec58a0300a2a.webp",
+    "articles/img/73b477c69071bf07.webp",
+    "articles/img/75d225b5b7392485.webp",
+    "articles/img/7a8df0e3ec1adbf5.webp",
+    "articles/img/843919ef4fdf6d67.webp",
+    "articles/img/9d16d74468d8046e.webp",
+    "articles/img/ac23aacdf8afeb6f.webp",
+    "articles/img/bdae536ac18f89c5.webp",
+    "articles/img/c040461c891f64b0.webp",
+    "articles/img/c17e79374b20a331.webp",
+    "articles/img/c23f3d99ab4eb23a.webp",
+    "articles/img/c764cdfb87cbb783.webp",
+    "articles/img/c81e10662b58e0b9.webp",
+    "articles/img/c822d05679f97bc7.webp",
+    "articles/img/cc1a2d9ff1cc526c.webp",
+    "articles/img/d550e935fafd6273.webp",
+    "articles/img/dcf1a25c55bcf272.webp",
+    "articles/img/e25687a69ec29dc7.webp",
+    "articles/img/e42890af86f6c9ed.webp",
+    "articles/img/ea133cc5416e5252.webp",
+    "articles/img/eb0b3353efb840d2.webp",
+    "articles/img/ef2d33ddd9d5db6a.webp",
+    "articles/img/f3ac56ca28accfc9.webp",
+    "articles/img/f74da44945981891.webp",
+    "articles/img/f934a289c8036803.webp",
+    "articles/img/fba7b357b6809be9.webp"
+   ],
+   "title": "Расовая энциклопедия",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@konradgotfrid/KvEEg15l2Os": {
+   "file": "articles/tt/konradgotfrid/KvEEg15l2Os.json",
+   "hash": "350f8e01822bf239",
+   "images": [
+    "articles/img/e7aa517ed4ca2913.webp"
+   ],
+   "title": "Пауль Рудольф Лангерганс",
+   "updated": "2026-09-30"
+  },
+  "https://teletype.in/@pacifeasting/Richard": {
+   "file": "articles/tt/pacifeasting/Richard.json",
+   "hash": "6dd3fed66db82e37",
+   "images": [
+    "articles/img/bbb50e5581777f03.webp"
+   ],
+   "title": "Ричард",
+   "updated": "2026-09-30"
+  }
+ },
+ "v": 1
+}

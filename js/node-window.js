@@ -15,8 +15,9 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=171';
-import { REF_ARTICLES } from './articles.js?v=171';
+import { escapeHtml } from './modal.js?v=173';
+import { REF_ARTICLES } from './articles.js?v=173';
+import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=173';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любой
 // точки, поэтому не в данных, а константой здесь.
@@ -108,8 +109,12 @@ function recruitHtml(view, floating) {
    же точке — тоже без перезагрузки (фрейм с тем же адресом остаётся). */
 export function renderNodeContent(container, view) {
   const url = embeddedArticleUrl(view);
-  const frame = container.querySelector(':scope > iframe.node-article-frame');
-  [...container.children].forEach(n => { if (n !== frame || frame.dataset.src !== url) n.remove(); });
+  // Та же статья, что уже открыта (вернулись к точке), — остаётся вместе с
+  // местом чтения: и iframe, и своя копия (.node-mirror).
+  const keep = [...container.children].filter(n =>
+    (n.matches('iframe.node-article-frame') || n.matches('.node-mirror')) && n.dataset.src === url);
+  [...container.children].forEach(n => { if (!keep.includes(n)) n.remove(); });
+  if (!keep.some(n => n.matches('.node-mirror'))) container.__artScroll = null;
   container.insertAdjacentHTML('afterbegin', `<div class="node-desc">${descriptionHtml(view)}</div>`);
   // Набор поверх статьи — плашка со своим ✕ (встроить её в чужую страницу
   // нельзя). Пересоздаётся на каждое открытие: набор могли поменять.
@@ -123,7 +128,14 @@ export function renderNodeContent(container, view) {
   container.__descScroll = 0;
 }
 
-/* Показать вкладку тела: 'desc' или 'article'. Подсветка кнопок — здесь же. */
+/* Показать вкладку тела: 'desc' или 'article'. Подсветка кнопок — здесь же.
+
+   Статья (01.10.2026): сначала своя копия (js/reader.js, .node-mirror) — она
+   рисуется в том же контейнере, что описание, со своей прокруткой (плашка
+   окна уезжает, как на описании). Копии нет — iframe, как было (.is-article:
+   контейнер без прокрутки, листает сама страница). on-article — «открыта
+   вкладка статьи» в обоих случаях (по нему phenom.js возвращается со своей
+   карты на ту же вкладку). */
 export function showNodeBody(refs, view, which) {
   const container = refs.body;
   const url = embeddedArticleUrl(view);
@@ -132,27 +144,118 @@ export function showNodeBody(refs, view, which) {
   if (refs.article) refs.article.classList.toggle('active', article);
   if (!container) return;
   const desc = container.querySelector(':scope > .node-desc');
-  let frame = container.querySelector(':scope > iframe.node-article-frame');
-  if (article && !frame) {
-    const teletype = /^https:\/\/teletype\.in\//i.test(url);
-    container.insertAdjacentHTML('beforeend', `<iframe class="node-article-frame${teletype ? ' is-teletype' : ''}" src="${escapeHtml(url)}"></iframe>`);
-    frame = container.lastElementChild;
-    frame.dataset.src = url;
-  }
-  // Прокрутка описания — своя, у статьи прокручивает iframe; контейнер со
-  // статьёй должен стоять в нуле, иначе фрейм уехал бы вместе с ним.
-  if (article && !container.classList.contains('is-article')) container.__descScroll = container.scrollTop;
-  container.classList.toggle('is-article', article);
+  const mirror = container.querySelector(':scope > .node-mirror');
+  const frame = container.querySelector(':scope > iframe.node-article-frame');
+  // Место чтения — своё у описания и у копии статьи (у iframe — внутри него).
+  const onArticle = container.classList.contains('on-article');
+  if (onArticle && !article && !container.classList.contains('is-article')) container.__artScroll = container.scrollTop;
+  if (!onArticle && article) container.__descScroll = container.scrollTop;
+  container.classList.toggle('on-article', article);
   if (desc) desc.hidden = article;
-  if (frame) frame.hidden = !article;
   const plaque = container.querySelector(':scope > .node-recruit.is-floating');
-  if (plaque) plaque.hidden = !article;
   // Прокрутку ставим сами — уезжающая плашка не должна принять её за жест
   // (wireHeadAutoHide); вкладку нажали на плашке — пусть она будет вся.
-  container.__ignoreScrollUntil = performance.now() + 200;
-  container.scrollTop = article ? 0 : (container.__descScroll || 0);
+  const setScroll = (y) => {
+    container.__ignoreScrollUntil = performance.now() + 200;
+    container.scrollTop = y;
+  };
   const card = container.closest('.phenom-card');
   if (card && card.__showHead) card.__showHead();
+
+  if (!article) {
+    if (mirror) mirror.hidden = true;
+    if (frame) frame.hidden = true;
+    if (plaque) plaque.hidden = true;
+    container.classList.remove('is-article');
+    setScroll(container.__descScroll || 0);
+    return;
+  }
+  if (mirror && mirror.dataset.src === url) {
+    mirror.hidden = false;
+    if (frame) frame.hidden = true;
+    if (plaque) plaque.hidden = true;
+    container.classList.remove('is-article');
+    setScroll(container.__artScroll || 0);
+    return;
+  }
+  if (frame && frame.dataset.src === url) {
+    showFrame();
+    return;
+  }
+  // Ни копии, ни фрейма ещё нет: спросим у копии статей, пока — «Загрузка…».
+  if (plaque) plaque.hidden = true;
+  container.classList.remove('is-article');
+  const holder = document.createElement('div');
+  holder.className = 'node-mirror';
+  holder.dataset.src = url;
+  holder.innerHTML = '<div class="mirror-loading">Загрузка…</div>';
+  container.appendChild(holder);
+  setScroll(0);
+  const fallback = () => {
+    if (!holder.isConnected) return;
+    holder.remove();
+    if (container.classList.contains('on-article')) showFrame();
+  };
+  renderMirror(url, container).then(art => {
+    if (!holder.isConnected) return;
+    if (!art) { fallback(); return; }
+    holder.textContent = '';
+    // Набор игроков — над статьёй, как над описанием (плавающая плашка —
+    // только для чужой страницы, в которую её не встроить).
+    holder.insertAdjacentHTML('afterbegin', recruitHtml(view, false));
+    holder.appendChild(art);
+    if (container.classList.contains('on-article') && !holder.hidden) {
+      setScroll(0);
+      scrollToAnchor(container, anchorOf(url));
+    }
+  }).catch(fallback);
+
+  function showFrame() {
+    let f = container.querySelector(':scope > iframe.node-article-frame');
+    if (!f || f.dataset.src !== url) {
+      if (f) f.remove();
+      const teletype = /^https:\/\/teletype\.in\//i.test(url);
+      container.insertAdjacentHTML('beforeend', `<iframe class="node-article-frame${teletype ? ' is-teletype' : ''}" src="${escapeHtml(url)}"></iframe>`);
+      f = container.lastElementChild;
+      f.dataset.src = url;
+    }
+    f.hidden = false;
+    const m = container.querySelector(':scope > .node-mirror');
+    if (m) m.hidden = true;
+    if (plaque) plaque.hidden = false;
+    // Контейнер со статьёй-фреймом стоит в нуле, иначе фрейм уехал бы с ним.
+    container.classList.add('is-article');
+    setScroll(0);
+  }
+}
+
+/* Анкета персонажа (01.10.2026): своя копия, если есть, иначе чужая страница
+   во фрейме (renderFrame). Та же анкета уже показана — не трогаем (место
+   чтения остаётся). Пока копия грузилась, игрок ушёл на «Броски» — holder
+   уже вынут из контейнера, и поздний ответ ничего не портит. */
+export function renderSheet(container, url) {
+  const existing = container.querySelector(':scope > .node-mirror, :scope > iframe.node-article-frame');
+  if (existing && existing.dataset.src === url && container.children.length === 1) return;
+  container.classList.remove('is-article');
+  container.innerHTML = '';
+  const holder = document.createElement('div');
+  holder.className = 'node-mirror';
+  holder.dataset.src = url;
+  holder.innerHTML = '<div class="mirror-loading">Загрузка анкеты…</div>';
+  container.appendChild(holder);
+  container.__ignoreScrollUntil = performance.now() + 200;
+  container.scrollTop = 0;
+  const fallback = () => {
+    if (!holder.isConnected) return;
+    renderFrame(container, url);
+  };
+  renderMirror(url, container).then(art => {
+    if (!holder.isConnected) return;
+    if (!art) { fallback(); return; }
+    holder.textContent = '';
+    holder.appendChild(art);
+    scrollToAnchor(container, anchorOf(url));
+  }).catch(fallback);
 }
 
 function descriptionHtml(view) {
@@ -410,6 +513,8 @@ document.querySelectorAll('.phenom-card').forEach(card => {
 const HEAD_SNAP_IDLE_MS = 140;   // столько тишины после прокрутки — и доводим до ступени
 const HEAD_SNAP_BIAS = 0.3;      // доля пути до следующей ступени, после которой едем к ней
 const HEAD_REVEAL_EDGE_PX = 40;  // компьютер: мышь у верхнего края — показать
+const HEAD_WHEEL_RATIO = 0.45;   // колесо: плашка едет на такую долю прокрутки текста
+const HEAD_WHEEL_HOLD_MS = 400;  // столько после события колеса прокрутка считается колёсной (плавный докат)
 function wireHeadAutoHide(card, head) {
   const body = card.querySelector('.story-content');
   if (!body) return;
@@ -464,6 +569,14 @@ function wireHeadAutoHide(card, head) {
   card.__showHead = () => { clearTimeout(idle); set(0, true); };
   if (window.ResizeObserver) new ResizeObserver(() => { measure(); if (offset) set(offset); }).observe(head);
   measure();
+  /* Колесо мыши (v=172, игрок: «один щелчок — и всё уехало»): щелчок колеса
+     — это сразу ~100 px, а доводка до ступени докручивала остальное. Для
+     колеса плашка едет вдвое медленнее текста (HEAD_WHEEL_RATIO) и БЕЗ
+     доводки — останавливается там, где остановилось колесо: 3–4 щелчка,
+     чтобы спрятать её целиком. Палец — как было: ровно за текстом и доводка. */
+  let wheelUntil = 0;
+  body.addEventListener('wheel', () => { wheelUntil = performance.now() + HEAD_WHEEL_HOLD_MS; }, {passive: true});
+  const byWheel = () => performance.now() < wheelUntil;
   body.addEventListener('scroll', () => {
     const y = body.scrollTop;
     const dy = y - lastY;
@@ -471,12 +584,16 @@ function wireHeadAutoHide(card, head) {
     // Прокрутку поставил код (вернулись с «Статьи» на «Описание») — не жест.
     if (performance.now() < (body.__ignoreScrollUntil || 0)) return;
     if (dy) dir = Math.sign(dy);
-    set(offset + dy, false);
     clearTimeout(idle);
+    if (byWheel()) { set(offset + dy * HEAD_WHEEL_RATIO, false); return; }
+    set(offset + dy, false);
     idle = setTimeout(snap, HEAD_SNAP_IDLE_MS);
   }, {passive: true});
   // Где есть — конец прокрутки (с докатом) ловится сразу, без ожидания.
-  body.addEventListener('scrollend', () => { if (performance.now() >= (body.__ignoreScrollUntil || 0)) snap(); });
+  body.addEventListener('scrollend', () => {
+    if (byWheel() || performance.now() < (body.__ignoreScrollUntil || 0)) return;
+    snap();
+  });
   // Сменилось содержимое тела (другая точка, анкета, броски) — плашка на месте.
   new MutationObserver(() => { clearTimeout(idle); lastY = body.scrollTop; set(0, false); })
     .observe(body, {childList: true});

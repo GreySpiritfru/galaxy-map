@@ -7,7 +7,8 @@
    "Магический лор" пока заглушка — заменить на настоящую статью, когда
    будет готова.
    ============================================================ */
-import { openIframeModal, isDockedWith, modalContent, escapeHtml } from './modal.js?v=171';
+import { openIframeModal, isDockedWith, setModalArticle, isArticleOpen } from './modal.js?v=173';
+import { normalizeUrl } from './reader.js?v=173';
 
 export const REF_ARTICLES = {
   phenom: 'https://teletype.in/@greyspirit/4tRzyNaVfEQ#fvQz',
@@ -27,21 +28,23 @@ export const REF_ARTICLES = {
    статьи (раздел «Кольцо Авалона» внутри «Магии») и выглядел лишним. */
 const refToolbarEl = document.getElementById('refToolbar');
 
-export function openRefArticle(id) {
-  const url = REF_ARTICLES[id];
+/* at — необязательный адрес с другим якорем внутри той же статьи (ссылка из
+   другой статьи справочника, см. «mirror-open» ниже). */
+export function openRefArticle(id, at) {
+  const url = at || REF_ARTICLES[id];
   if (!url) return;
   const docked = isDockedWith(refToolbarEl);
   // Клик по статье, которая и так уже открыта (повторный клик по активной
   // кнопке) — ничего не делаем: не нужно ни переоткрывать модал (это раньше
   // портило точку возврата панели — см. тот же фикс в system-view.js), ни
-  // просто так перезагружать тот же iframe заново.
+  // просто так перезагружать ту же статью заново.
   const activeBtn = refToolbarEl.querySelector(`[data-ref="${id}"].active`);
-  if (docked && activeBtn) return;
+  if (docked && activeBtn && !at) return;
   // Если статья уже открыта с этой же панелью (перешли с одной статьи на
-  // другую через #refToolbar) — просто подменяем iframe, не переоткрывая
+  // другую через #refToolbar) — просто подменяем содержимое, не переоткрывая
   // модал заново (без лишнего повторного "выезда" шторки/анимации).
   if (docked) {
-    modalContent.innerHTML = `<iframe src="${escapeHtml(url)}" loading="lazy"></iframe>`;
+    setModalArticle(url);
   } else {
     openIframeModal(url, refToolbarEl);
   }
@@ -55,6 +58,24 @@ export function openRefArticle(id) {
 // помечены одинаково через data-ref, ведущий на ключ в REF_ARTICLES.
 document.querySelectorAll('[data-ref]').forEach(btn => {
   btn.addEventListener('click', () => openRefArticle(btn.dataset.ref));
+});
+
+/* Ссылка внутри своей копии статьи на другую статью, у которой тоже есть
+   копия (js/reader.js шлёт «mirror-open»). Статья справочника — во вкладку
+   справочника (с якорем ссылки); любая другая — в том же модале, если он уже
+   открыт, иначе в новом. */
+window.addEventListener('mirror-open', (e) => {
+  const url = e.detail && e.detail.url;
+  if (!url) return;
+  const key = normalizeUrl(url);
+  const ref = Object.keys(REF_ARTICLES).find(k => k !== 'avalon' && normalizeUrl(REF_ARTICLES[k]) === key);
+  if (ref) { openRefArticle(ref, url); return; }
+  if (isArticleOpen()) {
+    refToolbarEl.querySelectorAll('[data-ref].active').forEach(b => b.classList.remove('active'));
+    setModalArticle(url);
+  } else {
+    openIframeModal(url);
+  }
 });
 
 // ✕ (#refToolbarClose) больше не вешается тут — js/navigation.js сам вешает

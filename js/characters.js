@@ -12,9 +12,9 @@
    Данные — characters.json, что показать (view) собирает map.js: там граф,
    камера и переходы.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=171';
-import { canEdit, showEditor } from './editor.js?v=171';
-import { renderFrame, renderNodeLinks } from './node-window.js?v=171';
+import { escapeHtml } from './modal.js?v=173';
+import { canEdit, showEditor } from './editor.js?v=173';
+import { renderSheet, renderNodeLinks } from './node-window.js?v=173';
 
 const overlay = document.getElementById('charOverlay');
 const content = document.getElementById('charContent');
@@ -48,7 +48,8 @@ function showStub(btn, title, text) {
 
 function showSheet() {
   if (!current) return;
-  if (current.sheetUrl) renderFrame(content, current.sheetUrl);
+  // Своя копия анкеты (articles/, js/reader.js), нет её — чужая страница.
+  if (current.sheetUrl) renderSheet(content, current.sheetUrl);
   // Анкеты нет — окно всё равно открывается, иначе тап по маркеру выглядел
   // бы так, будто ничего не произошло.
   else showStub(sheetBtn, current.name || 'Персонаж', 'Анкета пока не заполнена.');

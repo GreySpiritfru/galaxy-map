@@ -1838,6 +1838,108 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
 }
 /* Только у Teletype: у анкет на telegra.ph/graph.org такой плашки нет. */
 .node-article-frame.is-teletype { --teletype-bar: 52px; }
+
+/* ===== Своя копия статьи (01.10.2026, js/reader.js) =====
+   Статьи справочника, статьи точек и анкеты — нашей вёрсткой из articles/,
+   а не чужой страницей. Колонка ~720 px по центру, тёмная тема окон,
+   бирюзовые ссылки и цитаты (как акценты карты), цветные блоки Teletype —
+   тем же оттенком, но приглушённо. Переносы строк из исходника сохраняются
+   (white-space: pre-line) — у Teletype абзац хранит их как есть. */
+.mirror-article {
+  max-width: 720px;
+  margin: 0 auto;
+  color: #e8e8ee;
+  font: 16px/1.62 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  overflow-wrap: break-word;
+  -webkit-user-select: text;
+  user-select: text;
+}
+.mirror-article h1 {
+  margin: 4px 0 18px;
+  font-size: 24px;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #fff;
+}
+.mirror-article h2 { margin: 30px 0 10px; font-size: 21px; line-height: 1.3; color: #fff; }
+.mirror-article h3 { margin: 24px 0 8px; font-size: 18px; line-height: 1.35; color: #fff; }
+.mirror-article h4 { margin: 20px 0 6px; font-size: 16px; color: #fff; }
+.mirror-article p,
+.mirror-article li,
+.mirror-article blockquote,
+.mirror-article figcaption { white-space: pre-line; }
+.mirror-article p { margin: 0 0 12px; }
+.mirror-article p:empty { height: 0.6em; margin: 0; }
+.mirror-article .is-center { text-align: center; }
+.mirror-article .is-right { text-align: right; }
+.mirror-article a {
+  color: #AFEEEE;
+  text-decoration: underline;
+  text-decoration-color: rgba(175,238,238,0.45);
+  text-underline-offset: 2px;
+}
+.mirror-article blockquote {
+  margin: 14px 0;
+  padding: 8px 14px;
+  border-left: 3px solid #AFEEEE;
+  border-radius: 0 10px 10px 0;
+  background: rgba(175,238,238,0.06);
+}
+.mirror-article figure { margin: 18px 0; text-align: center; }
+.mirror-article figure img {
+  display: inline-block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  -webkit-touch-callout: none;
+}
+.mirror-article figcaption { margin-top: 6px; color: rgba(255,255,255,0.55); font-size: 13px; }
+.mirror-article .mirror-box {
+  margin: 16px 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: hsla(var(--box-hue, 200), var(--box-sat, 30%), 55%, 0.1);
+  border: 1px solid hsla(var(--box-hue, 200), var(--box-sat, 30%), 65%, 0.22);
+}
+.mirror-article .mirror-box > :last-child { margin-bottom: 0; }
+.mirror-article hr { margin: 22px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.15); }
+.mirror-article ul,
+.mirror-article ol { margin: 0 0 12px; padding-left: 22px; }
+.mirror-article li { margin: 4px 0; }
+.mirror-article code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.08);
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.92em;
+}
+.mirror-article pre { padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.06); white-space: pre-wrap; }
+.mirror-toc {
+  margin: 12px 0 20px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+}
+.mirror-toc ul { margin: 0; padding: 0; list-style: none; }
+.mirror-toc li { margin: 4px 0; white-space: normal; }
+.mirror-toc .lvl-2 { padding-left: 14px; }
+.mirror-toc .lvl-3 { padding-left: 28px; }
+.mirror-toc a { text-decoration: none; }
+.mirror-source { margin: 28px 0 8px; color: rgba(255,255,255,0.45); font-size: 12px; }
+.mirror-loading { padding: 48px 0; text-align: center; color: rgba(255,255,255,0.45); font-size: 13px; }
+
+/* Справочник и статьи рас в модале: своя копия прокручивается сама (у
+   фрейма листает страница внутри него). Сверху — место под пристыкованную
+   шторку статей (≈61 px) или под ✕ модала. */
+.modal-card.modal-card--iframe.is-reader { background: rgba(14,14,20,0.97); }
+.modal-card--iframe.is-reader #modalContent {
+  box-sizing: border-box;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 72px 20px 40px;
+}
 /* Набор игроков (поле recruit, 25.09.2026) — золотой, как маяк сюжета на
    карте: «сюда зовут». В тексте окна — над описанием; поверх статьи
    (iframe) — внизу окна, со своим ✕. */

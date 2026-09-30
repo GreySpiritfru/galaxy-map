@@ -5,6 +5,8 @@
    поверх статьи. Используется отовсюду: map.js (маркеры), system-view.js
    (лор системы), articles.js (статьи-справочники), onboarding.js.
    ============================================================ */
+import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=173';
+
 /* ⚠️ Кавычки экранируются тоже: результат подставляется не только в текст, но и
    в атрибуты (src="…" анкеты, title="…" с именем, value="…" в редакторе), а
    имена и ссылки пишут сами игроки через редактор. Раньше тут был приём с
@@ -31,9 +33,13 @@ const modalCloseBtn = document.getElementById('modalClose');
 // Игнорируем клики по фону первые 300мс после открытия — этого достаточно, чтобы
 // пропустить призрачный клик, но не помешать реальному следующему тапу пользователя.
 let modalArmed = false;
+// Статья в модале грузится не сразу (своя копия, js/reader.js): открыли уже
+// что-то другое — поздний ответ не должен его затереть.
+let articleToken = 0;
 
 export function openModal(html) {
-  modalCard.classList.remove('modal-card--iframe');
+  articleToken++;
+  modalCard.classList.remove('modal-card--iframe', 'is-reader');
   modalBackdrop.classList.remove('backdrop--iframe');
   resetLoreToolbarState();
   modalCloseBtn.hidden = false;
@@ -53,10 +59,34 @@ export function openModal(html) {
 // место сверху. activeBtn (необязательно) подсвечивается, пока статья открыта.
 let dockedToolbar = null; // {el, parent, next, activeBtn} — куда вернуть панель при закрытии
 
+/* Статья в развёрнутом модале (01.10.2026): сначала своя копия (articles/,
+   js/reader.js) — наша вёрстка, своя прокрутка (.is-reader), работает, когда
+   Teletype лежит; копии нет — чужая страница во фрейме, как раньше. Якорь
+   из адреса (#e5M4 — раздел внутри статьи) — прокрутка к нему. */
+export function setModalArticle(url) {
+  const token = ++articleToken;
+  modalCard.classList.add('is-reader');
+  modalContent.innerHTML = '<div class="mirror-loading">Загрузка…</div>';
+  modalContent.scrollTop = 0;
+  const frame = () => {
+    if (token !== articleToken) return;
+    modalCard.classList.remove('is-reader');
+    modalContent.innerHTML = `<iframe src="${escapeHtml(url)}" loading="lazy"></iframe>`;
+  };
+  renderMirror(url, modalContent).then(art => {
+    if (token !== articleToken) return;
+    if (!art) { frame(); return; }
+    modalContent.textContent = '';
+    modalContent.appendChild(art);
+    modalContent.scrollTop = 0;
+    scrollToAnchor(modalContent, anchorOf(url));
+  }).catch(frame);
+}
+
 export function openIframeModal(url, toolbarEl, activeBtn) {
   modalCard.classList.add('modal-card--iframe');
   modalBackdrop.classList.add('backdrop--iframe');
-  modalContent.innerHTML = `<iframe src="${escapeHtml(url)}" loading="lazy"></iframe>`;
+  setModalArticle(url);
   if (toolbarEl) {
     dockedToolbar = { el: toolbarEl, parent: toolbarEl.parentElement, next: toolbarEl.nextSibling, activeBtn: activeBtn || null };
     modalCard.insertBefore(toolbarEl, modalCard.firstChild);
@@ -82,6 +112,7 @@ function resetLoreToolbarState() {
 }
 
 export function closeModal() {
+  articleToken++;
   modalBackdrop.classList.remove('open');
   if (modalCard.classList.contains('modal-card--iframe')) resetLoreToolbarState();
 }
