@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=174';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=175';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -52,7 +52,7 @@ const FIELD_LABELS = {
   },
   node: {
     title: 'Название', shortTitle: 'Короткое название', code: 'Номер',
-    articleUrl: 'Статья', archiveUrl: 'Архив', color: 'Цвет',
+    articleUrl: 'Статья', color: 'Цвет',
     beacon: 'Маяк', completed: 'Статус', wide: 'Ширина маркера', pinned: 'Закреплено',
     location: 'Локация', recruit: 'Набор',
     parent: 'Привязка', links: 'Связи', x: 'Место на карте', y: 'Место на карте',
@@ -117,7 +117,7 @@ function fieldsOf(kind, d) {
   return {
     title: d.title || '', ...common, ...inSystem,
     shortTitle: d.shortTitle || '', code: d.code || '',
-    archiveUrl: d.archiveUrl || '', articleUrl: (d.article && d.article.url) || '',
+    articleUrl: (d.article && d.article.url) || '',
     color: d.color || '',
     beacon: d.beacon === true, completed: d.completed === true, wide: d.wide === true,
     pinned: d.pinned === true, location: d.location === true,
@@ -767,7 +767,6 @@ export function showNodeEditor(node) {
         ${input('shortTitle', 'Короткое название (для вкладки в окне родителя)', SHORT_TITLE_MAX)}
         ${input('code', 'Номер (например 2 или К.3)', CODE_MAX)}
         ${input('articleUrl', 'Ссылка на статью', URL_MAX, 'type="url" placeholder="https://…"')}
-        ${input('archiveUrl', 'Ссылка на архив', URL_MAX, 'type="url" placeholder="https://…"')}
         ${input('color', 'Цвет маркера (пусто — по умолчанию)', COLOR_MAX, 'placeholder="#ffd76a"')}
         <label class="editor-check">
           <input type="checkbox" name="beacon"${draft.beacon ? ' checked' : ''}>
@@ -881,10 +880,9 @@ export function showNodeEditor(node) {
 
   const problemOf = (set) => {
     if ('title' in set && !set.title) return 'Название не может быть пустым.';
-    const problem = textProblem(node.kind, set, ['title', 'shortTitle', 'code', 'archiveUrl', 'articleUrl', 'recruit'], ['title', 'shortTitle', 'recruit']);
+    const problem = textProblem(node.kind, set, ['title', 'shortTitle', 'code', 'articleUrl', 'recruit'], ['title', 'shortTitle', 'recruit']);
     if (problem) return problem;
     if (set.articleUrl && !/^https:\/\/\S+$/i.test(set.articleUrl)) return 'Ссылка на статью должна начинаться с https:// и быть без пробелов.';
-    if (set.archiveUrl && !/^https:\/\/\S+$/i.test(set.archiveUrl)) return 'Ссылка на архив должна начинаться с https:// и быть без пробелов.';
     if (set.color && !/^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]+\))$/i.test(set.color)) return 'Цвет: например #ffd76a (или пусто — цвет по умолчанию).';
     return '';
   };

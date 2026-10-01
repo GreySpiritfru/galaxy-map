@@ -18,12 +18,12 @@
    ⚠️ Тексты — черновик из инфоканала (введение, «Что такое Феном», анкета),
    игрок обещал поправить. Править прямо здесь, в INTRO_TABS и STEPS.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=174';
-import { closeStory, isStoryOpen } from './stories.js?v=174';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=174';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=174';
-import { closeSystem, isSystemOpen } from './system-view.js?v=174';
-import { quoteHtml, initQuotes } from './quotes.js?v=174';
+import { closeModal, isArticleOpen } from './modal.js?v=175';
+import { closeStory, isStoryOpen } from './stories.js?v=175';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=175';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=175';
+import { closeSystem, isSystemOpen } from './system-view.js?v=175';
+import { quoteHtml, initQuotes } from './quotes.js?v=175';
 
 const TOUR_SEEN_KEY = 'galaxyMapTourSeen';
 const LINKS = {
@@ -111,7 +111,7 @@ const STEPS = [
     target: () => topCard('.node-head'),
     optional: true,
     title: 'Панель окна',
-    text: 'На верхней панели также отображены маркеры, которые прикреплены к этому сюжету или находятся в локации.<br>В архиве хранятся все посты сюжета.',
+    text: 'На верхней панели также отображены маркеры, которые прикреплены к этому сюжету или находятся в локации.',
   },
   {
     // Про 🏷️ — поэтому на карту: в нодах на её месте ▦.

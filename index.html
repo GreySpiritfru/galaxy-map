@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=174" />
+  <link rel="stylesheet" href="css/styles.css?v=175" />
 </head>
 <body>
 
@@ -156,7 +156,7 @@
   <div class="phenom-card" id="phenomCard">
     <!-- Панель ДЕЙСТВИЙ окна точки — тот же таб-бар, что у статей и вида
          системы (.tabbar, грабли №12). Состав фиксирован: ✕, карта, статья,
-         правка, архив, сюжеты; пустые кнопки прячутся (applyNodeToolbar в
+         правка, сюжеты; пустые кнопки прячутся (applyNodeToolbar в
          js/node-window.js). Переходы к точкам — родителю и детям — НЕ здесь,
          а в ряду #phenomLinks ниже (24.09.2026). -->
     <div class="node-head">
@@ -180,9 +180,6 @@
       <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
       <button class="tabbar-btn" id="phenomEdit" hidden>
         <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
-      </button>
-      <button class="tabbar-btn" id="phenomArchive">
-        <span class="tabbar-btn-icon" aria-hidden="true">🗂️</span><span class="tabbar-btn-label">Архив</span>
       </button>
       <button class="tabbar-btn" id="phenomTelegram">
         <span class="tabbar-btn-icon" aria-hidden="true">📜</span><span class="tabbar-btn-label">Сюжеты</span>
@@ -241,9 +238,6 @@
       <button class="tabbar-btn" id="storyEdit" hidden>
         <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
       </button>
-      <button class="tabbar-btn" id="storyArchive">
-        <span class="tabbar-btn-icon" aria-hidden="true">🗂️</span><span class="tabbar-btn-label">Архив</span>
-      </button>
       <button class="tabbar-btn" id="storyTelegram">
         <span class="tabbar-btn-icon" aria-hidden="true">📜</span><span class="tabbar-btn-label">Сюжеты</span>
       </button>
@@ -286,6 +280,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=174"></script>
+<script type="module" src="js/main.js?v=175"></script>
 </body>
 </html>

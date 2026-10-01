@@ -5,7 +5,7 @@
    кода: простой модал у точки с одним текстом, «info»-ветка в js/phenom.js у
    Кольца Авалона и отдельный файл js/stories.js у сюжета. Расходились они
    только тем, чего у точки НЕ заполнено, — поэтому здесь один рендер, который
-   просто пропускает пустое: нет баннеров — нет картинок, нет архива — нет
+   просто пропускает пустое: нет баннеров — нет картинок, нет статьи — нет
    кнопки, нет детей-персонажей — нет их ряда.
 
    ⚠️ Физически окон ТРИ (#phenomOverlay, #storyOverlay, #charOverlay) — это
@@ -15,9 +15,9 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=174';
-import { REF_ARTICLES } from './articles.js?v=174';
-import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=174';
+import { escapeHtml } from './modal.js?v=175';
+import { REF_ARTICLES } from './articles.js?v=175';
+import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=175';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любой
 // точки, поэтому не в данных, а константой здесь.
@@ -301,7 +301,7 @@ export function setTabIcon(span, meta) {
    Нет арта — та же форма, залитая цветом её заглушки на карте, с первой
    буквой названия, как у портретов персонажей. Раньше у точки без арта на
    кнопке оставался 📍 или 🎬, и «перейти к Бездне» выглядело так же, как
-   «открыть архив».
+   «открыть статью».
 
    Битый путь к картинке — откат на букву (по событию error, как createMapIcon
    на карте откатывается на заглушку). */
@@ -766,13 +766,6 @@ export function applyNodeToolbar(refs, view, handlers) {
       : (art && art.url ? () => window.open(art.url, '_blank', 'noopener') : null);
   }
   showNodeBody(refs, view, 'desc');
-
-  show(refs.archive, !!view.archiveUrl);
-  if (refs.archive) {
-    refs.archive.onclick = view.archiveUrl
-      ? () => window.open(view.archiveUrl, '_blank', 'noopener')
-      : null;
-  }
 
   // Оглавление сюжетов в канале — только у точки с маяком: ровно она и есть
   // «сюжет» в новой схеме (галочка отвечает за мигание и за эту кнопку).

@@ -100,7 +100,6 @@
     "image": "images/From%20ashes.jpg",
     "images": ["images/From%20ashes.jpg"],
     "beacon": true,
-    "archiveUrl": "https://docs.google.com/document/d/1P35TMgYbvms8PlPanZR723i6WcUjS6t8p7H3lcFk2lE/edit?usp=sharing",
     "parent": "phenome",
     "links": [],
     "x": -200,
@@ -114,7 +113,6 @@
     "image": "images/bezdna.jpg",
     "images": ["images/bezdna.jpg"],
     "beacon": true,
-    "archiveUrl": "https://docs.google.com/document/d/1Hj4Oqbkqe07sFODup5n7ks_MyfbNPzO49iKz3009qX4/edit?usp=sharing",
     "links": [],
     "x": -425,
     "y": -145
@@ -128,7 +126,6 @@
     "images": ["images/gxexp.jpg"],
     "beacon": true,
     "completed": true,
-    "archiveUrl": "https://docs.google.com/document/d/1Rmtlx5xPQMgKyndHtP0ybh6mRBPNHk3EyaHntLIGp4s/edit?usp=sharing",
     "parent": "system:g-ux71",
     "links": [],
     "x": -157,
