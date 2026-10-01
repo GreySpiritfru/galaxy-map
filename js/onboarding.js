@@ -5,9 +5,9 @@
    игрока, к сайту/репозиторию отношения не имеет) кнопка мягко пульсирует,
    чтобы её было видно, но не мигает резко и не лезет с окном сама.
    ============================================================ */
-import { openModal, closeModal } from './modal.js?v=173';
-import { startTour, tourSeen } from './tour.js?v=173';
-import { quoteHtml, initQuotes } from './quotes.js?v=173';
+import { openModal, closeModal } from './modal.js?v=174';
+import { startTour, tourSeen } from './tour.js?v=174';
+import { quoteHtml, initQuotes } from './quotes.js?v=174';
 
 const ONBOARDING_SEEN_KEY = 'galaxyMapOnboardingSeen';
 const helpBtn = document.getElementById('helpBtn');

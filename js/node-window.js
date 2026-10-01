@@ -15,9 +15,9 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=173';
-import { REF_ARTICLES } from './articles.js?v=173';
-import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=173';
+import { escapeHtml } from './modal.js?v=174';
+import { REF_ARTICLES } from './articles.js?v=174';
+import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=174';
 
 // Пост в Telegram-канале со списком всех сюжетов — один и тот же для любой
 // точки, поэтому не в данных, а константой здесь.
