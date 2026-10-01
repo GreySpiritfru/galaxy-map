@@ -328,5 +328,19 @@
     "submapY": 6500,
     "x": -175,
     "y": -130
+  },
+  {
+    "id": "orbi",
+    "name": "Орби",
+    "race": "",
+    "role": "",
+    "player": "",
+    "sheetUrl": "",
+    "parent": "",
+    "links": [],
+    "image": "",
+    "color": "",
+    "x": -175,
+    "y": -100
   }
 ]
