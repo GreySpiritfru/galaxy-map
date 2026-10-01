@@ -18,18 +18,16 @@
    ⚠️ Тексты — черновик из инфоканала (введение, «Что такое Феном», анкета),
    игрок обещал поправить. Править прямо здесь, в INTRO_TABS и STEPS.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=175';
-import { closeStory, isStoryOpen } from './stories.js?v=175';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=175';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=175';
-import { closeSystem, isSystemOpen } from './system-view.js?v=175';
-import { quoteHtml, initQuotes } from './quotes.js?v=175';
+import { closeModal, isArticleOpen } from './modal.js?v=177';
+import { closeStory, isStoryOpen } from './stories.js?v=177';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=177';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=177';
+import { closeSystem, isSystemOpen } from './system-view.js?v=177';
+import { quoteHtml, initQuotes } from './quotes.js?v=177';
+import { JOIN_LINKS } from './node-window.js?v=177';
 
 const TOUR_SEEN_KEY = 'galaxyMapTourSeen';
-const LINKS = {
-  form: 'https://t.me/Phenome_hub/23',
-  contacts: 'https://t.me/Phenome_hub/17',
-};
+const LINKS = JOIN_LINKS;
 
 /* Тексты введения — от игрока (25.09.2026, v=156), из постов инфоканала.
    Правила — те же, что в посте t.me/Phenome_hub/19, под сворачиваемыми

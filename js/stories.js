@@ -13,7 +13,7 @@
    — js/phenom.js (он же умеет тайловую карту), верхний — этот. Оба вместе
    дают вложенность локация -> точка -> персонаж, см. CLAUDE.md.
    ============================================================ */
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=175';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=177';
 
 const storyOverlay = document.getElementById('storyOverlay');
 const storyContent = document.getElementById('storyContent');
@@ -22,8 +22,8 @@ const refs = {
   toolbar: document.getElementById('storyToolbar'),
   desc: document.getElementById('storyDescription'),
   article: document.getElementById('storyArticle'),
+  game: document.getElementById('storyGame'),
   body: storyContent,
-  index: document.getElementById('storyTelegram'),
   edit: document.getElementById('storyEdit'),
 };
 let storyArmed = false;

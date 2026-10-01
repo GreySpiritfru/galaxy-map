@@ -15,13 +15,16 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=175';
-import { REF_ARTICLES } from './articles.js?v=175';
-import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=175';
+import { escapeHtml } from './modal.js?v=177';
+import { REF_ARTICLES } from './articles.js?v=177';
+import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=177';
 
-// Пост в Telegram-канале со списком всех сюжетов — один и тот же для любой
-// точки, поэтому не в данных, а константой здесь.
-export const STORIES_INDEX_URL = 'https://t.me/phenomesdeep/1/206';
+/* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
+   Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
+export const JOIN_LINKS = {
+  form: 'https://t.me/Phenome_hub/23',
+  contacts: 'https://t.me/Phenome_hub/17',
+};
 
 /* Разбивает персонажей точки на группы связанных между собой (по их links) —
    связные компоненты. Один персонаж без союзников — группа из одного. Порядок
@@ -88,8 +91,19 @@ function recruitHtml(view, floating) {
       ${floating ? '<button type="button" class="node-recruit-close" aria-label="Скрыть">✕</button>' : ''}
       <div class="node-recruit-head">📣 Набор открыт</div>
       <div class="node-recruit-body">${escapeHtml(view.recruit).replace(/\n/g, '<br>')}</div>
+      <div class="node-recruit-actions">
+        <button type="button" class="node-recruit-btn" data-join="form">📝 Шаблон анкеты</button>
+        <button type="button" class="node-recruit-btn" data-join="contacts">💬 Написать нам</button>
+      </div>
     </div>`;
 }
+/* Кнопки набора (v=177) — те же, что в финале обучения: плашка без них
+   звала, но не говорила, куда идти. Один обработчик на все плашки (они
+   пересоздаются при каждом открытии окна). */
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest && e.target.closest('.node-recruit [data-join]');
+  if (btn && JOIN_LINKS[btn.dataset.join]) openExternal(JOIN_LINKS[btn.dataset.join]);
+});
 
 /* Содержимое окна: баннеры, заголовок, набор, описание в сворачиваемой
    цитате. Всё необязательное — точка объявляет только то, что у неё есть.
@@ -115,6 +129,9 @@ export function renderNodeContent(container, view) {
     (n.matches('iframe.node-article-frame') || n.matches('.node-mirror')) && n.dataset.src === url);
   [...container.children].forEach(n => { if (!keep.includes(n)) n.remove(); });
   if (!keep.some(n => n.matches('.node-mirror'))) container.__artScroll = null;
+  // Другая точка — места чтения прежней вкладки не переносим (showNodeBody).
+  delete container.dataset.tab;
+  container.__gameScroll = 0;
   container.insertAdjacentHTML('afterbegin', `<div class="node-desc">${descriptionHtml(view)}</div>`);
   // Набор поверх статьи — плашка со своим ✕ (встроить её в чужую страницу
   // нельзя). Пересоздаётся на каждое открытие: набор могли поменять.
@@ -139,19 +156,28 @@ export function renderNodeContent(container, view) {
 export function showNodeBody(refs, view, which) {
   const container = refs.body;
   const url = embeddedArticleUrl(view);
+  const game = which === 'game' && !!(container && container.querySelector(':scope > .node-game'));
   const article = which === 'article' && !!url;
-  if (refs.desc) refs.desc.classList.toggle('active', !article);
+  const tab = game ? 'game' : (article ? 'article' : 'desc');
+  if (refs.desc) refs.desc.classList.toggle('active', tab === 'desc');
   if (refs.article) refs.article.classList.toggle('active', article);
+  if (refs.game) refs.game.classList.toggle('active', game);
   if (!container) return;
   const desc = container.querySelector(':scope > .node-desc');
+  const gameEl = container.querySelector(':scope > .node-game');
   const mirror = container.querySelector(':scope > .node-mirror');
   const frame = container.querySelector(':scope > iframe.node-article-frame');
-  // Место чтения — своё у описания и у копии статьи (у iframe — внутри него).
-  const onArticle = container.classList.contains('on-article');
-  if (onArticle && !article && !container.classList.contains('is-article')) container.__artScroll = container.scrollTop;
-  if (!onArticle && article) container.__descScroll = container.scrollTop;
+  // Место чтения — своё у описания, «Игры» и копии статьи (у iframe — внутри
+  // него). dataset.tab — какая вкладка открыта сейчас (её же смотрит
+  // phenom.js, возвращаясь со своей карты); нет — окно только что открыто.
+  const prev = container.dataset.tab;
+  if (prev === 'article' && !container.classList.contains('is-article')) container.__artScroll = container.scrollTop;
+  if (prev === 'desc') container.__descScroll = container.scrollTop;
+  if (prev === 'game') container.__gameScroll = container.scrollTop;
+  container.dataset.tab = tab;
   container.classList.toggle('on-article', article);
-  if (desc) desc.hidden = article;
+  if (desc) desc.hidden = tab !== 'desc';
+  if (gameEl) gameEl.hidden = !game;
   const plaque = container.querySelector(':scope > .node-recruit.is-floating');
   // Прокрутку ставим сами — уезжающая плашка не должна принять её за жест
   // (wireHeadAutoHide); вкладку нажали на плашке — пусть она будет вся.
@@ -167,7 +193,7 @@ export function showNodeBody(refs, view, which) {
     if (frame) frame.hidden = true;
     if (plaque) plaque.hidden = true;
     container.classList.remove('is-article');
-    setScroll(container.__descScroll || 0);
+    setScroll((game ? container.__gameScroll : container.__descScroll) || 0);
     return;
   }
   if (mirror && mirror.dataset.src === url) {
@@ -227,6 +253,114 @@ export function showNodeBody(refs, view, which) {
     container.classList.add('is-article');
     setScroll(0);
   }
+}
+
+/* ============================================================
+   «♟️ Игра» — третья вкладка тела окна (02.10.2026, v=177, идея игрока).
+
+   Шторка под панелью — это меню ПЕРЕХОДОВ (маркер и короткое имя), а не
+   состав: в ней не видно, кто кем играет, и у локации нет персонажей её
+   сюжетов. Здесь — фактический состав: все персонажи ветки (сама точка и
+   её точки-потомки), с расой и ролью, союзники (links) — одной рамкой, как
+   пунктир на карте. Без имён игроков: их на карту не
+   выносим. Вкладка задумана как «игровое» место окна — сюда же потом лягут
+   статистика сюжета и броски, которые описанию лишние.
+   Данные — view.roster из map.js (worldView): [{id, own, head, chars}].
+   Нет ни одного персонажа — вкладки нет.
+   ============================================================ */
+const plural = (n, one, few, many) => {
+  const a = n % 10, b = n % 100;
+  if (a === 1 && b !== 11) return one;
+  return a >= 2 && a <= 4 && (b < 12 || b > 14) ? few : many;
+};
+
+function rosterRow(c, onTap) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'game-row';
+  btn.appendChild(markerEl(c, 'game-row-marker'));
+  const text = document.createElement('span');
+  text.className = 'game-row-text';
+  const name = document.createElement('span');
+  name.className = 'game-row-name';
+  name.textContent = c.fullName || c.name || c.label || '';
+  text.appendChild(name);
+  const sub = [c.race, c.role].filter(Boolean).join(' · ');
+  if (sub) {
+    const s = document.createElement('span');
+    s.className = 'game-row-sub';
+    s.textContent = sub;
+    text.appendChild(s);
+  }
+  const arrow = document.createElement('span');
+  arrow.className = 'game-row-arrow';
+  arrow.setAttribute('aria-hidden', 'true');
+  arrow.textContent = '›';
+  btn.append(text, arrow);
+  btn.addEventListener('click', () => onTap(c.id));
+  return btn;
+}
+
+function renderGame(container, view, handlers) {
+  const old = container.querySelector(':scope > .node-game');
+  if (old) old.remove();
+  const sections = (Array.isArray(view.roster) ? view.roster : []).filter(s => s.chars && s.chars.length);
+  if (!sections.length) return null;
+  const toChar = (id) => { if (handlers.onCharacter) handlers.onCharacter(id); };
+  const toPoint = (id) => { if (handlers.onChild) handlers.onChild(id); };
+
+  const root = document.createElement('div');
+  root.className = 'node-game';
+  root.hidden = true;
+  const total = sections.reduce((n, s) => n + s.chars.length, 0);
+  const grouped = sections.map(s => groupByLinks(pinnedFirst(s.chars)));
+  const allies = grouped.reduce((n, gs) => n + gs.filter(g => g.length > 1).length, 0);
+
+  const title = document.createElement('div');
+  title.className = 'game-title';
+  title.textContent = 'Состав';
+  const summary = document.createElement('div');
+  summary.className = 'game-summary';
+  summary.textContent = [
+    `${total} ${plural(total, 'персонаж', 'персонажа', 'персонажей')}`,
+    allies ? `${allies} ${plural(allies, 'группа', 'группы', 'групп')} союзников` : '',
+    sections.length > 1 ? `${sections.length} ${plural(sections.length, 'точка', 'точки', 'точек')}` : '',
+  ].filter(Boolean).join(' · ');
+  root.append(title, summary);
+
+  sections.forEach((s, k) => {
+    const sec = document.createElement('section');
+    sec.className = 'game-section';
+    // Заголовок — только когда точек несколько: у сюжета список и так его.
+    if (sections.length > 1) {
+      if (s.own || !s.head) {
+        const h = document.createElement('div');
+        h.className = 'game-section-head';
+        h.textContent = view.title || '';
+        sec.appendChild(h);
+      } else {
+        const h = document.createElement('button');
+        h.type = 'button';
+        h.className = 'game-section-head is-link';
+        h.appendChild(markerEl(s.head, 'game-head-marker'));
+        const t = document.createElement('span');
+        t.textContent = s.head.name || s.head.label || '';
+        h.appendChild(t);
+        h.addEventListener('click', () => toPoint(s.id));
+        sec.appendChild(h);
+      }
+    }
+    grouped[k].forEach(group => {
+      if (group.length === 1) { sec.appendChild(rosterRow(group[0], toChar)); return; }
+      const box = document.createElement('div');
+      box.className = 'game-group';
+      group.forEach(c => box.appendChild(rosterRow(c, toChar)));
+      sec.appendChild(box);
+    });
+    root.appendChild(sec);
+  });
+  container.appendChild(root);
+  return root;
 }
 
 /* Анкета персонажа (01.10.2026): своя копия, если есть, иначе чужая страница
@@ -765,14 +899,13 @@ export function applyNodeToolbar(refs, view, handlers) {
     refs.article.onclick = inline ? toBody('article')
       : (art && art.url ? () => window.open(art.url, '_blank', 'noopener') : null);
   }
-  showNodeBody(refs, view, 'desc');
-
-  // Оглавление сюжетов в канале — только у точки с маяком: ровно она и есть
-  // «сюжет» в новой схеме (галочка отвечает за мигание и за эту кнопку).
-  show(refs.index, !!view.beacon);
-  if (refs.index) {
-    refs.index.onclick = () => window.open(STORIES_INDEX_URL, '_blank', 'noopener');
+  // «Игра» — есть, только если у ветки точки есть персонажи (renderGame).
+  const game = refs.body ? renderGame(refs.body, view, handlers) : null;
+  if (refs.game) {
+    show(refs.game, !!game);
+    refs.game.onclick = game ? toBody('game') : null;
   }
+  showNodeBody(refs, view, 'desc');
 
   if (refs.edit) refs.edit.hidden = !view.canEdit;
 

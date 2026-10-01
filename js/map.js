@@ -1,17 +1,17 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=175';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=175';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=175';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=175';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=175';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=175';
-import { openCharacter, closeCharacter } from './characters.js?v=175';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=175';
-import { markerEl } from './node-window.js?v=175';
-import { layoutSections, renderSections } from './sections.js?v=175';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=175';
+import { createPanZoom } from './panzoom.js?v=177';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=177';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=177';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=177';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=177';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=177';
+import { openCharacter, closeCharacter } from './characters.js?v=177';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=177';
+import { markerEl } from './node-window.js?v=177';
+import { layoutSections, renderSections } from './sections.js?v=177';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=177';
 
 const SVG_PATH = 'map.svg';
 
@@ -165,7 +165,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=175').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=177').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -1097,7 +1097,36 @@ function finishMapPick(p) {
         id: c.id, links: siblingLinks(c).map(other => other.id),
       })),
       children: kids.map(c => tabIconOf(c, {id: c.id})),
+      roster: rosterOf(node),
     };
+  }
+
+  /* Состав для вкладки «♟️ Игра» (v=177, renderGame в node-window.js): все
+     персонажи ВЕТКИ — самой точки и её точек-потомков (у Фенома это и Ледо с
+     Текилой, и персонажи «Переворота»), по разделу на точку, в порядке
+     обхода дерева. Союзы — внутри своего раздела (siblingLinks). */
+  function rosterOf(node) {
+    const sections = [];
+    const visit = (n) => {
+      const chars = n.children.filter(c => c.kind === 'character' && c.onMap !== false);
+      if (chars.length) {
+        sections.push({
+          id: n.id,
+          own: n === node,
+          head: n === node ? null : tabIconOf(n, {id: n.id}),
+          chars: chars.map(c => tabIconOf(c, {
+            id: c.id,
+            links: siblingLinks(c).map(other => other.id),
+            fullName: c.data.name || '',
+            race: c.data.race || '',
+            role: c.data.role || '',
+          })),
+        });
+      }
+      n.children.filter(c => c.kind === 'world' && c.onMap !== false).forEach(visit);
+    };
+    visit(node);
+    return sections;
   }
 
   /* Окно персонажа (24.09.2026) — то же окно точки, третий слой. В ряду

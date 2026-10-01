@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=175" />
+  <link rel="stylesheet" href="css/styles.css?v=177" />
 </head>
 <body>
 
@@ -171,6 +171,11 @@
       <button class="tabbar-btn" id="phenomArticleTab" style="display:none">
         <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Статья</span>
       </button>
+      <!-- «Игра» — состав ветки (v=177), только если в ней есть персонажи
+           (renderGame в js/node-window.js). -->
+      <button class="tabbar-btn" id="phenomGameTab" style="display:none">
+        <span class="tabbar-btn-icon" aria-hidden="true">♟️</span><span class="tabbar-btn-label">Игра</span>
+      </button>
       <!-- Своя карта точки (поле submap, сейчас у Фенома) — ВИД поверх
            тела окна: ✕ превращается в ↩ и возвращает к нему
            (openSubmapView в js/phenom.js). -->
@@ -180,9 +185,6 @@
       <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
       <button class="tabbar-btn" id="phenomEdit" hidden>
         <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
-      </button>
-      <button class="tabbar-btn" id="phenomTelegram">
-        <span class="tabbar-btn-icon" aria-hidden="true">📜</span><span class="tabbar-btn-label">Сюжеты</span>
       </button>
     </div>
     <!-- Ряд переходов: родитель, места/сюжеты, персонажи, лишнее под «+N»,
@@ -234,12 +236,12 @@
       <button class="tabbar-btn" id="storyArticle" style="display:none">
         <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Статья</span>
       </button>
+      <button class="tabbar-btn" id="storyGame" style="display:none">
+        <span class="tabbar-btn-icon" aria-hidden="true">♟️</span><span class="tabbar-btn-label">Игра</span>
+      </button>
       <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
       <button class="tabbar-btn" id="storyEdit" hidden>
         <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
-      </button>
-      <button class="tabbar-btn" id="storyTelegram">
-        <span class="tabbar-btn-icon" aria-hidden="true">📜</span><span class="tabbar-btn-label">Сюжеты</span>
       </button>
     </div>
     <div class="node-links" id="storyLinks" hidden></div>
@@ -280,6 +282,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=175"></script>
+<script type="module" src="js/main.js?v=177"></script>
 </body>
 </html>

@@ -168,7 +168,9 @@ function element(n) {
   return el;
 }
 
-function openExternal(href) {
+// Внешняя ссылка: t.me — внутри Telegram, прочее — его браузером или новой
+// вкладкой. Общая с окном точки (кнопки набора, js/node-window.js).
+export function openExternal(href) {
   const tg = window.Telegram && window.Telegram.WebApp;
   if (tg && tg.platform && tg.platform !== 'unknown') {
     if (/^https:\/\/t\.me\//i.test(href) && tg.openTelegramLink) { tg.openTelegramLink(href); return; }

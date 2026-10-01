@@ -21,8 +21,8 @@
    точка без своей карты — это просто точка, и текст ей рисует тот же общий
    код, что и всем остальным. characters.json привязывает персонажей к любой
    точке с тайловой картой через submapX/submapY (см. ниже). */
-import { closeModal, escapeHtml } from './modal.js?v=175';
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=175';
+import { closeModal, escapeHtml } from './modal.js?v=177';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=177';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже
@@ -110,8 +110,8 @@ const refs = {
   toolbar: document.getElementById('phenomToolbar'),
   desc: document.getElementById('phenomDescriptionTab'),
   article: document.getElementById('phenomArticleTab'),
+  game: document.getElementById('phenomGameTab'),
   body: document.getElementById('phenomInfoContent'),
-  index: document.getElementById('phenomTelegram'),
   edit: document.getElementById('phenomEdit'),
 };
 
@@ -324,6 +324,7 @@ export function openSubmapView() {
   phenomMapTab.classList.add('active');
   refs.desc.classList.remove('active');
   refs.article.classList.remove('active');
+  refs.game.classList.remove('active');
   phenomInfoContent.hidden = true;
   // Сначала показать контейнер, потом создавать viewer: OpenSeadragon,
   // созданный в скрытом элементе, считает свой размер нулевым.
@@ -336,11 +337,12 @@ export function openSubmapView() {
 export function closeSubmapView() {
   if (!isSubmapViewOpen()) return;
   showBase();
-  // Назад на ту вкладку тела, с которой уходили на карту (on-article — и у
-  // своей копии статьи, и у iframe, см. showNodeBody).
-  const onArticle = phenomInfoContent.classList.contains('on-article');
-  refs.desc.classList.toggle('active', !onArticle);
-  refs.article.classList.toggle('active', onArticle);
+  // Назад на ту вкладку тела, с которой уходили на карту (dataset.tab ставит
+  // showNodeBody: desc / article / game).
+  const tab = phenomInfoContent.dataset.tab || 'desc';
+  refs.desc.classList.toggle('active', tab === 'desc');
+  refs.article.classList.toggle('active', tab === 'article');
+  refs.game.classList.toggle('active', tab === 'game');
 }
 
 export function isSubmapViewOpen() {

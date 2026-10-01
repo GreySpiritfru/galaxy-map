@@ -1985,6 +1985,125 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   font-size: 15px;
   cursor: pointer;
 }
+/* Кнопки набора (v=177) — куда идти: шаблон анкеты и контакты, как в
+   финале обучения. */
+.node-recruit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.node-recruit-btn {
+  flex: 1 1 140px;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 215, 106, 0.6);
+  border-radius: 9px;
+  background: rgba(255, 215, 106, 0.14);
+  color: #ffe9a8;
+  font: 600 13px sans-serif;
+  cursor: pointer;
+}
+.node-recruit-btn:hover { background: rgba(255, 215, 106, 0.24); }
+.node-recruit-btn:focus-visible { outline: 2px solid #ffd76a; outline-offset: 2px; }
+
+/* «♟️ Игра» — состав ветки точки (v=177, renderGame в js/node-window.js).
+   Строка: маркер персонажа, имя, раса · роль; союзники — пунктирной рамкой,
+   как в шторке переходов и на карте. */
+.node-game { padding-bottom: 12px; }
+.node-game[hidden] { display: none; }
+.game-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.game-summary {
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+}
+.game-section { margin-top: 14px; }
+.game-section-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 6px;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: rgba(255,255,255,0.85);
+  font: 700 14px sans-serif;
+  text-align: left;
+}
+.game-section-head.is-link { cursor: pointer; }
+.game-section-head.is-link::after {
+  content: '›';
+  margin-left: auto;
+  color: rgba(255,255,255,0.4);
+  font-size: 18px;
+}
+.game-head-marker { width: 26px; height: 26px; font-size: 12px; flex: 0 0 auto; }
+.game-group {
+  margin: 6px 2px;
+  border-radius: 12px;
+  outline: 1px dashed rgba(255,215,106,0.5);
+  outline-offset: 2px;
+}
+.game-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: #fff;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.game-row:hover { background: rgba(255,255,255,0.05); }
+.game-row:focus-visible { outline: 2px solid #AFEEEE; outline-offset: -2px; }
+.game-row-marker { width: 36px; height: 36px; font-size: 15px; flex: 0 0 auto; }
+.game-row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.game-row-name {
+  font-weight: 600;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.game-row-sub {
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.game-row-arrow {
+  flex: 0 0 auto;
+  color: rgba(255,255,255,0.35);
+  font-size: 20px;
+}
+/* Компьютер: строки в две колонки, рамка союзников — на всю ширину. */
+@media (min-width: 700px) {
+  .game-section, .game-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 8px;
+  }
+  .game-section > .game-section-head,
+  .game-section > .game-group { grid-column: 1 / -1; }
+}
+
 .node-article-link { margin-top: 14px; }
 .node-article-link a { color: #AFEEEE; }
 
