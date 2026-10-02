@@ -758,10 +758,14 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 .dock-side,
 .dock-modes,
 .dock-round {
-  /* 0.78: над светлым ядром галактики стекло иначе сереет, подписи тонут. */
-  background: rgba(16,16,24,0.78);
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  /* Полупрозрачно, но БЕЗ размытия (v=185, замер на телефоне игрока): панель
+     стоит поверх движущейся карты, и backdrop-filter заново размывал её на
+     каждом кадре жеста — перетаскивание теряло 11.4% кадров (blur 6 px —
+     4.4%), без размытия 0.8%, как у сплошной. Прозрачность сама по себе
+     почти бесплатна. Фон плотнее прежнего стекла (0.78): без размытия линии
+     карты просвечивают резче. Плашки окон (.node-dock) и капсула статей
+     стекло сохранили: под ними — неподвижный текст, там это ~1%. */
+  background: rgba(16,16,24,0.86);
   box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.08);
 }
 
@@ -827,7 +831,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   padding: 0 12px;
   border-radius: 20px;
 }
-.dock-side:active { color: #fff; background: rgba(34,34,46,0.82); }
+.dock-side:active { color: #fff; background: rgba(34,34,46,0.9); }
 
 /* Переключатель режима — капсула с «линзой» под активным разделом. */
 .dock-modes {
@@ -896,7 +900,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 /* Включённый инструмент (🏷️ «меньше подписей», ▦ «по разделам»). */
 .dock-round.active {
   color: #AFEEEE;
-  background: rgba(24,44,48,0.82);
+  background: rgba(24,44,48,0.88);
   box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 0 0 1.5px rgba(175,238,238,0.75);
 }
 

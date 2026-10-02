@@ -1,17 +1,17 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=184';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=184';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=184';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=184';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=184';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=184';
-import { openCharacter, closeCharacter } from './characters.js?v=184';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=184';
-import { markerEl } from './node-window.js?v=184';
-import { layoutSections, renderSections } from './sections.js?v=184';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=184';
+import { createPanZoom } from './panzoom.js?v=185';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=185';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=185';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=185';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=185';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=185';
+import { openCharacter, closeCharacter } from './characters.js?v=185';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=185';
+import { markerEl } from './node-window.js?v=185';
+import { layoutSections, renderSections } from './sections.js?v=185';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=185';
 
 const SVG_PATH = 'map.svg';
 
@@ -165,7 +165,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=184').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=185').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
