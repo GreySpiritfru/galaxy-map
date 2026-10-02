@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=177" />
+  <link rel="stylesheet" href="css/styles.css?v=178" />
 </head>
 <body>
 
@@ -154,12 +154,15 @@
      (тайлы + OpenSeadragon, см. js/phenom.js). -->
 <div class="phenom-overlay" id="phenomOverlay">
   <div class="phenom-card" id="phenomCard">
-    <!-- Панель ДЕЙСТВИЙ окна точки — тот же таб-бар, что у статей и вида
-         системы (.tabbar, грабли №12). Состав фиксирован: ✕, карта, статья,
-         правка, сюжеты; пустые кнопки прячутся (applyNodeToolbar в
-         js/node-window.js). Переходы к точкам — родителю и детям — НЕ здесь,
-         а в ряду #phenomLinks ниже (24.09.2026). -->
-    <div class="node-head">
+    <!-- Плашка окна — ВНИЗУ, как панель карты (v=178): сверху строка «где я и
+         кто тут» со шторкой переходов (#phenomLinks, renderNodeLinks в
+         js/node-window.js), под ней вкладки — панель ДЕЙСТВИЙ, тот же
+         таб-бар, что у статей и вида системы (.tabbar, грабли №12). Состав
+         фиксирован: ✕, описание, статья, игра, карта, правка; пустые кнопки
+         прячутся (applyNodeToolbar). При прокрутке тела вкладки уезжают вниз,
+         строка остаётся. -->
+    <div class="node-dock">
+      <div class="node-links" id="phenomLinks" hidden></div>
       <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
       <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть">✕</button>
       <!-- Тело окна — две вкладки: «Описание» (базовая, подсвечена при
@@ -187,10 +190,6 @@
         <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
       </button>
     </div>
-    <!-- Ряд переходов: родитель, места/сюжеты, персонажи, лишнее под «+N»,
-         под рядом язычок «свернуть». Наполняет renderNodeLinks в
-         js/node-window.js. -->
-    <div class="node-links" id="phenomLinks" hidden></div>
     </div>
     <div class="phenom-content" id="phenomContent">
       <!-- Персонажи, привязанные прямо к самой карте Феном (submapX/submapY в
@@ -225,10 +224,11 @@
      единственное место в проекте, которое ещё не было на общем стиле. -->
 <div class="phenom-overlay story-overlay" id="storyOverlay">
   <div class="phenom-card" id="storyCard">
-    <div class="node-head">
+    <div class="node-dock">
+      <div class="node-links" id="storyLinks" hidden></div>
       <div class="phenom-toolbar lore-toolbar tabbar" id="storyToolbar">
       <button class="toolbar-close-btn" id="storyClose" aria-label="Закрыть">✕</button>
-      <!-- Родителя тут нет — он первым в ряду переходов #storyLinks. -->
+      <!-- Родителя тут нет — он в строке плашки (#storyLinks). -->
       <!-- Тело окна — «Описание» и «Статья», как у нижнего слоя. -->
       <button class="tabbar-btn active" id="storyDescription">
         <span class="tabbar-btn-icon" aria-hidden="true">📄</span><span class="tabbar-btn-label">Описание</span>
@@ -244,7 +244,6 @@
         <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
       </button>
     </div>
-    <div class="node-links" id="storyLinks" hidden></div>
     </div>
     <div class="phenom-content story-content" id="storyContent"></div>
   </div>
@@ -258,7 +257,8 @@
      (Феном → сюжет → персонаж). Логика — js/characters.js. -->
 <div class="phenom-overlay story-overlay char-overlay" id="charOverlay">
   <div class="phenom-card" id="charCard">
-    <div class="node-head">
+    <div class="node-dock">
+      <div class="node-links" id="charLinks" hidden></div>
       <div class="phenom-toolbar lore-toolbar tabbar" id="charToolbar">
       <button class="toolbar-close-btn" id="charToolbarClose" aria-label="Закрыть">✕</button>
       <!-- Базовая вкладка — тело окна: анкета. -->
@@ -276,12 +276,11 @@
         <span class="tabbar-btn-icon" aria-hidden="true">🎲</span><span class="tabbar-btn-label">Броски</span>
       </button>
     </div>
-    <div class="node-links" id="charLinks" hidden></div>
     </div>
     <div class="phenom-content story-content" id="charContent"></div>
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=177"></script>
+<script type="module" src="js/main.js?v=178"></script>
 </body>
 </html>

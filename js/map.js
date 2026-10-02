@@ -1,17 +1,17 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=177';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=177';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=177';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=177';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=177';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=177';
-import { openCharacter, closeCharacter } from './characters.js?v=177';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=177';
-import { markerEl } from './node-window.js?v=177';
-import { layoutSections, renderSections } from './sections.js?v=177';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=177';
+import { createPanZoom } from './panzoom.js?v=178';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=178';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=178';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=178';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=178';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=178';
+import { openCharacter, closeCharacter } from './characters.js?v=178';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=178';
+import { markerEl } from './node-window.js?v=178';
+import { layoutSections, renderSections } from './sections.js?v=178';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=178';
 
 const SVG_PATH = 'map.svg';
 
@@ -165,7 +165,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=177').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=178').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -1090,6 +1090,8 @@ function finishMapPick(p) {
       article: d.article && (d.article.ref || d.article.url) ? d.article : null,
       submap: d.submap || null,
       parentMeta: parentButtonMeta(node),
+      // Маркер и короткое имя самой точки — для строки плашки окна (v=178).
+      self: tabIconOf(node, {id: node.id}),
       canEdit: canEditNodes(),
       // Союзы показываем только ВНУТРИ этой же точки: связь с персонажем из
       // другого сюжета в этом окне не к месту (siblingLinks в graph.js).
@@ -1139,6 +1141,7 @@ function finishMapPick(p) {
     const view = {
       char: node.data,
       parentMeta: parentButtonMeta(node),
+      self: tabIconOf(node, {id: node.id}),
       characters: allies.filter(n => n.kind === 'character').map(n => tabIconOf(n, {id: n.id})),
       children: allies.filter(n => n.kind !== 'character').map(n => tabIconOf(n, {id: n.id})),
     };

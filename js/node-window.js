@@ -15,9 +15,9 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=177';
-import { REF_ARTICLES } from './articles.js?v=177';
-import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=177';
+import { escapeHtml } from './modal.js?v=178';
+import { REF_ARTICLES } from './articles.js?v=178';
+import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=178';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -109,7 +109,7 @@ document.addEventListener('click', (e) => {
    цитате. Всё необязательное — точка объявляет только то, что у неё есть.
 
    ⚠️ Ряда персонажей тут больше нет (24.09.2026): персонажи-дети вместе с
-   детьми-точками — в ряду переходов под панелью (renderNodeLinks ниже).
+   детьми-точками — в шторке переходов плашки окна (renderNodeLinks ниже).
    Раньше ряд портретов жил внутри текста и уезжал вместе с ним. */
 /* Тело окна — две вкладки (v=166, решение игрока): «Описание» (базовая,
    открыта сразу) и «Статья» (есть, только если у точки задана статья).
@@ -179,14 +179,14 @@ export function showNodeBody(refs, view, which) {
   if (desc) desc.hidden = tab !== 'desc';
   if (gameEl) gameEl.hidden = !game;
   const plaque = container.querySelector(':scope > .node-recruit.is-floating');
-  // Прокрутку ставим сами — уезжающая плашка не должна принять её за жест
-  // (wireHeadAutoHide); вкладку нажали на плашке — пусть она будет вся.
+  // Прокрутку ставим сами — уезжающие вкладки не должны принять её за жест
+  // (wireDockAutoHide); вкладку нажали на плашке — пусть она будет вся.
   const setScroll = (y) => {
     container.__ignoreScrollUntil = performance.now() + 200;
     container.scrollTop = y;
   };
   const card = container.closest('.phenom-card');
-  if (card && card.__showHead) card.__showHead();
+  if (card && card.__showDock) card.__showDock();
 
   if (!article) {
     if (mirror) mirror.hidden = true;
@@ -258,7 +258,7 @@ export function showNodeBody(refs, view, which) {
 /* ============================================================
    «♟️ Игра» — третья вкладка тела окна (02.10.2026, v=177, идея игрока).
 
-   Шторка под панелью — это меню ПЕРЕХОДОВ (маркер и короткое имя), а не
+   Шторка плашки окна — это меню ПЕРЕХОДОВ (маркер и короткое имя), а не
    состав: в ней не видно, кто кем играет, и у локации нет персонажей её
    сюжетов. Здесь — фактический состав: все персонажи ветки (сама точка и
    её точки-потомки), с расой и ролью, союзники (links) — одной рамкой, как
@@ -463,27 +463,47 @@ export function markerEl(meta, extraClass) {
 
 
 /* ============================================================
-   Шторка переходов под панелью окна (24.09.2026).
+   Плашка окна — ВНИЗУ (02.10.2026, v=178, решение игрока по макетам).
 
-   Что тут: все переходы к точкам — ↑ родитель (значок ↑ на маркере), места и
-   сюжеты, персонажи (союзники — одной группой в пунктирной рамке, как нить
-   между ними на карте). Закреплённые (pinned) внутри своих групп — вперёд.
-   Сверху в панели — только действия (эмодзи — действие, маркер — точка).
+   Было (v=143–177): плашка сверху — панель действий, под ней шторка
+   переходов рядами маркеров с подписями. На телефоне ~200 px сверху (в
+   полноэкранном Telegram — ещё 84 px его кнопок), подписи обрезались
+   («Найто А…»), пунктирные рамки союзников рвали ряды. Теперь плашка внизу,
+   как панель карты, — одна плавающая карточка из двух частей:
+   - строка «где я и кто тут» (.node-strip): родитель — маркер, имя и «›»
+     (тап ведёт к нему, как «назад» в iOS), дальше название точки и стопки —
+     до трёх маркеров внахлёст и число: места/сюжеты и персонажи отдельно
+     (по форме маркера и так видно, где что). Тап по строке (кроме родителя)
+     или протяжка вверх — шторка со всеми переходами над строкой;
+   - вкладки окна (.phenom-toolbar). При прокрутке тела они уезжают вниз, а
+     строка остаётся (wireDockAutoHide ниже).
+   Шторка — те же ступени, что раньше (ряд, два, …, все), только растёт
+   вверх; по умолчанию свёрнута в строку (решение игрока), выбор
+   запоминается. Родителя в шторке нет — он в строке. Союзники — на общей
+   золотой подложке (раньше — пунктирная рамка).
 
-   Как устроено (идея игрока, вторая версия того же дня): маркеры лежат с
-   переносом строк, а видна только верхняя часть — «шторка» выдвигается за
-   язычок под плашкой на нужную высоту: скрыто → один ряд → два → … → все.
-   Потянуть — высота идёт за пальцем/мышью и при отпускании встаёт ровно на
-   границу ряда. Нажать — следующая ступень по кругу. На язычке — сколько
-   маркеров ещё спрятано.
-   Раньше (v=127–143): ряд в одну строку, лишнее под чипом «+N», который
-   раскрывал отдельный список по разделам, и отдельный язычок «свернуть» —
-   три органа управления на одну задачу. Горизонтальную прокрутку игрок
-   отверг ещё раньше.
+   Цели касания (что нажимается — игрок просил проверить на промахи):
+   родитель — своя кнопка не уже 44 px (минимум Apple HIG), всё остальное в
+   строке — одна большая кнопка «раскрыть». Отдельные лица в стопке НЕ
+   нажимаются: 22 px внахлёст — меньше минимума WCAG 2.5.8 (24 px), промахи
+   были бы гарантированы. Промахнуться можно только на границе «родитель |
+   название», и цена промаха разная: лишний тап по названию просто раскроет
+   шторку.
 
-   ⚠️ Точки идут первыми не только ради вида: при пятнадцати персонажах места
-   оказались бы во втором-третьем ряду.
+   Окно системы пока сверху (переезжает следующим шагом): там строка над
+   шторкой, а шторка растёт вниз (column-reverse в css, знак — grow ниже).
    ============================================================ */
+
+// Подпись под маркером персонажа в шторке — первое слово имени («Найто
+// Афетович» → «Найто»): полное имя в 50 px обрезалось. Инициал («О. Гил'ви»)
+// — вместе со следующим словом. Полное имя — в подсказке.
+function chipCaption(item) {
+  const text = item.label || item.name || '';
+  if (item.kind !== 'character') return text;
+  const words = text.trim().split(/\s+/);
+  if (words.length > 1 && (words[0].length <= 2 || words[0].endsWith('.'))) return words.slice(0, 2).join(' ');
+  return words[0] || text;
+}
 
 function linkChip(item, onTap, extraClass) {
   const btn = document.createElement('button');
@@ -498,7 +518,7 @@ function linkChip(item, onTap, extraClass) {
   slot.appendChild(markerEl(item, 'link-chip-marker'));
   const cap = document.createElement('span');
   cap.className = 'link-chip-caption';
-  cap.textContent = item.label || item.name || '';
+  cap.textContent = chipCaption(item);
   btn.append(slot, cap);
   btn.addEventListener('click', () => onTap(item.id));
   return btn;
@@ -510,15 +530,13 @@ function linkChip(item, onTap, extraClass) {
    участника. */
 const pinnedFirst = (list) => [...list.filter(i => i.pinned), ...list.filter(i => !i.pinned)];
 
-// Родитель, точки и персонажи — готовые элементы шторки; группа союзников —
-// один элемент (не рвётся между рядами). data-count — сколько переходов
-// внутри. Между непустыми частями — разделители.
+// Элементы шторки: места и сюжеты, потом персонажи; группа союзников — один
+// элемент (не рвётся между рядами). data-count — сколько переходов внутри.
+// Между непустыми частями — разделитель.
 function linkItems(view, go) {
-  const parent = view.parentMeta && view.parentMeta.id ? view.parentMeta : null;
   const points = pinnedFirst(Array.isArray(view.children) ? view.children : []);
   const chars = pinnedFirst(Array.isArray(view.characters) ? view.characters : []);
   const parts = [];
-  if (parent) parts.push([linkChip(parent, go.parent, 'link-chip--parent')]);
   if (points.length) parts.push(points.map(p => linkChip(p, go.point)));
   if (chars.length) {
     parts.push(groupByLinks(chars).map(group => {
@@ -543,14 +561,79 @@ function linkItems(view, go) {
       items.push(el);
     });
   });
-  const total = (parent ? 1 : 0) + points.length + chars.length;
-  return {items, total};
+  return {items, points, chars};
 }
 
-/* Ступени шторки — высоты, на которых она встаёт: 0 (скрыта), низ первого
-   ряда, второго, …, всё. Последняя ступень не выше SHADE_MAX_SHARE экрана —
-   дальше шторка прокручивается внутри себя. null — ширины ещё нет (окно
-   системы до открытия — display:none). */
+// Стопка в строке: до STACK_FACES маркеров внахлёст (первый — сверху) и число.
+const STACK_FACES = 3;
+function stackEl(list, label) {
+  const s = document.createElement('span');
+  s.className = 'node-stack';
+  s.title = `${label}: ${list.length}`;
+  list.slice(0, STACK_FACES).forEach((m, i) => {
+    const face = markerEl(m, 'node-stack-face');
+    face.style.zIndex = String(STACK_FACES - i);
+    s.appendChild(face);
+  });
+  const n = document.createElement('span');
+  n.className = 'node-stack-n';
+  n.textContent = String(list.length);
+  s.appendChild(n);
+  return s;
+}
+
+const CHEVRON_SVG = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5"/></svg>';
+
+/* Строка: [родитель ›] [название · стопки · шеврон]. Родителя нет — перед
+   названием маркер самой точки. Раскрывать нечего (у точки нет ни детей, ни
+   персонажей) — строка остаётся подписью, без шеврона. */
+function stripEl(view, parent, title, points, chars, canOpen, go) {
+  const el = document.createElement('div');
+  el.className = 'node-strip';
+  if (parent) {
+    const crumb = document.createElement('button');
+    crumb.type = 'button';
+    crumb.className = 'node-crumb';
+    const pname = parent.name || parent.label || '';
+    crumb.title = parent.kindLabel ? `${parent.kindLabel}: ${pname}` : pname;
+    crumb.appendChild(markerEl(parent, 'node-strip-marker'));
+    const name = document.createElement('span');
+    name.className = 'node-crumb-name';
+    name.textContent = parent.label || pname;
+    const sep = document.createElement('span');
+    sep.className = 'node-crumb-sep';
+    sep.setAttribute('aria-hidden', 'true');
+    sep.textContent = '›';
+    crumb.append(name, sep);
+    crumb.addEventListener('click', go.parent);
+    el.appendChild(crumb);
+  }
+  const open = document.createElement('button');
+  open.type = 'button';
+  open.className = 'node-strip-open' + (canOpen ? '' : ' is-static');
+  if (canOpen) open.title = 'Все переходы — нажми или потяни';
+  else open.tabIndex = -1;
+  if (!parent && view.self) open.appendChild(markerEl(view.self, 'node-strip-marker'));
+  const t = document.createElement('span');
+  t.className = 'node-strip-title';
+  t.textContent = title;
+  open.appendChild(t);
+  if (points.length) open.appendChild(stackEl(points, 'Места и сюжеты'));
+  if (chars.length) open.appendChild(stackEl(chars, 'Персонажи'));
+  if (canOpen) {
+    const chev = document.createElement('span');
+    chev.className = 'node-strip-chev';
+    chev.innerHTML = CHEVRON_SVG;
+    open.appendChild(chev);
+  }
+  el.appendChild(open);
+  return {el, open};
+}
+
+/* Ступени шторки — высоты, на которых она встаёт: 0 (свёрнута в строку),
+   низ первого ряда, второго, …, всё. Последняя ступень не выше
+   SHADE_MAX_SHARE экрана — дальше шторка прокручивается внутри себя. null —
+   ширины ещё нет (окно системы до открытия — display:none). */
 const SHADE_MAX_SHARE = 0.55;
 function shadeStops(grid) {
   if (!grid.clientWidth) return null;
@@ -575,24 +658,16 @@ function shadeStops(grid) {
   return stops;
 }
 
-// Сколько переходов ниже видимой высоты шторки (для счётчика на язычке).
-function hiddenBelow(grid, height) {
-  let n = 0;
-  [...grid.children].forEach(i => {
-    if (i.offsetTop + i.offsetHeight > height + 1) n += Number(i.dataset.count || 0);
-  });
-  return n;
-}
-
 // Шторки, которые надо переложить при повороте экрана.
 const liveRows = new Set();
 window.addEventListener('resize', () => liveRows.forEach(fn => fn()));
 
-/* На какой ступени шторка — своя память у каждого вида окна: в окне системы
-   по умолчанию скрыта (точки и так видны на её карте маркерами), в окне точки
-   — один ряд. Храним номер ступени, последнюю — как 'all' (рядов у разных
-   точек разное число). Хранилище недоступно (приватный режим) — умолчание. */
-const SHADE_KEY = 'galaxyMapLinksShade';
+/* На какой ступени шторка — своя память у каждого вида окна (точка,
+   система). Храним номер ступени, последнюю — как 'all' (рядов у разных
+   точек разное число). Хранилище недоступно (приватный режим) — умолчание.
+   ⚠️ Ключ новый (v=178): в старом у точки по умолчанию лежал «один ряд», и
+   переехавшая вниз шторка у всех открывалась бы раскрытой. */
+const SHADE_KEY = 'galaxyMapLinksShade2';
 function readShade(kind, fallback) {
   try {
     const v = JSON.parse(localStorage.getItem(SHADE_KEY) || '{}')[kind];
@@ -607,109 +682,71 @@ function writeShade(kind, level) {
   } catch (e) { /* не запомнили — не страшно */ }
 }
 
-/* Плашка окна (панель + шторка) лежит ПОВЕРХ тела, а тело отступает на её
-   высоту (--head-h на карточке). Пока шторку тянут или она доезжает до
-   ступени, отступ не трогаем: иначе текст и статья перекладывались бы
-   каждый кадр. Выставляется один раз, когда шторка встала. */
-const headObservers = new WeakSet();
-function syncHead(card) {
-  const head = card && card.querySelector(':scope > .node-head');
-  if (!head || head.classList.contains('is-moving')) return;
-  card.style.setProperty('--head-h', head.offsetHeight + 'px');
+/* Плашка лежит ПОВЕРХ тела, а тело отступает снизу на её высоту (--dock-h на
+   карточке). Пока шторку тянут или она доезжает до ступени, отступ не
+   трогаем: иначе текст перекладывался бы каждый кадр. Выставляется один раз,
+   когда шторка встала. Уезжающие вкладки высоту не меняют (transform). */
+const dockObservers = new WeakSet();
+function syncDock(card) {
+  const dock = card && card.querySelector(':scope > .node-dock');
+  if (!dock || dock.classList.contains('is-moving')) return;
+  card.style.setProperty('--dock-h', dock.offsetHeight + 'px');
 }
 document.querySelectorAll('.phenom-card').forEach(card => {
-  const head = card.querySelector(':scope > .node-head');
-  if (!head || !window.ResizeObserver || headObservers.has(head)) return;
-  headObservers.add(head);
-  new ResizeObserver(() => syncHead(card)).observe(head);
-  wireHeadAutoHide(card, head);
+  const dock = card.querySelector(':scope > .node-dock');
+  if (!dock || !window.ResizeObserver || dockObservers.has(dock)) return;
+  dockObservers.add(dock);
+  new ResizeObserver(() => syncDock(card)).observe(dock);
+  wireDockAutoHide(card, dock);
 });
 
-/* Плашка уезжает при прокрутке — ВСЛЕД ЗА ТЕКСТОМ (v=171; в v=170 пряталась
-   целиком по порогу, игрок: «не сразу всё, а как в Telegram — наполовинку»).
-   Плашка сдвигается ровно на столько, на сколько прокрутили тело, — как
-   шапка встроенного браузера Telegram и адресная строка Chrome: листают вниз
-   — уезжает вверх, вверх — выезжает обратно, и первым из-за края появляется
-   её НИЗ — ряд маркеров («открыть только маркеры, прокрутив чуть-чуть»).
-   Прокрутка остановилась — доезжает до ближайшей ступени: вся / только
-   маркеры (если шторка открыта хотя бы на ряд) / скрыта; спорное решает
-   направление последнего движения. Вернуть плашку — потянуть текст вниз, без
-   лишних нажатий (пилюлю «раскрыть» игрок отверг: «нажать, потом ещё нажать»).
-   В полноэкранном Telegram плашка уезжает ПОД полосу его кнопок
-   (.phenom-card::before, видна, пока плашка сдвинута), в браузере — за край.
-   ⚠️ Сдвиг не больше прокрутки тела (offset ≤ scrollTop): иначе у верха
-   текста между плашкой и первой строкой открывалась бы пустая полоса.
-   Работает только на НАШЕЙ прокрутке: описание, броски, заметки. Внутри
-   статьи Teletype или анкеты на telegra.ph (чужой iframe) браузер не даёт
-   узнать, что страницу листают, — там плашка стоит на месте (решится своей
-   копией статей). Только transform: тело и так начинается под плашкой с
-   отступом --head-h, ничего не перекладывается. */
-const HEAD_SNAP_IDLE_MS = 140;   // столько тишины после прокрутки — и доводим до ступени
-const HEAD_SNAP_BIAS = 0.3;      // доля пути до следующей ступени, после которой едем к ней
-const HEAD_REVEAL_EDGE_PX = 40;  // компьютер: мышь у верхнего края — показать
-const HEAD_WHEEL_RATIO = 0.45;   // колесо: плашка едет на такую долю прокрутки текста
-const HEAD_WHEEL_HOLD_MS = 400;  // столько после события колеса прокрутка считается колёсной (плавный докат)
-function wireHeadAutoHide(card, head) {
+/* Вкладки уезжают при прокрутке — ВСЛЕД ЗА ТЕКСТОМ, строка остаётся (v=178;
+   до этого так уезжала вся плашка сверху, v=171–177). Листают вниз — вкладки
+   опускаются за край и гаснут, вся карточка садится на их место; вверх —
+   возвращаются. Остановились (140 мс тишины или scrollend) — доводка: вкладки
+   либо целиком на месте, либо целиком спрятаны; спорное решает направление.
+   Колесо мыши (v=172) — вдвое медленнее текста и без доводки: один щелчок
+   колеса не прячет их целиком.
+   ⚠️ Сдвиг не больше прокрутки тела: у самого верха текста вкладки всегда на
+   месте, и вернуть их — потянуть текст вниз, без лишних нажатий.
+   Работает только на НАШЕЙ прокрутке (описание, «Игра», своя копия статьи,
+   броски) — в чужом iframe о прокрутке не узнать, там вкладки стоят. */
+const DOCK_SNAP_IDLE_MS = 140;   // столько тишины после прокрутки — и доводим
+const DOCK_SNAP_BIAS = 0.3;      // доля пути, после которой едем к другой ступени
+const DOCK_REVEAL_EDGE_PX = 40;  // компьютер: мышь у нижнего края — вкладки возвращаются
+const DOCK_WHEEL_RATIO = 0.45;   // колесо: вкладки едут на такую долю прокрутки текста
+const DOCK_WHEEL_HOLD_MS = 400;  // столько после события колеса прокрутка считается колёсной
+function wireDockAutoHide(card, dock) {
   const body = card.querySelector('.story-content');
-  if (!body) return;
-  const bar = head.querySelector(':scope > .phenom-toolbar');
+  const bar = dock.querySelector(':scope > .phenom-toolbar');
+  if (!body || !bar) return;
   let offset = 0, lastY = body.scrollTop, dir = 0, idle = 0;
-  // Размеры — из кэша: читать геометрию на каждом событии прокрутки нельзя.
-  let headH = 0, safeTop = 0, barH = 0;
-  const measure = () => {
-    headH = head.offsetHeight;
-    safeTop = parseFloat(getComputedStyle(head).paddingTop) || 0;
-    barH = bar ? bar.offsetHeight : 0;
-  };
-  const maxOffset = () => Math.max(0, Math.min(headH - safeTop, body.scrollTop));
+  // Высота вкладок — из кэша: читать геометрию на каждом событии прокрутки нельзя.
+  let barH = 0;
+  const measure = () => { barH = bar.offsetHeight; };
+  const maxOffset = () => Math.max(0, Math.min(barH, body.scrollTop));
   const set = (value, animate) => {
     offset = Math.max(0, Math.min(maxOffset(), value));
-    const shown = offset > 0.5;
-    head.classList.toggle('head-snap', !!animate);
-    head.style.transform = shown ? `translateY(${-offset}px)` : '';
-    card.classList.toggle('head-offset', shown);
-    card.classList.toggle('head-gone', shown && offset >= headH - safeTop - 0.5);
+    const moved = offset > 0.5;
+    dock.classList.toggle('dock-snap', !!animate);
+    dock.style.transform = moved ? `translateY(${offset}px)` : '';
+    // Гаснут вдвое быстрее, чем уезжают: к середине пути их уже не видно.
+    bar.style.opacity = moved ? String(Math.max(0, 1 - 2 * offset / (barH || 1))) : '';
+    card.classList.toggle('tabs-moving', moved);
   };
-  // Ступени: 0 — вся; barH — только маркеры (шторка открыта); низ — скрыта.
   const snap = () => {
     clearTimeout(idle);
-    const full = headH - safeTop;
-    const stops = [0];
-    if (full - barH > 8) stops.push(barH);
-    stops.push(full);
-    let target = full;
-    for (let i = 1; i < stops.length; i++) {
-      const a = stops[i - 1], b = stops[i];
-      if (offset > b) continue;
-      const t = (offset - a) / ((b - a) || 1);
-      target = dir > 0 ? (t > HEAD_SNAP_BIAS ? b : a) : (t < 1 - HEAD_SNAP_BIAS ? a : b);
-      break;
-    }
-    const y = body.scrollTop;
-    if (target > y) {
-      /* Сдвиг не больше прокрутки (иначе пустая полоса над текстом), а
-         ступень дальше: докручиваем текст вместе с плашкой — как большие
-         заголовки в iOS. Плашку ведёт обычное слежение за прокруткой.
-         Текста на столько не хватает — назад, к ступени поближе. */
-      if (target <= body.scrollHeight - body.clientHeight) {
-        const calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-        body.scrollTo({top: target, behavior: calm ? 'auto' : 'smooth'});
-        return;
-      }
-      target = stops.filter(s => s <= y).pop() || 0;
-    }
+    const t = offset / (barH || 1);
+    let target = dir > 0 ? (t > DOCK_SNAP_BIAS ? barH : 0) : (t < 1 - DOCK_SNAP_BIAS ? 0 : barH);
+    // Целиком не спрятать (текст прокручен меньше высоты вкладок) — вернуть.
+    if (target > maxOffset()) target = 0;
     set(target, true);
   };
-  card.__showHead = () => { clearTimeout(idle); set(0, true); };
-  if (window.ResizeObserver) new ResizeObserver(() => { measure(); if (offset) set(offset); }).observe(head);
+  card.__showDock = () => { clearTimeout(idle); set(0, true); };
+  if (window.ResizeObserver) new ResizeObserver(() => { measure(); if (offset) set(offset); }).observe(bar);
   measure();
-  /* Колесо мыши (v=172, игрок: «один щелчок — и всё уехало»): щелчок колеса
-     — это сразу ~100 px, а доводка до ступени докручивала остальное. Для
-     колеса плашка едет вдвое медленнее текста (HEAD_WHEEL_RATIO) и БЕЗ
-     доводки — останавливается там, где остановилось колесо: 3–4 щелчка,
-     чтобы спрятать её целиком. Палец — как было: ровно за текстом и доводка. */
   let wheelUntil = 0;
-  body.addEventListener('wheel', () => { wheelUntil = performance.now() + HEAD_WHEEL_HOLD_MS; }, {passive: true});
+  body.addEventListener('wheel', () => { wheelUntil = performance.now() + DOCK_WHEEL_HOLD_MS; }, {passive: true});
   const byWheel = () => performance.now() < wheelUntil;
   body.addEventListener('scroll', () => {
     const y = body.scrollTop;
@@ -719,28 +756,30 @@ function wireHeadAutoHide(card, head) {
     if (performance.now() < (body.__ignoreScrollUntil || 0)) return;
     if (dy) dir = Math.sign(dy);
     clearTimeout(idle);
-    if (byWheel()) { set(offset + dy * HEAD_WHEEL_RATIO, false); return; }
+    if (byWheel()) { set(offset + dy * DOCK_WHEEL_RATIO, false); return; }
     set(offset + dy, false);
-    idle = setTimeout(snap, HEAD_SNAP_IDLE_MS);
+    idle = setTimeout(snap, DOCK_SNAP_IDLE_MS);
   }, {passive: true});
   // Где есть — конец прокрутки (с докатом) ловится сразу, без ожидания.
   body.addEventListener('scrollend', () => {
     if (byWheel() || performance.now() < (body.__ignoreScrollUntil || 0)) return;
     snap();
   });
-  // Сменилось содержимое тела (другая точка, анкета, броски) — плашка на месте.
+  // Сменилось содержимое тела (другая точка, анкета, броски) — вкладки на месте.
   new MutationObserver(() => { clearTimeout(idle); lastY = body.scrollTop; set(0, false); })
     .observe(body, {childList: true});
-  // Компьютер: мышь к верхнему краю — плашка выезжает (колесо вверх — тоже).
+  // Компьютер: мышь к нижнему краю — вкладки возвращаются.
   card.addEventListener('mousemove', (e) => {
-    if (offset > 0.5 && e.clientY < HEAD_REVEAL_EDGE_PX + safeTop) card.__showHead();
+    if (offset > 0.5 && window.innerHeight - e.clientY < DOCK_REVEAL_EDGE_PX + barH) card.__showDock();
   });
-  // Фокус с клавиатуры внутри плашки — показать её.
-  head.addEventListener('focusin', () => card.__showHead());
+  // Фокус с клавиатуры внутри плашки — показать вкладки.
+  dock.addEventListener('focusin', () => card.__showDock());
 }
 
-/* opts.fold — вид окна для памяти ступени ('point' | 'system'),
-   opts.foldedByDefault — по умолчанию скрыта. */
+/* opts.fold — вид окна для памяти ступени ('point' | 'system').
+   view: parentMeta (родитель), self (маркер самой точки), children (места и
+   сюжеты), characters (персонажи); stripTitle — подпись строки, если у окна
+   нет своей точки (окно системы). */
 export function renderNodeLinks(el, view, handlers, opts) {
   if (!el) return;
   const kind = (opts && opts.fold) || 'point';
@@ -751,35 +790,34 @@ export function renderNodeLinks(el, view, handlers, opts) {
     point: (id) => { if (handlers.onChild) handlers.onChild(id); },
     char: (id) => { if (handlers.onCharacter) handlers.onCharacter(id); },
   };
-  const {items, total} = linkItems(view, go);
-  el.hidden = !items.length;
-  if (!items.length) return;
+  const {items, points, chars} = linkItems(view, go);
+  const parent = view.parentMeta && view.parentMeta.id ? view.parentMeta : null;
+  const title = (view.self && (view.self.label || view.self.name)) || view.stripTitle || '';
+  const canOpen = items.length > 0;
+  el.hidden = !canOpen && !parent && !title;
+  if (el.hidden) return;
 
-  // Окно (видимая часть шторки) и сетка маркеров с переносом внутри него.
+  // Окно шторки (видимая часть) и сетка маркеров с переносом внутри него.
   const shade = document.createElement('div');
   shade.className = 'node-links-row';
   const grid = document.createElement('div');
   grid.className = 'node-links-grid';
   items.forEach(i => grid.appendChild(i));
   shade.appendChild(grid);
-
-  const toggle = document.createElement('button');
-  toggle.type = 'button';
-  toggle.className = 'node-links-toggle';
-  toggle.title = 'Потяни или нажми, чтобы открыть больше';
-  el.append(shade, toggle);
+  const strip = stripEl(view, parent, title, points, chars, canOpen, go);
+  el.append(shade, strip.el);
 
   const card = el.closest('.phenom-card');
-  const head = el.closest('.node-head');
+  const dock = el.closest('.node-dock');
+  // Внизу шторка растёт вверх (тянуть вверх — открыть), в окне системы — вниз.
+  const grow = dock ? -1 : 1;
   let stops = [0];
   let level = 0;
   let height = 0;
 
   const paint = () => {
-    const n = hiddenBelow(grid, height);
-    toggle.textContent = height <= 0 ? `▾ ${total}` : (n ? `▾ +${n}` : '▴');
-    toggle.setAttribute('aria-expanded', String(height > 0));
     el.classList.toggle('folded', height <= 0);
+    if (canOpen) strip.open.setAttribute('aria-expanded', String(height > 0));
     // Всё не влезло даже на последней ступени — дальше крутится внутри.
     shade.classList.toggle('scrolls', level === stops.length - 1 && grid.scrollHeight > height + 1);
   };
@@ -787,70 +825,84 @@ export function renderNodeLinks(el, view, handlers, opts) {
   const setLevel = (k, animate) => {
     level = Math.max(0, Math.min(k, stops.length - 1));
     height = stops[level];
-    if (head && animate) head.classList.add('is-moving');
+    if (dock && animate) dock.classList.add('is-moving');
     shade.classList.toggle('animate', !!animate);
     shade.style.height = height + 'px';
     paint();
-    if (!animate) { if (card) syncHead(card); return; }
+    if (!animate) { if (card) syncDock(card); return; }
     // Отступ тела — когда шторка доехала (страховка таймером, если transitionend не придёт).
     let done = false;
     const finish = () => {
       if (done) return;
       done = true;
-      if (head) head.classList.remove('is-moving');
-      if (card) syncHead(card);
+      if (dock) dock.classList.remove('is-moving');
+      if (card) syncDock(card);
     };
     shade.addEventListener('transitionend', finish, {once: true});
     setTimeout(finish, 320);
   };
   const saveLevel = () => writeShade(kind, level === stops.length - 1 && level > 0 ? 'all' : level);
 
-  // Тянуть или нажать — один жест: сдвиг больше SHADE_DRAG_PX — это тяга.
-  const SHADE_DRAG_PX = 4;
-  let drag = null;
-  toggle.addEventListener('pointerdown', (e) => {
-    drag = {id: e.pointerId, y: e.clientY, h: height, moved: false};
-    try { toggle.setPointerCapture(e.pointerId); } catch (err) { /* не критично */ }
-  });
-  toggle.addEventListener('pointermove', (e) => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const dy = e.clientY - drag.y;
-    if (!drag.moved && Math.abs(dy) < SHADE_DRAG_PX) return;
-    if (!drag.moved) {
-      drag.moved = true;
-      if (head) head.classList.add('is-moving');
-      shade.classList.remove('animate');
-    }
-    height = Math.max(0, Math.min(drag.h + dy, stops[stops.length - 1]));
-    shade.style.height = height + 'px';
-    paint();
-  });
-  const release = (e) => {
-    if (!drag || e.pointerId !== drag.id) return;
-    const moved = drag.moved;
-    drag = null;
-    if (moved) {
-      // Ближайшая ступень к тому месту, где отпустили.
+  if (canOpen) {
+    // Нажатие — свернуть, если открыта хоть на ряд, иначе открыть целиком.
+    strip.open.addEventListener('click', () => {
+      setLevel(level > 0 ? 0 : stops.length - 1, true);
+      saveLevel();
+    });
+    /* Протяжка строки — высота идёт за пальцем/мышью, при отпускании встаёт
+       на ближайшую ступень. Сдвиг меньше SHADE_DRAG_PX — это тап, его
+       обрабатывает click кнопки (родитель или «раскрыть»). Протянули — click
+       после отпускания гасим: он не должен ни раскрыть шторку ещё раз, ни
+       увести к родителю. */
+    /* Движение слушаем на всём документе, пока тянут: мышь за быстрый рывок
+       уходит со строки (у пальца браузер сам держит касание за строкой). А
+       захватывать указатель сразу на pointerdown нельзя — тогда click
+       достался бы строке, а не кнопке под пальцем. */
+    const SHADE_DRAG_PX = 6;
+    let drag = null;
+    let swallowUntil = 0;
+    const move = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const dy = (e.clientY - drag.y) * grow;
+      if (!drag.moved && Math.abs(dy) < SHADE_DRAG_PX) return;
+      if (!drag.moved) {
+        drag.moved = true;
+        if (dock) dock.classList.add('is-moving');
+        shade.classList.remove('animate');
+      }
+      height = Math.max(0, Math.min(drag.h + dy, stops[stops.length - 1]));
+      shade.style.height = height + 'px';
+      paint();
+    };
+    const release = (e) => {
+      if (!drag || e.pointerId !== drag.id) return;
+      const moved = drag.moved;
+      drag = null;
+      document.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerup', release);
+      document.removeEventListener('pointercancel', release);
+      if (!moved) return;
+      swallowUntil = performance.now() + 400;
       let best = 0;
       stops.forEach((s, k) => { if (Math.abs(s - height) < Math.abs(stops[best] - height)) best = k; });
       setLevel(best, true);
-    } else {
-      setLevel((level + 1) % stops.length, true); // нажатие — следующая ступень по кругу
-    }
-    saveLevel();
-  };
-  toggle.addEventListener('pointerup', release);
-  toggle.addEventListener('pointercancel', release);
-  // Клик с клавиатуры (Enter/пробел) — тоже следующая ступень.
-  toggle.addEventListener('click', (e) => {
-    if (e.detail !== 0) return; // мышь/палец уже обработаны в pointerup
-    setLevel((level + 1) % stops.length, true);
-    saveLevel();
-  });
+      saveLevel();
+    };
+    strip.el.addEventListener('pointerdown', (e) => {
+      if (drag || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      drag = {id: e.pointerId, y: e.clientY, h: height, moved: false};
+      document.addEventListener('pointermove', move);
+      document.addEventListener('pointerup', release);
+      document.addEventListener('pointercancel', release);
+    });
+    strip.el.addEventListener('click', (e) => {
+      if (performance.now() < swallowUntil) { e.stopPropagation(); e.preventDefault(); }
+    }, true);
+  }
 
   // Раскладка — когда у шторки есть ширина: окно системы до открытия вообще
   // display:none. Несколько кадров подождать и сдаться.
-  const saved = readShade(kind, opts && opts.foldedByDefault ? 0 : 1);
+  const saved = readShade(kind, 0);
   let tries = 0;
   const refit = () => {
     const s = shadeStops(grid);
@@ -860,6 +912,7 @@ export function renderNodeLinks(el, view, handlers, opts) {
   };
   shade.style.height = '0px';
   paint();
+  if (!canOpen) { if (card) syncDock(card); return; }
   el.__refit = () => { tries = 0; refit(); };
   liveRows.add(el.__refit);
   refit();
@@ -910,6 +963,6 @@ export function applyNodeToolbar(refs, view, handlers) {
   if (refs.edit) refs.edit.hidden = !view.canEdit;
 
   // ⚠️ Вкладок детей-точек в этом ряду больше НЕТ (24.09.2026): они уехали в
-  // ряд переходов под панелью (renderNodeLinks ниже). Панель действий теперь
+  // шторку переходов (renderNodeLinks выше). Панель действий теперь
   // не зависит от данных — ✕, родитель и максимум четыре действия.
 }

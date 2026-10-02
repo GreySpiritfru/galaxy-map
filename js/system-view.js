@@ -1,9 +1,9 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=177';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=177';
-import { renderNodeLinks } from './node-window.js?v=177';
+import { createPanZoom } from './panzoom.js?v=178';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=178';
+import { renderNodeLinks } from './node-window.js?v=178';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -126,7 +126,8 @@ export function getOpenSystem() { return current; }
    По умолчанию ряд здесь СВЁРНУТ (идея игрока): эти точки и так видны
    маркерами на карте системы, а развёрнутый ряд закрывает её верх. */
 export function setSystemTabs(items, onSelect) {
-  renderNodeLinks(systemLinks, {children: items || []}, {
+  // Своей точки у окна системы нет — строке плашки нужна подпись.
+  renderNodeLinks(systemLinks, {children: items || [], stripTitle: 'Точки в системе'}, {
     onChild: (id) => {
       // Статья расы пристыкована к панели — сначала закрыть её, иначе окно
       // точки откроется ПОД ней (модал выше по z-index).

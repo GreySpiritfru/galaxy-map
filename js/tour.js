@@ -18,13 +18,13 @@
    ⚠️ Тексты — черновик из инфоканала (введение, «Что такое Феном», анкета),
    игрок обещал поправить. Править прямо здесь, в INTRO_TABS и STEPS.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=177';
-import { closeStory, isStoryOpen } from './stories.js?v=177';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=177';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=177';
-import { closeSystem, isSystemOpen } from './system-view.js?v=177';
-import { quoteHtml, initQuotes } from './quotes.js?v=177';
-import { JOIN_LINKS } from './node-window.js?v=177';
+import { closeModal, isArticleOpen } from './modal.js?v=178';
+import { closeStory, isStoryOpen } from './stories.js?v=178';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=178';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=178';
+import { closeSystem, isSystemOpen } from './system-view.js?v=178';
+import { quoteHtml, initQuotes } from './quotes.js?v=178';
+import { JOIN_LINKS } from './node-window.js?v=178';
 
 const TOUR_SEEN_KEY = 'galaxyMapTourSeen';
 const LINKS = JOIN_LINKS;
@@ -106,10 +106,10 @@ const STEPS = [
   },
   {
     prepare: async h => { await h.showSections(); await h.openPlot(); },
-    target: () => topCard('.node-head'),
+    target: () => topCard('.node-dock'),
     optional: true,
     title: 'Панель окна',
-    text: 'На верхней панели также отображены маркеры, которые прикреплены к этому сюжету или находятся в локации.',
+    text: 'Внизу — панель окна. В строке слева то, к чему привязан сюжет (нажми — перейдёшь туда), справа — маркеры, которые прикреплены к этому сюжету или находятся в локации: нажми на строку или потяни её вверх, чтобы увидеть все. Под строкой — вкладки окна.',
   },
   {
     // Про 🏷️ — поэтому на карту: в нодах на её месте ▦.
