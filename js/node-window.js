@@ -15,9 +15,9 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=192';
-import { REF_ARTICLES } from './articles.js?v=192';
-import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=192';
+import { escapeHtml } from './modal.js?v=194';
+import { REF_ARTICLES } from './articles.js?v=194';
+import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=194';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -686,58 +686,66 @@ function syncDock(card) {
   if (!dock || dock.classList.contains('is-moving')) return;
   card.style.setProperty('--dock-h', dock.offsetHeight + 'px');
 }
-document.querySelectorAll('.phenom-card').forEach(card => {
-  const dock = card.querySelector(':scope > .node-dock');
-  if (!dock || !window.ResizeObserver || dockObservers.has(dock)) return;
-  dockObservers.add(dock);
-  new ResizeObserver(() => syncDock(card)).observe(dock);
-  wireDockAutoHide(card, dock);
-});
 
-/* Вкладки уезжают при прокрутке — ВСЛЕД ЗА ТЕКСТОМ, строка остаётся (v=178;
-   до этого так уезжала вся плашка сверху, v=171–177). Листают вниз — вкладки
-   опускаются за край и гаснут, вся карточка садится на их место; вверх —
-   возвращаются. Остановились (140 мс тишины или scrollend) — доводка: вкладки
-   либо целиком на месте, либо целиком спрятаны; спорное решает направление.
-   Колесо мыши (v=172) — вдвое медленнее текста и без доводки: один щелчок
-   колеса не прячет их целиком.
-   ⚠️ Сдвиг не больше прокрутки тела: у самого верха текста вкладки всегда на
-   месте, и вернуть их — потянуть текст вниз, без лишних нажатий.
+/* Строка маркеров прячется при прокрутке — ВСЛЕД ЗА ТЕКСТОМ, вкладки стоят
+   (v=193, решение игрока: «панели кнопок важнее, чем панель маркеров»; в
+   v=178–192 было наоборот — уезжали вкладки, а до v=178 вся плашка сверху).
+   Листают вниз — строка опускается за вкладки (не дальше их высоты: ниже
+   плашки она не вылезает) и гаснет, вкладки становятся отдельной капсулой;
+   вверх — возвращается. Путь — высота строки, но не больше DOCK_HIDE_MAX_PX
+   (раскрытая панель высокая — иначе прятать её пришлось бы пол-экрана).
+   Остановились (140 мс тишины или scrollend) — доводка: целиком на месте
+   либо целиком спрятана; спорное решает направление. Колесо мыши (v=172) —
+   вдвое медленнее текста и без доводки.
+   ⚠️ Сдвиг не больше прокрутки тела: у самого верха текста строка всегда на
+   месте, и вернуть её — потянуть текст вниз, без лишних нажатий.
    Работает только на НАШЕЙ прокрутке (описание, «Игра», своя копия статьи,
-   броски) — в чужом iframe о прокрутке не узнать, там вкладки стоят. */
+   броски) — в чужом iframe о прокрутке не узнать, там строка стоит. */
 const DOCK_SNAP_IDLE_MS = 140;   // столько тишины после прокрутки — и доводим
 const DOCK_SNAP_BIAS = 0.3;      // доля пути, после которой едем к другой ступени
-const DOCK_REVEAL_EDGE_PX = 40;  // компьютер: мышь у нижнего края — вкладки возвращаются
-const DOCK_WHEEL_RATIO = 0.45;   // колесо: вкладки едут на такую долю прокрутки текста
+const DOCK_REVEAL_EDGE_PX = 40;  // компьютер: мышь у нижнего края — строка возвращается
+const DOCK_WHEEL_RATIO = 0.45;   // колесо: строка прячется на такую долю прокрутки текста
 const DOCK_WHEEL_HOLD_MS = 400;  // столько после события колеса прокрутка считается колёсной
+const DOCK_HIDE_MAX_PX = 120;    // путь прокрутки, за который строка прячется целиком
 function wireDockAutoHide(card, dock) {
   const body = card.querySelector('.story-content');
   const bar = dock.querySelector(':scope > .phenom-toolbar');
-  if (!body || !bar) return;
+  const strip = dock.querySelector(':scope > .node-links');
+  if (!body || !bar || !strip) return;
   let offset = 0, lastY = body.scrollTop, dir = 0, idle = 0;
-  // Высота вкладок — из кэша: читать геометрию на каждом событии прокрутки нельзя.
-  let barH = 0;
-  const measure = () => { barH = bar.offsetHeight; };
-  const maxOffset = () => Math.max(0, Math.min(barH, body.scrollTop));
+  // Размеры — из кэша: читать геометрию на каждом событии прокрутки нельзя.
+  let range = 0, travel = 0;
+  const measure = () => {
+    const h = strip.hidden ? 0 : strip.offsetHeight;
+    range = Math.min(h, DOCK_HIDE_MAX_PX);
+    travel = Math.min(h, bar.offsetHeight);
+  };
+  const maxOffset = () => Math.max(0, Math.min(range, body.scrollTop));
   const set = (value, animate) => {
     offset = Math.max(0, Math.min(maxOffset(), value));
     const moved = offset > 0.5;
+    const k = offset / (range || 1);
     dock.classList.toggle('dock-snap', !!animate);
-    dock.style.transform = moved ? `translateY(${offset}px)` : '';
-    // Гаснут вдвое быстрее, чем уезжают: к середине пути их уже не видно.
-    bar.style.opacity = moved ? String(Math.max(0, 1 - 2 * offset / (barH || 1))) : '';
-    card.classList.toggle('tabs-moving', moved);
+    strip.style.transform = moved ? `translateY(${(k * travel).toFixed(1)}px)` : '';
+    // Гаснет вдвое быстрее, чем опускается: к середине пути её уже не видно.
+    strip.style.opacity = moved ? String(Math.max(0, 1 - 2 * k)) : '';
+    card.classList.toggle('strip-hiding', moved);
   };
   const snap = () => {
     clearTimeout(idle);
-    const t = offset / (barH || 1);
-    let target = dir > 0 ? (t > DOCK_SNAP_BIAS ? barH : 0) : (t < 1 - DOCK_SNAP_BIAS ? 0 : barH);
-    // Целиком не спрятать (текст прокручен меньше высоты вкладок) — вернуть.
+    const t = offset / (range || 1);
+    let target = dir > 0 ? (t > DOCK_SNAP_BIAS ? range : 0) : (t < 1 - DOCK_SNAP_BIAS ? 0 : range);
+    // Целиком не спрятать (текст прокручен меньше пути) — вернуть.
     if (target > maxOffset()) target = 0;
     set(target, true);
   };
   card.__showDock = () => { clearTimeout(idle); set(0, true); };
-  if (window.ResizeObserver) new ResizeObserver(() => { measure(); if (offset) set(offset); }).observe(bar);
+  // Строка меняет высоту (раскрыли панель, другая точка) и прячется атрибутом
+  // hidden (своя карта Фенома) — размеры заново.
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => { measure(); if (offset) set(offset); });
+    ro.observe(bar); ro.observe(strip);
+  }
   measure();
   let wheelUntil = 0;
   body.addEventListener('wheel', () => { wheelUntil = performance.now() + DOCK_WHEEL_HOLD_MS; }, {passive: true});
@@ -762,13 +770,23 @@ function wireDockAutoHide(card, dock) {
   // Сменилось содержимое тела (другая точка, анкета, броски) — вкладки на месте.
   new MutationObserver(() => { clearTimeout(idle); lastY = body.scrollTop; set(0, false); })
     .observe(body, {childList: true});
-  // Компьютер: мышь к нижнему краю — вкладки возвращаются.
+  // Компьютер: мышь к плашке внизу — строка возвращается.
   card.addEventListener('mousemove', (e) => {
-    if (offset > 0.5 && window.innerHeight - e.clientY < DOCK_REVEAL_EDGE_PX + barH) card.__showDock();
+    if (offset > 0.5 && window.innerHeight - e.clientY < DOCK_REVEAL_EDGE_PX + bar.offsetHeight + travel) card.__showDock();
   });
-  // Фокус с клавиатуры внутри плашки — показать вкладки.
+  // Фокус с клавиатуры внутри плашки — показать строку.
   dock.addEventListener('focusin', () => card.__showDock());
 }
+
+// ⚠️ Ниже констант DOCK_*: wireDockAutoHide меряет строку сразу, и вызов до
+// их объявления — ReferenceError (TDZ), модуль падал целиком (v=193).
+document.querySelectorAll('.phenom-card').forEach(card => {
+  const dock = card.querySelector(':scope > .node-dock');
+  if (!dock || !window.ResizeObserver || dockObservers.has(dock)) return;
+  dockObservers.add(dock);
+  new ResizeObserver(() => syncDock(card)).observe(dock);
+  wireDockAutoHide(card, dock);
+});
 
 /* opts.fold — вид окна для памяти раскрытия ('point' | 'system').
    view: parentMeta (родитель), self (маркер самой точки), children (места и

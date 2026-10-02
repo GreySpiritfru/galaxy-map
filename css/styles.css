@@ -1791,9 +1791,9 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
 /* Плашка окна (.node-dock, v=178) — ВНИЗУ, как панель карты (.map-dock):
    плавающая карточка с полями 10 px, на широком экране по центру, не шире
    560 px. Две части: строка со шторкой (.node-links) и вкладки
-   (.phenom-toolbar). Стекло — у каждой части, а не у самой плашки: когда
-   вкладки уезжают при прокрутке (wireDockAutoHide — вся плашка едет вниз на
-   их высоту, вкладки гаснут), под строкой не должно оставаться полосы фона.
+   (.phenom-toolbar). Фон — у каждой части, а не у самой плашки: когда строка
+   прячется при прокрутке (wireDockAutoHide, v=193 — опускается за вкладки и
+   гаснет), над вкладками не должно оставаться полосы фона.
    Тело отступает снизу на высоту плашки (--dock-h, syncDock в
    js/node-window.js).
    До v=178 плашка (.node-head) лежала сверху на всю ширину: панель действий +
@@ -1851,42 +1851,29 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
 /* Окно системы (v=179): та же плашка поверх карты системы. Своё у панели
    (.system-toolbar — полоса сверху до v=179) здесь снимается. */
 .node-dock.system-dock { z-index: 210; }
-/* Сверху панели больше нет — под кнопками Telegram (полноэкранный режим)
-   полоса-затемнение, как .top-scrim у карты; в браузере высота 0. */
-.system-overlay::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  z-index: 205;
-  height: var(--safe-top);
-  background: rgba(12,12,18,0.85);
-  pointer-events: none;
-}
 .node-dock > .system-toolbar {
   position: static;
   box-shadow: none;
   border-bottom: none;
 }
-/* Вкладки уезжают (инлайн transform плашки и opacity вкладок, wireDockAutoHide):
-   пока идёт прокрутка — ровно за текстом, доводка — .dock-snap. Строка в это
-   время — отдельная карточка: своё скругление снизу, своя тень и ободок. */
-.node-dock.dock-snap { transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
-.node-dock.dock-snap > .phenom-toolbar { transition: opacity 0.22s ease; }
-.phenom-card.tabs-moving > .node-dock { box-shadow: none; }
-.phenom-card.tabs-moving > .node-dock::after { opacity: 0; }
-.phenom-card.tabs-moving > .node-dock > .node-links {
+/* Строка маркеров прячется при прокрутке (v=193; инлайн transform и opacity
+   строки, wireDockAutoHide): пока идёт прокрутка — ровно за текстом, доводка —
+   .dock-snap. Строка опускается ЗА вкладки (у них z-index выше), вкладки в
+   это время — отдельная капсула: своё скругление сверху, своя тень и ободок.
+   До v=193 было наоборот: уезжали вкладки (класс tabs-moving). */
+.node-dock > .tabbar { position: relative; z-index: 2; }
+.node-dock::after { z-index: 3; }
+.node-dock.dock-snap > .node-links { transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.22s ease; }
+.phenom-card.strip-hiding > .node-dock { box-shadow: none; }
+.phenom-card.strip-hiding > .node-dock::after { opacity: 0; }
+.phenom-card.strip-hiding > .node-dock > .node-links { pointer-events: none; }
+.phenom-card.strip-hiding > .node-dock > .tabbar {
   border-radius: 20px;
+  border-top-color: transparent;
   box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.08);
 }
-.phenom-card.tabs-moving > .node-dock > .phenom-toolbar { pointer-events: none; }
-/* На своей карте точки (Феном) прокрутки тела нет — вкладки всегда на месте. */
-.phenom-overlay.map-view .phenom-card > .node-dock { transform: none !important; }
-.phenom-overlay.map-view .phenom-card > .node-dock > .phenom-toolbar { opacity: 1 !important; pointer-events: auto; }
 @media (prefers-reduced-motion: reduce) {
-  .node-dock.dock-snap,
-  .node-dock.dock-snap > .phenom-toolbar,
+  .node-dock.dock-snap > .node-links,
   .node-dock > .node-links { transition: none; }
 }
 .phenom-toolbar {
@@ -1900,24 +1887,10 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   padding: 10px;
   background: none;
 }
-/* Полоса под кнопками Telegram (полноэкранный режим; в браузере высота 0):
-   текст прокручивается ПОД неё. Плотнее стекла — как верхние панели
-   Android при прокрутке. До v=178 была видна, только пока сверху уезжала
-   плашка окна; теперь сверху нашей плашки нет — видна всегда.
-   ⚠️ Без backdrop-filter: с ним Chromium переставал рисовать то, что лежит
-   поверх полосы (проверка v=171), да и лишний слой размытия на прокрутке. */
-.phenom-card::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  z-index: 4;
-  height: var(--safe-top);
-  background: rgba(12,12,18,0.93);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  pointer-events: none;
-}
+/* Полосы-затемнения под кнопками Telegram сверху окна (.phenom-card::before,
+   .system-overlay::before, v=178–192) больше нет — решение игрока v=193:
+   текст при прокрутке уходит прямо под кнопки Telegram. Начинается он
+   по-прежнему ниже них (padding-top с --safe-top). */
 /* Тело — во всю карточку: сверху — под полосой Telegram, снизу — над плашкой. */
 .phenom-card > .phenom-content { flex: 1; }
 .phenom-card > .story-content:not(.is-article),
