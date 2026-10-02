@@ -126,6 +126,15 @@
    "title": "Районы Фенома (ред.)",
    "updated": "2026-09-30"
   },
+  "https://teletype.in/@greyspirit/9Yl3KOH0GfW": {
+   "file": "articles/tt/greyspirit/9Yl3KOH0GfW.json",
+   "hash": "c3ff0f60150d023b",
+   "images": [
+    "articles/img/148c8c3c13fb1419.webp"
+   ],
+   "title": "Капитан Валкан",
+   "updated": "2026-10-02"
+  },
   "https://teletype.in/@greyspirit/F7zCvt_WsN1": {
    "file": "articles/tt/greyspirit/F7zCvt_WsN1.json",
    "hash": "9324e622c841173d",
@@ -294,6 +303,28 @@
    ],
    "title": "Расовая энциклопедия",
    "updated": "2026-09-30"
+  },
+  "https://teletype.in/@himeserath/cpHreWFSLuc": {
+   "file": "articles/tt/himeserath/cpHreWFSLuc.json",
+   "hash": "d0c888c8ed0005a2",
+   "images": [
+    "articles/img/1900787b600bf75b.webp",
+    "articles/img/22b792b903418dd6.webp",
+    "articles/img/3b0efc087cc594f8.webp",
+    "articles/img/46cd6ce4093dfe80.webp",
+    "articles/img/55f55176c98e3f4e.webp",
+    "articles/img/62c99fe39964366a.webp",
+    "articles/img/68d6a5162f98d39b.webp",
+    "articles/img/6bd192b904fc4ad0.webp",
+    "articles/img/6e81143b55cb237d.webp",
+    "articles/img/7e03a2d0f7c5e5bd.webp",
+    "articles/img/89b1472cfa487cad.webp",
+    "articles/img/add0e3cc5c05629c.webp",
+    "articles/img/ae25922635a433e1.webp",
+    "articles/img/cdbfec8d9c7c39c5.webp"
+   ],
+   "title": "Орби (O.E.R–BIO)",
+   "updated": "2026-10-02"
   },
   "https://teletype.in/@konradgotfrid/KvEEg15l2Os": {
    "file": "articles/tt/konradgotfrid/KvEEg15l2Os.json",
