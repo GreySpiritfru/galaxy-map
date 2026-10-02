@@ -3040,3 +3040,123 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   .tour-arrow, .help-tour-btn.pulse { animation: none; }
   .tour-hole { transition: none; }
 }
+
+/* Заставка загрузки (v=188, index.html + js/splash.js): логотип Фенома на
+   минималистичной галактике — две спиральные ветви точками (бирюзовая и
+   фиолетовая, цвета логотипа), мягкое ядро, редкие звёзды. Галактика
+   наклонена (scaleY) и медленно вращается.
+   ⚠️ Анимируются ТОЛЬКО transform и opacity HTML-элементов: SVG галактики
+   растеризуется один раз, дальше её слой крутит видеокарта. Анимация внутри
+   SVG перерисовывала бы его каждый кадр (урок маяков, «Замер на телефоне»).
+   Уход: всё гаснет, галактика «наезжает» на зрителя — как влёт в карту;
+   потом элемент удаляется из DOM целиком. */
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 42%, #14121f 0%, #0b0b10 62%);
+  color: #e8f6f6;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+  transition: opacity 0.55s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.splash-stage {
+  position: relative;
+  width: 168px;
+  height: 168px;
+  margin-bottom: 22px;
+}
+.splash-galaxy {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(118vw, 600px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%) rotate(-24deg) scaleY(0.52);
+  animation: splashGalaxyIn 1.3s cubic-bezier(.2,.7,.2,1) backwards;
+  transition: transform 0.6s cubic-bezier(.5,0,.8,.4), opacity 0.5s ease;
+}
+.splash-spin {
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+  animation: splashSpin 70s linear infinite;
+}
+.splash-galaxy-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.splash-glow {
+  position: absolute;
+  inset: -60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(175,238,238,0.28) 0%, rgba(150,110,255,0.16) 38%, rgba(150,110,255,0) 70%);
+  animation: splashGlow 3.2s ease-in-out infinite;
+}
+.splash-float {
+  position: absolute;
+  inset: 0;
+  animation: splashFloat 4.2s ease-in-out infinite;
+  transition: transform 0.55s ease, opacity 0.45s ease;
+}
+.splash-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+.splash-logo.is-loaded { animation: splashLogoIn 0.8s cubic-bezier(.2,.8,.2,1) forwards; }
+.splash-title {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.42em;
+  margin-right: -0.42em; /* разрядка не сдвигает слово влево */
+  animation: splashTextIn 0.9s 0.25s ease-out backwards;
+}
+.splash-sub {
+  margin-top: 6px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: rgba(232,246,246,0.5);
+  animation: splashTextIn 0.9s 0.4s ease-out backwards;
+}
+.splash-bar {
+  position: relative;
+  width: 112px;
+  height: 2px;
+  margin-top: 22px;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+  animation: splashTextIn 0.9s 0.55s ease-out backwards;
+}
+.splash-bar span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(175,238,238,0), #AFEEEE, rgba(180,140,255,0));
+  animation: splashBar 1.35s ease-in-out infinite;
+}
+.splash.is-done { opacity: 0; pointer-events: none; }
+.splash.is-done .splash-galaxy { transform: translate(-50%, -50%) rotate(-24deg) scale(1.9, 0.99); }
+.splash.is-done .splash-float { transform: scale(1.15); opacity: 0; }
+@keyframes splashSpin { to { transform: rotate(360deg); } }
+@keyframes splashGalaxyIn {
+  from { opacity: 0; transform: translate(-50%, -50%) rotate(-60deg) scale(0.55, 0.29); }
+}
+@keyframes splashGlow { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+@keyframes splashFloat { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(4px); } }
+@keyframes splashLogoIn {
+  from { opacity: 0; transform: scale(0.82); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes splashTextIn { from { opacity: 0; transform: translateY(6px); } }
+@keyframes splashBar { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@media (prefers-reduced-motion: reduce) {
+  .splash-galaxy, .splash-spin, .splash-glow, .splash-float, .splash-title, .splash-sub, .splash-bar, .splash-bar span { animation: none; }
+  .splash-logo.is-loaded { animation: none; opacity: 1; }
+}

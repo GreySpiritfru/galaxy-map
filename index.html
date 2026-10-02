@@ -13,9 +13,33 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=187" />
+  <link rel="preload" href="images/splash-logo.webp" as="image" />
+  <link rel="stylesheet" href="css/styles.css?v=188" />
 </head>
 <body>
+
+<!-- Заставка загрузки (v=188): логотип Фенома на минималистичной галактике.
+     В разметке, а не из JS — видна сразу, пока грузятся модули и map.svg.
+     Двигаются только transform/opacity HTML-слоёв (видеокарта, без
+     перерисовки); убирает её js/splash.js, когда карта готова (map.js). -->
+<div class="splash" id="splash" aria-hidden="true">
+  <div class="splash-stage">
+    <div class="splash-galaxy"><div class="splash-spin"><svg class="splash-galaxy-svg" viewBox="-100 -100 200 200" aria-hidden="true"><defs><radialGradient id="splashCore"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".25" stop-color="#cfe" stop-opacity=".45"/><stop offset=".6" stop-color="#8a6cff" stop-opacity=".12"/><stop offset="1" stop-color="#8a6cff" stop-opacity="0"/></radialGradient><path id="splashArm0" d="M7.1 2.6 L6.9 3.3 L6.7 3.9 L6.4 4.6 L6.1 5.3 L5.7 5.9 L5.3 6.5 L4.7 7.1 L4.2 7.6 L3.5 8.1 L2.8 8.5 L2.1 8.9 L1.3 9.2 L0.5 9.5 L-0.4 9.7 L-1.3 9.8 L-2.2 9.8 L-3.1 9.7 L-4.0 9.6 L-5.0 9.3 L-5.9 9.0 L-6.8 8.6 L-7.7 8.1 L-8.5 7.5 L-9.3 6.8 L-10.1 6.1 L-10.8 5.2 L-11.4 4.3 L-12.0 3.3 L-12.4 2.3 L-12.8 1.2 L-13.1 0.0 L-13.3 -1.2 L-13.4 -2.4 L-13.3 -3.7 L-13.2 -4.9 L-12.9 -6.2 L-12.5 -7.5 L-12.0 -8.7 L-11.4 -10.0 L-10.7 -11.2 L-9.8 -12.3 L-8.8 -13.4 L-7.7 -14.3 L-6.5 -15.3 L-5.2 -16.1 L-3.8 -16.8 L-2.3 -17.3 L-0.8 -17.8 L0.9 -18.1 L2.5 -18.3 L4.2 -18.3 L6.0 -18.2 L7.7 -17.9 L9.5 -17.4 L11.2 -16.8 L12.9 -16.0 L14.5 -15.1 L16.1 -14.0 L17.6 -12.7 L19.0 -11.2 L20.3 -9.7 L21.5 -7.9 L22.5 -6.1 L23.4 -4.1 L24.1 -2.0 L24.6 0.2 L25.0 2.4 L25.1 4.7 L25.0 7.1 L24.7 9.5 L24.2 11.9 L23.4 14.3 L22.5 16.6 L21.3 18.9 L19.8 21.1 L18.2 23.2 L16.3 25.2 L14.2 27.1 L11.9 28.7 L9.5 30.2 L6.9 31.5 L4.1 32.6 L1.1 33.4 L-1.9 34.0 L-5.0 34.3 L-8.3 34.3 L-11.5 34.0 L-14.8 33.5 L-18.1 32.6 L-21.3 31.4 L-24.5 29.9 L-27.5 28.1 L-30.5 25.9 L-33.3 23.5 L-35.9 20.8 L-38.3 17.8 L-40.5 14.5 L-42.4 11.0 L-44.0 7.3 L-45.3 3.4 L-46.2 -0.7 L-46.8 -4.9 L-47.0 -9.3 L-46.8 -13.7 L-46.2 -18.2 L-45.2 -22.7 L-43.8 -27.2 L-41.9 -31.5 L-39.6 -35.8 L-36.9 -39.9 L-33.8 -43.9 L-30.2 -47.6 L-26.3 -51.0 L-22.0 -54.1 L-17.3 -56.9 L-12.4 -59.3 L-7.1 -61.3 L-1.6 -62.8 L4.1 -63.8 L10.0 -64.3 L16.0 -64.3 L22.2 -63.7 L28.3 -62.6 L34.4 -60.9 L40.5 -58.6 L46.4 -55.7 L52.2 -52.3 L57.7 -48.2 L62.9 -43.6 L67.8 -38.5 L72.2 -32.8 L76.3 -26.7 L79.8 -20.1"/><path id="splashArm1" d="M-7.1 -2.6 L-6.9 -3.3 L-6.7 -3.9 L-6.4 -4.6 L-6.1 -5.3 L-5.7 -5.9 L-5.3 -6.5 L-4.7 -7.1 L-4.2 -7.6 L-3.5 -8.1 L-2.8 -8.5 L-2.1 -8.9 L-1.3 -9.2 L-0.5 -9.5 L0.4 -9.7 L1.3 -9.8 L2.2 -9.8 L3.1 -9.7 L4.0 -9.6 L5.0 -9.3 L5.9 -9.0 L6.8 -8.6 L7.7 -8.1 L8.5 -7.5 L9.3 -6.8 L10.1 -6.1 L10.8 -5.2 L11.4 -4.3 L12.0 -3.3 L12.4 -2.3 L12.8 -1.2 L13.1 -0.0 L13.3 1.2 L13.4 2.4 L13.3 3.7 L13.2 4.9 L12.9 6.2 L12.5 7.5 L12.0 8.7 L11.4 10.0 L10.7 11.2 L9.8 12.3 L8.8 13.4 L7.7 14.3 L6.5 15.3 L5.2 16.1 L3.8 16.8 L2.3 17.3 L0.8 17.8 L-0.9 18.1 L-2.5 18.3 L-4.2 18.3 L-6.0 18.2 L-7.7 17.9 L-9.5 17.4 L-11.2 16.8 L-12.9 16.0 L-14.5 15.1 L-16.1 14.0 L-17.6 12.7 L-19.0 11.2 L-20.3 9.7 L-21.5 7.9 L-22.5 6.1 L-23.4 4.1 L-24.1 2.0 L-24.6 -0.2 L-25.0 -2.4 L-25.1 -4.7 L-25.0 -7.1 L-24.7 -9.5 L-24.2 -11.9 L-23.4 -14.3 L-22.5 -16.6 L-21.3 -18.9 L-19.8 -21.1 L-18.2 -23.2 L-16.3 -25.2 L-14.2 -27.1 L-11.9 -28.7 L-9.5 -30.2 L-6.9 -31.5 L-4.1 -32.6 L-1.1 -33.4 L1.9 -34.0 L5.0 -34.3 L8.3 -34.3 L11.5 -34.0 L14.8 -33.5 L18.1 -32.6 L21.3 -31.4 L24.5 -29.9 L27.5 -28.1 L30.5 -25.9 L33.3 -23.5 L35.9 -20.8 L38.3 -17.8 L40.5 -14.5 L42.4 -11.0 L44.0 -7.3 L45.3 -3.4 L46.2 0.7 L46.8 4.9 L47.0 9.3 L46.8 13.7 L46.2 18.2 L45.2 22.7 L43.8 27.2 L41.9 31.5 L39.6 35.8 L36.9 39.9 L33.8 43.9 L30.2 47.6 L26.3 51.0 L22.0 54.1 L17.3 56.9 L12.4 59.3 L7.1 61.3 L1.6 62.8 L-4.1 63.8 L-10.0 64.3 L-16.0 64.3 L-22.2 63.7 L-28.3 62.6 L-34.4 60.9 L-40.5 58.6 L-46.4 55.7 L-52.2 52.3 L-57.7 48.2 L-62.9 43.6 L-67.8 38.5 L-72.2 32.8 L-76.3 26.7 L-79.8 20.1"/></defs><circle r="34" fill="url(#splashCore)"/><g fill="none" stroke="#AFEEEE" stroke-linecap="round"><use href="#splashArm0" stroke-width="9" stroke-opacity=".05"/><use href="#splashArm0" stroke-width="3" stroke-opacity=".12"/><use href="#splashArm0" stroke-width="1.7" stroke-dasharray="0 4.6" stroke-opacity=".85"/></g><g fill="none" stroke="#B48CFF" stroke-linecap="round"><use href="#splashArm1" stroke-width="9" stroke-opacity=".05"/><use href="#splashArm1" stroke-width="3" stroke-opacity=".12"/><use href="#splashArm1" stroke-width="1.7" stroke-dasharray="0 4.6" stroke-opacity=".85"/></g><g fill="#fff"><circle cx="36.4" cy="50.7" r="0.45" opacity="0.3"/><circle cx="73.6" cy="49.4" r="0.45" opacity="0.45"/><circle cx="-30.3" cy="13.4" r="0.45" opacity="0.45"/><circle cx="-36.9" cy="18.9" r="0.45" opacity="0.45"/><circle cx="-69.3" cy="-39.8" r="0.45" opacity="0.85"/><circle cx="6.4" cy="34.8" r="0.6" opacity="0.6"/><circle cx="-66.3" cy="-17.3" r="0.8" opacity="0.45"/><circle cx="-38.8" cy="-18.6" r="0.6" opacity="0.6"/><circle cx="-10.0" cy="-41.2" r="0.45" opacity="0.45"/><circle cx="-71.5" cy="-14.4" r="0.8" opacity="0.85"/><circle cx="-74.4" cy="22.5" r="0.8" opacity="0.45"/><circle cx="-27.6" cy="-83.1" r="0.6" opacity="0.3"/><circle cx="-76.2" cy="-12.2" r="0.8" opacity="0.85"/><circle cx="59.4" cy="-7.4" r="0.45" opacity="0.85"/><circle cx="-27.2" cy="41.6" r="1.0" opacity="0.85"/><circle cx="-16.4" cy="-29.1" r="0.8" opacity="0.6"/><circle cx="-68.9" cy="-46.4" r="1.0" opacity="0.3"/><circle cx="84.1" cy="-30.5" r="1.0" opacity="0.3"/><circle cx="-11.2" cy="-35.5" r="1.0" opacity="0.6"/><circle cx="63.7" cy="-54.8" r="0.8" opacity="0.3"/><circle cx="-57.6" cy="73.8" r="0.45" opacity="0.85"/><circle cx="4.2" cy="-36.7" r="0.6" opacity="0.45"/><circle cx="58.2" cy="-33.5" r="1.0" opacity="0.3"/><circle cx="-40.6" cy="28.9" r="0.8" opacity="0.45"/><circle cx="58.2" cy="-66.8" r="0.8" opacity="0.85"/><circle cx="-39.2" cy="-87.1" r="1.0" opacity="0.45"/><circle cx="21.6" cy="43.2" r="0.6" opacity="0.45"/><circle cx="13.0" cy="-23.2" r="0.6" opacity="0.6"/><circle cx="36.2" cy="47.1" r="0.8" opacity="0.6"/><circle cx="-34.4" cy="-87.6" r="0.45" opacity="0.85"/><circle cx="17.2" cy="-90.4" r="1.0" opacity="0.85"/><circle cx="53.5" cy="40.7" r="1.0" opacity="0.3"/><circle cx="51.8" cy="-5.0" r="1.0" opacity="0.45"/><circle cx="-35.4" cy="-25.9" r="0.45" opacity="0.3"/><circle cx="-74.7" cy="-17.5" r="0.8" opacity="0.3"/><circle cx="10.1" cy="37.3" r="1.0" opacity="0.45"/><circle cx="77.0" cy="-22.1" r="0.8" opacity="0.85"/><circle cx="26.4" cy="-36.9" r="1.0" opacity="0.85"/><circle cx="62.0" cy="37.1" r="0.45" opacity="0.6"/><circle cx="-84.3" cy="11.4" r="0.6" opacity="0.3"/><circle cx="50.9" cy="-15.8" r="0.8" opacity="0.45"/><circle cx="71.0" cy="-42.5" r="0.8" opacity="0.3"/><circle cx="-5.8" cy="82.9" r="0.8" opacity="0.45"/><circle cx="11.0" cy="63.6" r="0.8" opacity="0.45"/><circle cx="18.9" cy="-76.8" r="0.6" opacity="0.45"/><circle cx="-5.6" cy="-88.4" r="0.6" opacity="0.45"/></g></svg></div></div>
+    <div class="splash-glow"></div>
+    <div class="splash-float"><img class="splash-logo" src="images/splash-logo.webp" alt="" onload="this.classList.add('is-loaded')" /></div>
+  </div>
+  <div class="splash-title">ФЕНОМ</div>
+  <div class="splash-sub">карта галактики</div>
+  <div class="splash-bar"><span></span></div>
+</div>
+<script>
+  // Telegram прячет свою заглушку только после ready() — зовём сразу, чтобы
+  // игрок увидел заставку, а не пустой экран до конца загрузки модулей
+  // (expand/полноэкранный режим — как раньше, в js/main.js).
+  try { window.Telegram && Telegram.WebApp && Telegram.WebApp.ready(); } catch (e) {}
+  // Страховка: карта так и не сообщила о готовности (сбой сети и т.п.).
+  setTimeout(function () { var s = document.getElementById('splash'); if (s) s.remove(); }, 20000);
+</script>
 
 <div class="svg-widget" id="svgWidget">
   <!-- Панель карты (v=168, была колонкой кнопок в правом верхнем углу —
@@ -282,6 +306,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=187"></script>
+<script type="module" src="js/main.js?v=188"></script>
 </body>
 </html>
