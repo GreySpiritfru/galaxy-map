@@ -270,20 +270,6 @@
     "y": -40
   },
   {
-    "id": "loki",
-    "name": "Локи",
-    "race": "Куннласси",
-    "role": "Наёмник",
-    "player": "",
-    "sheetUrl": "https://teletype.in/@greyspirit/xbugnhuaVbR",
-    "parent": "kreyser-gorizont",
-    "links": [],
-    "image": "images/loki.jpg",
-    "color": "",
-    "x": -200,
-    "y": -40
-  },
-  {
     "id": "izida",
     "name": "Изида",
     "race": "Сарказка",
