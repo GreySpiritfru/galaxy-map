@@ -14,10 +14,17 @@ export function hideSplash() {
   hiding = true;
   const wait = Math.max(0, SPLASH_MIN_MS - performance.now());
   setTimeout(() => {
-    // Кадр на отрисовку карты под заставкой — иначе уход открыл бы пустоту.
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    let done = false;
+    const go = () => {
+      if (done) return;
+      done = true;
       el.classList.add('is-done');
       setTimeout(() => el.remove(), SPLASH_FADE_MS + 100);
-    }));
+    };
+    // Кадр на отрисовку карты под заставкой — иначе уход открыл бы пустоту.
+    // Кадров может не быть (страница скрыта — Telegram свёрнут): тогда по
+    // таймеру, чтобы заставка не висела до возвращения.
+    requestAnimationFrame(() => requestAnimationFrame(go));
+    setTimeout(go, 300);
   }, wait);
 }
