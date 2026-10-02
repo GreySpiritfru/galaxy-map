@@ -16,7 +16,7 @@
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=178" />
+  <link rel="stylesheet" href="css/styles.css?v=182" />
 </head>
 <body>
 
@@ -135,6 +135,11 @@
      самый явный и понятный "путь назад", отдельная стрелка тут только
      дублировала бы то, что видно и так. -->
 <div class="system-overlay" id="systemOverlay">
+  <!-- Плашка ВНИЗУ (v=179), как у окна точки (.node-dock): строка «Точки в
+       системе» с раскрывающимися колонками и под ней панель. Панель при
+       статье расы переезжает в модал и там стоит на том же месте капсулой. -->
+  <div class="node-dock system-dock">
+  <div class="node-links system-links" id="systemLinks" hidden></div>
   <div class="system-toolbar lore-toolbar tabbar">
     <button class="toolbar-close-btn" id="systemBack" aria-label="Закрыть">✕</button>
     <button class="tabbar-btn active" id="systemMapTab">
@@ -144,8 +149,7 @@
       <span class="tabbar-btn-icon" aria-hidden="true">👑</span><span class="tabbar-btn-label">Контролирующая раса</span>
     </button>
   </div>
-  <!-- Точки внутри системы — тот же ряд переходов, что в окне точки. -->
-  <div class="node-links system-links" id="systemLinks" hidden></div>
+  </div>
   <div id="systemContainer" style="position:absolute; inset:0; touch-action:none;"></div>
 </div>
 
@@ -281,6 +285,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=178"></script>
+<script type="module" src="js/main.js?v=182"></script>
 </body>
 </html>

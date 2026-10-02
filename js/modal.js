@@ -5,7 +5,7 @@
    поверх статьи. Используется отовсюду: map.js (маркеры), system-view.js
    (лор системы), articles.js (статьи-справочники), onboarding.js.
    ============================================================ */
-import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=178';
+import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=182';
 
 /* ⚠️ Кавычки экранируются тоже: результат подставляется не только в текст, но и
    в атрибуты (src="…" анкеты, title="…" с именем, value="…" в редакторе), а
@@ -39,7 +39,7 @@ let articleToken = 0;
 
 export function openModal(html) {
   articleToken++;
-  modalCard.classList.remove('modal-card--iframe', 'is-reader');
+  modalCard.classList.remove('modal-card--iframe', 'is-reader', 'has-dock');
   modalBackdrop.classList.remove('backdrop--iframe');
   resetLoreToolbarState();
   modalCloseBtn.hidden = false;
@@ -95,6 +95,8 @@ export function openIframeModal(url, toolbarEl, activeBtn) {
     modalCard.classList.remove('is-reader');
     modalContent.textContent = '';
   }
+  // Панель пристыкована — она внизу (v=179), статье нужен отступ снизу.
+  modalCard.classList.toggle('has-dock', !!toolbarEl);
   if (toolbarEl) {
     dockedToolbar = { el: toolbarEl, parent: toolbarEl.parentElement, next: toolbarEl.nextSibling, activeBtn: activeBtn || null };
     modalCard.insertBefore(toolbarEl, modalCard.firstChild);

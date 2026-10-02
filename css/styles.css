@@ -1179,17 +1179,26 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
    #modalClose в этом состоянии скрывается через JS (см. openIframeModal в
    modal.js), чтобы не дублировать его и не плавать поверх ряда отдельным
    несостыкованным элементом. */
+/* v=179: шторка статьи — ВНИЗУ, той же плавающей капсулой, что плашка окна
+   точки (.node-dock) и панель карты: поля 10 px, на широком экране по центру,
+   не шире 560 px. Раньше — полоса на всю ширину сверху, под кнопками
+   Telegram. Статья отступает снизу (.has-dock у модала). */
 .lore-toolbar.compact {
   position: fixed;
-  inset: 0 0 auto 0;
-  max-width: 100%;
-  margin: 0;
-  padding: calc(10px + var(--safe-top)) 10px 10px;
-  background: rgba(12,12,18,0.62);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  border-radius: 0 0 16px 16px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  left: 0;
+  right: 0;
+  top: auto;
+  bottom: calc(10px + var(--safe-bottom));
+  width: calc(100% - 20px);
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 3px 6px 4px;
+  background: rgba(16,16,24,0.82);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.08);
   box-sizing: border-box;
   z-index: 2;
   display: flex;
@@ -1306,14 +1315,17 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
    игрока: арт это содержательная часть кнопки, в 19 px он не читался. */
 .tab-node-icon { width: 25px; height: 25px; font-size: 12px; }
 
-/* ===== Строка и шторка переходов плашки окна (renderNodeLinks; v=178) =====
+/* ===== Строка и раскрывающаяся панель переходов (renderNodeLinks; v=178–179) =====
    Строка «где я и кто тут» (.node-strip): родитель › название · стопки ·
-   шеврон. Над ней — шторка (.node-links-row): маркеры с переносом строк,
-   видна верхняя часть, выдвигается на ступень (ряд, два, все) — тапом по
-   строке или протяжкой, см. js/node-window.js. До v=178 шторка висела под
-   панелью сверху и выдвигалась язычком. */
+   шеврон. Раскрытие (v=179) — не отдельная шторка, а сама строка растёт в
+   панель: под ней колонки (.node-links-body), слева места и сюжеты, справа
+   персонажи, лица из стопок разлетаются в маркеры колонок. Всем управляет
+   одно число --p (0 — свёрнуто, 1 — раскрыто) на .node-links: JS двигает
+   только его и высоту тела, полёт и проявление считаются здесь. До v=178
+   шторка висела под панелью сверху и выдвигалась язычком. */
 .node-links {
-  position: relative;
+  --p: 0;
+  position: relative; /* от неё меряются места маркеров (offsetIn в JS) */
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
@@ -1321,21 +1333,55 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 .node-links[hidden] { display: none; }
 /* У чипов свой display:flex — без !important атрибут hidden бы не сработал. */
 .node-links [hidden] { display: none !important; }
-/* Окно шторки: высоту задаёт JS (ступень или палец), лишнее обрезается. */
-.node-links-row {
+
+/* Тело панели: высоту ведёт JS (p × высота колонок). Пока панель
+   раскрывается, маркеры летят из строки СВЕРХУ — поэтому тело не обрезает
+   ничего выше себя (clip-path с запасом вверх и вбок), а снизу обрезает по
+   своей высоте: ниже — вкладки. Раскрыто — обычная прокрутка внутри.
+   Свёрнуто — невидимо и не ловит нажатий. */
+/* ⚠️ Скрывать и выключать — только ПОКА свёрнуто, а раскрытому ничего явно не
+   разрешать (visibility: visible / pointer-events: auto): такое значение у
+   потомка перебивает скрытие слоя окна. Так было в v=179 — закрытое верхнее
+   окно (персонаж) оставляло свою раскрытую панель невидимой, но нажимаемой
+   поверх нижнего окна: тап по строке Бездны открывал Дантеса, а мимо
+   маркеров — пропадал; скрытый под верхним окном слой просвечивал текстом. */
+.node-links-body {
   position: relative;
-  overflow: hidden;
   height: 0;
+  clip-path: inset(-600px -60px 0 -60px);
 }
-.node-links-row.animate { transition: height 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
-.node-links-row.scrolls { overflow-y: auto; overscroll-behavior: contain; }
-.node-links-grid {
-  position: relative; /* offsetTop элементов — от сетки (ступени в JS) */
+.node-links:not(.is-expanding) > .node-links-body { visibility: hidden; }
+.node-links:not(.is-open) > .node-links-body { pointer-events: none; }
+.node-links.is-open > .node-links-body {
+  clip-path: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.node-links-cols {
+  display: flex;
+  align-items: flex-start;
+  padding: 10px 10px 8px;
+}
+.node-links-col {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start; /* верх у элементов ряда общий — по нему JS делит ряды */
+  align-content: flex-start;
+  align-items: flex-start;
   gap: 8px;
-  padding: 10px 10px 6px;
+  min-width: 0;
+}
+.node-links-col.is-points { flex: 0 0 auto; width: 64px; }
+.node-links-col.is-points.is-wide { width: 136px; }
+.node-links-col.is-chars { flex: 1 1 0; }
+/* Колонка одна (только места или только персонажи) — во всю ширину. */
+.node-links-col:only-child { flex: 1 1 auto; width: auto; }
+.node-links-sep {
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 1px;
+  margin: 2px 10px;
+  background: rgba(255,255,255,0.14);
+  opacity: calc((var(--p) - 0.6) * 2.5);
 }
 .link-chip {
   flex: 0 0 auto;
@@ -1373,32 +1419,63 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
    детей. Размер различается с одного взгляда лучше, чем радиус углов: обычная
    точка и персонаж — оба квадраты, разница только в скруглении. */
 .link-chip--point .link-chip-marker { width: 36px; height: 36px; font-size: 15px; }
-.link-chip--char .link-chip-marker { width: 30px; height: 30px; font-size: 13px; }
-.link-divider {
-  flex: 0 0 auto;
-  align-self: stretch;
-  width: 1px;
-  margin: 3px 0 14px;
-  background: rgba(255,255,255,0.16);
+/* Названия мест длиннее имён («Крейсер Горизонт») — чип шире и подпись в
+   две строки, иначе «Крейсе…». */
+.link-chip--point { width: 64px; }
+.link-chip--point .link-chip-caption {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  white-space: normal;
+  /* Длинное слово («Гигаструктура») — переносом по слогам, а не обрывом. */
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  overflow-wrap: break-word;
+  text-align: center;
 }
+.link-chip--char .link-chip-marker { width: 30px; height: 30px; font-size: 13px; }
 /* Союзники — одной группой на золотой подложке (v=178; раньше — пунктирная
-   рамка, как нить союза на карте). Отрицательные поля — чипы в группе стоят
+   рамка, как нить союза на карте). Подложка — отдельным слоем, чтобы
+   проявляться вместе с раскрытием. Отрицательные поля — чипы в группе стоят
    на той же линии, что одиночные. */
 .link-group {
+  position: relative;
   flex: 0 0 auto;
   display: flex;
   gap: 6px;
   margin: -3px 0;
   padding: 3px 5px;
   border-radius: 12px;
+}
+.link-group::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
   background: rgba(255,215,106,0.09);
   box-shadow: inset 0 0 0 1px rgba(255,215,106,0.32);
+  /* Под конец, вместе с подписями: раньше пустая рамка ждала бы маркеры,
+     которые ещё летят. */
+  opacity: calc((var(--p) - 0.6) * 2.5);
+  pointer-events: none;
 }
+/* Полёт маркера: при p = 0 он ровно на месте и в размер своего лица в строке
+   (--dx/--dy/--s меряет JS), при p = 1 — на своём месте в колонке. Кого в
+   стопке не было (--o0: 0) — проявляются по дороге. Подписи — под конец. */
+.node-links-body .link-chip-marker {
+  position: relative;
+  transform-origin: 0 0;
+  transform:
+    translate(calc(var(--dx, 0) * (1 - var(--p)) * 1px), calc(var(--dy, 0) * (1 - var(--p)) * 1px))
+    scale(calc(var(--s, 1) + (1 - var(--s, 1)) * var(--p)));
+  opacity: calc(var(--o0, 1) + (1 - var(--o0, 1)) * (var(--p) * 2 - 0.3));
+}
+.node-links-body .link-chip-caption { opacity: calc((var(--p) - 0.55) * 2.2); }
 
 /* Строка. Нажимаются две вещи: родитель (.node-crumb — к нему) и всё
-   остальное (.node-strip-open — раскрыть шторку). Лица в стопках отдельно не
-   нажимаются (22 px внахлёст — промахи). Тянуть строку — шторка за пальцем,
-   поэтому touch-action: none. */
+   остальное (.node-strip-open — раскрыть/свернуть). Лица в стопках отдельно
+   не нажимаются (22 px внахлёст — промахи). Тянуть строку — раскрытие за
+   пальцем, поэтому touch-action: none. */
 .node-strip {
   flex: 0 0 auto;
   display: flex;
@@ -1409,7 +1486,9 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   -webkit-user-select: none;
   user-select: none;
 }
-.node-links:not(.folded) > .node-strip { border-top: 1px solid rgba(255,255,255,0.07); }
+/* Раскрыто — тонкая черта между строкой и колонками (тенью: рамка сдвинула
+   бы колонки на пиксель, а места маркеров уже замерены). */
+.node-links.is-expanding > .node-strip { box-shadow: inset 0 -1px 0 rgba(255,255,255,0.07); }
 .node-crumb,
 .node-strip-open {
   display: flex;
@@ -1472,7 +1551,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 }
 .node-strip-marker { flex: none; width: 24px; height: 24px; font-size: 11px; }
 /* Стопка: до трёх маркеров внахлёст, первый сверху (z-index ставит JS), тёмный
-   ободок отделяет соседей. */
+   ободок отделяет соседей. Раскрывается панель — лица уже летят маркерами
+   колонок, свои прячем (место держат: от них меряется полёт), число гаснет. */
 .node-stack { flex: none; display: inline-flex; align-items: center; }
 .node-stack-face {
   position: relative;
@@ -1483,7 +1563,14 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   box-shadow: 0 0 0 1.5px rgba(16,16,24,0.95);
 }
 .node-stack-face:first-child { margin-left: 0; }
-.node-stack-n { margin-left: 5px; color: #AFEEEE; font-size: 12px; font-weight: 600; }
+.node-links.is-expanding .node-stack-face { visibility: hidden; }
+.node-stack-n {
+  margin-left: 5px;
+  color: #AFEEEE;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: calc(1 - var(--p) * 2.5);
+}
 /* Шеврон «куда раскроется»: внизу экрана — вверх, раскрыто — вниз. */
 .node-strip-chev {
   flex: none;
@@ -1491,7 +1578,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   width: 14px;
   height: 14px;
   color: rgba(255,255,255,0.5);
-  transition: transform 0.2s ease;
+  transform: rotate(calc(var(--p) * 180deg));
 }
 .node-strip-chev svg {
   width: 100%;
@@ -1502,49 +1589,10 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.node-links:not(.folded) .node-strip-chev { transform: rotate(180deg); }
-
-/* Окно системы (пока сверху — переезд вниз следующим шагом): строка под её
-   таб-баром, вплотную (одна плашка с ним), шторка под строкой и растёт вниз. */
-.node-links.system-links {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: var(--system-toolbar-bottom, 74px);
-  z-index: 210;
-  flex-direction: column-reverse;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  border: none;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-  border-radius: 0 0 16px 16px;
-  background: rgba(12,12,18,0.62);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-}
-.node-links.system-links > .node-links-row,
-.node-links.system-links > .node-strip {
-  width: 100%;
-  max-width: 960px;
-  margin-left: auto;
-  margin-right: auto;
-  box-sizing: border-box;
-}
-.node-links.system-links:not(.folded) > .node-strip {
-  border-top: none;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-}
-.node-links.system-links .node-strip-chev { transform: rotate(180deg); }
-.node-links.system-links:not(.folded) .node-strip-chev { transform: none; }
-/* Панель и строка — одна плашка: скругление и тень уходят на строку.
-   Работает, пока панель не пристыкована к статье расы (тогда она не сосед). */
-.system-toolbar:has(+ .system-links:not([hidden])) {
-  border-radius: 0;
-  box-shadow: none;
-}
 
 /* Своя карта точки — вкладка окна (openSubmapView в js/phenom.js). На карте
-   строки и шторки нет, на описании нет 👥: это разные задачи, и вместе они
-   дублировали персонажей и отнимали у карты место. */
+   строки и панели переходов нет, на описании нет 👥: это разные задачи, и
+   вместе они дублировали персонажей и отнимали у карты место. */
 .phenom-overlay.map-view .node-links { display: none; }
 .phenom-overlay:not(.map-view) .phenom-char-nav { display: none; }
 
@@ -1566,7 +1614,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 /* Двойной вкладки «Феном | Карта» (.tabbar-split) больше нет (24.09.2026):
    справочник — только статьи, вход в точку Феном — кнопка в углу карты. */
 @keyframes loreBarIn {
-  from { transform: translateY(-100%); opacity: 0; }
+  from { transform: translateY(16px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
@@ -1764,25 +1812,47 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   pointer-events: none;
 }
 .node-dock > .node-links,
-.node-dock > .phenom-toolbar {
+.node-dock > .tabbar {
   background: rgba(16,16,24,0.82);
   backdrop-filter: blur(14px) saturate(140%);
   -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
-.node-dock > .node-links {
-  border-radius: 20px 20px 0 0;
-  transition: border-radius 0.15s ease;
-}
-.node-dock > .phenom-toolbar {
+/* Скругление снизу меняется без анимации: открыли другое окно после
+   прокрутки (вкладки были спрятаны) — оно доезжало бы на глазах, и над
+   вкладками торчал недорисованный край (v=181, скриншот игрока). */
+.node-dock > .node-links { border-radius: 20px 20px 0 0; }
+.node-dock > .tabbar {
   padding: 3px 6px 4px;
   border-radius: 0 0 20px 20px;
   border-top: 1px solid rgba(255,255,255,0.07);
 }
-/* Строки нет (своя карта Фенома) — вкладки одни, скругление со всех сторон. */
-.node-dock > .node-links[hidden] + .phenom-toolbar,
-.phenom-overlay.map-view .node-dock > .phenom-toolbar {
+/* Строки нет (своя карта Фенома, система без точек) — вкладки одни,
+   скругление со всех сторон. */
+.node-dock > .node-links[hidden] + .tabbar,
+.phenom-overlay.map-view .node-dock > .tabbar {
   border-radius: 20px;
   border-top: none;
+}
+/* Окно системы (v=179): та же плашка поверх карты системы. Своё у панели
+   (.system-toolbar — полоса сверху до v=179) здесь снимается. */
+.node-dock.system-dock { z-index: 210; }
+/* Сверху панели больше нет — под кнопками Telegram (полноэкранный режим)
+   полоса-затемнение, как .top-scrim у карты; в браузере высота 0. */
+.system-overlay::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 205;
+  height: var(--safe-top);
+  background: rgba(12,12,18,0.85);
+  pointer-events: none;
+}
+.node-dock > .system-toolbar {
+  position: static;
+  box-shadow: none;
+  border-bottom: none;
 }
 /* Вкладки уезжают (инлайн transform плашки и opacity вкладок, wireDockAutoHide):
    пока идёт прокрутка — ровно за текстом, доводка — .dock-snap. Строка в это
@@ -2032,8 +2102,14 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 72px 20px 40px;
+  padding: 72px 20px 40px; /* без панели: сверху — место под ✕ модала */
 }
+/* С пристыкованной панелью (v=179) она внизу — отступ снизу под неё. */
+.modal-card--iframe.is-reader.has-dock #modalContent {
+  padding: 20px 20px calc(84px + var(--safe-bottom));
+}
+/* Чужая страница во фрейме кончается над панелью: в неё отступ не вставить. */
+.modal-card--iframe.has-dock iframe { height: calc(100% - 70px - var(--safe-bottom)); }
 /* Набор игроков (поле recruit, 25.09.2026) — золотой, как маяк сюжета на
    карте: «сюда зовут». В тексте окна — над описанием; поверх статьи
    (iframe) — внизу окна, со своим ✕. */

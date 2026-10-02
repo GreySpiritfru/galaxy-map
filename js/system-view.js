@@ -1,9 +1,9 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=178';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=178';
-import { renderNodeLinks } from './node-window.js?v=178';
+import { createPanZoom } from './panzoom.js?v=182';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=182';
+import { renderNodeLinks } from './node-window.js?v=182';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -13,18 +13,9 @@ const systemLoreLabel = systemLoreBtn.querySelector('.tabbar-btn-label');
 const systemToolbarEl = document.querySelector('.system-toolbar');
 const systemLinks = document.getElementById('systemLinks');
 
-/* Ряд переходов прилегает к панели системы вплотную — одна плашка (css
-   `.system-toolbar + .system-links`). Высота панели зависит от шрифта
-   устройства, поэтому низ панели меряется, а не вписан числом; −1 px —
-   нахлёст, чтобы на дробной высоте не светилась щель. Панель, пристыкованная
-   к статье расы, живёт в модале — её размеры тут ни при чём. */
-if (window.ResizeObserver && systemToolbarEl) {
-  new ResizeObserver(() => {
-    if (systemToolbarEl.parentElement !== systemOverlay || !systemToolbarEl.offsetHeight) return;
-    systemOverlay.style.setProperty('--system-toolbar-bottom',
-      (systemToolbarEl.offsetTop + systemToolbarEl.offsetHeight - 1) + 'px');
-  }).observe(systemToolbarEl);
-}
+/* Строка точек и панель системы — одна плашка внизу (.node-dock.system-dock
+   в index.html, v=179). До этого строка висела под панелью сверху, и низ
+   панели мерился здесь (--system-toolbar-bottom). */
 
 // "Карта системы" <-> "Контролирующая раса" — переключение между вкладками
 // НИКОГДА не пересоздаёт саму карту: #systemContainer (SVG + пан/зум) не
