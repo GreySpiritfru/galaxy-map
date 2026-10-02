@@ -35,6 +35,21 @@ html, body {
   background: #0b0b10;
 }
 
+/* Карта под окном на узком экране не рисуется (v=183, замер на телефоне
+   игрока): окно там закрывает её почти целиком (фон 0.94), а движок всё
+   равно сводил её в каждый кадр прокрутки — текст в окне точки терял 7.5%
+   кадров, со спрятанной картой — 0.7%. Прячется после проявления окна
+   (0.25 с, иначе на появлении мелькнул бы чёрный фон), возвращается сразу.
+   Только полноэкранное: окно точки, система, статья/редактор (модал
+   --iframe); маленькая карточка маркера — поверх видимой карты. */
+@media (max-width: 760px) {
+  body:has(.phenom-overlay.open) #svgWidget > svg,
+  body:has(.system-overlay.open) #svgWidget > svg,
+  body:has(.modal-backdrop.open.backdrop--iframe) #svgWidget > svg {
+    visibility: hidden;
+    transition: visibility 0s linear 0.25s;
+  }
+}
 .svg-widget svg {
   width: 100%;
   height: 100%;
@@ -619,38 +634,27 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   -webkit-touch-callout: none;
 }
 
-/* Маяк сюжетного маркера — сходящиеся кольца (см. addStoryBeacon в
-   js/map.js). Мягко: пик непрозрачности ~0.45, тонкие линии, медленный цикл.
-   Цвет — color группы (= цвет кольца сюжета), фигуры берут currentColor. */
+/* Маяк сюжетного маркера — НЕПОДВИЖНЫЙ «прицел» (v=183, см. addStoryBeacon
+   в js/map.js: дуги, штрихи по диагоналям, бледное кольцо). Анимации нет
+   сознательно — она перерисовывала всю карту каждый кадр (замер там же).
+   Цвет — color группы (= цвет кольца сюжета), фигуры берут currentColor.
+   Видны всегда: и во время жеста, и в 🏷️. */
 .hotspot .story-beacon,
 .hotspot .story-beacon * { pointer-events: none; }
-
-.story-beacon-ring {
+.story-beacon * {
   fill: none;
   stroke: currentColor;
-  stroke-width: 1.2px;
   vector-effect: non-scaling-stroke;
-  transform-box: fill-box;
-  transform-origin: center;
-  opacity: 0;
-  animation: storyBeaconRing 3.6s cubic-bezier(0.25, 0.1, 0.35, 1) infinite;
 }
-@keyframes storyBeaconRing {
-  0%   { transform: scale(3.6); opacity: 0; }
-  45%  { opacity: 0.42; }
-  100% { transform: scale(1);   opacity: 0; }
-}
-
-/* Маяки видны ВСЕГДА (v=161, решение игрока): и во время жеста (раньше
-   прятались по .panning — мигали на каждом движении), и в режиме 🏷️ (с
-   16.09.2026), и при «меньше движения» в системе. В последнем случае —
-   одно неподвижное кольцо вместо сходящихся: сюжет на карте всё равно
-   видно, а анимации нет (на Android это включает «Удалить анимацию»,
-   у многих оно стоит ради скорости). */
-@media (prefers-reduced-motion: reduce) {
-  .story-beacon-ring { animation: none; opacity: 0; }
-  .story-beacon-ring:first-child { opacity: 0.4; transform: scale(1.7); }
-}
+.story-beacon-arcs { stroke-width: 1.6px; opacity: 0.75; }
+.story-beacon-tick { stroke-width: 1.6px; stroke-linecap: round; opacity: 0.75; }
+.story-beacon-inner { stroke-width: 1px; opacity: 0.3; }
+/* Только на общем виде (detail-far — персонажи спрятаны): маяк нужен, чтобы
+   сюжет был виден ИЗДАЛЕКА. Вблизи сюжет и так крупный, а вокруг кольцом
+   стоят его персонажи — неподвижный прицел ложился бы прямо на них (в нодах
+   то же самое). */
+.svg-widget svg:not(.detail-far) .hotspot > .story-beacon,
+.svg-widget svg.nodes-mode .hotspot > .story-beacon { display: none; }
 .sys-hit { pointer-events: auto; cursor: pointer; }
 
 /* «Где это на карте» — долгое нажатие на маркер в нодах (showNodeOnMap в
@@ -2642,7 +2646,9 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 /* Значки у подписи системы (renderSystemBadges в js/map.js) — как значки справа
    от названия системы в Stellaris. Маяк у значка мельче и спокойнее, чем у
    маркера сюжета: он в самой гуще подписей. */
-.system-badges .story-beacon-ring { stroke-width: 1px; }
+.system-badges .story-beacon-arcs,
+.system-badges .story-beacon-tick { stroke-width: 1px; }
+.system-badges .story-beacon-inner { display: none; }
 .system-badges-more { pointer-events: none; }
 
 /* Маркеры внутри окна системы — поверх её SVG. Каждая точка с детьми это одно

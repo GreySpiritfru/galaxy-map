@@ -1,17 +1,17 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=182';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=182';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=182';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=182';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=182';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=182';
-import { openCharacter, closeCharacter } from './characters.js?v=182';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=182';
-import { markerEl } from './node-window.js?v=182';
-import { layoutSections, renderSections } from './sections.js?v=182';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=182';
+import { createPanZoom } from './panzoom.js?v=184';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=184';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=184';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=184';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=184';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=184';
+import { openCharacter, closeCharacter } from './characters.js?v=184';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=184';
+import { markerEl } from './node-window.js?v=184';
+import { layoutSections, renderSections } from './sections.js?v=184';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=184';
 
 const SVG_PATH = 'map.svg';
 
@@ -165,7 +165,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=182').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=184').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -824,29 +824,55 @@ function finishMapPick(p) {
   }
 
   /* "Маяк" сюжетного маркера (игрок, 15.09.2026: сюжеты должны привлекать
-     внимание издалека, но мягко). Сходящиеся к маркеру кольца, которые
-     стягиваются к центру и тают (лучи-штрихи тоже были — игрок попросил
-     убрать, 15.09.2026). Вся анимация — в CSS
-     (.story-beacon в css/styles.css), тут только геометрия.
+     внимание издалека, но мягко). С v=183 — НЕПОДВИЖНЫЙ знак-«прицел»:
+     внешнее кольцо из четырёх дуг, в промежутках между ними — короткие
+     штрихи наружу по диагоналям, ближе к маркеру — бледное тонкое кольцо.
+     Стиль — .story-beacon в css/styles.css, тут только геометрия.
 
-     ⚠️ Производительность (грабли №15/17): анимируются только transform,
-     opacity и stroke-dashoffset у простых фигур, БЕЗ фильтров и без opacity
-     на больших группах. Обводка — vector-effect: non-scaling-stroke, иначе при
-     scale(3) кольцо на подлёте становилось втрое толще. Видны всегда, и во
-     время жеста (v=161); при prefers-reduced-motion — одно неподвижное
-     кольцо, см. CSS. pointer-events: none — маяк не расширяет зону тапа по
-     маркеру. */
-  const BEACON_RINGS = 3;
+     ⚠️ Почему без анимации (замер на телефоне игрока, Nothing Phone 3, 90 Гц,
+     в Telegram, 02.10.2026): до v=183 тут были три бесконечно сходящиеся
+     кольца. Анимация ВНУТРИ SVG карты заставляет перерисовывать всю карту
+     (1260×2800 пикселей) на каждом кадре, даже когда её никто не трогает и
+     сверху открыто окно: перетаскивание карты теряло 33% кадров (с
+     остановленными кольцами — 8%), прокрутка текста в окне точки — 23%
+     (7.5%), а телефон грелся и со временем лагал ещё сильнее. Остановленные
+     кольца стоят столько же, сколько их отсутствие, — поэтому знак остался,
+     ушло только движение. Вернуть движение можно только вынеся маяки в
+     отдельный лёгкий слой поверх карты, не внутри её SVG.
+     Обводка — vector-effect: non-scaling-stroke (толщина в пикселях экрана на
+     любом зуме). pointer-events: none — маяк не расширяет зону тапа. */
+  /* Виден только на общем виде (css: svg.detail-far), где персонажи вокруг
+     сюжета спрятаны, — поэтому может быть крупнее маркера. */
+  const BEACON_ARC_R = 1.15;    // внешние дуги — в размерах маркера
+  const BEACON_TICK = [1.3, 1.7]; // штрихи по диагоналям: от и до
+  const BEACON_INNER_R = 0.8;   // бледное внутреннее кольцо
   function addStoryBeacon(g, iconSize, color) {
     const beacon = document.createElementNS(ns, 'g');
     beacon.setAttribute('class', 'story-beacon');
     beacon.style.color = color;
-    for (let i = 0; i < BEACON_RINGS; i++) {
-      const ring = document.createElementNS(ns, 'circle');
-      ring.setAttribute('class', 'story-beacon-ring');
-      ring.setAttribute('r', iconSize * 0.55);
-      ring.style.animationDelay = `${-i * 3.6 / BEACON_RINGS}s`;
-      beacon.appendChild(ring);
+    const inner = document.createElementNS(ns, 'circle');
+    inner.setAttribute('class', 'story-beacon-inner');
+    inner.setAttribute('r', iconSize * BEACON_INNER_R);
+    beacon.appendChild(inner);
+    // Четыре дуги: окружность длиной 100, штрих 17 + просвет 8; сдвиг 8.5 —
+    // дуги по сторонам света, просветы на диагоналях (там штрихи).
+    const arcs = document.createElementNS(ns, 'circle');
+    arcs.setAttribute('class', 'story-beacon-arcs');
+    arcs.setAttribute('r', iconSize * BEACON_ARC_R);
+    arcs.setAttribute('pathLength', '100');
+    arcs.setAttribute('stroke-dasharray', '17 8');
+    arcs.setAttribute('stroke-dashoffset', '8.5');
+    beacon.appendChild(arcs);
+    for (let k = 0; k < 4; k++) {
+      const a = Math.PI / 4 + k * Math.PI / 2;
+      const [r1, r2] = BEACON_TICK.map(v => v * iconSize);
+      const tick = document.createElementNS(ns, 'line');
+      tick.setAttribute('class', 'story-beacon-tick');
+      tick.setAttribute('x1', (Math.cos(a) * r1).toFixed(3));
+      tick.setAttribute('y1', (Math.sin(a) * r1).toFixed(3));
+      tick.setAttribute('x2', (Math.cos(a) * r2).toFixed(3));
+      tick.setAttribute('y2', (Math.sin(a) * r2).toFixed(3));
+      beacon.appendChild(tick);
     }
     g.appendChild(beacon);
   }
