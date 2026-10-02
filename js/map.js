@@ -1,17 +1,17 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=185';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=185';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=185';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=185';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=185';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=185';
-import { openCharacter, closeCharacter } from './characters.js?v=185';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=185';
-import { markerEl } from './node-window.js?v=185';
-import { layoutSections, renderSections } from './sections.js?v=185';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=185';
+import { createPanZoom } from './panzoom.js?v=187';
+import { openModal, closeModal, escapeHtml } from './modal.js?v=187';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=187';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=187';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=187';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=187';
+import { openCharacter, closeCharacter } from './characters.js?v=187';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=187';
+import { markerEl } from './node-window.js?v=187';
+import { layoutSections, renderSections } from './sections.js?v=187';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=187';
 
 const SVG_PATH = 'map.svg';
 
@@ -165,7 +165,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=185').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=187').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -1492,7 +1492,14 @@ function finishMapPick(p) {
   // 7 / 8 → 6.5 / 7 (v=165, игрок: «прятать чуть позже»).
   const LABEL_SHOW_PX = matchMedia('(pointer: coarse)').matches ? 6.5 : 7;
   const LABEL_HIDE_PX = LABEL_SHOW_PX - 0.5;
-  let labelsFar = null;
+  /* ⚠️ v=187, замер на телефоне игрока: группе с display:none этого мало —
+     Chrome всё равно обходит каждую из ~1600 подписей внутри на каждом кадре
+     жеста (общий вид: 12% пропущенных кадров, спрятать сами подписи — 2.6%,
+     а на экране одно и то же). Поэтому после угасания (LABEL_FADE_MS, как
+     transition в css) прячем ещё и каждую подпись — класс `labels-gone`.
+     Возвращаются сразу, вместе со снятием labels-far. */
+  const LABEL_FADE_MS = 260;
+  let labelsFar = null, labelsGoneTimer = 0;
   function syncLabelLod(vb) {
     if (!paneMin) return;
     const px = LABEL_UNITS * paneMin / vb.w;
@@ -1500,6 +1507,9 @@ function finishMapPick(p) {
     if (far !== labelsFar) {
       labelsFar = far;
       svg.classList.toggle('labels-far', far);
+      clearTimeout(labelsGoneTimer);
+      if (far) labelsGoneTimer = setTimeout(() => svg.classList.add('labels-gone'), LABEL_FADE_MS);
+      else svg.classList.remove('labels-gone');
     }
   }
   // Мелкие — все подписи систем, кроме названий фракций (Impact/крупные) —
@@ -2761,9 +2771,11 @@ function finishMapPick(p) {
     // класс .map-label-major проставляется внутри setupSystemLabels, и до
     // этого момента "важных" подписей ещё нет — включив режим раньше, мы бы
     // на секунду спрятали вообще всё, включая названия фракций.
-    try {
-      if (localStorage.getItem(LABELS_MINIMAL_KEY) === '1') applyLabelsMinimal(true);
-    } catch (e) {}
+    // v=187: по умолчанию ВКЛЮЧЕНА (решение игрока) — выключенной остаётся
+    // только у того, кто сам её выключил ('0').
+    let saved = null;
+    try { saved = localStorage.getItem(LABELS_MINIMAL_KEY); } catch (e) {}
+    if (saved !== '0') applyLabelsMinimal(true);
   });
   // Значкам нужны и размеры подписей (после шрифта), и граф.
   Promise.all([labelsReady, graphReady]).then(([, graph]) => renderSystemBadges(graph));

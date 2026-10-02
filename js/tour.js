@@ -18,13 +18,13 @@
    ⚠️ Тексты — черновик из инфоканала (введение, «Что такое Феном», анкета),
    игрок обещал поправить. Править прямо здесь, в INTRO_TABS и STEPS.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=185';
-import { closeStory, isStoryOpen } from './stories.js?v=185';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=185';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=185';
-import { closeSystem, isSystemOpen } from './system-view.js?v=185';
-import { quoteHtml, initQuotes } from './quotes.js?v=185';
-import { JOIN_LINKS } from './node-window.js?v=185';
+import { closeModal, isArticleOpen } from './modal.js?v=187';
+import { closeStory, isStoryOpen } from './stories.js?v=187';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=187';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=187';
+import { closeSystem, isSystemOpen } from './system-view.js?v=187';
+import { quoteHtml, initQuotes } from './quotes.js?v=187';
+import { JOIN_LINKS } from './node-window.js?v=187';
 
 const TOUR_SEEN_KEY = 'galaxyMapTourSeen';
 const LINKS = JOIN_LINKS;
@@ -116,7 +116,7 @@ const STEPS = [
     prepare: async h => { closeWindows(); await h.showMap(); },
     target: () => document.getElementById('controls'),
     title: 'Переходы',
-    text: '<b>Справочник</b> — статьи о мире: расы, магия, техника, описание галактики и Фенома. Рядом — переключатель карт и каталога нод.<br>🏷️ — меньше несгенерированных систем, если карта тормозит: останутся только бирюзовые, на которые можно нажать и перейти в саму систему.',
+    text: '<b>Справочник</b> — статьи о мире: расы, магия, техника, описание галактики и Фенома. Рядом — переключатель карт и каталога нод.<br>🏷️ — меньше подписей (включена сразу, так карта быстрее): видны только бирюзовые системы, на которые можно нажать и перейти в саму систему. Выключи — и при приближении появятся названия всех систем.',
   },
   {kind: 'finish'},
 ];

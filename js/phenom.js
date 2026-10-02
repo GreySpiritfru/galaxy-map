@@ -5,9 +5,10 @@
    ensurePhenomViewer): исходная иллюстрация огромная (21284x9902px для
    Фенома) — грузить её целиком нельзя, тот же класс бага, что уже был с
    4096px-текстурой в map.svg, тут тайлы решают его в принципе, подгружая
-   только видимые кусочки. OpenSeadragon грузится отдельным классическим
-   <script> в index.html (глобальная UMD-сборка) — этот модуль просто
-   использует window.OpenSeadragon.
+   только видимые кусочки. OpenSeadragon (глобальная UMD-сборка с cdnjs)
+   грузится ТОЛЬКО при первом открытии своей карты точки — loadOpenSeadragon
+   ниже. До v=187 он стоял <script> в <head> index.html и задерживал запуск
+   всей карты (271 КБ, а cdnjs — Cloudflare, в РФ местами тормозит).
 
    ⚠️ Это НИЖНИЙ СЛОЙ окна мировой точки, а не «окно Фенома»: в нём
    открывается любая точка world.json. Само содержимое рисует общий
@@ -21,8 +22,8 @@
    точка без своей карты — это просто точка, и текст ей рисует тот же общий
    код, что и всем остальным. characters.json привязывает персонажей к любой
    точке с тайловой картой через submapX/submapY (см. ниже). */
-import { closeModal, escapeHtml } from './modal.js?v=185';
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=185';
+import { closeModal, escapeHtml } from './modal.js?v=187';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=187';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже
@@ -52,6 +53,23 @@ const SUBMAP_DEFAULT_ZOOM = 2.2; // если у submap нет своего initi
 // Во сколько раз ближе домашнего вида камера подлетает к персонажу из списка 👥
 // (минимум — если игрок уже приблизился сильнее, не отдаляем).
 const SUBMAP_CHAR_FOCUS_ZOOM = 6;
+
+const OSD_URL = 'https://cdnjs.cloudflare.com/ajax/libs/openseadragon/5.0.1/openseadragon.min.js';
+let osdPromise = null;
+function loadOpenSeadragon() {
+  if (window.OpenSeadragon) return Promise.resolve();
+  if (!osdPromise) {
+    osdPromise = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = OSD_URL;
+      s.onload = () => resolve();
+      // Не загрузилось — следующая попытка при следующем открытии карты.
+      s.onerror = () => { osdPromise = null; s.remove(); reject(new Error('OpenSeadragon')); };
+      document.head.appendChild(s);
+    });
+  }
+  return osdPromise;
+}
 
 function ensurePhenomViewer() {
   if (phenomViewer) return;
@@ -332,9 +350,18 @@ export function openSubmapView() {
   // Сначала показать контейнер, потом создавать viewer: OpenSeadragon,
   // созданный в скрытом элементе, считает свой размер нулевым.
   phenomViewerEl.hidden = false;
-  if (!phenomViewer) ensurePhenomViewer();
-  else if (openedSource !== currentSubmap.source) phenomViewer.open(currentSubmap.source);
-  openedSource = currentSubmap.source;
+  if (phenomViewer) {
+    if (openedSource !== currentSubmap.source) phenomViewer.open(currentSubmap.source);
+    openedSource = currentSubmap.source;
+    return;
+  }
+  // Первое открытие: библиотеку догружаем. Пока качается, игрок мог уйти с
+  // карты или закрыть окно — тогда viewer создастся при следующем открытии.
+  loadOpenSeadragon().then(() => {
+    if (phenomViewer || !isSubmapViewOpen()) return;
+    ensurePhenomViewer();
+    openedSource = currentSubmap.source;
+  }, () => {});
 }
 
 export function closeSubmapView() {

@@ -5,18 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Карта галактики — Феном</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Карта Феном — огромная растровая иллюстрация (21284x9902px), порезана офлайн
-       на тайлы (Deep Zoom Image, см. phenom-tiles/) и рендерится через OpenSeadragon:
-       грузятся только видимые тайлы нужного уровня приближения, а не вся картинка
-       разом (та же проблема, что уже возникала с 4096px-текстурой в map.svg, только
-       на порядок крупнее — тайлы решают её в принципе, а не переносом лимита). -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/5.0.1/openseadragon.min.js"></script>
+  <!-- OpenSeadragon (тайловая карта Фенома) здесь больше не подключается: его
+       догружает js/phenom.js при первом открытии карты (v=187) — раньше 271 КБ
+       с cdnjs задерживали запуск всей страницы. -->
   <!-- Самый тяжёлый файл на странице (~2.7 МБ после пережатия подложки в WebP,
        см. tools/optimize-map-svg.py) — без preload браузер начинает качать его
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
-  <link rel="stylesheet" href="css/styles.css?v=185" />
+  <link rel="stylesheet" href="css/styles.css?v=187" />
 </head>
 <body>
 
@@ -285,6 +282,6 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=185"></script>
+<script type="module" src="js/main.js?v=187"></script>
 </body>
 </html>

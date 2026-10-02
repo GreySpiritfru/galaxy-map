@@ -5,9 +5,9 @@
    игрока, к сайту/репозиторию отношения не имеет) кнопка мягко пульсирует,
    чтобы её было видно, но не мигает резко и не лезет с окном сама.
    ============================================================ */
-import { openModal, closeModal } from './modal.js?v=185';
-import { startTour, tourSeen } from './tour.js?v=185';
-import { quoteHtml, initQuotes } from './quotes.js?v=185';
+import { openModal, closeModal } from './modal.js?v=187';
+import { startTour, tourSeen } from './tour.js?v=187';
+import { quoteHtml, initQuotes } from './quotes.js?v=187';
 
 const ONBOARDING_SEEN_KEY = 'galaxyMapOnboardingSeen';
 const helpBtn = document.getElementById('helpBtn');
@@ -44,7 +44,7 @@ function showOnboarding() {
           <li>📖 <b>Справочник</b> — статьи о галактике, расах, магии и технике.</li>
           <li><b>Ноды</b> — граф связей, <b>Карта</b> — с границами фракций, <b>Графика</b> — без границ.</li>
           <li>▦ (в нодах) — разложить все точки по разделам: где открыт набор, какие сюжеты идут, локации, архив. Персонажи — рядом со своей точкой.</li>
-          <li>🏷️ — меньше подписей, если карта тормозит.</li>
+          <li>🏷️ — меньше подписей (включена сразу, так карта быстрее). Выключи, чтобы при приближении видеть названия всех систем.</li>
         </ul>`)}
       </div>
 
