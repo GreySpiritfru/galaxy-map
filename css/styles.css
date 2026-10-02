@@ -3048,8 +3048,8 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
    ⚠️ Анимируются ТОЛЬКО transform и opacity HTML-элементов: SVG галактики
    растеризуется один раз, дальше её слой крутит видеокарта. Анимация внутри
    SVG перерисовывала бы его каждый кадр (урок маяков, «Замер на телефоне»).
-   Уход: всё гаснет, галактика «наезжает» на зрителя — как влёт в карту;
-   потом элемент удаляется из DOM целиком. */
+   Уход: всё гаснет, галактика чуть растёт (см. .is-done ниже); потом
+   элемент удаляется из DOM целиком. */
 .splash {
   position: fixed;
   inset: 0;
@@ -3080,7 +3080,6 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   aspect-ratio: 1;
   transform: translate(-50%, -50%) rotate(-24deg) scaleY(0.52);
   animation: splashGalaxyIn 1.3s cubic-bezier(.2,.7,.2,1) backwards;
-  transition: transform 0.6s cubic-bezier(.5,0,.8,.4), opacity 0.5s ease;
 }
 .splash-spin {
   width: 100%;
@@ -3142,8 +3141,15 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   animation: splashBar 1.35s ease-in-out infinite;
 }
 .splash.is-done { opacity: 0; pointer-events: none; }
-.splash.is-done .splash-galaxy { transform: translate(-50%, -50%) rotate(-24deg) scale(1.9, 0.99); }
-.splash.is-done .splash-float { transform: scale(1.15); opacity: 0; }
+/* Уход — спокойный: галактика чуть растёт и гаснет раньше остального.
+   ⚠️ v=188 растягивал её в 1.9 раза («влёт в карту») — кольца разлетались
+   на весь экран поверх карты, игрок принял это за баг (v=189). */
+.splash.is-done .splash-galaxy {
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(-24deg) scale(1.1, 0.57);
+  transition: transform 0.45s ease-out, opacity 0.3s ease;
+}
+.splash.is-done .splash-float { transform: scale(1.06); opacity: 0; }
 @keyframes splashSpin { to { transform: rotate(360deg); } }
 @keyframes splashGalaxyIn {
   from { opacity: 0; transform: translate(-50%, -50%) rotate(-60deg) scale(0.55, 0.29); }
