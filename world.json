@@ -140,6 +140,7 @@
     "description": "",
     "image": "images/nodes/korporatsiya-kartograf-marker.jpg?v=1790454931",
     "images": ["images/nodes/korporatsiya-kartograf.jpg?v=1790454931"],
+    "location": true,
     "parent": "",
     "links": [],
     "x": -175,
