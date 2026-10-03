@@ -3171,6 +3171,50 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   font-weight: 700;
   cursor: pointer;
 }
+/* Гигадетонатор (v=198): кнопка справа внизу, пока он есть (за планету,
+   разбитую щитом). Значок — белый «ёж» лучей, как в Spore (SVG из flappy.js). */
+.flappy-giga {
+  position: absolute;
+  right: 14px;
+  bottom: calc(var(--safe-bottom) + 78px);
+  z-index: 2;
+  width: 66px;
+  height: 66px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(225,210,255,0.85);
+  background: radial-gradient(circle, rgba(150,90,255,0.95) 0%, rgba(70,30,140,0.95) 70%);
+  box-shadow: 0 0 18px rgba(170,120,255,0.75);
+  cursor: pointer;
+  touch-action: none;
+  animation: flappyGiga 1.4s ease-in-out infinite;
+}
+.flappy-giga[hidden] { display: none; }
+.flappy-giga .flappy-giga-icon { width: 46px; height: 46px; display: block; margin: auto; }
+.flappy-giga-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 22px;
+  padding: 2px 5px;
+  border-radius: 11px;
+  background: #ffd76a;
+  color: #0b0b10;
+  font-size: 12px;
+  font-weight: 800;
+}
+.flappy-giga-count:empty { display: none; }
+@keyframes flappyGiga {
+  50% { box-shadow: 0 0 30px rgba(200,160,255,1); transform: scale(1.05); }
+}
+.flappy-legend .flappy-giga-icon {
+  width: 15px;
+  height: 15px;
+  vertical-align: -3px;
+  border-radius: 50%;
+  background: #6a3ad0;
+}
+
 /* Комикс «Типа Феном» (v=197): кнопка на заставке и на экране конца. */
 .flappy-comic-btn {
   pointer-events: auto;          /* заставка целиком pointer-events: none */
@@ -3286,7 +3330,7 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 .flappy-comic-dots button.is-active { background: #ffd76a; color: #0b0b10; }
 .flappy-comic-dots button.is-locked { border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.5); font-size: 11px; }
 @media (prefers-reduced-motion: reduce) {
-  .flappy-hint, .flappy-score.bump, .flappy-panel, .flappy-comic-btn.is-new { animation: none; }
+  .flappy-hint, .flappy-score.bump, .flappy-panel, .flappy-comic-btn.is-new, .flappy-giga { animation: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tour-arrow, .help-tour-btn.pulse { animation: none; }

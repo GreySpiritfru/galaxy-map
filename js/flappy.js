@@ -18,7 +18,9 @@
    корабль в Geometry Dash (держишь — плавно вверх, отпустил — плавно вниз),
    📖 страница комикса «Типа Феном» (страница N появляется после PAGE_AT[N]
    встреч, только следующая неоткрытая; открытые — localStorage, читалка —
-   кнопка 📖 на заставке и на экране конца).
+   кнопка 📖 на заставке и на экране конца). За планету, разбитую щитом, —
+   гигадетонатор (v=198): кнопка справа внизу / F — луч и волна сносят всё
+   впереди (стены, планеты, астероиды, дыры, гроксов).
 
    Модуль грузится ТОЛЬКО по нажатию кнопки (динамический import в
    onboarding.js) — на запуск карты не влияет. Рисует один <canvas> 2D;
@@ -46,6 +48,17 @@ const HOLE_PULL = 1100;
 const GD_TIME = 10;
 const GD_UP = 1700, GD_DOWN = 1150, GD_MAX_UP = 340, GD_MAX_DOWN = 360;
 const SLOWMO = 0.9;            // замедление после взрыва планеты, с
+// Гигадетонатор (как в Spore) — за планету, разбитую щитом; кнопка справа
+// внизу или F: луч антиматерии из носа + волна во всю высоту, сносит всё впереди.
+const GIGA_MAX = 3, BEAM_TIME = 1.1, BEAM_SPEED = 1600;
+const GIGA_ICON = (() => {   // белый «ёж» лучей вокруг ядра — как значок в Spore
+  let rays = '';
+  for (let i = 0; i < 20; i++) {
+    const a = i * Math.PI / 10, l = i % 2 ? 11 : 17, w = i % 2 ? 1.2 : 1.8, c = Math.cos(a), s = Math.sin(a);
+    rays += `<line x1="${(c * 4).toFixed(1)}" y1="${(s * 4).toFixed(1)}" x2="${(c * l).toFixed(1)}" y2="${(s * l).toFixed(1)}" stroke-width="${w}"/>`;
+  }
+  return `<svg class="flappy-giga-icon" viewBox="-20 -20 40 40" aria-hidden="true"><g stroke="#fff" stroke-linecap="round">${rays}</g><circle r="4.5" fill="#fff"/></svg>`;
+})();
 const COMIC_KEY = 'galaxyMapFlappyComic';
 const COMIC_PAGES = 5;
 const PAGE_AT = [0, 0, 5, 12, 20, 30];   // страница N — в полёте после стольких встреч (первая открыта сразу)
@@ -111,6 +124,7 @@ let lastGapY = H / 2, lastKinds = [], lastWallStyle = '', lastShieldAt = 0, last
 let holding = false, slowmo = 0;
 let unlocked = 1, pageOfferAt = 0, newPage = 0, comicOpen = false, comicPage = 1, swipeX = null;
 let sightings = null, bgMarks = [], nextMarkAt = 0;   // маркеры карты, проплывающие на фоне
+let beam = null, gigaHintShown = false;                // луч гигадетонатора
 let sector = 0, route = [], palShift = 0, paletteIdx = 0, prevPaletteIdx = 0, paletteFade = 1, warp = 0;
 let far = null, prevFar = null, stars = null;
 let bgScroll = 0, shake = 0, flash = 0, deadAt = 0, trailAcc = 0;
@@ -162,7 +176,7 @@ function build() {
       <div class="flappy-title">Flappy Phenome</div>
       <div class="flappy-hint">Тапни, чтобы дать импульс</div>
       <div class="flappy-sub">Проходи ворота, облетай планеты, астероиды и чёрные дыры. «!» у правого края — летят гроксы: уходи с их линии.</div>
-      <div class="flappy-legend"><span>💎 +1</span><span>🛡️ щит — взрывает планеты</span><span>🚀 держи — летишь вверх</span><span>📖 страницы комикса</span></div>
+      <div class="flappy-legend"><span>💎 +1</span><span>🛡️ щит — взрывает планеты</span><span>🚀 держи — летишь вверх</span><span>${GIGA_ICON} гигадетонатор за планету</span><span>📖 страницы комикса</span></div>
       <div class="flappy-best-start"></div>
       <button type="button" class="flappy-comic-btn">📖 Комикс «Типа Феном» · <span class="flappy-comic-count"></span></button>
     </div>
@@ -198,7 +212,8 @@ function build() {
         <div class="flappy-comic-dots"></div>
         <button type="button" class="flappy-comic-next" aria-label="Следующая страница">›</button>
       </div>
-    </div>`;
+    </div>
+    <button type="button" class="flappy-giga" hidden aria-label="Гигадетонатор">${GIGA_ICON}<span class="flappy-giga-count"></span></button>`;
   canvas = overlay.querySelector('.flappy-canvas');
   ctx = canvas.getContext('2d');
   scoreEl = overlay.querySelector('.flappy-score');
@@ -231,6 +246,12 @@ function build() {
     swipeX = null;
     if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) showPage(comicPage + (dx < 0 ? 1 : -1));
   });
+  // Гигадетонатор — по нажатию (pointerdown: без задержки click), F на клавиатуре.
+  overlay.querySelector('.flappy-giga').addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    fireGiga();
+  });
   overlay.addEventListener('pointerdown', (e) => {
     if (e.target.closest('button, .flappy-comic')) return;
     e.preventDefault();
@@ -250,6 +271,7 @@ function build() {
       else if (e.code === 'ArrowRight') showPage(comicPage + 1);
       return;
     }
+    if (e.code === 'KeyF' && !e.repeat) { fireGiga(); return; }
     if (isKey(e)) {
       e.preventDefault();
       if (e.repeat) return;
@@ -486,12 +508,14 @@ const gapSize = () => 240 - Math.min(made, 40) * 1.5;
 const spacing = () => 250 - Math.min(made, 40) * 2;
 
 function reset() {
-  ship = { y: H * 0.45, vy: 0, boost: 0, alive: true, shield: false, invuln: 0, ring: 0, gd: 0 };
+  ship = { y: H * 0.45, vy: 0, boost: 0, alive: true, shield: false, invuln: 0, ring: 0, gd: 0, giga: 0 };
   encounters = []; groxes = []; bolts = []; pickups = []; particles = []; texts = [];
   score = 0; made = 0; progress = 0;
   lastGapY = H * 0.45; lastKinds = []; lastWallStyle = ''; lastShieldAt = 0; lastGdAt = -6;
   holding = false; slowmo = 0; pageOfferAt = 0; newPage = 0;
   bgMarks = []; nextMarkAt = bgScroll + 900;
+  beam = null;
+  syncGiga();
   closeComic();
   updateComicUi();
   sector = 0; route = shuffle(SYSTEMS.slice()); palShift = Math.floor(Math.random() * 4);
@@ -516,11 +540,112 @@ function onTap() {
     startEl.hidden = true;
     scoreEl.hidden = false;
     showBanner('Курс', GROX_HOME);
+    syncGiga();
     flap();
     return;
   }
   if (state === 'play') { flap(); return; }
   if (state === 'dead' && performance.now() - deadAt > 650) { reset(); onTap(); }
+}
+
+/* ---------- Гигадетонатор ---------- */
+function syncGiga() {
+  const b = overlay.querySelector('.flappy-giga');
+  b.hidden = !(state === 'play' && ship.giga > 0);
+  b.querySelector('.flappy-giga-count').textContent = ship.giga > 1 ? `×${ship.giga}` : '';
+}
+function giveGiga() {
+  ship.giga = Math.min(GIGA_MAX, ship.giga + 1);
+  syncGiga();
+  // надпись — прямо над появившейся кнопкой (заодно видно, куда жать)
+  const r = overlay.querySelector('.flappy-giga').getBoundingClientRect();
+  const x = (r.left + r.width / 2) / scale, y = r.top / scale - 10;
+  floatText(x, y - 18, 'Гигадетонатор!', '#d9c2ff', 2);
+  if (!gigaHintShown) { gigaHintShown = true; floatText(x, y, 'жми сюда (или F)', '#e9dcff', 2.4); }
+}
+// Выстрел: луч из носа, волна во всю высоту катится вправо и сносит всё, что прошла.
+function fireGiga() {
+  if (state !== 'play' || ship.giga <= 0 || beam) return;
+  ship.giga--;
+  syncGiga();
+  beam = { t: 0, front: shipX() + 34, y: ship.y };
+  flash = Math.max(flash, 0.6);
+  if (!reduceMotion) shake = Math.max(shake, 0.9);
+  haptic('heavy');
+  const nx = shipX() + 34;
+  particles.push({ k: 6, x: nx, y: ship.y, vx: 0, vy: 0, t: 0, life: 0.6, r: 12, r2: 90, rot: rand(0, TAU) });
+  particles.push({ k: 1, x: nx, y: ship.y, vx: 0, vy: 0, t: 0, life: 0.5, r: 16, c: '230,215,255', grow: 2.5 });
+  floatText(shipX() + 40, Math.max(ship.y - 40, 40), 'ГИГАДЕТОНАТОР!', '#ffffff', 1.4);
+}
+function updateBeam(dt) {
+  if (!beam) return;
+  beam.t += dt;
+  beam.y = ship.y;
+  beam.front += BEAM_SPEED * dt;
+  const sx = shipX(), f = Math.min(beam.front, W + 60);
+  let n = 0;
+  for (const e of encounters) {
+    if (e.gone || e.kind === 'grox' || e.x > f || e.x + e.w < sx - 10) continue;
+    n += smash(e);
+  }
+  for (const g of groxes) {
+    if (g.dead || g.phase === 'warn' || g.phase === 'gone' || g.x > f || g.x < sx - 30) continue;
+    g.dead = true;
+    explode(g.x, g.y, ['#8c929b', '#4b5058', '#b48cff', '#ffb347', '#ffd27a'], 26);
+    n++;
+  }
+  for (const b of bolts) if (b.x < f && b.x > sx) b.dead = true;
+  if (n) addScore(n);
+  // искры вдоль луча
+  if (Math.random() < 0.7) {
+    particles.push({ k: 1, x: rand(sx + 40, f), y: beam.y + rand(-14, 14), vx: rand(200, 500), vy: rand(-30, 30), t: 0, life: 0.3, r: rand(1.5, 3), c: pick(['230,215,255', '180,140,255', '255,255,255']) });
+  }
+  if (beam.t > BEAM_TIME) beam = null;
+}
+// Снести встречу лучом; сколько очков за неё (планета даёт +3 сама).
+function smash(e) {
+  if (e.kind === 'planet' || e.kind === 'nebula') {
+    if (e.p.dead) return 0;
+    blowPlanet(e, true);
+    return 0;
+  }
+  if (e.kind === 'field') {
+    if (!e.rocks.length) return 0;
+    for (const k of e.rocks) {
+      const x = e.x + k.x, y = k.y;
+      for (let i = 0; i < 5; i++) {
+        const a = rand(0, TAU), v = rand(60, 220);
+        particles.push({ k: 0, x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, t: 0, life: rand(0.5, 1), r: rand(2, 4), c: pick(k.sh), dr: 0.98, wd: true });
+      }
+      particles.push({ k: 1, x, y, vx: 0, vy: 0, t: 0, life: 0.4, r: k.r * 0.4, c: '255,190,120', grow: 1.5, wd: true });
+    }
+    e.rocks = [];
+    e.shapes = [];
+    floatText(clamp(e.x + e.w / 2, 60, W - 60), H / 2, 'Пояс астероидов — в пыль!', '#d9c2ff', 1.4);
+    return 2;
+  }
+  e.gone = true;
+  e.shapes = [];
+  const cx = e.x + e.w / 2;
+  if (e.kind === 'hole') {
+    particles.push({ k: 3, x: e.x + e.hx, y: e.hy, vx: 0, vy: 0, t: 0, life: 0.7, r: 120, r2: 4, c: '255,170,90', wd: true });
+    explode(e.x + e.hx, e.hy, ['#ffd27a', '#ff9b5e', '#ffffff'], 30, '255,200,140');
+    floatText(clamp(e.x + e.hx, 70, W - 70), e.hy - 30, 'Дыра схлопнулась!', '#ffd27a', 1.4);
+    return 2;
+  }
+  // ворота: обе колонны рассыпаются по всей высоте
+  const cols = e.style === 'laser' ? ['#ff4d6d', '#ffd0da', '#3a3f55'] : e.style === 'girder' ? ['#5a6380', '#e0b12f', '#343b4c']
+    : e.style === 'crystal' ? [e.col.b, e.col.c, e.col.a] : ['#8a7d72', '#94806a', '#3b332e'];
+  const dy = eDy(e);
+  for (let y = 20; y < H; y += 46) {
+    if (y > e.top + dy - 6 && y < e.bot + dy + 6) continue;
+    for (let i = 0; i < 4; i++) {
+      const a = rand(0, TAU), v = rand(60, 260);
+      particles.push({ k: 0, x: cx + rand(-14, 14), y, vx: Math.cos(a) * v + 80, vy: Math.sin(a) * v, t: 0, life: rand(0.5, 1.1), r: rand(2, 4.5), c: pick(cols), dr: 0.98, wd: true });
+    }
+    particles.push({ k: 2, x: cx, y, vx: rand(40, 160), vy: rand(-80, 80), t: 0, life: rand(0.8, 1.4), r: rand(3, 6), c: pick(cols), rot: rand(0, TAU), vr: rand(-8, 8), dr: 0.99, wd: true });
+  }
+  return 1;
 }
 
 function flap() {
@@ -1012,7 +1137,8 @@ function absorb(hit) {
 
 // Эпичный взрыв планеты (или сверхновая): вспышка, ударные волны, плоское
 // кольцо как у взорванной станции в кино, обломки цветов планеты, замедление.
-function blowPlanet(e) {
+// Щитом — ещё и гигадетонатор; лучом гигадетонатора — без него (иначе цепочка).
+function blowPlanet(e, byBeam = false) {
   const p = e.p, cx = e.x + e.pcx, cy = e.pcy, r = p.r, star = p.kind === 'star';
   p.dead = true;
   e.shapes = [];
@@ -1035,13 +1161,15 @@ function blowPlanet(e) {
   particles.push({ k: 3, x: cx, y: cy, vx: 0, vy: 0, t: 0, life: 1.4, r: r * 0.6, r2: r * 2.6, c: glowC, wd: true });
   particles.push({ k: 5, x: cx, y: cy, vx: 0, vy: 0, t: 0, life: 1.7, rx0: r * 0.8, rx1: r * 5.5, tilt: rand(-0.35, 0.35),
     c: star ? '255,230,170' : '255,200,140', wd: true });
-  flash = 1;
-  if (!reduceMotion) { shake = 1.3; slowmo = SLOWMO; }
+  flash = Math.max(flash, byBeam ? 0.5 : 1);
+  if (!reduceMotion) { shake = Math.max(shake, 1.3); if (!byBeam) slowmo = SLOWMO; }
   addScore(3);
   // надписи — над планетой и под кораблём, чтобы не наезжали друг на друга
   floatText(cx, clamp(cy - r - 16, 60, H - 60), star ? 'Сверхновая! +3' : 'Планета разнесена! +3', '#ffd27a', 1.8);
+  if (byBeam) return;
   floatText(shipX() + 30, Math.min(ship.y + 52, H - 20), 'Феному хоть бы хны', '#bfeaff', 1.6);
   haptic('heavy');
+  giveGiga();
 }
 function blowMoon(e, m, quiet) {
   m.dead = true;
@@ -1067,6 +1195,8 @@ function die(cause) {
   deadAt = performance.now();
   ship.alive = false;
   ship.shield = false;
+  beam = null;
+  syncGiga();
   if (!reduceMotion) shake = 1;
   flash = 0.7;
   haptic('error');
@@ -1096,15 +1226,16 @@ function die(cause) {
    или персонаж, будто Феном пролетает мимо событий. Список — из world.json и
    characters.json (их же грузит карта, тут — один раз при первом открытии
    игры), картинка маркера (миниатюра) грузится, только когда он появляется.
-   Рисуется до препятствий, полупрозрачно, медленнее мира (параллакс). */
+   Рисуется до препятствий, без подписей и сильно прозрачно (v=198, просьба
+   игрока), медленнее мира (параллакс). */
 function loadSightings() {
   if (sightings) return;
   sightings = [];
   Promise.all(['world.json', 'characters.json'].map(f => fetch(f).then(r => r.json()).catch(() => []))).then(([world, chars]) => {
     for (const n of world || []) {
-      if (n.image && n.id !== 'phenome' && n.onMap !== false) sightings.push({ src: n.image, title: n.shortTitle || n.title, shape: n.beacon ? 'circle' : 'square' });
+      if (n.image && n.id !== 'phenome' && n.onMap !== false) sightings.push({ src: n.image, shape: n.beacon ? 'circle' : 'square' });
     }
-    for (const n of chars || []) if (n.image) sightings.push({ src: n.image, title: n.name, shape: 'round' });
+    for (const n of chars || []) if (n.image) sightings.push({ src: n.image, shape: 'round' });
   });
 }
 function spawnMark() {
@@ -1112,7 +1243,7 @@ function spawnMark() {
   const s = pick(sightings), img = new Image();
   img.src = s.src;
   const size = rand(34, 52);
-  bgMarks.push({ img, title: s.title, shape: s.shape, x: W + size, y: rand(70, H - 100), size, k: rand(0.28, 0.42), a: rand(0.5, 0.7) });
+  bgMarks.push({ img, shape: s.shape, x: W + size, y: rand(70, H - 80), size, k: rand(0.28, 0.42), a: rand(0.26, 0.38) });
 }
 function markPath(m) {
   const h = m.size / 2;
@@ -1139,11 +1270,6 @@ function drawMarks() {
     ctx.lineWidth = 1.5;
     ctx.strokeStyle = m.shape === 'circle' ? 'rgba(255,215,106,0.8)' : 'rgba(175,238,238,0.6)';
     ctx.stroke();
-    ctx.font = '600 10px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
-    ctx.fillStyle = 'rgba(220,235,255,0.75)';
-    ctx.fillText(m.title, m.x, m.y + h + 13);
     ctx.globalAlpha = 1;
   }
 }
@@ -1196,7 +1322,7 @@ function update(dt) {
   for (const e of encounters) {
     e.x -= v * dt;
     if (e.kind === 'nebula') tickNebula(e, dt);
-    else if (e.kind === 'hole' && e.x < W + 60 && e.x + e.w > -60) feedHole(e, dt);
+    else if (e.kind === 'hole' && !e.gone && e.x < W + 60 && e.x + e.w > -60) feedHole(e, dt);
   }
   encounters = encounters.filter(e => e.x + e.w > -220);
   for (const p of pickups) p.x -= v * dt;
@@ -1212,6 +1338,7 @@ function update(dt) {
   cursor -= v * dt;
   while (cursor < W + 160) spawnEncounter();
   for (const e of encounters) if (e.kind === 'grox') tickGroxSlot(e, dt);
+  updateBeam(dt);
 
   // Физика: тяжесть + притяжение чёрных дыр (только по вертикали — Феном держит курс).
   // В режиме корабля вместо импульсов — тяга, пока держишь, и плавный спуск.
@@ -1224,7 +1351,7 @@ function update(dt) {
     if (ship.gd === 0) floatText(sx + 30, ship.y - 34, 'Снова импульсы', '#ff9be6');
   }
   for (const e of encounters) {
-    if (e.kind !== 'hole') continue;
+    if (e.kind !== 'hole' || e.gone) continue;
     const dx = e.x + e.hx - sx, dy = e.hy - ship.y, d = Math.hypot(dx, dy);
     if (d < e.R && d > 1) ay += HOLE_PULL * Math.pow(1 - d / e.R, 1.3) * (dy / d);
   }
@@ -1759,6 +1886,7 @@ function drawHole(e) {
   disk(true);
 }
 function drawEncounter(e) {
+  if (e.gone) return;                  // снесено гигадетонатором
   if (e.kind === 'wall') drawWall(e);
   else if (e.kind === 'planet' || e.kind === 'nebula') drawPlanetEnc(e);
   else if (e.kind === 'field') for (const k of e.rocks) drawRock(e.x + k.x, k.y, k);
@@ -1857,6 +1985,25 @@ function drawParticles() {
       ctx.lineWidth = 5 * a + 1;
       ctx.stroke();
       ctx.restore();
+    } else if (p.k === 6) {
+      // «ёж» лучей — вспышка гигадетонатора (как его значок в Spore)
+      const rr = p.r + (p.r2 - p.r) * (1 - a * a);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = a;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineCap = 'round';
+      ctx.lineWidth = 2.2 * a + 0.5;
+      ctx.beginPath();
+      for (let i = 0; i < 20; i++) {
+        const an = i * Math.PI / 10, l = (i % 2 ? 0.62 : 1) * rr, c = Math.cos(an), s = Math.sin(an);
+        ctx.moveTo(c * rr * 0.22, s * rr * 0.22);
+        ctx.lineTo(c * l, s * l);
+      }
+      ctx.stroke();
+      ctx.restore();
     } else {
       const e = p.e;
       glow(e.x + e.hx + Math.cos(p.ang) * p.d, e.hy + Math.sin(p.ang) * p.d * 0.42, p.r * 4, p.c, Math.min(1, p.t * 3) * 0.7);
@@ -1914,6 +2061,35 @@ function drawBackground() {
   }
 }
 
+// Луч антиматерии: белое ядро, фиолетовое сияние; фронт — волна во всю высоту
+// (по нему и сносится всё впереди, см. updateBeam).
+function drawBeam() {
+  const a = 1 - beam.t / BEAM_TIME, x0 = shipX() + 34, x1 = Math.min(beam.front, W + 40), y = beam.y;
+  const hh = (14 + 22 * Math.min(1, beam.t * 8)) * (0.6 + 0.4 * a) + Math.sin(time * 40) * 2;
+  const po = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createLinearGradient(0, y - hh, 0, y + hh);
+  g.addColorStop(0, 'rgba(150,90,255,0)');
+  g.addColorStop(0.3, 'rgba(160,110,255,0.55)');
+  g.addColorStop(0.46, 'rgba(225,215,255,0.95)');
+  g.addColorStop(0.5, 'rgba(255,255,255,1)');
+  g.addColorStop(0.54, 'rgba(225,215,255,0.95)');
+  g.addColorStop(0.7, 'rgba(160,110,255,0.55)');
+  g.addColorStop(1, 'rgba(150,90,255,0)');
+  ctx.globalAlpha = Math.min(1, a * 1.5);
+  ctx.fillStyle = g;
+  ctx.fillRect(x0, y - hh, x1 - x0, hh * 2);
+  if (beam.front < W + 120) {
+    ctx.globalAlpha = 0.85 * a;
+    ctx.drawImage(glowSprite('190,150,255'), x1 - 45, -60, 90, H + 120);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x1 - 1.5, 0, 3, H);
+  }
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = po;
+  glow(x0, y, 90 + 40 * a, '200,160,255', a);
+}
+
 function render() {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.fillStyle = '#05050b';
@@ -1929,6 +2105,7 @@ function render() {
   for (const b of bolts) drawBolt(b);
   for (const g of groxes) drawGroxLayer(g);
   drawParticles();
+  if (beam) drawBeam();
   if (ship.alive) {
     const blink = ship.invuln > 0 ? (Math.sin(time * 30) > 0 ? 0.35 : 0.9) : 1;
     drawPhenom(shipX(), ship.y, shipAngle(), blink);
