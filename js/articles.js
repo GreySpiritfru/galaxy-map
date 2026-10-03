@@ -7,8 +7,8 @@
    "Магический лор" пока заглушка — заменить на настоящую статью, когда
    будет готова.
    ============================================================ */
-import { openIframeModal, isDockedWith, setModalArticle, isArticleOpen } from './modal.js?v=198';
-import { normalizeUrl } from './reader.js?v=198';
+import { openIframeModal, isDockedWith, setModalArticle, isArticleOpen } from './modal.js?v=199';
+import { normalizeUrl } from './reader.js?v=199';
 
 export const REF_ARTICLES = {
   phenom: 'https://teletype.in/@greyspirit/4tRzyNaVfEQ#fvQz',

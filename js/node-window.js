@@ -15,9 +15,9 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=198';
-import { REF_ARTICLES } from './articles.js?v=198';
-import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=198';
+import { escapeHtml } from './modal.js?v=199';
+import { REF_ARTICLES } from './articles.js?v=199';
+import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=199';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
