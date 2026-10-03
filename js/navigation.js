@@ -38,15 +38,22 @@
    вложенность считается по ТИПАМ слоёв (модал/сюжет/локация/система), а не
    по конкретным id узлов, этого достаточно для всех текущих сценариев.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=194';
-import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=194';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=194';
-import { closeStory, isStoryOpen } from './stories.js?v=194';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=194';
-import { closeTour, isTourOpen } from './tour.js?v=194';
+import { closeModal, isArticleOpen } from './modal.js?v=197';
+import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=197';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=197';
+import { closeStory, isStoryOpen } from './stories.js?v=197';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=197';
+import { closeTour, isTourOpen } from './tour.js?v=197';
+
+/* Мини-игра (js/flappy.js, v=195) — модуль грузится только по нажатию, поэтому
+   отсюда его не импортируем: смотрим на класс слоя, закрываем событием. */
+const flappyEl = document.getElementById('flappyOverlay');
+const isFlappyOpen = () => flappyEl.classList.contains('open');
+const closeFlappy = () => flappyEl.dispatchEvent(new Event('flappy-close'));
 
 function depth() {
   let d = 0;
+  if (isFlappyOpen()) d++;
   // Обучение (js/tour.js, v=155) — самый верхний слой: «назад» и Esc
   // закрывают сначала его, а не окно, которое тур открыл под собой.
   if (isTourOpen()) d++;
@@ -79,6 +86,7 @@ function depth() {
    статья расы (isSystemLoreOpen), а сама система закрывается последней, как
    самый нижний слой. */
 function closeTop() {
+  if (isFlappyOpen()) { closeFlappy(); return; }
   if (isTourOpen()) { closeTour(); return; }
   if (isArticleOpen()) { if (isSystemLoreOpen()) showSystemMap(); else closeModal(); return; }
   if (isCharacterOpen()) { closeCharacter(); return; }
@@ -242,6 +250,6 @@ function scheduleSync() {
 // даёт один sync(), а не два, и если итоговая глубина не изменилась —
 // история вообще не трогается.
 const observer = new MutationObserver(scheduleSync);
-['modalBackdrop', 'systemOverlay', 'phenomOverlay', 'storyOverlay', 'charOverlay', 'tourOverlay'].forEach(id => {
+['modalBackdrop', 'systemOverlay', 'phenomOverlay', 'storyOverlay', 'charOverlay', 'tourOverlay', 'flappyOverlay'].forEach(id => {
   observer.observe(document.getElementById(id), { attributes: true, attributeFilter: ['class'] });
 });

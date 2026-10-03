@@ -5,9 +5,9 @@
    игрока, к сайту/репозиторию отношения не имеет) кнопка мягко пульсирует,
    чтобы её было видно, но не мигает резко и не лезет с окном сама.
    ============================================================ */
-import { openModal, closeModal } from './modal.js?v=194';
-import { startTour, tourSeen } from './tour.js?v=194';
-import { quoteHtml, initQuotes } from './quotes.js?v=194';
+import { openModal, closeModal } from './modal.js?v=197';
+import { startTour, tourSeen } from './tour.js?v=197';
+import { quoteHtml, initQuotes } from './quotes.js?v=197';
 
 const ONBOARDING_SEEN_KEY = 'galaxyMapOnboardingSeen';
 const helpBtn = document.getElementById('helpBtn');
@@ -26,6 +26,14 @@ function showOnboarding() {
       <div class="modal-title">Как пользоваться картой</div>
       <!-- Обучение по шагам (js/tour.js): пульсирует, пока его ни разу не запускали. -->
       <button type="button" class="help-tour-btn${tourSeen() ? '' : ' pulse'}" id="helpTourBtn">🎓 Пройти обучение</button>
+      <!-- Под ним — мини-игра Flappy Phenome (js/flappy.js, грузится по нажатию). -->
+      <button type="button" class="help-game-btn" id="helpGameBtn">
+        <span class="help-game-icon" aria-hidden="true">🕹️</span>
+        <span class="help-game-text">
+          <span class="help-game-title">Flappy Phenome</span>
+          <span class="help-game-sub">Мини-игра: долети до центра Галактики, увернись от гроксов и собери комикс «Типа Феном»</span>
+        </span>
+      </button>
 
       <div class="help-section">
         <div class="help-heading">🧭 Перемещение</div>
@@ -86,6 +94,10 @@ helpBtn.addEventListener('click', () => {
   document.getElementById('helpTourBtn')?.addEventListener('click', () => {
     closeModal();
     startTour();
+  });
+  document.getElementById('helpGameBtn')?.addEventListener('click', () => {
+    closeModal();
+    import('./flappy.js?v=197').then(m => m.openFlappy(), () => {});
   });
   helpBtn.classList.remove('pulse');
   try { localStorage.setItem(ONBOARDING_SEEN_KEY, '1'); } catch (e) {}

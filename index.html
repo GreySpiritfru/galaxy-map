@@ -14,7 +14,7 @@
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
   <link rel="preload" href="images/splash-logo.webp" as="image" />
-  <link rel="stylesheet" href="css/styles.css?v=194" />
+  <link rel="stylesheet" href="css/styles.css?v=197" />
 </head>
 <body>
 
@@ -306,6 +306,11 @@
   </div>
 </div>
 
-<script type="module" src="js/main.js?v=194"></script>
+<!-- Мини-игра Flappy Phenome (кнопка 🕹️ в подсказке «?»). Пустой слой: его
+     наполняет js/flappy.js, который грузится только по нажатию. Слой здесь, а
+     не в модуле, — за ним следит navigation.js (Esc / «назад» закрывают игру). -->
+<div class="flappy-overlay" id="flappyOverlay"></div>
+
+<script type="module" src="js/main.js?v=197"></script>
 </body>
 </html>
