@@ -48,6 +48,23 @@ const HOLE_PULL = 1100;
 const GD_TIME = 10;
 const GD_UP = 1700, GD_DOWN = 1150, GD_MAX_UP = 340, GD_MAX_DOWN = 360;
 const SLOWMO = 0.9;            // замедление после взрыва планеты, с
+/* Режим корабля разгоняет мир (v=203, просьба игрока), а в начале режима и
+   после его конца на GRAV_TIME перед носом стоит гравитационный щит: смена
+   управления (импульсы ↔ тяга) — самый частый момент разбиться. Щит
+   пропускает сквозь стены и планеты, камни и луны разбивает, гроксов сбивает,
+   заряды гасит; пол — мягкий отскок. Это не обычный щит 🛡️: он не тратится
+   и не взрывает планеты. */
+const GD_SPEED = 1.22, GRAV_TIME = 2.5;
+/* Редкое оружие (v=203): мини-лазеры из носа, случайный вид. Стреляет само —
+   тап по-прежнему импульс. Камни и луны разбивает, гроксов сбивает (+1),
+   заряды гасит; о стены и планеты — искры. */
+const WEAPONS = {
+  spread: { name: 'Тройной лазер', time: 5, col: '95,243,238', w: 34 },
+  burst: { name: 'Очереди', time: 5, col: '255,215,106', w: 30 },
+  shotgun: { name: 'Дробь', time: 0, col: '255,150,90', w: 22 },
+  minigun: { name: 'Миниган', time: 3, col: '255,95,95', w: 14 },
+};
+const SHOT_SPEED = 900;
 // Гигадетонатор (как в Spore) — за планету, разбитую щитом; кнопка справа
 // внизу или F: луч антиматерии из носа + волна во всю высоту, сносит всё впереди.
 const GIGA_MAX = 3, BEAM_TIME = 1.1, BEAM_SPEED = 1600;
@@ -132,6 +149,7 @@ let paused = false, pauseEl = null;
 let unlocked = 1, pageOfferAt = 0, newPage = 0, comicOpen = false, comicPage = 1, swipeX = null;
 let sightings = null, bgMarks = [], nextMarkAt = 0;   // маркеры карты, проплывающие на фоне
 let beam = null, gigaHintShown = false;                // луч гигадетонатора
+let shots = [], lastWpnAt = 0, gravSpark = 0;          // мини-лазеры; искры гравищита
 let sector = 0, route = [], palShift = 0, paletteIdx = 0, prevPaletteIdx = 0, paletteFade = 1, warp = 0;
 let far = null, prevFar = null, stars = null;
 let bgScroll = 0, shake = 0, flash = 0, deadAt = 0, trailAcc = 0;
@@ -183,7 +201,7 @@ function build() {
       <div class="flappy-title">Flappy Phenome</div>
       <div class="flappy-hint">Тапни, чтобы дать импульс</div>
       <div class="flappy-sub">Проходи ворота, облетай планеты, астероиды и чёрные дыры. «!» у правого края — летят гроксы: уходи с их линии.</div>
-      <div class="flappy-legend"><span>💎 +1</span><span>🛡️ щит — взрывает планеты</span><span>🚀 держи — летишь вверх</span><span>${GIGA_ICON} гигадетонатор за планету</span><span>📖 страницы комикса</span></div>
+      <div class="flappy-legend"><span>💎 +1</span><span>🛡️ щит — взрывает планеты</span><span>🚀 держи — летишь вверх</span><span>⚡ редкое оружие</span><span>${GIGA_ICON} гигадетонатор за планету</span><span>📖 страницы комикса</span></div>
       <div class="flappy-best-start"></div>
       <button type="button" class="flappy-comic-btn">📖 Комикс «Типа Феном» · <span class="flappy-comic-count"></span></button>
     </div>
@@ -555,8 +573,10 @@ const gapSize = () => 240 - Math.min(made, 40) * 1.5;
 const spacing = () => 250 - Math.min(made, 40) * 2;
 
 function reset() {
-  ship = { y: H * 0.45, vy: 0, boost: 0, alive: true, shield: false, invuln: 0, ring: 0, gd: 0, giga: 0 };
-  encounters = []; groxes = []; bolts = []; pickups = []; particles = []; texts = [];
+  ship = { y: H * 0.45, vy: 0, boost: 0, alive: true, shield: false, invuln: 0, ring: 0, gd: 0, giga: 0,
+    spd: 1, grav: 0, ghost: 0, wpn: null };
+  encounters = []; groxes = []; bolts = []; pickups = []; particles = []; texts = []; shots = [];
+  lastWpnAt = -4;
   score = 0; made = 0; progress = 0;
   lastGapY = H * 0.45; lastKinds = []; lastWallStyle = ''; lastShieldAt = 0; lastGdAt = -6;
   holding = false; slowmo = 0; pageOfferAt = 0; newPage = 0;
@@ -777,9 +797,20 @@ function spawnEncounter() {
   }
   // Портал режима корабля — в свободном месте перед встречей, на высоте её прохода
   // (лучше всего — перед астероидным полем: по коридору так и летают).
+  let portal = false;
   if (i >= 6 && i - lastGdAt >= 12 && kind !== 'grox' && e.safe && (kind === 'field' || Math.random() < 0.35)) {
     addSpecial('g', x - spacing() * 0.5, e.entry ?? e.safe[1]);
     lastGdAt = i;
+    portal = true;
+  }
+  // Оружие — редко: не раньше 8-й встречи, не чаще раза в 11, примерно в
+  // трети подходящих мест. Перед гроксами тоже можно — как раз пригодится.
+  if (!portal && i >= 8 && i - lastWpnAt >= 11 && !ship.wpn && Math.random() < 0.34) {
+    const y = kind === 'grox' ? clamp(lastGapY, 120, H - 120) : (e.entry ?? (e.safe ? e.safe[1] : null));
+    if (y != null) {
+      addSpecial('w', x - spacing() * 0.4, y);
+      lastWpnAt = i;
+    }
   }
 }
 
@@ -1065,6 +1096,10 @@ function sparkle(x, y, col, n = 10) {
 }
 function emitTrail(dt, bgV) {
   if (!ship.alive) return;
+  // Разгон режима корабля виден по «линиям скорости» навстречу.
+  if (ship.spd > 1.04 && !reduceMotion && Math.random() < dt * 40 * (ship.spd - 1)) {
+    particles.push({ k: 7, x: W + 10, y: rand(20, H - 20), vx: -bgV * rand(2.2, 3.2), vy: 0, t: 0, life: 0.6, len: rand(40, 90) });
+  }
   trailAcc += dt;
   const a = shipAngle(), c = Math.cos(a), s = Math.sin(a), gd = ship.gd > 0;
   const rate = gd ? 1 / 80 : 1 / 50;
@@ -1236,6 +1271,132 @@ function shatterRock(e, idx) {
   for (const p of particles.slice(-34)) p.wd = true;
 }
 
+/* Гравищит принял касание: мелочь разбивает, сквозь крупное пропускает.
+   ghost — короткий «хвост» неуязвимости, пока корабль ещё внутри того, сквозь
+   что прошёл (иначе щит кончился бы посреди стены — и смерть). */
+function gravDeflect(hit, dt) {
+  ship.ghost = Math.max(ship.ghost, 0.18);
+  const e = hit.e;
+  if (hit.b) { hit.b.dead = true; sparkle(hit.b.x, hit.b.y, '190,170,255', 10); return; }
+  if (hit.g) {
+    hit.g.dead = true;
+    explode(hit.g.x, hit.g.y, ['#8c929b', '#4b5058', '#b48cff', '#ffb347', '#ffd27a'], 30);
+    addScore(1);
+    floatText(hit.g.x, hit.g.y - 30, 'Грокс отброшен! +1', '#c9b8ff');
+    haptic('medium');
+    return;
+  }
+  if (hit.moon) { blowMoon(e, hit.moon, false); return; }
+  if (e && e.rocks && hit.idx >= 0 && hit.idx < e.rocks.length) { shatterRock(e, hit.idx); return; }
+  gravSpark -= dt;
+  if (gravSpark <= 0) {
+    gravSpark = 0.07;
+    const [nx, ny] = shipNose();
+    sparkle(nx + 6, ny + rand(-14, 14), pick(['190,170,255', '127,211,255']), 3);
+  }
+}
+
+function shipNose() {
+  const a = shipAngle(), d = 58 * SHIP_S;
+  return [shipX() + Math.cos(a) * d, ship.y + Math.sin(a) * d];
+}
+
+function giveWeapon(x, y) {
+  const r = Math.random();
+  const kind = r < 0.35 ? 'spread' : r < 0.65 ? 'burst' : r < 0.85 ? 'shotgun' : 'minigun';
+  const W_ = WEAPONS[kind];
+  ship.wpn = { kind, t: W_.time, total: W_.time, cd: 0.15, n: 0, left: kind === 'shotgun' ? (Math.random() < 0.5 ? 2 : 3) : 0 };
+  if (kind === 'shotgun') ship.wpn.total = ship.wpn.left;
+  sparkle(x, y, W_.col, 18);
+  particles.push({ k: 3, x, y, vx: 0, vy: 0, t: 0, life: 0.5, r: 10, r2: 64, c: W_.col });
+  const extra = kind === 'shotgun' ? ` ×${ship.wpn.left}` : '';
+  floatText(shipX() + 30, ship.y - 40, `${W_.name}${extra}!`, `rgb(${W_.col})`, 1.5);
+  haptic('medium');
+}
+
+function fireShot(da, col, speedK = 1, life = 1.2, len = 18) {
+  const [nx, ny] = shipNose();
+  const a = shipAngle() * 0.5 + da;
+  shots.push({ x: nx, y: ny, vx: Math.cos(a) * SHOT_SPEED * speedK, vy: Math.sin(a) * SHOT_SPEED * speedK, t: 0, life, col, len });
+}
+
+function updateWeapon(dt) {
+  const w = ship.wpn;
+  if (!w || state !== 'play') return;
+  const def = WEAPONS[w.kind];
+  if (w.kind !== 'shotgun') w.t -= dt;
+  w.cd -= dt;
+  while (w.cd <= 0) {
+    if (w.kind === 'spread') {
+      for (const da of [-0.13, 0, 0.13]) fireShot(da, def.col);
+      w.cd += 0.32;
+    } else if (w.kind === 'burst') {
+      fireShot(rand(-0.02, 0.02), def.col);
+      w.n++;
+      w.cd += w.n % 3 ? 0.07 : 0.42;
+    } else if (w.kind === 'minigun') {
+      fireShot(rand(-0.06, 0.06), def.col, rand(0.95, 1.1), 1.1, 14);
+      w.cd += 1 / 16;
+    } else {
+      for (let i = 0; i < 8; i++) fireShot(rand(-0.34, 0.34), def.col, rand(0.75, 1), rand(0.4, 0.6), 12);
+      sparkle(...shipNose(), def.col, 8);
+      if (!reduceMotion) shake = Math.max(shake, 0.25);
+      w.left--;
+      w.cd += 0.7;
+      if (w.left <= 0) { w.t = 0; break; }
+    }
+  }
+  if (w.t <= 0 && (w.kind !== 'shotgun' || w.left <= 0)) {
+    ship.wpn = null;
+    floatText(shipX() + 30, ship.y - 34, 'Оружие разряжено', '#ffd27a', 1);
+  }
+}
+
+// Мини-лазеры: летят по экрану, гаснут о первое препятствие.
+function updateShots(dt) {
+  if (!shots.length) return;
+  for (const sh of shots) {
+    sh.t += dt;
+    sh.x += sh.vx * dt;
+    sh.y += sh.vy * dt;
+    if (sh.t > sh.life || sh.x > W + 40 || sh.y < -20 || sh.y > H + 20) { sh.dead = true; continue; }
+    if (state !== 'play') continue;
+    const c = [[sh.x, sh.y, 4]];
+    let done = false;
+    for (const g of groxes) {
+      if (g.dead || g.phase === 'warn' || g.phase === 'gone' || g.x > W + 20) continue;
+      if (groxHit(g, c)) {
+        g.dead = true;
+        explode(g.x, g.y, ['#8c929b', '#4b5058', '#b48cff', '#ffb347', '#ffd27a'], 26);
+        addScore(1);
+        floatText(g.x, g.y - 30, 'Грокс сбит! +1', '#ffc070');
+        done = true; break;
+      }
+    }
+    if (!done) {
+      for (const b of bolts) {
+        if (!b.dead && circleRect(sh.x, sh.y, 4, b.x - 12, b.y - 3, b.x + 12, b.y + 3)) {
+          b.dead = true; sparkle(b.x, b.y, '255,190,120', 8); done = true; break;
+        }
+      }
+    }
+    if (!done) {
+      for (const e of encounters) {
+        if (e.gone || !e.shapes || e.x > sh.x + 10 || e.x + e.w < sh.x - 10) continue;
+        const hit = encounterHit(e, c);
+        if (!hit) continue;
+        if (hit.moon) blowMoon(e, hit.moon, false);
+        else if (e.rocks && hit.idx >= 0 && hit.idx < e.rocks.length) shatterRock(e, hit.idx);
+        else sparkle(sh.x, sh.y, sh.col, 5);
+        done = true; break;
+      }
+    }
+    if (done) sh.dead = true;
+  }
+  shots = shots.filter(sh => !sh.dead);
+  if (shots.length > 120) shots.splice(0, shots.length - 120);
+}
+
 function die(cause) {
   if (state !== 'play') return;
   state = 'dead';
@@ -1349,7 +1510,9 @@ function update(dt) {
   if (warp > 0) warp = reduceMotion ? 0 : Math.max(0, warp - dt / 1.4);
   if (paletteFade < 1) paletteFade = Math.min(1, paletteFade + dt / 1.6);
   ship.ring += dt * 1.8;
-  const v = state === 'play' ? speed() : 0;
+  // Разгон в режиме корабля — плавно туда и обратно (ship.spd).
+  ship.spd += ((ship.gd > 0 ? GD_SPEED : 1) - ship.spd) * Math.min(1, dt * 1.6);
+  const v = state === 'play' ? speed() * ship.spd : 0;
   const bgV = state === 'play' ? v : state === 'ready' ? 60 : 18;
   bgScroll += bgV * dt * (1 + warp * 7);
   updateParticles(dt, v);
@@ -1378,6 +1541,7 @@ function update(dt) {
   groxes = groxes.filter(g => !g.dead);
   for (const b of bolts) b.x += b.vx * dt;
   bolts = bolts.filter(b => !b.dead && b.x > -60);
+  updateShots(dt);
   ship.boost = Math.max(0, ship.boost - dt * 3);
   if (state !== 'play') return;
 
@@ -1395,8 +1559,15 @@ function update(dt) {
     ay = holding ? -GD_UP : GD_DOWN;
     ship.boost = holding ? 1 : ship.boost;
     ship.gd = Math.max(0, ship.gd - dt);
-    if (ship.gd === 0) floatText(sx + 30, ship.y - 34, 'Снова импульсы', '#ff9be6');
+    if (ship.gd === 0) {
+      floatText(sx + 30, ship.y - 34, 'Снова импульсы', '#ff9be6');
+      floatText(sx + 30, ship.y - 16, 'гравищит', '#c9b8ff', 1.2);
+      ship.grav = GRAV_TIME;
+    }
   }
+  if (ship.grav > 0) ship.grav = Math.max(0, ship.grav - dt);
+  if (ship.ghost > 0) ship.ghost -= dt;
+  updateWeapon(dt);
   for (const e of encounters) {
     if (e.kind !== 'hole' || e.gone) continue;
     const dx = e.x + e.hx - sx, dy = e.hy - ship.y, d = Math.hypot(dx, dy);
@@ -1433,16 +1604,25 @@ function update(dt) {
       haptic('medium');
     } else if (p.k === 'g') {
       ship.gd = GD_TIME;
+      ship.grav = GRAV_TIME;
       sparkle(p.x, py, '255,90,200', 18);
       particles.push({ k: 3, x: p.x, y: py, vx: 0, vy: 0, t: 0, life: 0.5, r: 10, r2: 70, c: '255,110,220' });
       floatText(sx + 30, ship.y - 46, 'Режим корабля!', '#ff9be6', 1.4);
       floatText(sx + 30, ship.y - 28, 'держи — вверх, отпусти — вниз', '#ffd1f3', 1.8);
       haptic('medium');
+    } else if (p.k === 'w') {
+      giveWeapon(p.x, py);
     } else if (p.k === 'p') {
       unlockPage(p.page, p.x, py);
     }
   }
 
+  if (ship.y > H - 10 && ship.grav > 0 && !ship.invuln) {
+    // гравищит — мягкий отскок от пола, щит 🛡️ не тратится
+    ship.y = H - 10;
+    ship.vy = FLAP_VY * 0.75;
+    sparkle(sx, H - 8, '190,170,255', 8);
+  }
   if (ship.y > H - 10) {
     if (ship.shield || ship.invuln > 0) {
       if (ship.shield) absorb(null);
@@ -1473,6 +1653,7 @@ function update(dt) {
   if (hit) {
     // После щита — не умираем, пока не вылетели из того, что уже пробили.
     if (ship.invuln > 0) { if (hit.b) hit.b.dead = true; ship.invuln = Math.max(ship.invuln, 0.12); }
+    else if (ship.grav > 0 || ship.ghost > 0) gravDeflect(hit, dt);
     else if (ship.shield) absorb(hit);
     else die(hit.cause);
   }
@@ -1583,6 +1764,49 @@ function drawShield(x, y, a) {
   ctx.lineDashOffset = -time * 18;
   ctx.beginPath(); ctx.ellipse(0, 0, 46, 22, 0, 0, TAU); ctx.stroke();
   ctx.setLineDash([]);
+  ctx.restore();
+}
+
+/* Гравитационный щит — «ударная волна» перед носом: три дуги, рябь бежит
+   вперёд, гаснет в последние 0.5 с. */
+function drawGravShield(x, y, a) {
+  const k = Math.min(1, ship.grav / 0.5, (GRAV_TIME - ship.grav) / 0.15 + 0.2);
+  if (k <= 0) return;
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(a);
+  glow(44, 0, 120, '170,150,255', 0.22 * k);
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 3; i++) {
+    const ph = (time * 2.2 + i / 3) % 1;
+    const r = 30 + ph * 26;
+    ctx.globalAlpha = k * (1 - ph) * 0.85;
+    ctx.strokeStyle = i === 1 ? '#a8f0ff' : '#c9b8ff';
+    ctx.lineWidth = 3 - ph * 2;
+    ctx.beginPath(); ctx.arc(14, 0, r, -0.95, 0.95); ctx.stroke();
+  }
+  ctx.globalAlpha = k * 0.6;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(14, 0, 32, -0.8, 0.8); ctx.stroke();
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
+
+function drawShots() {
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.lineCap = 'round';
+  for (const sh of shots) {
+    const sp = Math.hypot(sh.vx, sh.vy) || 1, ux = sh.vx / sp, uy = sh.vy / sp;
+    ctx.strokeStyle = `rgba(${sh.col},0.55)`;
+    ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(sh.x - ux * sh.len, sh.y - uy * sh.len); ctx.lineTo(sh.x, sh.y); ctx.stroke();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(sh.x - ux * sh.len * 0.7, sh.y - uy * sh.len * 0.7); ctx.lineTo(sh.x, sh.y); ctx.stroke();
+  }
   ctx.restore();
 }
 
@@ -1963,6 +2187,20 @@ function drawPickup(p) {
     ctx.fill();
     ctx.fillStyle = '#fff';
     ctx.beginPath(); ctx.moveTo(x - 5, y - 4); ctx.lineTo(x + 6, y); ctx.lineTo(x - 5, y + 4); ctx.lineTo(x - 2.5, y); ctx.closePath(); ctx.fill();
+  } else if (p.k === 'w') {
+    // оружие — оранжевое кольцо с тремя лучами вперёд
+    const pulse = 0.5 + 0.5 * Math.sin(time * 6 + p.ph);
+    glow(x, y, 60, '255,150,70', 0.4 + 0.25 * pulse);
+    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = '#ffb36b';
+    ctx.beginPath(); ctx.arc(x, y, 13, 0, TAU); ctx.stroke();
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#fff2dc';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (const dy of [-5, 0, 5]) { ctx.moveTo(x - 6, y + dy * 0.6); ctx.lineTo(x + 7, y + dy); }
+    ctx.stroke();
+    ctx.lineCap = 'butt';
   } else if (p.k === 'p') {
     // страница комикса — светится золотом, покачивается
     const pulse = 0.5 + 0.5 * Math.sin(time * 4 + p.ph);
@@ -2051,6 +2289,12 @@ function drawParticles() {
       }
       ctx.stroke();
       ctx.restore();
+    } else if (p.k === 7) {
+      // линия скорости при разгоне
+      ctx.globalAlpha = a * 0.35;
+      ctx.strokeStyle = '#ffd1f3';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + p.len, p.y); ctx.stroke();
     } else {
       const e = p.e;
       glow(e.x + e.hx + Math.cos(p.ang) * p.d, e.hy + Math.sin(p.ang) * p.d * 0.42, p.r * 4, p.c, Math.min(1, p.t * 3) * 0.7);
@@ -2152,20 +2396,42 @@ function render() {
   for (const b of bolts) drawBolt(b);
   for (const g of groxes) drawGroxLayer(g);
   drawParticles();
+  if (shots.length) drawShots();
   if (beam) drawBeam();
   if (ship.alive) {
     const blink = ship.invuln > 0 ? (Math.sin(time * 30) > 0 ? 0.35 : 0.9) : 1;
     drawPhenom(shipX(), ship.y, shipAngle(), blink);
     if (ship.shield) drawShield(shipX(), ship.y, shipAngle());
+    if (ship.grav > 0) drawGravShield(shipX(), ship.y, shipAngle());
   }
   drawTexts();
   if (ship.alive && ship.gd > 0) drawGdHud();
+  if (ship.alive && ship.wpn) drawWpnHud(ship.gd > 0 ? 36 : 0);
   if (flash > 0) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     // «Уменьшить движение» — вспышка вчетверо слабее (белый экран на миг).
     ctx.fillStyle = `rgba(255,255,255,${(flash * (reduceMotion ? 0.11 : 0.45)).toFixed(3)})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
+}
+
+// Полоска оружия: над полоской режима корабля, если она тоже есть.
+function drawWpnHud(up) {
+  const w_ = ship.wpn, def = WEAPONS[w_.kind];
+  const k = w_.kind === 'shotgun' ? w_.left / w_.total : Math.max(0, w_.t / w_.total);
+  const w = Math.min(200, W - 70), x = (W - w) / 2, y = H - 26 - up;
+  ctx.fillStyle = 'rgba(24,14,8,0.72)';
+  ctx.fillRect(x - 8, y - 19, w + 16, 30);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = '700 12px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+  ctx.fillStyle = `rgb(${def.col})`;
+  const left = w_.kind === 'shotgun' ? `залпов: ${w_.left}` : `${Math.ceil(w_.t)} с`;
+  ctx.fillText(`⚡ ${def.name} · ${left}`, W / 2, y - 5);
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.fillRect(x, y + 1, w, 4);
+  ctx.fillStyle = `rgb(${def.col})`;
+  ctx.fillRect(x, y + 1, w * k, 4);
 }
 
 // Полоска режима корабля внизу: сколько осталось; последние 2 с мигает.
