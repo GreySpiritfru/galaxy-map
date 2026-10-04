@@ -4,6 +4,10 @@
    логика одна и та же, подключить второй раз к любому новому SVG
    стоит нескольких строк (см. map.js и system-view.js).
    ============================================================ */
+// Настройка системы «уменьшить движение» — читается каждый раз (могут
+// переключить, не перезагружая страницу).
+export const prefersReducedMotion = () => !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
 export function createPanZoom(svg, opts) {
   opts = opts || {};
   const zoomOutLimit = opts.zoomOutLimit ?? 1;   // 1 = нельзя отдалить дальше исходного охвата карты
@@ -99,7 +103,13 @@ export function createPanZoom(svg, opts) {
      затуханием карты, см. CLAUDE.md). */
   let paneW = svg.clientWidth || 0, paneH = svg.clientHeight || 0;
   if (typeof ResizeObserver !== 'undefined') {
-    new ResizeObserver(() => { paneW = svg.clientWidth || 0; paneH = svg.clientHeight || 0; }).observe(svg);
+    new ResizeObserver(() => {
+      paneW = svg.clientWidth || 0; paneH = svg.clientHeight || 0;
+      /* Поворот экрана (v=202, аудит): упёрлись в край, повернули — видно
+         маску, а первый драг прыгал на ~100 px (кадр переклэмпливался только
+         на нём). Без активного жеста — сразу поставить кадр в границы. */
+      if (paneW && paneH && !pointers.size && !animFrameId && !fling && !wheel) setViewBox(clampViewBox(cur));
+    }).observe(svg);
   }
 
   // Центр отрезка длиной size держим внутри [lo, hi]; не влезает целиком —
@@ -331,7 +341,8 @@ export function createPanZoom(svg, opts) {
     fling = {vx, vy, last: now, raf: 0};
     const step = (t) => {
       if (!fling) return;
-      const d = Math.min(64, t - fling.last);
+      // Метка кадра бывает раньше performance.now() обработчика — без отрицательного шага.
+      const d = Math.max(0, Math.min(64, t - fling.last));
       fling.last = t;
       // Путь за кадр — интеграл экспоненты, а не v·dt: не зависит от частоты кадров.
       const k = (1 - Math.exp(-FLING_DECAY * d)) / FLING_DECAY;
@@ -368,7 +379,9 @@ export function createPanZoom(svg, opts) {
     clearTimeout(wheelIdle);
     wheelIdle = setTimeout(() => { if (!wheel) { busyWheel = false; refreshBusy(); } }, BUSY_OFF_MS);
     if (Math.abs(dy) < WHEEL_SMOOTH_MIN && !wheel) {
-      zoomAt(pt.x, pt.y, Math.exp(-dy * WHEEL_SPEED));   // тачпад — сразу
+      /* Щипок на тачпаде Chrome шлёт ctrl+wheel с deltaY = −100·ln(масштаб) —
+         как у пальцев, а не 0.002 на пиксель (было в ~5 раз медленнее). */
+      zoomAt(pt.x, pt.y, Math.exp(e.ctrlKey ? -dy / 100 : -dy * WHEEL_SPEED));   // тачпад — сразу
       return;
     }
     const base = wheel ? wheel.targetW : cur.w;
@@ -379,7 +392,7 @@ export function createPanZoom(svg, opts) {
     if (w.raf) return;
     const step = (t) => {
       if (wheel !== w) return;
-      const d = Math.min(64, t - w.last);
+      const d = Math.max(0, Math.min(64, t - w.last));
       w.last = t;
       let nw = cur.w + (w.targetW - cur.w) * (1 - Math.exp(-d / WHEEL_TAU));
       if (Math.abs(nw - w.targetW) < w.targetW * 0.002) nw = w.targetW;
@@ -584,17 +597,32 @@ export function createPanZoom(svg, opts) {
     return false;
   }
 
+  /* «Призрачный» click (v=200, аудит 04.10.2026): после касания браузер
+     досылает click в ту же точку экрана. Если тап открыл окно СРАЗУ (ноды,
+     подписи систем, маркеры внутри системы), click попадал в кнопку этого
+     окна — тап по персонажу в нодах открывал вместо него родителя через
+     крошку плашки. Карта сама click не слушает (тапы — на pointerup), так
+     что после тапа пальцем/пером следующий click в течение GHOST_CLICK_MS
+     просто гасим. Мышь не трогаем: у неё click уходит общему предку. */
+  const GHOST_CLICK_MS = 450;
+  function eatGhostClick(p) {
+    if (p.type === 'mouse') return;
+    const eat = (ce) => { ce.stopPropagation(); ce.preventDefault(); };
+    window.addEventListener('click', eat, {capture: true, once: true});
+    setTimeout(() => window.removeEventListener('click', eat, {capture: true}), GHOST_CLICK_MS);
+  }
+
   function handleTap(e, p) {
     const assist = !!(tapAssist && tapAssist());
     // Тап во время приближения двойным тапом — только часть цепочки тапов:
     // маркер, оказавшийся под пальцем посреди зума, не открываем.
     if (p.chain) { if (assist) doubleTap(e, p); return; }
     const tap = findTapHandler(p.target);
-    if (tap) { lastTap = null; tap(e); return; }
+    if (tap) { lastTap = null; eatGhostClick(p); tap(e); return; }
     if (assist) {
       if (p.type !== 'mouse') {
         const near = findNearTap(e.clientX, e.clientY);
-        if (near) { lastTap = null; near(e); return; }
+        if (near) { lastTap = null; eatGhostClick(p); near(e); return; }
       }
       if (doubleTap(e, p)) return;
     }
@@ -624,16 +652,14 @@ export function createPanZoom(svg, opts) {
         end: () => { if (!startFling(rs)) { busyDrag = false; refreshBusy(); } },
       };
     },
-    zoomIn: () => { cancelAnim(); zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1.25); },
-    zoomOut: () => { cancelAnim(); zoomAt(cur.x+cur.w/2, cur.y+cur.h/2, 1/1.25); },
-    reset: () => { cancelAnim(); stopFling(); stopWheel(); setViewBox({...initialViewBox}); },
-    centerOn: (x, y) => { stopFling(); setViewBox(clampViewBox({x: x-cur.w/2, y: y-cur.h/2, w:cur.w, h:cur.h})); },
     // Центрирует на (x,y) на ФИКСИРОВАННОМ уровне приближения targetWidth (в единицах
     // viewBox, не зависит от того, насколько был зумлен пользователь до этого — в
     // отличие от zoomAt/zoomIn, где новый масштаб считается относительно текущего).
     // Без duration — мгновенно (как centerOn); с duration — плавный анимированный
     // перелёт камеры, по завершении которого вызывается onDone.
     focusOn: (x, y, targetWidth, duration, onDone) => {
+      // «Уменьшить движение» в системе — перелёты камеры мгновенные (v=202).
+      if (prefersReducedMotion()) duration = 0;
       // Инерция и колёсико иначе перебивали бы перелёт кадр за кадром.
       stopFling(); stopWheel();
       const aspect = initialViewBox.h / initialViewBox.w;

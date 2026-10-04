@@ -38,12 +38,12 @@
    вложенность считается по ТИПАМ слоёв (модал/сюжет/локация/система), а не
    по конкретным id узлов, этого достаточно для всех текущих сценариев.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=199';
-import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=199';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=199';
-import { closeStory, isStoryOpen } from './stories.js?v=199';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=199';
-import { closeTour, isTourOpen } from './tour.js?v=199';
+import { closeModal, isArticleOpen } from './modal.js?v=202';
+import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=202';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=202';
+import { closeStory, isStoryOpen } from './stories.js?v=202';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=202';
+import { closeTour, isTourOpen } from './tour.js?v=202';
 
 /* Мини-игра (js/flappy.js, v=195) — модуль грузится только по нажатию, поэтому
    отсюда его не импортируем: смотрим на класс слоя, закрываем событием. */
@@ -54,6 +54,9 @@ const closeFlappy = () => flappyEl.dispatchEvent(new Event('flappy-close'));
 function depth() {
   let d = 0;
   if (isFlappyOpen()) d++;
+  // Читалка комикса внутри игры — свой уровень: «назад» закрывает сначала её
+  // (flappy.js сам решает, что закрыть по flappy-close), v=200.
+  if (isFlappyOpen() && flappyEl.classList.contains('comic-open')) d++;
   // Обучение (js/tour.js, v=155) — самый верхний слой: «назад» и Esc
   // закрывают сначала его, а не окно, которое тур открыл под собой.
   if (isTourOpen()) d++;
@@ -101,7 +104,11 @@ document.addEventListener('keydown', (e) => {
 });
 
 // --- Telegram Mini App: кнопка BackButton в шапке (Bot API 6.1+) ---
-const tg = window.Telegram && window.Telegram.WebApp;
+/* Только настоящий Telegram с BackButton (Bot API 6.1+): вне Telegram (platform
+   unknown) и в старом клиенте скрипт на каждое show/hide пишет предупреждение
+   в консоль (v=202). */
+const tgRaw = window.Telegram && window.Telegram.WebApp;
+const tg = tgRaw && tgRaw.platform !== 'unknown' && tgRaw.isVersionAtLeast && tgRaw.isVersionAtLeast('6.1') ? tgRaw : null;
 if (tg && tg.BackButton) {
   tg.BackButton.onClick(closeTop);
 }
@@ -180,8 +187,40 @@ window.addEventListener('popstate', () => {
 const morphButtons = ['refToolbarClose', 'charToolbarClose', 'phenomClose', 'storyClose']
   .map(id => document.getElementById(id));
 
+/* Фокус (v=202, аудит 04.10.2026): открылся слой — фокус на его ✕, закрылся —
+   обратно туда, где был (кнопка, которой открывали). Раньше после ✕ фокус
+   падал на body, а Tab ходил по кнопкам карты под окном. Верхний слой — тот
+   же порядок, что в closeTop(). */
+const visibleBtn = el => el && el.offsetParent !== null ? el : null;
+function topCloseButton() {
+  if (isFlappyOpen()) return flappyEl.querySelector('.flappy-close');
+  if (isTourOpen()) return visibleBtn(document.querySelector('#tourOverlay button'));
+  if (isArticleOpen()) return visibleBtn(document.getElementById('refToolbarClose'))
+    || visibleBtn(document.getElementById('systemBack')) || visibleBtn(document.getElementById('modalClose'));
+  if (isCharacterOpen()) return document.getElementById('charToolbarClose');
+  if (isStoryOpen()) return document.getElementById('storyClose');
+  if (isPhenomOpen()) return document.getElementById('phenomClose');
+  if (isSystemOpen()) return document.getElementById('systemBack');
+  return null;
+}
+const focusStack = [];
+function syncFocus(d) {
+  if (d > lastDepth) {
+    for (let i = lastDepth; i < d; i++) focusStack.push(document.activeElement);
+    const btn = topCloseButton();
+    if (btn && btn !== document.activeElement) { try { btn.focus({preventScroll: true}); } catch (e) {} }
+  } else if (d < lastDepth) {
+    let back = null;
+    for (let i = d; i < lastDepth && focusStack.length; i++) back = focusStack.pop();
+    if (back && back.isConnected && back !== document.body && back.offsetParent !== null) {
+      try { back.focus({preventScroll: true}); } catch (e) {}
+    }
+  }
+}
+
 function sync() {
   const d = depth();
+  syncFocus(d);
   if (tg && tg.BackButton) { d > 0 ? tg.BackButton.show() : tg.BackButton.hide(); }
   const goesBack = d > 1;
   morphButtons.forEach(btn => {
@@ -252,4 +291,14 @@ function scheduleSync() {
 const observer = new MutationObserver(scheduleSync);
 ['modalBackdrop', 'systemOverlay', 'phenomOverlay', 'storyOverlay', 'charOverlay', 'tourOverlay', 'flappyOverlay'].forEach(id => {
   observer.observe(document.getElementById(id), { attributes: true, attributeFilter: ['class'] });
+});
+
+/* Нажатая вкладка/режим — не только цветом (v=202, доступность): экранный
+   диктор читает aria-pressed. Кнопки статичные, следим за их классом. */
+const pressedObserver = new MutationObserver(list => list.forEach(m => {
+  m.target.setAttribute('aria-pressed', m.target.classList.contains('active') ? 'true' : 'false');
+}));
+document.querySelectorAll('.tabbar-btn, .view-switch-btn').forEach(btn => {
+  btn.setAttribute('aria-pressed', btn.classList.contains('active') ? 'true' : 'false');
+  pressedObserver.observe(btn, {attributes: true, attributeFilter: ['class']});
 });

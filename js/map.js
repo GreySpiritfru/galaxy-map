@@ -1,18 +1,19 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=199';
-import { openModal, closeModal, escapeHtml } from './modal.js?v=199';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=199';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=199';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=199';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=199';
-import { openCharacter, closeCharacter } from './characters.js?v=199';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=199';
-import { markerEl } from './node-window.js?v=199';
-import { layoutSections, renderSections } from './sections.js?v=199';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=199';
-import { hideSplash } from './splash.js?v=199';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=202';
+import { closeModal } from './modal.js?v=202';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=202';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=202';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=202';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=202';
+import { openCharacter, closeCharacter } from './characters.js?v=202';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=202';
+import { markerEl } from './node-window.js?v=202';
+import { layoutSections, renderSections } from './sections.js?v=202';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=202';
+import { hideSplash } from './splash.js?v=202';
+import { fetchT, showLoadError } from './net.js?v=202';
 
 const SVG_PATH = 'map.svg';
 
@@ -33,20 +34,26 @@ function finishMapPick(p) {
 
 (async function(){
   const container = document.getElementById('svgWidget');
-  let svgText;
+  /* v=200 (аудит 04.10.2026): раньше статус не проверялся — страница ошибки
+     GitHub (404/5xx) вставлялась в карту как есть, а querySelector('svg')
+     находил иконку панели (#labelsToggle) и цеплял карту к ней; сетевой сбой
+     стирал всю панель через innerHTML. Теперь — только настоящий SVG первым
+     элементом, иначе плашка «Повторить», панель и «?» на месте.
+     Таймаута у map.svg нет сознательно: 2.5 МБ на медленной сети честно
+     качаются дольше любого разумного порога. */
+  let svgText = '';
   try {
     const resp = await fetch(SVG_PATH, {cache:'no-cache'});
+    if (resp.status >= 400) throw new Error('HTTP ' + resp.status);
     svgText = await resp.text();
   } catch (err) {
-    container.innerHTML = '<div style="color:#f88;padding:12px">Ошибка загрузки SVG: ' + err.message + '</div>';
-    hideSplash();
-    throw err;
+    svgText = '';
   }
-
-  container.insertAdjacentHTML('afterbegin', svgText);
-  const svg = container.querySelector('svg');
+  if (/<svg[\s>]/i.test(svgText.slice(0, 4000))) container.insertAdjacentHTML('afterbegin', svgText);
+  const svg = container.firstElementChild && container.firstElementChild.tagName.toLowerCase() === 'svg'
+    ? container.firstElementChild : null;
   if (!svg) {
-    container.innerHTML = '<div style="color:#f88;padding:12px">Файл не содержит тег &lt;svg&gt;.</div>';
+    showLoadError('Карта не загрузилась — проверь соединение.');
     hideSplash();
     return;
   }
@@ -168,7 +175,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=199').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=202').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -692,7 +699,9 @@ function finishMapPick(p) {
 
   async function loadJsonList(path) {
     try {
-      const resp = await fetch(path, {cache:'no-cache'});
+      const resp = await fetchT(path, {cache:'no-cache'});
+      // 404 — файла нет, это не сбой (так задумано: точек просто нет).
+      if (resp.status === 404) return [];
       // Не проверяем resp.ok — оно ложно считается false и на статусе 304
       // (файл не изменился, отдан из кэша), из-за чего реально загрузившийся
       // файл принимался бы за ошибку. Пробуем распарсить в любом случае,
@@ -700,7 +709,10 @@ function finishMapPick(p) {
       const data = await resp.json();
       return Array.isArray(data) ? data : [];
     } catch (e) {
-      return []; // файла нет или он битый — просто не рисуем точки, не ошибка
+      // Сеть оборвалась/таймаут/битый ответ — карту рисуем без этих точек,
+      // но говорим игроку, а не молчим (v=200).
+      showLoadError('Часть данных карты не загрузилась — маркеры могут быть не все.');
+      return [];
     }
   }
 
@@ -736,10 +748,33 @@ function finishMapPick(p) {
      requestAnimationFrame, который в фоне и на слабых устройствах тормозят
      (раньше ради этого был ещё и страховочный таймер). */
   const FOCUS_OPEN_SHARE = 0.55;
+  /* ⚠️ Отложенное открытие ОТМЕНЯЕМО (v=200, аудит 04.10.2026). Раньше голый
+     setTimeout: тап по Феному и через 150 мс по Авалону — оба окна слоями
+     (Авалон поверх несвязанного Фенома), тап по маркеру и сразу «Справочник» —
+     модал и окно разом, Esc в эти 357 мс ничего не отменял. Теперь отложенное
+     открытие одно: его снимают новый тап по точке, Esc/«назад», касание карты
+     (игрок передумал и тащит её), смена режима; а если к моменту срабатывания
+     открылся какой-то слой (а при тапе ничего открыто не было) — не открываем. */
+  let pendingOpen = null;
+  function cancelPendingOpen() {
+    if (pendingOpen) { clearTimeout(pendingOpen); pendingOpen = null; }
+  }
+  const LAYER_IDS = ['modalBackdrop', 'systemOverlay', 'phenomOverlay', 'storyOverlay', 'charOverlay', 'tourOverlay', 'flappyOverlay'];
+  const anyLayerOpen = () => LAYER_IDS.some(id => document.getElementById(id)?.classList.contains('open'));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cancelPendingOpen(); });
+  window.addEventListener('popstate', cancelPendingOpen);
+  svg.addEventListener('pointerdown', cancelPendingOpen);
   function focusAndOpen(x, y, openFn, instant) {
-    if (instant) { pz.focusOn(x, y, FOCUS_WIDTH, 0); openFn(); return; }
+    cancelPendingOpen();
+    // «Уменьшить движение» — без перелёта и сразу окно (v=202).
+    if (instant || prefersReducedMotion()) { pz.focusOn(x, y, FOCUS_WIDTH, 0); openFn(); return; }
     pz.focusOn(x, y, FOCUS_WIDTH, FOCUS_PAN_DURATION);
-    setTimeout(openFn, FOCUS_PAN_DURATION * FOCUS_OPEN_SHARE);
+    const layerWasOpen = anyLayerOpen();
+    pendingOpen = setTimeout(() => {
+      pendingOpen = null;
+      if (!layerWasOpen && anyLayerOpen()) return;
+      openFn();
+    }, FOCUS_PAN_DURATION * FOCUS_OPEN_SHARE);
   }
 
   /* Отклик на тап: кольцо расходится от маркера в тот же кадр, что и нажатие,
@@ -1531,6 +1566,15 @@ function finishMapPick(p) {
     host.insertBefore(minorLabels, host.querySelector(':scope > text[font-family="Impact"]'));
     minorTexts.forEach(t => {
       t.classList.add('map-label-minor');
+      /* Звезда системы — <use> прямо перед подписью в экспорте. Запоминаем
+         её центр ДО переноса подписи в группу (v=201, аудит 04.10.2026): после
+         переноса previousElementSibling — соседняя подпись или чужой значок,
+         и точка, привязанная к Денебу, улетала к звезде в (53, 53). */
+      const icon = t.previousElementSibling;
+      if (icon && icon.tagName.toLowerCase() === 'use') {
+        const v = ['x', 'y', 'width', 'height'].map(k => parseFloat(icon.getAttribute(k)));
+        if (v.every(isFinite)) t.__star = {x: v[0] + v[2] / 2, y: v[1] + v[3] / 2};
+      }
       if (t.parentNode === host) minorLabels.appendChild(t);
     });
   }
@@ -1726,28 +1770,38 @@ function finishMapPick(p) {
        или растягивается ровно во столько раз, во сколько вышло за край.
        Функция от масштаба непрерывная (на самой границе k = 1), поэтому в
        момент включения потолка маркер не прыгает. */
+    /* Размер окна — из ResizeObserver, а не clientWidth на каждом кадре жеста
+       (v=202, аудит: чтение геометрии сразу после смены viewBox — пересчёт
+       сцены), и transform пишется, только когда масштаб изменился. */
+    let paneW = 0, paneH = 0, lastK = NaN;
     const rescale = () => {
       const vb = sysSvg.viewBox.baseVal;
       // ⚠️ Размер окна системы в пикселях — обязательное условие: до первой
       // раскладки он нулевой, и «дорасти до минимума» превращалось в scale в
       // сотни раз (прежний потолок такого не ловил: он умел только ужимать).
-      const w = sysSvg.clientWidth, h = sysSvg.clientHeight;
-      if (!w || !h || !vb.width || !vb.height) return;
-      const px = size * Math.min(w / vb.width, h / vb.height);
+      if (!paneW || !paneH || !vb.width || !vb.height) return;
+      const px = size * Math.min(paneW / vb.width, paneH / vb.height);
       const k = px > SYSTEM_MARKER_MAX_PX ? SYSTEM_MARKER_MAX_PX / px
               : px < SYSTEM_MARKER_MIN_PX ? SYSTEM_MARKER_MIN_PX / px : 1;
+      if (k === lastK) return;
+      lastK = k;
       clusters.forEach(c => {
         c.k = k;
         c.g.setAttribute('transform', `translate(${c.x} ${c.y})` + (k !== 1 ? ` scale(${k})` : ''));
       });
     };
+    paneW = sysSvg.clientWidth; paneH = sysSvg.clientHeight;
     rescale();
     const onViewBox = new MutationObserver(rescale);
     onViewBox.observe(sysSvg, {attributes: true, attributeFilter: ['viewBox']});
     // Размер окна тоже меняет масштаб на экране: поворот телефона, открытие
     // клавиатуры. Первый вызов приходит сразу после раскладки — им же и
     // считается масштаб, если к моменту отрисовки размера ещё не было.
-    const onSize = new ResizeObserver(rescale);
+    const onSize = new ResizeObserver(entries => {
+      const r = entries[entries.length - 1].contentRect;
+      paneW = r.width; paneH = r.height;
+      rescale();
+    });
     onSize.observe(sysSvg);
     sysSvg.__markerObservers = [onViewBox, onSize];
   }
@@ -2154,6 +2208,8 @@ function finishMapPick(p) {
 
   async function setViewMode(mode, instant, focus) {
     if (mode === viewMode || !viewSwitchBtns.some(b => b.dataset.view === mode)) return;
+    cancelPendingOpen();
+    if (prefersReducedMotion()) instant = true;  // без разлёта узлов (v=202)
     /* ⚠️ Ждём граф ТОЛЬКО если он ещё не приехал. Просто `await graphReady`
        здесь был бы дедлоком: эта же функция вызывается ИЗНУТРИ graphReady.then
        (применение сохранённого режима при загрузке), а сам промис в этот
@@ -2318,7 +2374,7 @@ function finishMapPick(p) {
   const NAMES_PATH = 'systems/names.json';
   async function loadSystemNames() {
     try {
-      const resp = await fetch(NAMES_PATH, {cache:'no-cache'});
+      const resp = await fetchT(NAMES_PATH, {cache:'no-cache'});
       if (resp.status === 404) return {};
       const data = await resp.json();
       return data && typeof data === 'object' && !Array.isArray(data) ? data : {};
@@ -2331,7 +2387,7 @@ function finishMapPick(p) {
   // тогда просто ничего не подсвечиваем, это не ошибка.
   async function loadReadySystems() {
     try {
-      const resp = await fetch(MANIFEST_PATH, {cache:'no-cache'});
+      const resp = await fetchT(MANIFEST_PATH, {cache:'no-cache'});
       // Та же история: не полагаемся на resp.ok из-за ложного срабатывания на 304
       const list = await resp.json();
       return new Set(list);
@@ -2360,17 +2416,16 @@ function finishMapPick(p) {
       const shown = (typeof names[raw] === 'string' && names[raw].trim()) || raw;
       const slug = slugify(shown);
       if (!readySlugs.has(slug)) return;
-      let icon = t.previousElementSibling;
-      while (icon && icon.classList.contains('sys-hit')) icon = icon.previousElementSibling;
-      const ix = parseFloat(icon?.getAttribute('x')), iy = parseFloat(icon?.getAttribute('y'));
-      const iw = parseFloat(icon?.getAttribute('width')), ih = parseFloat(icon?.getAttribute('height'));
-      const hasIcon = icon && icon.tagName.toLowerCase() === 'use' && [ix, iy, iw, ih].every(isFinite);
+      // Центр звезды запомнен при сборке группы мелких подписей (t.__star) —
+      // соседи в DOM к этому моменту уже другие.
+      const star = t.__star;
+      const hasIcon = !!star;
       if (found.has(slug) && (found.get(slug).hasIcon || !hasIcon)) return;
       const tx = parseFloat(t.getAttribute('x')), ty = parseFloat(t.getAttribute('y'));
       found.set(slug, {
         slug, title: shown, hasIcon,
-        x: hasIcon ? ix + iw / 2 : tx,
-        y: hasIcon ? iy + ih / 2 : ty - 1.5,
+        x: hasIcon ? star.x : tx,
+        y: hasIcon ? star.y : ty - 1.5,
       });
     });
     return found;
@@ -2392,6 +2447,21 @@ function finishMapPick(p) {
     // (js/editor.js) — поверх скачанных файлов и ДО раскладки: новая привязка
     // или место должны попасть в расчёт позиций.
     const pendingShown = applyPendingEdits({world, character: characters});
+    /* Поля, уходящие в стили и загрузчики, — в известном виде (v=201, аудит):
+       color — только #hex/rgb()/rgba(), как пускает бот (url(http://…) в fill
+       маркера дёргал бы чужой сервер у каждого, кто открыл карту);
+       submap.source — только свой относительный путь к .dzi (адрес на .js
+       OpenSeadragon грузит как <script>). Прочее — как будто поля нет. */
+    const COLOR_OK = /^(#[0-9a-fA-F]{3,8}|rgba?\([\d\s.,%]+\))$/;
+    const DZI_OK = /^(?![a-z][a-z0-9+.-]*:)(?!\/)(?!.*\.\.)[\w\-\/.]+\.dzi$/i;
+    [...world, ...characters].forEach(it => {
+      if (!it || typeof it !== 'object') return;
+      if ('color' in it && !(typeof it.color === 'string' && COLOR_OK.test(it.color))) delete it.color;
+      if (it.submap && !(typeof it.submap.source === 'string' && DZI_OK.test(it.submap.source))) delete it.submap;
+      // Текстовые поля — строки: число в shortTitle ронял открытие окна (.trim).
+      ['id', 'title', 'shortTitle', 'code', 'name', 'race', 'role', 'description', 'recruit', 'parent', 'image', 'sheetUrl']
+        .forEach(k => { if (k in it && it[k] != null && typeof it[k] !== 'string') it[k] = String(it[k]); });
+    });
     const anchors = collectSystemAnchors(names, readySlugs);
     systemChoices = [...anchors.values()]
       .map(a => ({id: 'system:' + a.slug, title: a.title}))
@@ -2479,8 +2549,6 @@ function finishMapPick(p) {
         if (viewMode === 'nodes') await setViewMode(savedMapMode(), false);
       },
       sectionsLayer: () => graphLayer.querySelector('.sections-layer'),
-      sectionFrame: (key) => graphLayer.querySelector(key
-        ? `.section-frame-fill[data-section="${key}"]` : '.section-frame-fill'),
       // Сюжет вместе с его персонажами (подложка группы в разделах); нет
       // персонажей — сам маркер без колец маяка.
       plotEl: () => {

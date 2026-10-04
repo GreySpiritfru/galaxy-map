@@ -6,7 +6,7 @@
   <title>Карта галактики — Феном</title>
   <!-- Скрипт Telegram — своя копия (v=199): telegram.org из РФ без VPN не
        отвечает, и этот блокирующий <script> вешал страницу на ~35 с. -->
-  <script src="js/vendor/telegram-web-app.js?v=199"></script>
+  <script src="js/vendor/telegram-web-app.js?v=202"></script>
   <!-- OpenSeadragon (тайловая карта Фенома) здесь больше не подключается: его
        догружает js/phenom.js при первом открытии карты (v=187) — раньше 271 КБ
        с cdnjs задерживали запуск всей страницы. -->
@@ -16,7 +16,7 @@
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
   <link rel="preload" href="images/splash-logo.webp" as="image" />
-  <link rel="stylesheet" href="css/styles.css?v=199" />
+  <link rel="stylesheet" href="css/styles.css?v=202" />
 </head>
 <body>
 
@@ -41,6 +41,26 @@
   try { window.Telegram && Telegram.WebApp && Telegram.WebApp.ready(); } catch (e) {}
   // Страховка: карта так и не сообщила о готовности (сбой сети и т.п.).
   setTimeout(function () { var s = document.getElementById('splash'); if (s) s.remove(); }, 20000);
+  /* v=200: не загрузился или упал при запуске какой-то модуль js/ — раньше
+     20 с заставки, потом кнопки без обработчиков. Теперь сразу сообщение и
+     «Обновить». Ловим: ошибку загрузки графа модулей (error у самого
+     <script type="module">) и исключение из нашего js/ до конца запуска
+     (main.js ставит __mapBooted последним). */
+  window.__bootFail = function () {
+    if (window.__mapBooted || document.getElementById('bootFail')) return;
+    var s = document.getElementById('splash'); if (s) s.remove();
+    var d = document.createElement('div');
+    d.id = 'bootFail';
+    d.setAttribute('role', 'alert');
+    d.style.cssText = 'position:fixed;inset:0;z-index:1000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;background:#0b0b10;color:#eee;font:15px/1.4 system-ui,sans-serif;text-align:center';
+    d.innerHTML = '<div>Карта не загрузилась — похоже, оборвалась связь.</div>'
+      + '<button type="button" style="font:inherit;padding:10px 22px;border-radius:12px;border:1px solid #AFEEEE;background:#16161f;color:#AFEEEE">Обновить</button>';
+    d.querySelector('button').onclick = function () { location.reload(); };
+    document.body.appendChild(d);
+  };
+  window.addEventListener('error', function (e) {
+    if (!window.__mapBooted && e.filename && /\/js\/[^/]+\.js/.test(e.filename) && !/vendor|flappy/.test(e.filename)) window.__bootFail();
+  });
 </script>
 
 <div class="svg-widget" id="svgWidget">
@@ -139,9 +159,9 @@
 </div>
 
 <!-- Модал для "инфо"-точек (фракции/регионы) -->
-<div class="modal-backdrop" id="modalBackdrop">
+<div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true" aria-label="Окно">
   <div class="modal-card" id="modalCard">
-    <button class="modal-close" id="modalClose">×</button>
+    <button class="modal-close" id="modalClose" aria-label="Закрыть">×</button>
     <div id="modalContent"></div>
   </div>
 </div>
@@ -157,7 +177,7 @@
      которой нужно куда-то выбираться" — вкладка сама по себе уже и есть
      самый явный и понятный "путь назад", отдельная стрелка тут только
      дублировала бы то, что видно и так. -->
-<div class="system-overlay" id="systemOverlay">
+<div class="system-overlay" id="systemOverlay" role="dialog" aria-modal="true" aria-label="Система">
   <!-- Плашка ВНИЗУ (v=179), как у окна точки (.node-dock): строка «Точки в
        системе» с раскрывающимися колонками и под ней панель. Панель при
        статье расы переезжает в модал и там стоит на том же месте капсулой. -->
@@ -179,7 +199,7 @@
 <!-- Окно-вкладыш "Корабль-город Феном" — открывается поверх карты галактики,
      сама карта карта остаётся видна (затемнена) по краям. Внутри — карта Феном
      (тайлы + OpenSeadragon, см. js/phenom.js). -->
-<div class="phenom-overlay" id="phenomOverlay">
+<div class="phenom-overlay" id="phenomOverlay" role="dialog" aria-modal="true" aria-label="Точка карты">
   <div class="phenom-card" id="phenomCard">
     <!-- Плашка окна — ВНИЗУ, как панель карты (v=178): сверху строка «где я и
          кто тут» со шторкой переходов (#phenomLinks, renderNodeLinks в
@@ -227,7 +247,7 @@
            руками сюда ничего не добавляется. Кнопка прячется сама, если
            таких персонажей пока нет. -->
       <div class="phenom-char-nav" id="phenomCharNav" hidden>
-        <button class="phenom-char-nav-btn" id="phenomCharNavBtn" title="Персонажи на карте Феном">👥</button>
+        <button class="phenom-char-nav-btn" id="phenomCharNavBtn" title="Персонажи на карте Феном" aria-label="Персонажи на карте">👥</button>
         <div class="phenom-char-nav-list" id="phenomCharNavList" hidden></div>
       </div>
       <div class="phenom-viewer" id="phenomViewer"></div>
@@ -249,7 +269,7 @@
      общий .tabbar (как у статей/системы/Феном/персонажа, см. грабли №12) —
      раньше тут были широкие текстовые кнопки-пилюли (.story-action-btn),
      единственное место в проекте, которое ещё не было на общем стиле. -->
-<div class="phenom-overlay story-overlay" id="storyOverlay">
+<div class="phenom-overlay story-overlay" id="storyOverlay" role="dialog" aria-modal="true" aria-label="Точка карты">
   <div class="phenom-card" id="storyCard">
     <div class="node-dock">
       <div class="node-links" id="storyLinks" hidden></div>
@@ -282,7 +302,7 @@
      модал остался только редактору, справочнику и статье расы. Слой свой, а
      не общий с сюжетом: персонаж открывается ПОВЕРХ окна своего сюжета
      (Феном → сюжет → персонаж). Логика — js/characters.js. -->
-<div class="phenom-overlay story-overlay char-overlay" id="charOverlay">
+<div class="phenom-overlay story-overlay char-overlay" id="charOverlay" role="dialog" aria-modal="true" aria-label="Персонаж">
   <div class="phenom-card" id="charCard">
     <div class="node-dock">
       <div class="node-links" id="charLinks" hidden></div>
@@ -311,8 +331,8 @@
 <!-- Мини-игра Flappy Phenome (кнопка 🕹️ в подсказке «?»). Пустой слой: его
      наполняет js/flappy.js, который грузится только по нажатию. Слой здесь, а
      не в модуле, — за ним следит navigation.js (Esc / «назад» закрывают игру). -->
-<div class="flappy-overlay" id="flappyOverlay"></div>
+<div class="flappy-overlay" id="flappyOverlay" role="dialog" aria-modal="true" aria-label="Мини-игра Flappy Phenome"></div>
 
-<script type="module" src="js/main.js?v=199"></script>
+<script type="module" src="js/main.js?v=202" onerror="window.__bootFail && window.__bootFail()"></script>
 </body>
 </html>

@@ -7,8 +7,8 @@
    "Магический лор" пока заглушка — заменить на настоящую статью, когда
    будет готова.
    ============================================================ */
-import { openIframeModal, isDockedWith, setModalArticle, isArticleOpen } from './modal.js?v=199';
-import { normalizeUrl } from './reader.js?v=199';
+import { openIframeModal, isDockedWith, setModalArticle, isArticleOpen } from './modal.js?v=202';
+import { normalizeUrl } from './reader.js?v=202';
 
 export const REF_ARTICLES = {
   phenom: 'https://teletype.in/@greyspirit/4tRzyNaVfEQ#fvQz',
@@ -31,7 +31,7 @@ const refToolbarEl = document.getElementById('refToolbar');
 /* at — необязательный адрес с другим якорем внутри той же статьи (ссылка из
    другой статьи справочника, см. «mirror-open» ниже). */
 export function openRefArticle(id, at) {
-  const url = at || REF_ARTICLES[id];
+  const url = at || (Object.prototype.hasOwnProperty.call(REF_ARTICLES, id) ? REF_ARTICLES[id] : '');
   if (!url) return;
   const docked = isDockedWith(refToolbarEl);
   // Клик по статье, которая и так уже открыта (повторный клик по активной

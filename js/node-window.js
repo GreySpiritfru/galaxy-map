@@ -15,9 +15,10 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=199';
-import { REF_ARTICLES } from './articles.js?v=199';
-import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=199';
+import { escapeHtml } from './modal.js?v=202';
+import { REF_ARTICLES } from './articles.js?v=202';
+import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=202';
+import { frameHtml, safeHttps } from './net.js?v=202';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -61,7 +62,8 @@ function groupByLinks(chars) {
 export function embeddedArticleUrl(view) {
   const art = view && view.article;
   if (!art) return '';
-  if (art.ref) return REF_ARTICLES[art.ref] || '';
+  // Только свои ключи: ref «constructor» иначе давал адрес вида «function Object()…» (v=202).
+  if (art.ref) return (Object.prototype.hasOwnProperty.call(REF_ARTICLES, art.ref) && REF_ARTICLES[art.ref]) || '';
   return /^https:\/\/teletype\.in\//i.test(art.url || '') ? art.url : '';
 }
 
@@ -74,10 +76,11 @@ export function embeddedArticleUrl(view) {
    (css .node-article-frame.is-teletype); у telegra.ph/graph.org её нет. */
 export function renderFrame(container, url) {
   container.classList.add('is-article');
-  const old = container.querySelector('iframe.node-article-frame');
+  const old = container.querySelector('.node-article-frame');
   if (old && old.dataset.src === url) return;
   const teletype = /^https:\/\/teletype\.in\//i.test(url);
-  container.innerHTML = `<iframe class="node-article-frame${teletype ? ' is-teletype' : ''}" src="${escapeHtml(url)}"></iframe>`;
+  // Через frameHtml (v=201): только https и только сайты статей/анкет.
+  container.innerHTML = frameHtml(url, 'node-article-frame' + (teletype ? ' is-teletype' : ''));
   container.firstElementChild.dataset.src = url;
 }
 
@@ -126,7 +129,11 @@ export function renderNodeContent(container, view) {
   // Та же статья, что уже открыта (вернулись к точке), — остаётся вместе с
   // местом чтения: и iframe, и своя копия (.node-mirror).
   const keep = [...container.children].filter(n =>
-    (n.matches('iframe.node-article-frame') || n.matches('.node-mirror')) && n.dataset.src === url);
+    (n.matches('.node-article-frame') || n.matches('.node-mirror')) && n.dataset.src === url);
+  // Ушли со статьи прямо в другое окно и вернулись — место чтения копии
+  // запоминаем ДО сброса dataset.tab ниже (v=202, аудит: раньше терялось).
+  if (container.dataset.tab === 'article' && keep.some(n => n.matches('.node-mirror'))
+      && !container.classList.contains('is-article')) container.__artScroll = container.scrollTop;
   [...container.children].forEach(n => { if (!keep.includes(n)) n.remove(); });
   if (!keep.some(n => n.matches('.node-mirror'))) container.__artScroll = null;
   // Другая точка — места чтения прежней вкладки не переносим (showNodeBody).
@@ -166,7 +173,7 @@ export function showNodeBody(refs, view, which) {
   const desc = container.querySelector(':scope > .node-desc');
   const gameEl = container.querySelector(':scope > .node-game');
   const mirror = container.querySelector(':scope > .node-mirror');
-  const frame = container.querySelector(':scope > iframe.node-article-frame');
+  const frame = container.querySelector(':scope > .node-article-frame');
   // Место чтения — своё у описания, «Игры» и копии статьи (у iframe — внутри
   // него). dataset.tab — какая вкладка открыта сейчас (её же смотрит
   // phenom.js, возвращаясь со своей карты); нет — окно только что открыто.
@@ -237,11 +244,11 @@ export function showNodeBody(refs, view, which) {
   }).catch(fallback);
 
   function showFrame() {
-    let f = container.querySelector(':scope > iframe.node-article-frame');
+    let f = container.querySelector(':scope > .node-article-frame');
     if (!f || f.dataset.src !== url) {
       if (f) f.remove();
       const teletype = /^https:\/\/teletype\.in\//i.test(url);
-      container.insertAdjacentHTML('beforeend', `<iframe class="node-article-frame${teletype ? ' is-teletype' : ''}" src="${escapeHtml(url)}"></iframe>`);
+      container.insertAdjacentHTML('beforeend', frameHtml(url, 'node-article-frame' + (teletype ? ' is-teletype' : '')));
       f = container.lastElementChild;
       f.dataset.src = url;
     }
@@ -368,7 +375,7 @@ function renderGame(container, view, handlers) {
    чтения остаётся). Пока копия грузилась, игрок ушёл на «Броски» — holder
    уже вынут из контейнера, и поздний ответ ничего не портит. */
 export function renderSheet(container, url) {
-  const existing = container.querySelector(':scope > .node-mirror, :scope > iframe.node-article-frame');
+  const existing = container.querySelector(':scope > .node-mirror, :scope > .node-article-frame');
   if (existing && existing.dataset.src === url && container.children.length === 1) return;
   container.classList.remove('is-article');
   container.innerHTML = '';
@@ -412,20 +419,6 @@ function descriptionHtml(view) {
     ${recruitHtml(view, false)}
     ${descHtml}
   `;
-}
-
-/* Значок кнопки таб-бара, ведущей к точке, — её маркер (markerEl ниже), по
-   предложению игрока 24.09.2026: «куда я попаду» видно ещё до нажатия.
-   ⚠️ У системы арт не берётся (tabIconOf в map.js отдаёт пустую картинку):
-   её «картинка» — карта всей системы, в значке она читается тёмным пятном
-   (та же причина, что SYSTEM_ART_ZOOM в нодах). Ей рисуется бирюзовый круг
-   с буквой. */
-export function setTabIcon(span, meta) {
-  if (!span || !meta) return;
-  span.textContent = '';
-  // Не точка (нет формы маркера) — остаётся смайлик: это действие, а не переход.
-  if (!meta.shape) { span.textContent = meta.icon || ''; return; }
-  span.appendChild(markerEl(meta, 'tab-node-icon'));
 }
 
 /* ПРАВИЛО (24.09.2026): эмодзи — это действие, форма маркера — это точка.
@@ -1020,7 +1013,7 @@ export function applyNodeToolbar(refs, view, handlers) {
     show(refs.article, !!(art && (art.url || inline)));
     refs.article.title = (art && art.label) || 'Статья';
     refs.article.onclick = inline ? toBody('article')
-      : (art && art.url ? () => window.open(art.url, '_blank', 'noopener') : null);
+      : (art && safeHttps(art.url) ? () => window.open(safeHttps(art.url), '_blank', 'noopener') : null);
   }
   // «Игра» — есть, только если у ветки точки есть персонажи (renderGame).
   const game = refs.body ? renderGame(refs.body, view, handlers) : null;

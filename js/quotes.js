@@ -23,6 +23,10 @@ export function initQuotes(root) {
     if (body && body.scrollHeight <= body.clientHeight + 2) {
       q.classList.remove('is-collapsed');
       q.classList.add('is-short');
+      // Короткая — не кнопка: нечего раскрывать (v=202, доступность).
+      q.removeAttribute('role');
+      q.removeAttribute('tabindex');
+      q.removeAttribute('aria-expanded');
     }
   });
 }

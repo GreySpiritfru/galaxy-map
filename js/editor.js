@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=199';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=202';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -194,26 +194,43 @@ export function applyPendingEdits(lists) {
   const keep = [];
   pendingNow = new Map();
   readPending().forEach(entry => {
-    if (now - entry.at >= PENDING_TTL) return;
-    const item = (lists[entry.kind] || []).find(it => it && it.id === entry.id);
-    // Файл не скачался или точки в нём нет — ничего не накладываем, но и не
-    // забываем: при следующей загрузке файл может оказаться на месте.
-    if (!item) { keep.push(entry); return; }
-    const current = fieldsOf(entry.kind, item);
-    const fields = {};
-    Object.entries(entry.fields).forEach(([key, f]) => {
-      if (!f || !(key in current) || same(current[key], f.to)) return;
-      if (!Array.isArray(f.before) || !f.before.some(v => same(v, current[key]))) return;
-      // Пустое значение = поля в файле нет (так же пишет и бот).
-      if (f.to === null || f.to === false || f.to === '') delete item[key];
-      else item[key] = Array.isArray(f.to) ? [...f.to] : f.to;
-      fields[key] = f;
-    });
-    if (Object.keys(fields).length) {
-      const rest = {...entry, fields};
-      keep.push(rest);
-      pendingNow.set(entry.kind + ':' + entry.id, rest);
-    }
+    /* v=201 (аудит): запись проверяется целиком и накладывается под try —
+       одна кривая запись (kind не world/character, время из будущего, чужой
+       тип значения) бросала внутри graphReady, и на карте пропадали ВСЕ
+       маркеры. Такая запись просто выбрасывается. */
+    if (entry.kind !== 'world' && entry.kind !== 'character') return;
+    if (!(entry.at <= now) || now - entry.at >= PENDING_TTL) return;
+    try {
+      const list = Array.isArray(lists[entry.kind]) ? lists[entry.kind] : [];
+      const item = list.find(it => it && it.id === entry.id);
+      // Файл не скачался или точки в нём нет — ничего не накладываем, но и не
+      // забываем: при следующей загрузке файл может оказаться на месте.
+      if (!item) { keep.push(entry); return; }
+      const current = fieldsOf(entry.kind, item);
+      const fields = {};
+      Object.entries(entry.fields).forEach(([key, f]) => {
+        if (!f || !Object.prototype.hasOwnProperty.call(current, key) || same(current[key], f.to)) return;
+        if (!Array.isArray(f.before) || !f.before.some(v => same(v, current[key]))) return;
+        // Значение того же типа, что у поля (строка к строке и т.д.), иначе — мимо.
+        if (f.to !== null && current[key] !== null && typeof f.to !== typeof current[key]
+            && !(Array.isArray(f.to) && Array.isArray(current[key]))) return;
+        const empty = f.to === null || f.to === false || f.to === '';
+        if (key === 'articleUrl') {
+          /* В форме это поле плоское, а в данных — article.url (v=201, аудит):
+             раньше писалось item.articleUrl, которое карта не читает, и вкладка
+             «Статья» до коммита бота не появлялась. */
+          if (empty) { if (item.article) { delete item.article.url; if (!item.article.ref) delete item.article; } }
+          else item.article = {...(item.article && !item.article.ref ? item.article : {}), url: f.to};
+        } else if (empty) delete item[key];
+        else item[key] = Array.isArray(f.to) ? [...f.to] : f.to;
+        fields[key] = f;
+      });
+      if (Object.keys(fields).length) {
+        const rest = {...entry, fields};
+        keep.push(rest);
+        pendingNow.set(entry.kind + ':' + entry.id, rest);
+      }
+    } catch (e) { /* испорченная запись — выбрасываем */ }
   });
   writePending(keep);
   return pendingNow.size;

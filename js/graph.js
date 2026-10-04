@@ -220,14 +220,29 @@ export function buildNodes(sources) {
      его заметили: иначе обход дерева уйдёт в бесконечность. Проверять надо
      ПОСЛЕ того, как проставлены все родители — на полуготовом дереве цикл
      можно не увидеть, и результат зависел бы от порядка перебора. */
+  /* ⚠️ Рвём, только если обход вернулся в САМ узел (v=201, аудит): раньше
+     родителя терял и узел, который в цикл лишь упирался (C→A при A↔B — C
+     становился корнем). Узел вне цикла теперь доходит до разорванного цикла
+     и останавливается на нём. */
   byId.forEach(node => {
     const seen = new Set([node]);
     let cur = node.parent;
     while (cur) {
-      if (seen.has(cur)) { node.parent = null; break; }
+      if (cur === node) { node.parent = null; break; }
+      if (seen.has(cur)) break;
       seen.add(cur);
       cur = cur.parent;
     }
+  });
+
+  /* Корень без своих координат (v=202, аудит): например, точка была в системе,
+     а систему убрали из manifest — редактор таким пишет только systemX/Y.
+     Раньше она вставала в (0, 0) посреди карты; теперь маркера на карте нет
+     (как onMap: false), окно и переходы к ней остаются. */
+  byId.forEach(node => {
+    if (node.parent || node.kind === 'system') return;
+    const {x, y} = node.data;
+    if (!(typeof x === 'number' && isFinite(x) && typeof y === 'number' && isFinite(y))) node.onMap = false;
   });
 
   byId.forEach(node => {

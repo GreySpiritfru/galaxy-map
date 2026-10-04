@@ -12,9 +12,10 @@
    Данные — characters.json, что показать (view) собирает map.js: там граф,
    камера и переходы.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=199';
-import { canEdit, showEditor } from './editor.js?v=199';
-import { renderSheet, renderNodeLinks } from './node-window.js?v=199';
+import { escapeHtml } from './modal.js?v=202';
+import { canEdit, showEditor } from './editor.js?v=202';
+import { renderSheet, renderNodeLinks } from './node-window.js?v=202';
+import { fetchT } from './net.js?v=202';
 
 const overlay = document.getElementById('charOverlay');
 const content = document.getElementById('charContent');
@@ -28,7 +29,6 @@ const editBtn = document.getElementById('charEdit');
 
 // Персонаж, чьё окно открыто сейчас (запись из characters.json).
 let current = null;
-export function getOpenCharacter() { return current; }
 
 function setActive(btn) {
   [sheetBtn, notesBtn, rollsBtn].forEach(b => b.classList.toggle('active', b === btn));
@@ -36,9 +36,28 @@ function setActive(btn) {
 
 // Вкладка-заглушка вместо анкеты. Панель остаётся, вернуться на анкету —
 // одним тапом по «Анкета».
-function showStub(btn, title, text) {
+/* Тело «Заметок»/«Бросков» — отдельный ребёнок рядом с анкетой, а анкета
+   только прячется (v=202, аудит): раньше innerHTML стирал её, и при возврате
+   на «Анкету» чужая страница грузилась заново с начала. Место чтения анкеты
+   запоминается. */
+const SHEET_SEL = ':scope > .node-mirror, :scope > .node-article-frame';
+function tabBody() {
+  const sheet = content.querySelector(SHEET_SEL);
+  if (sheet && !sheet.hidden) { content.__sheetScroll = content.scrollTop; sheet.hidden = true; }
+  let el = content.querySelector(':scope > .char-tab');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'char-tab';
+    content.appendChild(el);
+  }
+  el.hidden = false;
   content.classList.remove('is-article');
-  content.innerHTML = `
+  content.scrollTop = 0;
+  return el;
+}
+
+function showStub(btn, title, text) {
+  tabBody().innerHTML = `
     <div class="char-stub">
       <div class="char-stub-title">${escapeHtml(title)}</div>
       <div>${escapeHtml(text)}</div>
@@ -49,6 +68,17 @@ function showStub(btn, title, text) {
 function showSheet() {
   if (!current) return;
   // Своя копия анкеты (articles/, js/reader.js), нет её — чужая страница.
+  // Та же анкета уже есть (спрятана под «Бросками») — просто показать её там же.
+  const sheet = content.querySelector(SHEET_SEL);
+  if (current.sheetUrl && sheet && sheet.dataset.src === current.sheetUrl) {
+    const tab = content.querySelector(':scope > .char-tab');
+    if (tab) tab.hidden = true;
+    sheet.hidden = false;
+    if (sheet.classList.contains('node-article-frame')) content.classList.add('is-article');
+    content.scrollTop = content.__sheetScroll || 0;
+    setActive(sheetBtn);
+    return;
+  }
   if (current.sheetUrl) renderSheet(content, current.sheetUrl);
   // Анкеты нет — окно всё равно открывается, иначе тап по маркеру выглядел
   // бы так, будто ничего не произошло.
@@ -66,7 +96,7 @@ export function openCharacter(view, handlers, {edit = false} = {}) {
   renderNodeLinks(links, view, handlers || {});
   // Другой персонаж — старую анкету долой, даже если тот же адрес не сменился
   // бы (у разных персонажей он разный, но заглушка «Заметок» могла остаться).
-  if (changed) content.innerHTML = '';
+  if (changed) { content.innerHTML = ''; content.__sheetScroll = 0; }
   showSheet();
   overlay.classList.add('open');
   if (edit && canEdit(current.id)) showEditor(current);
@@ -106,7 +136,7 @@ async function loadRolls() {
   if (rollsCache && Date.now() - rollsCache.at < 60000) return rollsCache.data;
   let data = {characters: {}};
   try {
-    const resp = await fetch(ROLLS_URL, {cache: 'no-cache'});
+    const resp = await fetchT(ROLLS_URL, {cache: 'no-cache'});
     // 404 — бот ещё ни разу не выгружал броски; это не ошибка.
     if (resp.status !== 404) data = await resp.json();
   } catch (e) { /* нет сети/битый файл — покажем «бросков нет» */ }
@@ -146,16 +176,17 @@ async function showRolls() {
   if (!current) return;
   const char = current;
   setActive(rollsBtn);
-  content.classList.remove('is-article');
-  content.innerHTML = '<div class="char-stub">Загрузка бросков…</div>';
+  const body = tabBody();
+  body.innerHTML = '<div class="char-stub">Загрузка бросков…</div>';
   const data = await loadRolls();
   // Пока грузилось, игрок мог уйти на другую вкладку или персонажа.
   if (current !== char || !rollsBtn.classList.contains('active')) return;
-  const list = (data.characters && data.characters[char.id]) || [];
+  const list = (data.characters && Object.prototype.hasOwnProperty.call(data.characters, char.id) && Array.isArray(data.characters[char.id]))
+    ? data.characters[char.id] : [];
   const how = `В группе: <code>/d20 ${escapeHtml((char.name || '').split(' ').pop() || 'Имя')} действие сл15</code>. `
     + 'В чате бросок виден сразу, здесь — в течение ~20 минут.';
   if (!list.length) {
-    content.innerHTML = `<div class="char-stub"><div class="char-stub-title">Бросков пока нет</div><div>${how}</div></div>`;
+    body.innerHTML = `<div class="char-stub"><div class="char-stub-title">Бросков пока нет</div><div>${how}</div></div>`;
     return;
   }
   const d20 = list.filter(r => /^d20([+-]|$)/.test(r.d || '') && Array.isArray(r.r));
@@ -164,7 +195,7 @@ async function showRolls() {
   const fails = list.filter(r => r.o === 'critfail').length;
   const summary = [`бросков: ${list.length}`, avg ? `средний d20: ${avg}` : '', crits ? `💥 ${crits}` : '', fails ? `💀 ${fails}` : '']
     .filter(Boolean).join(' · ');
-  content.innerHTML = `
+  body.innerHTML = `
     <div class="rolls">
       <div class="rolls-summary">${summary}</div>
       <ul class="rolls-list">${list.map(rollRow).join('')}</ul>

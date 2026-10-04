@@ -22,8 +22,8 @@
    точка без своей карты — это просто точка, и текст ей рисует тот же общий
    код, что и всем остальным. characters.json привязывает персонажей к любой
    точке с тайловой картой через submapX/submapY (см. ниже). */
-import { closeModal, escapeHtml } from './modal.js?v=199';
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=199';
+import { closeModal, escapeHtml } from './modal.js?v=202';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=202';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже
@@ -55,6 +55,7 @@ const SUBMAP_DEFAULT_ZOOM = 2.2; // если у submap нет своего initi
 const SUBMAP_CHAR_FOCUS_ZOOM = 6;
 
 const OSD_URL = 'https://cdnjs.cloudflare.com/ajax/libs/openseadragon/5.0.1/openseadragon.min.js';
+const OSD_SRI = 'sha512-gPZzE+sKmE0kvcjMxW431ef5b5T5QOADV9Gij0isPw2oLATd1IZW7dmDmKh7F2e5BfwjQyAfFp3/OF0fVMOF7Q==';
 let osdPromise = null;
 function loadOpenSeadragon() {
   if (window.OpenSeadragon) return Promise.resolve();
@@ -62,6 +63,10 @@ function loadOpenSeadragon() {
     osdPromise = new Promise((resolve, reject) => {
       const s = document.createElement('script');
       s.src = OSD_URL;
+      // Хеш файла (v=202, аудит): подмена на CDN — не выполнится. Совпадает с
+      // опубликованным cdnjs (api.cdnjs.com, поле sri). Новая версия — новый хеш.
+      s.integrity = OSD_SRI;
+      s.crossOrigin = 'anonymous';
       s.onload = () => resolve();
       // Не загрузилось — следующая попытка при следующем открытии карты.
       s.onerror = () => { osdPromise = null; s.remove(); reject(new Error('OpenSeadragon')); };
@@ -91,8 +96,16 @@ function ensurePhenomViewer() {
   // потому что тем же самым viewer'ом может переоткрыться ДРУГАЯ карта —
   // см. openSubmap ниже.
   phenomViewer.addHandler('open', () => {
+    setViewerStatus('');
     const vp = phenomViewer.viewport;
-    vp.zoomTo(vp.getHomeZoom() * (currentSubmap.initialZoom || SUBMAP_DEFAULT_ZOOM), null, true);
+    // Вернулись на ту же карту после «парковки» (см. parkViewer) — тот же вид,
+    // где игрок её оставил; иначе — стартовое приближение.
+    if (parkedView && parkedView.source === currentSubmap.source) {
+      vp.zoomTo(parkedView.zoom, null, true);
+      vp.panTo(parkedView.center, true);
+    } else {
+      vp.zoomTo(vp.getHomeZoom() * (currentSubmap.initialZoom || SUBMAP_DEFAULT_ZOOM), null, true);
+    }
     // Маркеры персонажей ставятся через imageToViewportCoordinates самого
     // TiledImage — до события 'open' его ещё нет, поэтому первая отрисовка
     // возможна только отсюда (setSubmapCharacters могли вызвать до того, как
@@ -316,9 +329,8 @@ export function openWorldWindow(view, handlers) {
    у любой точки одно и то же базовое окно (описание + ряд переходов), а своя
    карта — кнопка «🗺️ Карта» в панели, у тех, у кого она есть.
 
-   Для навигации это отдельный уровень (isSubmapViewOpen в depth() js/
-   navigation.js): ✕ превращается в ↩ и возвращает к описанию — ровно так же,
-   как закрытие статьи, открытой поверх окна.
+   Для навигации это ВКЛАДКА, а не уровень (с v=144): ✕ на карте закрывает
+   окно целиком, как на «Статье»; в v=134 карта была уровнем и ✕ становился ↩.
 
    На карте ряда переходов нет, а на описании нет 👥: переходы к детям и
    список персонажей на карте — разные задачи, и показывать их разом значило
@@ -328,7 +340,28 @@ export function openWorldWindow(view, handlers) {
 const phenomMapTab = document.getElementById('phenomMapTab');
 let openedSource = null; // какой .dzi сейчас загружен во viewer
 
+/* ⚠️ «Парковка» viewer'а (v=200, аудит 04.10.2026). OpenSeadragon, пока у
+   него открыта картинка, крутит requestAnimationFrame без остановки — даже
+   когда окно закрыто (замер облака: 0 вызовов/с до первого открытия карты
+   Фенома, ~80/с после — до конца сессии; на телефоне это и батарея, и
+   конкуренция с кадрами карты). Ушли с карты — закрываем картинку
+   (viewer.close(): цикл встаёт), запомнив вид; вернулись — open() снова,
+   тайлы приходят из кэша браузера, вид восстанавливает обработчик 'open'. */
+let parkedView = null;
+function parkViewer() {
+  if (!phenomViewer || !openedSource) return;
+  try {
+    const vp = phenomViewer.viewport;
+    parkedView = {source: openedSource, center: vp.getCenter(), zoom: vp.getZoom()};
+  } catch (e) { parkedView = null; }
+  phenomViewer.close();
+  openedSource = null;
+}
+
 function showBase() {
+  parkViewer();
+  setViewerStatus('');
+  phenomCharNavList.hidden = true;
   phenomOverlay.classList.remove('map-view');
   phenomMapTab.classList.remove('active');
   // Подсветку «Описание»/«Статья» ставит showNodeBody (js/node-window.js).
@@ -357,11 +390,30 @@ export function openSubmapView() {
   }
   // Первое открытие: библиотеку догружаем. Пока качается, игрок мог уйти с
   // карты или закрыть окно — тогда viewer создастся при следующем открытии.
+  setViewerStatus('Загрузка карты…');
   loadOpenSeadragon().then(() => {
     if (phenomViewer || !isSubmapViewOpen()) return;
     ensurePhenomViewer();
     openedSource = currentSubmap.source;
-  }, () => {});
+  }, () => {
+    // Библиотека с cdnjs не скачалась (v=202): раньше — пустая тьма и 👥.
+    setViewerStatus('Карта не загрузилась — проверь соединение.', true);
+  });
+}
+
+/* Надпись поверх области карты, пока библиотека качается, или при сбое —
+   с кнопкой «Повторить» (v=202, аудит). Убирается по 'open' viewer'а. */
+function setViewerStatus(text, retry) {
+  let el = phenomViewerEl.parentNode.querySelector(':scope > .phenom-viewer-status');
+  if (!text) { if (el) el.remove(); return; }
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'phenom-viewer-status';
+    phenomViewerEl.after(el);
+  }
+  el.innerHTML = '<span></span>' + (retry ? '<button type="button">Повторить</button>' : '');
+  el.firstChild.textContent = text;
+  if (retry) el.querySelector('button').onclick = () => { setViewerStatus(''); openSubmapView(); };
 }
 
 export function closeSubmapView() {

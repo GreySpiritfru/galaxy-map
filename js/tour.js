@@ -18,13 +18,13 @@
    ⚠️ Тексты — черновик из инфоканала (введение, «Что такое Феном», анкета),
    игрок обещал поправить. Править прямо здесь, в INTRO_TABS и STEPS.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=199';
-import { closeStory, isStoryOpen } from './stories.js?v=199';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=199';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=199';
-import { closeSystem, isSystemOpen } from './system-view.js?v=199';
-import { quoteHtml, initQuotes } from './quotes.js?v=199';
-import { JOIN_LINKS } from './node-window.js?v=199';
+import { closeModal, isArticleOpen } from './modal.js?v=202';
+import { closeStory, isStoryOpen } from './stories.js?v=202';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=202';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=202';
+import { closeSystem, isSystemOpen } from './system-view.js?v=202';
+import { quoteHtml, initQuotes } from './quotes.js?v=202';
+import { JOIN_LINKS } from './node-window.js?v=202';
 
 const TOUR_SEEN_KEY = 'galaxyMapTourSeen';
 const LINKS = JOIN_LINKS;
@@ -229,7 +229,6 @@ const COUNTED = STEPS.filter(s => !s.kind);
 
 function renderCard(step, rect) {
   const last = index === STEPS.length - 1;
-  let body;
   /* Карточка: шапка (заголовок, вкладки) и кнопки стоят на месте, текст
      между ними прокручивается — длинная вкладка «Про Феном» или раскрытые
      правила не уносят кнопки за край экрана. */

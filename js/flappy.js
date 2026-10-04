@@ -122,6 +122,13 @@ let ship, encounters = [], groxes = [], bolts = [], pickups = [], particles = []
 let score = 0, best = 0, made = 0, progress = 0, cursor = 0;
 let lastGapY = H / 2, lastKinds = [], lastWallStyle = '', lastShieldAt = 0, lastGdAt = 0;
 let holding = false, slowmo = 0;
+// Удержание (v=202, аудит): нажатые пальцы/кнопки мыши и клавиша — отдельно,
+// иначе при мультитаче отпускание любого пальца сбрасывало тягу.
+const downPointers = new Set();
+let keyHeld = false;
+// Пауза при сворачивании/уходе фокуса/повороте (v=202): раньше Феном погибал
+// через доли секунды после возврата — физика шла дальше без игрока.
+let paused = false, pauseEl = null;
 let unlocked = 1, pageOfferAt = 0, newPage = 0, comicOpen = false, comicPage = 1, swipeX = null;
 let sightings = null, bgMarks = [], nextMarkAt = 0;   // маркеры карты, проплывающие на фоне
 let beam = null, gigaHintShown = false;                // луч гигадетонатора
@@ -170,7 +177,7 @@ function build() {
   overlay.innerHTML = `
     <canvas class="flappy-canvas"></canvas>
     <button type="button" class="flappy-close" aria-label="Закрыть">✕</button>
-    <div class="flappy-score" aria-live="polite">0</div>
+    <div class="flappy-score">0</div>
     <div class="flappy-sector"><span class="flappy-sector-kicker"></span><span class="flappy-sector-name"></span></div>
     <div class="flappy-start">
       <div class="flappy-title">Flappy Phenome</div>
@@ -250,16 +257,20 @@ function build() {
   overlay.querySelector('.flappy-giga').addEventListener('pointerdown', (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (e.button) return;  // правая/средняя кнопка мыши — не трата детонатора
     fireGiga();
   });
   overlay.addEventListener('pointerdown', (e) => {
     if (e.target.closest('button, .flappy-comic')) return;
+    if (e.button) return;
     e.preventDefault();
+    downPointers.add(e.pointerId);
     press();
   });
-  window.addEventListener('pointerup', release);
-  window.addEventListener('pointercancel', release);
-  window.addEventListener('blur', release);
+  const up = (e) => { downPointers.delete(e.pointerId); if (!downPointers.size && !keyHeld) release(); };
+  window.addEventListener('pointerup', up);
+  window.addEventListener('pointercancel', up);
+  window.addEventListener('blur', () => { downPointers.clear(); keyHeld = false; release(); pause(); });
   overlay.addEventListener('contextmenu', (e) => e.preventDefault());
   // «Назад» (Esc, Telegram) сначала закрывает комикс, потом игру.
   overlay.addEventListener('flappy-close', () => (comicOpen ? closeComic() : closeFlappy()));
@@ -271,23 +282,53 @@ function build() {
       else if (e.code === 'ArrowRight') showPage(comicPage + 1);
       return;
     }
-    if (e.code === 'KeyF' && !e.repeat) { fireGiga(); return; }
+    // F без модификаторов: Ctrl/Cmd+F — поиск браузера, не детонатор.
+    if (e.code === 'KeyF' && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) { fireGiga(); return; }
+    // Enter/пробел на кнопке игры (✕, «Ещё раз», 📖) — нажатие самой кнопки,
+    // а не импульс (v=202).
+    if ((e.code === 'Enter' || e.code === 'Space') && e.target.closest && e.target.closest('button')) return;
     if (isKey(e)) {
       e.preventDefault();
       if (e.repeat) return;
+      keyHeld = true;
       press();
     }
   });
-  document.addEventListener('keyup', (e) => { if (isKey(e)) release(); });
-  window.addEventListener('resize', () => { if (isOpen()) resize(); });
-  document.addEventListener('visibilitychange', () => { lastT = 0; release(); });
+  document.addEventListener('keyup', (e) => {
+    if (!isKey(e)) return;
+    keyHeld = false;
+    if (!downPointers.size) release();
+  });
+  window.addEventListener('resize', () => { if (isOpen()) { resize(); pause(); } });
+  document.addEventListener('visibilitychange', () => { lastT = 0; release(); if (document.hidden) pause(); });
+  // Telegram свернули (шторка, другое приложение) — Bot API 8.0.
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg && typeof tg.onEvent === 'function') tg.onEvent('deactivated', pause);
+  pauseEl = document.createElement('div');
+  pauseEl.className = 'flappy-pause';
+  pauseEl.hidden = true;
+  pauseEl.innerHTML = '<div class="flappy-pause-title">Пауза</div><div class="flappy-pause-sub">Тапни, чтобы продолжить</div>';
+  overlay.appendChild(pauseEl);
 }
 
 // Нажатие: в режиме корабля — держим (тяга вверх), иначе — обычный импульс.
 function press() {
+  // Снятие с паузы — только снятие: импульс вторым нажатием.
+  if (paused) { resume(); return; }
   holding = true;
   if (state === 'play' && ship.gd > 0) return;
   onTap();
+}
+function pause() {
+  if (!isOpen() || state !== 'play' || paused) return;
+  paused = true;
+  holding = false;
+  pauseEl.hidden = false;
+}
+function resume() {
+  paused = false;
+  pauseEl.hidden = true;
+  lastT = 0; acc = 0;
 }
 function release() { holding = false; }
 
@@ -299,14 +340,20 @@ function updateComicUi() {
   if (newPage) np.textContent = `📖 Открыта страница ${newPage} комикса — загляни!`;
   overlay.querySelector('.flappy-comic-btn--panel').classList.toggle('is-new', !!newPage);
 }
+/* Класс comic-open на слое — для js/navigation.js (v=200): читалка считается
+   отдельным уровнем «назад». Без этого «назад» при открытом комиксе съедал
+   запись истории (закрывалась читалка, а глубина не менялась), и в браузере
+   третий «назад» уводил с сайта. */
 function openComic(n) {
   comicOpen = true;
   comicEl.hidden = false;
+  overlay.classList.add('comic-open');
   showPage(n);
 }
 function closeComic() {
   comicOpen = false;
   comicEl.hidden = true;
+  overlay.classList.remove('comic-open');
 }
 function showPage(n) {
   n = clamp(n, 1, COMIC_PAGES);
@@ -1299,7 +1346,7 @@ function update(dt) {
   time += dt;
   shake = Math.max(0, shake - dt * 2.5);
   flash = Math.max(0, flash - dt * 2.4);
-  if (warp > 0) warp = Math.max(0, warp - dt / 1.4);
+  if (warp > 0) warp = reduceMotion ? 0 : Math.max(0, warp - dt / 1.4);
   if (paletteFade < 1) paletteFade = Math.min(1, paletteFade + dt / 1.6);
   ship.ring += dt * 1.8;
   const v = state === 'play' ? speed() : 0;
@@ -2115,7 +2162,8 @@ function render() {
   if (ship.alive && ship.gd > 0) drawGdHud();
   if (flash > 0) {
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.fillStyle = `rgba(255,255,255,${(flash * 0.45).toFixed(3)})`;
+    // «Уменьшить движение» — вспышка вчетверо слабее (белый экран на миг).
+    ctx.fillStyle = `rgba(255,255,255,${(flash * (reduceMotion ? 0.11 : 0.45)).toFixed(3)})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 }
@@ -2138,36 +2186,58 @@ function drawGdHud() {
 
 function frame(t) {
   raf = requestAnimationFrame(frame);
+  // Под читалкой комикса холст не виден — не считаем и не рисуем (v=202).
+  if (comicOpen) { lastT = 0; return; }
   if (!lastT) lastT = t;
   const real = Math.min(0.05, (t - lastT) / 1000);  // свернули/вернулись — без рывка
+  lastT = t;
+  if (paused) { render(); return; }
   let ts = 1;
   if (slowmo > 0) {      // после взрыва планеты время на миг замедляется и разгоняется обратно
     ts = 1 - 0.7 * clamp(slowmo / SLOWMO, 0, 1);
     slowmo = Math.max(0, slowmo - real);
   }
   acc += real * ts;
-  lastT = t;
-  while (acc >= STEP) { update(STEP); acc -= STEP; }
+  /* Равные шаги не длиннее STEP на каждый кадр (v=202, аудит): раньше целые
+     шаги 1/120 с с остатком давали на 90 Гц шаблон 1-1-2 шага за кадр — каждый
+     третий кадр мир прыгал вдвое дальше (рывки). Теперь кадр делится поровну:
+     на 90 Гц — всегда 2 шага по 5.6 мс, на 60 Гц — 2–3 шага, движение ровное. */
+  const n = Math.ceil(acc / STEP - 1e-9);
+  if (n > 0) {
+    const dt = acc / n;
+    for (let i = 0; i < n; i++) update(dt);
+    acc = 0;
+  }
   render();
 }
 
 /* ---------- Открыть / закрыть ---------- */
 export function openFlappy() {
   if (!built) build();
-  best = loadBest();
-  unlocked = loadComic();
+  // Без localStorage рекорд и страницы живут хотя бы до перезагрузки (v=202).
+  best = Math.max(best || 0, loadBest());
+  unlocked = Math.max(unlocked || 1, loadComic());
   loadSightings();
   overlay.classList.add('open');
   resize();
   reset();
+  paused = false; if (pauseEl) pauseEl.hidden = true;
+  downPointers.clear(); keyHeld = false;
   lastT = 0; acc = 0;
+  // Фокус в игру (клавиатура/экранный диктор), назад — туда, откуда пришли.
+  returnFocus = document.activeElement;
+  overlay.querySelector('.flappy-close').focus({preventScroll: true});
   cancelAnimationFrame(raf);
   raf = requestAnimationFrame(frame);
 }
 
+let returnFocus = null;
 function closeFlappy() {
   overlay.classList.remove('open');
   cancelAnimationFrame(raf);
   raf = 0;
   state = 'ready';
+  paused = false;
+  if (returnFocus && returnFocus.isConnected) returnFocus.focus({preventScroll: true});
+  returnFocus = null;
 }

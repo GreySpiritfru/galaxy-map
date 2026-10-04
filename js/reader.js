@@ -16,6 +16,8 @@
    (articles/img/<хеш>.webp).
    ============================================================ */
 
+import { fetchT } from './net.js?v=202';
+
 const INDEX_URL = 'articles/index.json';
 const ANCHOR_RE = /^[A-Za-z0-9_-]{1,40}$/;
 const IMG_RE = /^articles\/img\/[0-9a-f]{16}\.webp$/;
@@ -42,7 +44,7 @@ export function anchorOf(url) {
 let indexPromise = null;
 function loadIndex() {
   if (!indexPromise) {
-    indexPromise = fetch(INDEX_URL, {cache: 'no-cache'})
+    indexPromise = fetchT(INDEX_URL, {cache: 'no-cache'}, 10000)
       .then(r => (r.status === 404 ? {} : r.json()))
       .then(d => (d && d.articles) || {})
       .catch(() => { indexPromise = null; return {}; });
@@ -61,9 +63,14 @@ export async function mirrorOf(url) {
 // кэш GitHub Pages (10 минут) не покажет старую.
 const docs = new Map();
 function loadDoc(entry) {
+  // Файл копии — только из articles/ (v=202, укрепление: адрес берётся из
+  // index.json, а грузить чужой адрес незачем).
+  if (typeof entry.file !== 'string' || !/^articles\/(tt|tg)\/[\w.@\/-]+\.json$/.test(entry.file) || entry.file.includes('..')) {
+    return Promise.reject(new Error('bad file'));
+  }
   const src = `${entry.file}?h=${encodeURIComponent(entry.hash || '')}`;
   if (!docs.has(src)) {
-    docs.set(src, fetch(src).then(r => {
+    docs.set(src, fetchT(src).then(r => {
       if (!r.ok) throw new Error(String(r.status));
       return r.json();
     }).catch(e => { docs.delete(src); throw e; }));
@@ -103,7 +110,7 @@ function safeHref(href) {
 function element(n) {
   const t = n.t;
   let el = null;
-  if (INLINE[t]) {
+  if (Object.prototype.hasOwnProperty.call(INLINE, t)) {
     el = document.createElement(INLINE[t]);
     build(n.c, el);
   } else if (t === 'br') {
@@ -112,7 +119,7 @@ function element(n) {
     const href = safeHref(n.href);
     el = href ? linkEl(href) : document.createElement('span');
     build(n.c, el);
-  } else if (BLOCK[t]) {
+  } else if (Object.prototype.hasOwnProperty.call(BLOCK, t)) {
     el = document.createElement(BLOCK[t]);
     if (n.align === 'center' || n.align === 'right') el.classList.add('is-' + n.align);
     build(n.c, el);
@@ -182,7 +189,7 @@ export function openExternal(href) {
 /* Прокрутить контейнер к блоку с якорем: блок встаёт сразу под верхний
    отступ контейнера (под плашку окна / шторку справочника). Прокрутку ставит
    код — уезжающая плашка не должна принять её за жест (__ignoreScrollUntil,
-   см. wireHeadAutoHide в node-window.js). */
+   см. wireDockAutoHide в node-window.js). */
 export function scrollToAnchor(scroller, anchor) {
   if (!scroller || !anchor || !ANCHOR_RE.test(anchor)) return false;
   const el = scroller.querySelector(`[data-anchor="${anchor}"]`);

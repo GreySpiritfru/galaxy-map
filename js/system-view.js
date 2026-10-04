@@ -1,9 +1,10 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=199';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=199';
-import { renderNodeLinks } from './node-window.js?v=199';
+import { createPanZoom } from './panzoom.js?v=202';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=202';
+import { renderNodeLinks } from './node-window.js?v=202';
+import { fetchT } from './net.js?v=202';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -63,7 +64,7 @@ document.getElementById('systemBack').addEventListener('click', () => {
 const LORE_PATH = 'systems/lore.json';
 const loreDataPromise = (async () => {
   try {
-    const resp = await fetch(LORE_PATH, {cache:'no-cache'});
+    const resp = await fetchT(LORE_PATH, {cache:'no-cache'});
     const data = await resp.json();
     return (data && typeof data === 'object') ? data : {};
   } catch (e) {
@@ -165,19 +166,32 @@ const systemCache = {};
 /* Карту системы с 17.09.2026 может залить и бот («загрузить систему», файл
    проверяет map_systems.py на сервере). Вторая линия защиты — здесь: SVG
    разбирается в инертном <template> (скрипты не выполняются, картинки не
-   грузятся), всё исполняемое и внешние ссылки выкидываются до вставки. */
-const UNSAFE_SVG_TAGS = new Set(['script', 'foreignobject', 'iframe', 'object', 'embed', 'audio', 'video']);
+   грузятся), до вставки остаётся только разрешённое.
+   ⚠️ v=201 (аудит 04.10.2026): раньше был ЧЁРНЫЙ список (script, iframe…) —
+   проходили <meta http-equiv="refresh"> (уводит всю Mini App), <set
+   attributeName="href">, <style> на весь документ (@import, прятать кнопки),
+   <img>/url() на чужой сервер и поддельные HTML-формы. Теперь БЕЛЫЙ список
+   элементов SVG (экспорт StellarMaps использует svg/g/defs/path/circle/rect/
+   text/textPath/filter/feGaussianBlur — с запасом на обычный SVG), внешние
+   ссылки и url() не на #id выкидываются. */
+const SAFE_SVG_TAGS = new Set(['svg', 'g', 'defs', 'path', 'circle', 'ellipse', 'rect', 'line', 'polyline',
+  'polygon', 'text', 'tspan', 'textpath', 'title', 'desc', 'use', 'symbol', 'clippath', 'mask', 'pattern',
+  'marker', 'lineargradient', 'radialgradient', 'stop', 'image', 'filter', 'fegaussianblur', 'feoffset',
+  'femerge', 'femergenode', 'feflood', 'fecomposite', 'feblend', 'fecolormatrix']);
+// url(…) в атрибуте/стиле — только на свой #id (фильтр, градиент, обрезка).
+const FOREIGN_URL = /url\(\s*(?!['"]?#)/i;
 function sanitizeSvg(svgText) {
   const tpl = document.createElement('template');
   tpl.innerHTML = svgText;
   tpl.content.querySelectorAll('*').forEach(el => {
-    if (UNSAFE_SVG_TAGS.has(el.localName.toLowerCase())) { el.remove(); return; }
+    if (!SAFE_SVG_TAGS.has(el.localName.toLowerCase())) { el.remove(); return; }
     [...el.attributes].forEach(attr => {
       const name = attr.name.toLowerCase();
       const value = attr.value.replace(/\s+/g, '').toLowerCase();
       const isHref = name === 'href' || name === 'xlink:href';
-      if (name.startsWith('on') || value.includes('javascript:') ||
-          (isHref && !value.startsWith('#') && !value.startsWith('data:image/'))) {
+      if (name.startsWith('on') || value.includes('javascript:') || value.includes('@import')
+          || (isHref && !value.startsWith('#') && !value.startsWith('data:image/'))
+          || FOREIGN_URL.test(attr.value)) {
         el.removeAttribute(attr.name);
       }
     });
@@ -209,7 +223,7 @@ export async function openSystem(name, opts = {}) {
   // только если для этой системы есть запись. Настраиваем её независимо от того,
   // готова ли сама карта системы (пусть работает даже пока карта в разработке).
   const loreData = await loreDataPromise;
-  const lore = loreData[slug];
+  const lore = loreData && Object.prototype.hasOwnProperty.call(loreData, slug) ? loreData[slug] : null;
   if (lore && lore.url) {
     systemLoreLabel.textContent = lore.label || 'Контролирующая раса';
     systemLoreBtn.classList.add('visible');
@@ -233,12 +247,15 @@ export async function openSystem(name, opts = {}) {
 
   if (!svgText) {
     try {
-      const resp = await fetch(`systems/${encodeURIComponent(slug)}.svg`, {cache:'no-cache'});
+      const resp = await fetchT(`systems/${encodeURIComponent(slug)}.svg`, {cache:'no-cache'});
       // Проверяем именно 404, а не resp.ok — resp.ok ложно считается false и на статусе
       // 304 (Not Modified из кэша), из-за чего реально загрузившийся файл принимался
       // бы за отсутствующий.
       if (resp.status === 404) throw new Error('not found');
       svgText = await resp.text();
+      // Страница ошибки (5xx и т.п.) — не карта: не вставляем и не кэшируем
+      // до перезагрузки, следующее открытие попробует снова (v=201).
+      if (resp.status >= 400 || !/<svg[\s>]/i.test(svgText.slice(0, 4000))) throw new Error('not svg');
       systemCache[slug] = svgText;
     } catch (err) {
       if (current !== opened) return;

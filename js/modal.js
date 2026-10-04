@@ -5,7 +5,8 @@
    поверх статьи. Используется отовсюду: map.js (маркеры), system-view.js
    (лор системы), articles.js (статьи-справочники), onboarding.js.
    ============================================================ */
-import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=199';
+import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=202';
+import { frameHtml } from './net.js?v=202';
 
 /* ⚠️ Кавычки экранируются тоже: результат подставляется не только в текст, но и
    в атрибуты (src="…" анкеты, title="…" с именем, value="…" в редакторе), а
@@ -71,7 +72,9 @@ export function setModalArticle(url) {
   const frame = () => {
     if (token !== articleToken) return;
     modalCard.classList.remove('is-reader');
-    modalContent.innerHTML = `<iframe src="${escapeHtml(url)}" loading="lazy"></iframe>`;
+    // Через frameHtml (v=201): только https и сайты статей. Без loading="lazy":
+    // с ним фрейм не прокручивался к #якорю раздела (как в окне точки).
+    modalContent.innerHTML = frameHtml(url, '');
   };
   renderMirror(url, modalContent).then(art => {
     if (token !== articleToken) return;

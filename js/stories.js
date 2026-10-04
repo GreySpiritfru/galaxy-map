@@ -13,7 +13,7 @@
    — js/phenom.js (он же умеет тайловую карту), верхний — этот. Оба вместе
    дают вложенность локация -> точка -> персонаж, см. CLAUDE.md.
    ============================================================ */
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=199';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=202';
 
 const storyOverlay = document.getElementById('storyOverlay');
 const storyContent = document.getElementById('storyContent');
@@ -28,10 +28,8 @@ const refs = {
 };
 let storyArmed = false;
 
-// Точка, чьё окно открыто сейчас (view из map.js, см. worldView). Нужна
-// снаружи: кнопка «Правка» живёт в map.js — там есть и граф, и камера.
+// Точка, чьё окно открыто сейчас (view из map.js, см. worldView).
 let currentNode = null;
-export function getOpenStory() { return currentNode; }
 
 // Переход «точка -> персонаж» (обратная сторона кнопки родителя в окне
 // персонажа): map.js регистрирует сюда колбэк, который наводит камеру и

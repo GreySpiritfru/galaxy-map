@@ -18,6 +18,11 @@ html, body {
   --safe-top: calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px));
   --safe-bottom: max(env(safe-area-inset-bottom, 0px),
     calc(var(--tg-safe-area-inset-bottom, 0px) + var(--tg-content-safe-area-inset-bottom, 0px)));
+  /* Слева/справа (v=202): вырез камеры в альбомной ориентации. */
+  --safe-left: max(env(safe-area-inset-left, 0px),
+    calc(var(--tg-safe-area-inset-left, 0px) + var(--tg-content-safe-area-inset-left, 0px)));
+  --safe-right: max(env(safe-area-inset-right, 0px),
+    calc(var(--tg-safe-area-inset-right, 0px) + var(--tg-content-safe-area-inset-right, 0px)));
 }
 
 .svg-widget {
@@ -245,7 +250,7 @@ html, body {
 .roll.is-fail .roll-total { border-color: rgba(255,120,120,0.45); }
 .roll-body { flex: 1; min-width: 0; }
 .roll-action { color: #fff; font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
-.roll-muted { color: rgba(255,255,255,0.4); font-style: italic; }
+.roll-muted { color: rgba(255,255,255,0.6); font-style: italic; }
 .roll-meta { margin-top: 2px; color: rgba(255,255,255,0.55); font-size: 12px; }
 .roll-verdict { margin-left: 4px; white-space: nowrap; }
 .roll-verdict.is-crit { color: #ffd76a; }
@@ -258,7 +263,7 @@ html, body {
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
-  color: rgba(255,255,255,0.45);
+  color: rgba(255,255,255,0.65);
   font-size: 11px;
 }
 .rolls-hint { margin-top: 14px; color: rgba(255,255,255,0.5); font-size: 12px; line-height: 1.5; }
@@ -277,7 +282,8 @@ html, body {
   height: 100%;
   overflow-y: auto;
   box-sizing: border-box;
-  padding: 76px 16px 28px;
+  /* Снизу — под системную панель телефона, иначе «Сохранить» уходил под неё. */
+  padding: 76px 16px calc(28px + var(--safe-bottom));
   background: #0e0e14;
   color: rgba(255,255,255,0.85);
   font-family: sans-serif;
@@ -334,8 +340,6 @@ html, body {
   font-size: 12px;
   margin: 4px 0 8px;
 }
-/* Кнопка «✏️ Правка» внизу карточки события (map.js, openNode). */
-.modal-edit-row { margin-top: 14px; }
 .editor-avatar-row .editor-btn { margin: 0 6px 6px 0; }
 .editor-avatar-row {
   display: flex;
@@ -501,6 +505,9 @@ html, body {
    попадает в фон окна. */
 body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .editor-fab,
 body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .editor-toast { display: none; }
+/* Панель карты под окнами тоже не нужна (v=202): сквозь полупрозрачные края
+   окна её подписи ложились под текст (альбомная ориентация, подсказка «?»). */
+body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flappy-overlay.open) .map-dock { visibility: hidden; }
 
 .editor-toast {
   position: absolute;
@@ -714,8 +721,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
    Стекло — как у плашек окон: тёмный полупрозрачный фон с размытием. */
 .map-dock {
   position: absolute;
-  left: 10px;
-  right: 10px;
+  left: calc(10px + var(--safe-left));
+  right: calc(10px + var(--safe-right));
   bottom: calc(10px + var(--safe-bottom));
   z-index: 20;
   display: flex;
@@ -914,12 +921,25 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
    сами не нажали и не посмотрели обучение хотя бы раз (см. onboarding.js).
    Не мигание (резкая смена видимости), а плавно расширяющееся/тающее
    кольцо — заметно, но не раздражает. */
-@keyframes helpPulse {
-  0%, 100% { box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.08), 0 0 0 0 rgba(175,238,238,0.55); }
-  50%      { box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.08), 0 0 0 9px rgba(175,238,238,0); }
+/* v=202 (аудит): кольцо — отдельный ::after на transform/opacity (видеокарта),
+   а не анимация box-shadow самой кнопки (перерисовка каждый кадр без конца). */
+#helpBtn.pulse { position: relative; }
+#helpBtn.pulse::after,
+.help-tour-btn.pulse::after,
+.flappy-comic-btn.is-new::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 2px rgba(175,238,238,0.6);
+  pointer-events: none;
+  animation: ringPulse 2.4s ease-out infinite;
 }
-#helpBtn.pulse {
-  animation: helpPulse 2.4s ease-in-out infinite;
+.help-tour-btn.pulse::after,
+.flappy-comic-btn.is-new::after { box-shadow: 0 0 0 2px rgba(255,215,106,0.6); animation-duration: 2.2s; }
+@keyframes ringPulse {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(1.35, 1.6); opacity: 0; }
 }
 
 @media (hover: hover) {
@@ -1054,6 +1074,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   position: absolute;
   right: 10px;
   top: 8px;
+  z-index: 2;
   border: none;
   background: transparent;
   color: #fff;
@@ -1095,7 +1116,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
   margin-top: 14px;
   padding-top: 10px;
   border-top: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.45);
+  color: rgba(255,255,255,0.62);
   font-size: 11px;
   text-align: center;
 }
@@ -1319,9 +1340,6 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open) .edit
 /* Завершённая точка — как её маркер на карте: обесцвечена. */
 .node-marker.is-done { filter: grayscale(1); opacity: 0.75; }
 
-/* Маркер на кнопке таб-бара. Крупнее строки эмодзи рядом (19px) — по просьбе
-   игрока: арт это содержательная часть кнопки, в 19 px он не читался. */
-.tab-node-icon { width: 25px; height: 25px; font-size: 12px; }
 
 /* ===== Строка и раскрывающаяся панель переходов (renderNodeLinks; v=178–179) =====
    Строка «где я и кто тут» (.node-strip): родитель › название · стопки ·
@@ -1909,7 +1927,10 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
    иначе просвечивала бы карта галактики. */
 .phenom-viewer { background: #0e0e14; }
 /* Персонаж — третий, самый верхний слой окна точки (под модалом 300). */
-.char-overlay { z-index: 252; }
+/* Двойной класс (v=201): у слоя есть и .story-overlay, чьё правило z-index 251
+   стоит в файле ниже и перебивало одиночный .char-overlay — персонаж лежал
+   выше сюжета только по порядку в DOM. */
+.story-overlay.char-overlay { z-index: 252; }
 .phenom-toolbar::-webkit-scrollbar { display: none; }
 /* Меню окна Феном переведено на .tabbar (как статьи и вид системы, см.
    грабли №12): кнопки делят ширину поровну через flex:1 1 0, поэтому зазор
@@ -2079,7 +2100,7 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
 .mirror-toc .lvl-3 { padding-left: 28px; }
 .mirror-toc a { text-decoration: none; }
 .mirror-source { margin: 28px 0 8px; color: rgba(255,255,255,0.45); font-size: 12px; }
-.mirror-loading { padding: 48px 0; text-align: center; color: rgba(255,255,255,0.45); font-size: 13px; }
+.mirror-loading { padding: 48px 0; text-align: center; color: rgba(255,255,255,0.65); font-size: 13px; }
 
 /* Справочник и статьи рас в модале: своя копия прокручивается сама (у
    фрейма листает страница внутри него). Сверху — место под пристыкованную
@@ -2090,7 +2111,7 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 72px 20px 40px; /* без панели: сверху — место под ✕ модала */
+  padding: 72px 20px calc(40px + var(--safe-bottom)); /* без панели: сверху — место под ✕ модала */
 }
 /* С пристыкованной панелью (v=179) она внизу — отступ снизу под неё. */
 .modal-card--iframe.is-reader.has-dock #modalContent {
@@ -2162,7 +2183,7 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   font: 600 13px sans-serif;
   cursor: pointer;
 }
-.node-recruit-btn:hover { background: rgba(255, 215, 106, 0.24); }
+@media (hover: hover) { .node-recruit-btn:hover { background: rgba(255, 215, 106, 0.24); } }
 .node-recruit-btn:focus-visible { outline: 2px solid #ffd76a; outline-offset: 2px; }
 
 /* «♟️ Игра» — состав ветки точки (v=177, renderGame в js/node-window.js).
@@ -2222,7 +2243,7 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   text-align: left;
   cursor: pointer;
 }
-.game-row:hover { background: rgba(255,255,255,0.05); }
+@media (hover: hover) { .game-row:hover { background: rgba(255,255,255,0.05); } }
 .game-row:focus-visible { outline: 2px solid #AFEEEE; outline-offset: -2px; }
 .game-row-marker { width: 36px; height: 36px; font-size: 15px; flex: 0 0 auto; }
 .game-row-text {
@@ -2262,8 +2283,6 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   .game-section > .game-group { grid-column: 1 / -1; }
 }
 
-.node-article-link { margin-top: 14px; }
-.node-article-link a { color: #AFEEEE; }
 
 /* Кнопка "персонажи на карте Феном" (слева сверху над самой картой, а не в
    общем таб-баре — это навигация ВНУТРИ карты, а не смена вкладки окна) и её
@@ -2834,7 +2853,7 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   display: flex;
   align-items: center;
   gap: 5px;
-  color: rgba(255,255,255,0.45);
+  color: rgba(255,255,255,0.62);
   font-size: 12px;
   margin-bottom: 6px;
 }
@@ -2875,7 +2894,7 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 .tour-tab-num {
   font-size: 14px;
   font-weight: 800;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.6);
 }
 .tour-tab-label {
   max-width: 100%;
@@ -2958,6 +2977,7 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   outline: none;
 }
 .tg-quote.is-short { cursor: default; padding-right: 11px; }
+.tg-quote:focus-visible { outline: 2px solid #AFEEEE; outline-offset: 2px; }
 .tg-quote-body { font-size: 13.5px; line-height: 1.45; }
 .tg-quote.is-collapsed .tg-quote-body {
   max-height: 4.35em;
@@ -2994,11 +3014,7 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   font-weight: 700;
   cursor: pointer;
 }
-@keyframes tourBtnPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,106,0.5); }
-  50%      { box-shadow: 0 0 0 8px rgba(255,215,106,0); }
-}
-.help-tour-btn.pulse { animation: tourBtnPulse 2.2s ease-in-out infinite; }
+.help-tour-btn.pulse { position: relative; }
 /* Мини-игра под кнопкой обучения (v=197; в v=195–196 — маленькая 🕹️ справа). */
 .help-game-btn {
   display: flex;
@@ -3173,9 +3189,11 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 }
 /* Гигадетонатор (v=198): кнопка справа внизу, пока он есть (за планету,
    разбитую щитом). Значок — белый «ёж» лучей, как в Spore (SVG из flappy.js). */
+/* Слева внизу (v=202, аудит): справа у края появляется «!» гроксов, и кнопка
+   закрывала предупреждение, когда грокс шёл по нижней линии. */
 .flappy-giga {
   position: absolute;
-  right: 14px;
+  left: calc(14px + var(--safe-left, 0px));
   bottom: calc(var(--safe-bottom) + 78px);
   z-index: 2;
   width: 66px;
@@ -3205,7 +3223,7 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 }
 .flappy-giga-count:empty { display: none; }
 @keyframes flappyGiga {
-  50% { box-shadow: 0 0 30px rgba(200,160,255,1); transform: scale(1.05); }
+  50% { transform: scale(1.07); }
 }
 .flappy-legend .flappy-giga-icon {
   width: 15px;
@@ -3229,7 +3247,7 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   cursor: pointer;
 }
 .flappy-comic-btn--panel { margin-top: 0; flex: 0 0 auto; padding: 11px 14px; }
-.flappy-comic-btn.is-new { animation: tourBtnPulse 2.2s ease-in-out infinite; }
+.flappy-comic-btn.is-new { position: relative; }
 .flappy-newpage { margin-top: 8px; font-size: 13px; font-weight: 700; color: #ffd76a; }
 .flappy-newpage[hidden], .flappy-comic[hidden] { display: none; }
 .flappy-comic {
@@ -3334,6 +3352,7 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tour-arrow, .help-tour-btn.pulse { animation: none; }
+  #helpBtn.pulse::after, .help-tour-btn.pulse::after, .flappy-comic-btn.is-new::after { animation: none; opacity: 0; }
   .tour-hole { transition: none; }
 }
 
@@ -3462,3 +3481,132 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   .splash-galaxy, .splash-spin, .splash-glow, .splash-float, .splash-title, .splash-sub, .splash-bar, .splash-bar span { animation: none; }
   .splash-logo.is-loaded { animation: none; opacity: 1; }
 }
+
+/* Плашка «не загрузилось — повторить» (js/net.js, v=200). Сверху, под
+   кнопками Telegram; выше окон (500), ниже экрана сбоя запуска (1000). */
+.load-error {
+  position: fixed;
+  top: calc(var(--safe-top) + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 20px));
+  box-sizing: border-box;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px 10px 14px;
+  border-radius: 14px;
+  background: rgba(40, 16, 20, 0.95);
+  border: 1px solid rgba(255, 140, 140, 0.45);
+  color: #ffd9d9;
+  font-size: 13px;
+  line-height: 1.35;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+.load-error[hidden] { display: none; }
+.load-error-text { flex: 1; }
+.load-error-retry {
+  flex: none;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 180, 180, 0.6);
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffe9e9;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.load-error-close {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: #ffd9d9;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* Чужая страница не из списка (js/net.js frameHtml, v=201) — вместо фрейма
+   ссылка «Открыть страницу ↗». */
+.frame-blocked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  padding: 24px;
+  box-sizing: border-box;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 15px;
+  text-align: center;
+}
+.frame-blocked a {
+  color: #AFEEEE;
+  padding: 10px 18px;
+  border: 1px solid rgba(175, 238, 238, 0.5);
+  border-radius: 12px;
+  text-decoration: none;
+}
+
+/* Пауза мини-игры (js/flappy.js, v=202) — свернули Telegram, ушёл фокус,
+   повернули экран посреди забега. Тап — продолжить. */
+.flappy-pause {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(5, 5, 11, 0.55);
+  color: #fff;
+  pointer-events: none;
+}
+.flappy-pause[hidden] { display: none; }
+.flappy-pause-title { font-size: 30px; font-weight: 800; letter-spacing: 0.04em; }
+.flappy-pause-sub { font-size: 14px; color: rgba(255, 255, 255, 0.8); }
+
+/* ✕ обычного модала («?», карточка точки) — прилипает к верху карточки при
+   прокрутке длинного текста (v=202, аудит: после прокрутки он уезжал вместе
+   с текстом). У модала со статьёй своя раскладка — не трогаем. */
+.modal-card:not(.modal-card--iframe) > .modal-close {
+  position: sticky;
+  top: -8px;
+  float: right;
+  margin: -8px -10px 0 6px;
+  border-radius: 10px;
+  background: rgba(10,10,16,0.92);
+}
+
+/* Своя карта точки: «Загрузка карты…» / ошибка с «Повторить» (js/phenom.js,
+   v=202) — поверх области viewer'а, по центру. */
+.phenom-viewer-status {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 80%;
+  color: rgba(255,255,255,0.8);
+  font-size: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+.phenom-viewer-status button {
+  pointer-events: auto;
+  padding: 8px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(175,238,238,0.5);
+  background: rgba(255,255,255,0.06);
+  color: #AFEEEE;
+  font: inherit;
+  cursor: pointer;
+}
+.phenom-overlay:not(.map-view) .phenom-viewer-status { display: none; }
