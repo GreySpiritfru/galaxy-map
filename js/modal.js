@@ -5,8 +5,8 @@
    поверх статьи. Используется отовсюду: map.js (маркеры), system-view.js
    (лор системы), articles.js (статьи-справочники), onboarding.js.
    ============================================================ */
-import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=203';
-import { frameHtml } from './net.js?v=203';
+import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=204';
+import { frameHtml } from './net.js?v=204';
 
 /* ⚠️ Кавычки экранируются тоже: результат подставляется не только в текст, но и
    в атрибуты (src="…" анкеты, title="…" с именем, value="…" в редакторе), а

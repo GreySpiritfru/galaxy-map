@@ -15,10 +15,11 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=203';
-import { REF_ARTICLES } from './articles.js?v=203';
-import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=203';
-import { frameHtml, safeHttps } from './net.js?v=203';
+import { escapeHtml } from './modal.js?v=204';
+import { REF_ARTICLES } from './articles.js?v=204';
+import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=204';
+import { frameHtml, safeHttps } from './net.js?v=204';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=204';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -270,10 +271,14 @@ export function showNodeBody(refs, view, which) {
    сюжетов. Здесь — фактический состав: все персонажи ветки (сама точка и
    её точки-потомки), с расой и ролью, союзники (links) — одной рамкой, как
    пунктир на карте. Без имён игроков: их на карту не
-   выносим. Вкладка задумана как «игровое» место окна — сюда же потом лягут
-   статистика сюжета и броски, которые описанию лишние.
+   выносим. Вкладка задумана как «игровое» место окна — статистика сюжета и
+   броски, которые описанию лишние.
    Данные — view.roster из map.js (worldView): [{id, own, head, chars}].
-   Нет ни одного персонажа — вкладки нет.
+   v=204 (решение игрока): «Игра» есть ТОЛЬКО у сюжетов (beacon) — у Фенома,
+   фракций и прочих точек её нет. Под составом — броски: персонажей ветки
+   (rolls.json → characters) и НПС от сюжета (→ plots, view.branch — сам
+   сюжет и точки под ним; бот: «/d20 Переворот враг Киборг бьёт»), вместе по
+   времени, и «весы удачи» — средний d20 героев против НПС.
    ============================================================ */
 const plural = (n, one, few, many) => {
   const a = n % 10, b = n % 100;
@@ -311,8 +316,8 @@ function rosterRow(c, onTap) {
 function renderGame(container, view, handlers) {
   const old = container.querySelector(':scope > .node-game');
   if (old) old.remove();
+  if (!view.beacon) return null;
   const sections = (Array.isArray(view.roster) ? view.roster : []).filter(s => s.chars && s.chars.length);
-  if (!sections.length) return null;
   const toChar = (id) => { if (handlers.onCharacter) handlers.onCharacter(id); };
   const toPoint = (id) => { if (handlers.onChild) handlers.onChild(id); };
 
@@ -323,16 +328,19 @@ function renderGame(container, view, handlers) {
   const grouped = sections.map(s => groupByLinks(pinnedFirst(s.chars)));
   const allies = grouped.reduce((n, gs) => n + gs.filter(g => g.length > 1).length, 0);
 
+  // Порядок (решение игрока): броски → (НПС — потом) → состав последним:
+  // персонажи и так есть в строке плашки окна.
+  root.appendChild(gameRolls(view, sections, toChar));
   const title = document.createElement('div');
-  title.className = 'game-title';
+  title.className = 'game-title game-roster-title';
   title.textContent = 'Состав';
   const summary = document.createElement('div');
   summary.className = 'game-summary';
-  summary.textContent = [
+  summary.textContent = total ? [
     `${total} ${plural(total, 'персонаж', 'персонажа', 'персонажей')}`,
     allies ? `${allies} ${plural(allies, 'группа', 'группы', 'групп')} союзников` : '',
     sections.length > 1 ? `${sections.length} ${plural(sections.length, 'точка', 'точки', 'точек')}` : '',
-  ].filter(Boolean).join(' · ');
+  ].filter(Boolean).join(' · ') : 'Персонажей пока нет.';
   root.append(title, summary);
 
   sections.forEach((s, k) => {
@@ -368,6 +376,113 @@ function renderGame(container, view, handlers) {
   });
   container.appendChild(root);
   return root;
+}
+
+const GAME_ROLLS_SHOW = 30;
+
+/* Броски сюжета: грузятся при открытии окна (rolls.json кэшируется на минуту),
+   пока — «Загрузка…». Окно успели переоткрыть другой точкой — блок уже вынут
+   из DOM, поздний ответ ничего не портит. */
+function gameRolls(view, sections, toChar) {
+  const box = document.createElement('section');
+  box.className = 'game-rolls';
+  const title = document.createElement('div');
+  title.className = 'game-title';
+  title.textContent = 'Броски';
+  const body = document.createElement('div');
+  body.className = 'game-summary';
+  body.textContent = 'Загрузка бросков…';
+  box.append(title, body);
+
+  const chars = new Map();
+  sections.forEach(s => s.chars.forEach(c => chars.set(c.id, c)));
+  // Как бот найдёт сюжет: короткое название, иначе полное (без номера).
+  const plotName = view.shortTitle || view.title || 'Сюжет';
+  const firstName = (c) => (c.fullName || c.name || '').split(' ').find(w => w.length > 2) || c.name || '';
+  const hint = `За персонажа: <code>/d20 ${escapeHtml(firstName(chars.values().next().value || {}) || 'Имя')} действие сл15</code>. `
+    + `За НПС сюжета: <code>/d20 ${escapeHtml(plotName)} враг Киборг бьёт</code> `
+    + '(или «нейтрал», «союзник»; бросает ведущий). В чате бросок виден сразу, здесь — в течение ~20 минут.';
+
+  loadRolls().then(data => {
+    if (!box.isConnected) return;
+    const heroes = [];
+    chars.forEach((c, id) => rollsOf(data, 'characters', id).forEach(r => heroes.push({r, char: c})));
+    const npcs = [];
+    (Array.isArray(view.branch) ? view.branch : [view.id]).forEach(id =>
+      rollsOf(data, 'plots', id).forEach(r => npcs.push({r})));
+    const all = heroes.concat(npcs).sort((a, b) => (Number(b.r.t) || 0) - (Number(a.r.t) || 0));
+
+    body.remove();
+    if (!all.length) {
+      box.insertAdjacentHTML('beforeend', `<div class="game-summary">Бросков пока нет.</div>
+        <div class="rolls-hint">${hint}</div>`);
+      return;
+    }
+    const sum = document.createElement('div');
+    sum.className = 'game-summary';
+    sum.textContent = [
+      `бросков: ${all.length}`,
+      heroes.length ? `героев: ${heroes.length}` : '',
+      npcs.length ? `НПС: ${npcs.length}` : '',
+    ].filter(Boolean).join(' · ');
+    box.appendChild(sum);
+    const luck = luckEl(heroes.map(x => x.r), npcs.map(x => x.r));
+    if (luck) box.appendChild(luck);
+
+    const ul = document.createElement('ul');
+    ul.className = 'rolls-list';
+    all.slice(0, GAME_ROLLS_SHOW).forEach(({r, char}) => {
+      ul.insertAdjacentHTML('beforeend', rollRowHtml(r));
+      const li = ul.lastElementChild;
+      li.querySelector('.roll-body').prepend(char ? heroWho(char, toChar) : npcWho(r));
+    });
+    box.appendChild(ul);
+    if (all.length > GAME_ROLLS_SHOW) {
+      box.insertAdjacentHTML('beforeend', `<div class="rolls-hint">Ещё ${all.length - GAME_ROLLS_SHOW} раньше — `
+        + 'у персонажей во вкладке «🎲 Броски», у НПС — командой «броски» в группе.</div>');
+    }
+    box.insertAdjacentHTML('beforeend', `<div class="rolls-hint">${hint}</div>`);
+  });
+  return box;
+}
+
+// Кто бросал: персонаж — маркер и имя (тап — его окно), НПС — значок стороны.
+function heroWho(c, toChar) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'roll-who is-hero';
+  btn.appendChild(markerEl(c, 'roll-who-marker'));
+  const t = document.createElement('span');
+  t.textContent = c.name || c.fullName || '';
+  btn.appendChild(t);
+  btn.addEventListener('click', () => toChar(c.id));
+  return btn;
+}
+
+function npcWho(r) {
+  const side = Object.prototype.hasOwnProperty.call(NPC_SIDE, r.k) ? NPC_SIDE[r.k] : NPC_DEFAULT;
+  const el = document.createElement('span');
+  el.className = 'roll-who ' + side[2];
+  el.textContent = `${side[0]} ${side[1]}`;
+  return el;
+}
+
+/* «Весы удачи» — средний d20 героев против НПС: перетягивание каната, доля
+   полосы — пропорция средних. Нужны d20 с обеих сторон, иначе не рисуем. */
+function luckEl(heroes, npcs) {
+  const h = d20Faces(heroes), n = d20Faces(npcs);
+  if (!h.length || !n.length) return null;
+  const ah = average(h), an = average(n);
+  const fmt = (x) => x.toFixed(1).replace('.', ',');
+  const verdict = Math.abs(ah - an) < 1 ? 'кубы держат нейтралитет'
+    : (ah > an ? 'кубы на стороне героев 😇' : 'кубы на стороне НПС 😈');
+  const el = document.createElement('div');
+  el.className = 'game-luck';
+  el.innerHTML = `
+    <div class="game-luck-head">⚖️ Весы удачи — ${verdict}</div>
+    <div class="game-luck-bar" style="--share:${(ah / (ah + an) * 100).toFixed(1)}%"><span></span></div>
+    <div class="game-luck-legend"><span>Герои · d20 ${fmt(ah)}</span><span>НПС · d20 ${fmt(an)}</span></div>`;
+  return el;
 }
 
 /* Анкета персонажа (01.10.2026): своя копия, если есть, иначе чужая страница
@@ -1015,7 +1130,7 @@ export function applyNodeToolbar(refs, view, handlers) {
     refs.article.onclick = inline ? toBody('article')
       : (art && safeHttps(art.url) ? () => window.open(safeHttps(art.url), '_blank', 'noopener') : null);
   }
-  // «Игра» — есть, только если у ветки точки есть персонажи (renderGame).
+  // «Игра» — только у сюжетов (beacon, v=204): состав и броски (renderGame).
   const game = refs.body ? renderGame(refs.body, view, handlers) : null;
   if (refs.game) {
     show(refs.game, !!game);
