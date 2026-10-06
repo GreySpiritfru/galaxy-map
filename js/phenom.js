@@ -22,8 +22,8 @@
    точка без своей карты — это просто точка, и текст ей рисует тот же общий
    код, что и всем остальным. characters.json привязывает персонажей к любой
    точке с тайловой картой через submapX/submapY (см. ниже). */
-import { closeModal, escapeHtml } from './modal.js?v=204';
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=204';
+import { closeModal, escapeHtml } from './modal.js?v=205';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks, syncDock } from './node-window.js?v=205';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomViewerEl = document.getElementById('phenomViewer'); // DOM-элемент; не путать с phenomViewer — экземпляром OpenSeadragon ниже
@@ -315,6 +315,7 @@ export function openWorldWindow(view, handlers) {
   applyNodeToolbar(refs, view, {...(handlers || {}), beforeBody: showBase});
   renderNodeLinks(phenomLinks, view, handlers || {});
   phenomMapTab.hidden = !currentSubmap;
+  phenomShipTab.hidden = !currentSubmap;
   phenomArmed = false;
   setTimeout(() => { phenomArmed = true; }, 300);
 }
@@ -358,7 +359,63 @@ function parkViewer() {
   openedSource = null;
 }
 
+/* Схема корабля (v=205) — тест нового вида Фенома: страница ship/ (PixiJS,
+   векторный корабль с вращающимися кольцами) во фрейме, вкладкой рядом с
+   «Картой». Фрейм создаётся при открытии и УДАЛЯЕТСЯ при уходе с вкладки:
+   страница рисует каждый кадр (кольца), и спрятанный фрейм крутил бы его
+   впустую, как OpenSeadragon до парковки. Повторное открытие — заново с
+   общего вида, страница и PixiJS приходят из кэша. Кончается фрейм над
+   плашкой окна: внизу у страницы своя панель частей корабля. */
+const phenomShipTab = document.getElementById('phenomShipTab');
+const phenomShipEl = document.getElementById('phenomShip');
+
+function hideShip() {
+  if (!phenomOverlay.classList.contains('ship-view')) return;
+  phenomOverlay.classList.remove('ship-view');
+  const card = phenomOverlay.querySelector('.phenom-card');
+  if (card) syncDock(card);   // строка плашки вернулась
+  phenomShipTab.classList.remove('active');
+  phenomShipEl.hidden = true;
+  phenomShipEl.textContent = '';
+}
+
+function openShipView() {
+  if (!currentSubmap || !isPhenomOpen()) return;
+  showBase();
+  phenomOverlay.classList.add('ship-view');
+  phenomShipTab.classList.add('active');
+  const card = phenomOverlay.querySelector('.phenom-card');
+  if (card && card.__showDock) card.__showDock();
+  refs.desc.classList.remove('active');
+  refs.article.classList.remove('active');
+  refs.game.classList.remove('active');
+  phenomInfoContent.hidden = true;
+  phenomShipEl.hidden = false;
+  // Строка плашки спряталась — высота плашки другая; наблюдатель за размером
+  // мог промолчать (плашка в этот момент «в движении»), меряем сами.
+  if (card) syncDock(card);
+  const frame = document.createElement('iframe');
+  frame.src = 'ship/?v=205';
+  frame.title = 'Схема корабля Феном';
+  phenomShipEl.appendChild(frame);
+}
+
+function isShipViewOpen() {
+  return isPhenomOpen() && phenomOverlay.classList.contains('ship-view');
+}
+
+phenomShipTab.addEventListener('click', () => {
+  if (!isShipViewOpen()) { openShipView(); return; }
+  // Повторный тап — назад на вкладку тела, как у «Карты».
+  showBase();
+  const tab = phenomInfoContent.dataset.tab || 'desc';
+  refs.desc.classList.toggle('active', tab === 'desc');
+  refs.article.classList.toggle('active', tab === 'article');
+  refs.game.classList.toggle('active', tab === 'game');
+});
+
 function showBase() {
+  hideShip();
   parkViewer();
   setViewerStatus('');
   phenomCharNavList.hidden = true;
@@ -371,6 +428,7 @@ function showBase() {
 
 export function openSubmapView() {
   if (!currentSubmap || !isPhenomOpen()) return;
+  hideShip();
   phenomOverlay.classList.add('map-view');
   phenomMapTab.classList.add('active');
   // Вкладки могли уехать при прокрутке описания — на карте они всегда на месте.

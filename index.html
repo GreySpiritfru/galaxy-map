@@ -6,7 +6,7 @@
   <title>Карта галактики — Феном</title>
   <!-- Скрипт Telegram — своя копия (v=199): telegram.org из РФ без VPN не
        отвечает, и этот блокирующий <script> вешал страницу на ~35 с. -->
-  <script src="js/vendor/telegram-web-app.js?v=204"></script>
+  <script src="js/vendor/telegram-web-app.js?v=205"></script>
   <!-- OpenSeadragon (тайловая карта Фенома) здесь больше не подключается: его
        догружает js/phenom.js при первом открытии карты (v=187) — раньше 271 КБ
        с cdnjs задерживали запуск всей страницы. -->
@@ -16,7 +16,7 @@
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
   <link rel="preload" href="images/splash-logo.webp" as="image" />
-  <link rel="stylesheet" href="css/styles.css?v=204" />
+  <link rel="stylesheet" href="css/styles.css?v=205" />
 </head>
 <body>
 
@@ -232,6 +232,11 @@
       <button class="tabbar-btn" id="phenomMapTab" hidden>
         <span class="tabbar-btn-icon" aria-hidden="true">🗺️</span><span class="tabbar-btn-label">Карта</span>
       </button>
+      <!-- Схема корабля — тест нового вида Фенома (страница ship/, PixiJS) во
+           фрейме; вкладка, как «Карта» (openShipView в js/phenom.js, v=205). -->
+      <button class="tabbar-btn" id="phenomShipTab" hidden>
+        <span class="tabbar-btn-icon" aria-hidden="true">🚀</span><span class="tabbar-btn-label">Схема</span>
+      </button>
       <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
       <button class="tabbar-btn" id="phenomEdit" hidden>
         <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
@@ -251,6 +256,7 @@
         <div class="phenom-char-nav-list" id="phenomCharNavList" hidden></div>
       </div>
       <div class="phenom-viewer" id="phenomViewer"></div>
+      <div class="phenom-ship" id="phenomShip" hidden></div>
       <!-- Содержимое для локаций без карты ("submap.type": "info", см.
            markers.json/CLAUDE.md) — баннер(ы) + заголовок + сворачиваемое
            описание, тот же визуальный язык, что у окна сюжета (переиспользует
@@ -333,6 +339,6 @@
      не в модуле, — за ним следит navigation.js (Esc / «назад» закрывают игру). -->
 <div class="flappy-overlay" id="flappyOverlay" role="dialog" aria-modal="true" aria-label="Мини-игра Flappy Phenome"></div>
 
-<script type="module" src="js/main.js?v=204" onerror="window.__bootFail && window.__bootFail()"></script>
+<script type="module" src="js/main.js?v=205" onerror="window.__bootFail && window.__bootFail()"></script>
 </body>
 </html>

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Феном — корабль слоями</title>
+<style>
+:root { --accent:#AFEEEE; --text:#e8e8ef; --muted:rgba(255,255,255,.62); --line:rgba(255,255,255,.14);
+        --safe-bottom: env(safe-area-inset-bottom, 0px); }
+html, body { margin:0; height:100%; background:#06070b; color:var(--text); font:14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; overflow:hidden; }
+#stage { position:fixed; inset:0; touch-action:none; }
+#stage canvas { display:block; }
+
+/* Переключатель частей — капсула внизу, как панель карты (.map-dock/.dock-modes). */
+.dock { position:fixed; left:10px; right:10px; bottom:calc(10px + var(--safe-bottom)); z-index:10; display:flex; justify-content:center; gap:8px;
+        pointer-events:none; user-select:none; -webkit-user-select:none; touch-action:none; }
+.modes { position:relative; flex:1 1 auto; display:flex; height:54px; padding:4px; box-sizing:border-box; border-radius:20px;
+         background:rgba(16,16,24,.86); box-shadow:0 8px 26px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.08); pointer-events:auto; }
+.modes button { position:relative; z-index:1; flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+                margin:0; padding:0 4px; border:0; border-radius:16px; background:none; color:rgba(255,255,255,.66); font:inherit; cursor:pointer;
+                -webkit-tap-highlight-color:transparent; transition:color .2s ease; }
+.modes button.active { color:var(--accent); }
+.modes button:focus { outline:none; }
+.modes button:focus-visible { outline:2px solid rgba(175,238,238,.7); outline-offset:2px; }
+.dock-svg { display:block; overflow:visible; width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.dock-label { font-size:10px; font-weight:600; line-height:12px; letter-spacing:.1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.lens { position:absolute; top:4px; bottom:4px; left:0; width:0; border-radius:16px; background:rgba(175,238,238,.15);
+        box-shadow:inset 0 0 0 1px rgba(175,238,238,.3); pointer-events:none; }
+.lens.ready { transition:transform .34s cubic-bezier(.2,.9,.25,1), width .34s cubic-bezier(.2,.9,.25,1); }
+@media (hover:hover) { .modes button:hover { color:#fff; } .modes button.active:hover { color:var(--accent); } }
+@media (min-width:601px) { .modes { flex:0 0 auto; } .modes button { flex:0 0 auto; width:72px; } }
+@media (min-width:1000px) {
+  .dock { bottom:calc(16px + var(--safe-bottom)); }
+  .modes { height:52px; border-radius:18px; }
+  .modes button { flex-direction:row; gap:9px; width:auto; padding:0 16px; }
+  .dock-label { font-size:14px; line-height:18px; letter-spacing:0; }
+  .lens { border-radius:14px; }
+}
+@media (prefers-reduced-motion:reduce) { .lens.ready { transition:none; } }
+.round { flex:0 0 auto; align-self:center; width:44px; height:44px; border-radius:50%; border:0; padding:0; display:flex; align-items:center; justify-content:center;
+         background:rgba(16,16,24,.86); box-shadow:0 8px 26px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.08); color:rgba(255,255,255,.72);
+         pointer-events:auto; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.round.active { color:var(--accent); background:rgba(24,44,48,.88); box-shadow:0 8px 26px rgba(0,0,0,.45), inset 0 0 0 1.5px rgba(175,238,238,.75); }
+.round svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+@media (min-width:1000px) { .round { width:52px; height:52px; } }
+#editBar { position:fixed; left:10px; right:10px; bottom:calc(76px + var(--safe-bottom)); z-index:11; max-width:560px; margin:0 auto; box-sizing:border-box;
+           display:flex; gap:8px; align-items:center; padding:8px 10px; border-radius:16px; background:rgba(16,16,24,.95);
+           box-shadow:0 8px 26px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.08); }
+#editBar[hidden] { display:none; }
+#editHint { flex:1 1 auto; font-size:13px; color:var(--muted); }
+#editBar button { font:inherit; font-size:13px; color:var(--text); background:rgba(255,255,255,.08); border:0; border-radius:10px; padding:7px 10px; cursor:pointer; }
+
+#fps { position:fixed; right:8px; top:8px; z-index:5; font:11px/1.3 ui-monospace, monospace; color:var(--muted); background:rgba(10,10,16,.7);
+       padding:3px 6px; border-radius:7px; text-align:right; pointer-events:none; }
+#card { position:fixed; left:10px; right:10px; bottom:calc(76px + var(--safe-bottom)); z-index:11; max-width:560px; margin:0 auto; box-sizing:border-box;
+        background:rgba(16,16,24,.95); box-shadow:0 8px 26px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.08); border-radius:18px; padding:12px 40px 12px 14px; display:none; }
+#card.open { display:block; }
+#card h2 { margin:0 0 2px; font-size:17px; font-weight:600; }
+#card .sub { color:var(--muted); font-size:13px; }
+#card p { margin:6px 0 0; font-size:14px; }
+#card .chips span { display:inline-block; padding:2px 8px; margin:5px 5px 0 0; border-radius:8px; background:rgba(175,238,238,.1); color:var(--accent); font-size:13px; }
+#card .x { position:absolute; right:8px; top:6px; width:30px; height:30px; background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; }
+@media (min-width:1000px) { #card { bottom:calc(80px + var(--safe-bottom)); } }
+#loading { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); z-index:7; pointer-events:none; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<nav class="dock" id="dock" aria-label="Части корабля">
+  <div class="modes" id="modes">
+    <span class="lens" id="lens"></span>
+    <button data-f="all" class="active" aria-label="Весь корабль">
+      <svg class="dock-svg" viewBox="0 0 24 24"><path d="M2 12l4.5-4H18l3.5 2.5v3L18 16H6.5z"/><ellipse cx="15" cy="12" rx="1.6" ry="6.5"/></svg>
+      <span class="dock-label">Корабль</span></button>
+    <button data-f="nose" aria-label="Передняя оболочка">
+      <svg class="dock-svg" viewBox="0 0 24 24"><path d="M2.5 12L11 5.5h10.5v13H11z"/><path d="M14 9.5h4M14 14.5h4"/></svg>
+      <span class="dock-label">Нос</span></button>
+    <button data-f="city" aria-label="Феном-Сити">
+      <svg class="dock-svg" viewBox="0 0 24 24"><path d="M3 20h18M5 20v-8h4v8M10 20V5h4v15M15 20v-6h4v6"/></svg>
+      <span class="dock-label">Город</span></button>
+    <button data-f="rings" aria-label="Кольца">
+      <svg class="dock-svg" viewBox="0 0 24 24"><ellipse cx="9" cy="12" rx="3.2" ry="8.5"/><ellipse cx="15.5" cy="12" rx="3.2" ry="8.5"/><path d="M2 12h20"/></svg>
+      <span class="dock-label">Кольца</span></button>
+    <button data-f="stern" aria-label="Корма и двигатель">
+      <svg class="dock-svg" viewBox="0 0 24 24"><path d="M3 9h8l2-2.5v11L11 15H3zM13 9.5l4-2v9l-4-2"/><path d="M19.5 9.5l2-.8M19.5 14.5l2 .8M19.5 12h2.5"/></svg>
+      <span class="dock-label">Корма</span></button>
+  </div>
+  <button class="round" id="editBtn" aria-label="Править разметку районов" title="Править разметку районов">
+    <svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg></button>
+</nav>
+<div id="editBar" hidden><span id="editHint">Тяни точки углов районов</span><button id="copyZones">Скопировать</button><button id="resetZones">Сброс</button></div>
+<div id="card" role="dialog" aria-live="polite"><button class="x" id="cardClose" aria-label="Закрыть">✕</button><div id="cardBody"></div></div>
+<div id="fps"></div>
+<div id="loading">Загрузка…</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.19.0/pixi.min.js"></script>
+<script src="ship.js?v=1"></script>
+</body>
+</html>

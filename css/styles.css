@@ -1619,7 +1619,17 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 /* Своя карта точки — вкладка окна (openSubmapView в js/phenom.js). На карте
    строки и панели переходов нет, на описании нет 👥: это разные задачи, и
    вместе они дублировали персонажей и отнимали у карты место. */
-.phenom-overlay.map-view .node-links { display: none; }
+.phenom-overlay.map-view .node-links,
+.phenom-overlay.ship-view .node-links { display: none; }
+/* Схема корабля (v=205, js/phenom.js openShipView) — фрейм страницы ship/,
+   кончается над плашкой окна (внизу у страницы своя панель частей). */
+.phenom-ship {
+  position: absolute;
+  inset: 0 0 calc(var(--dock-h, 100px) + 20px + var(--safe-bottom)) 0;
+  background: #06070b;
+}
+.phenom-ship[hidden] { display: none; }
+.phenom-ship iframe { display: block; width: 100%; height: 100%; border: 0; }
 .phenom-overlay:not(.map-view) .phenom-char-nav { display: none; }
 
 /* Маркер Фенома на кнопке в углу карты вместо 🚀 — переход к точке. */
@@ -1862,7 +1872,8 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
 /* Строки нет (своя карта Фенома, система без точек) — вкладки одни,
    скругление со всех сторон. */
 .node-dock > .node-links[hidden] + .tabbar,
-.phenom-overlay.map-view .node-dock > .tabbar {
+.phenom-overlay.map-view .node-dock > .tabbar,
+.phenom-overlay.ship-view .node-dock > .tabbar {
   border-radius: 20px;
   border-top: none;
 }

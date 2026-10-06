@@ -15,11 +15,11 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=204';
-import { REF_ARTICLES } from './articles.js?v=204';
-import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=204';
-import { frameHtml, safeHttps } from './net.js?v=204';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=204';
+import { escapeHtml } from './modal.js?v=205';
+import { REF_ARTICLES } from './articles.js?v=205';
+import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=205';
+import { frameHtml, safeHttps } from './net.js?v=205';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=205';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -789,7 +789,7 @@ function writeShade(kind, open) {
    иначе текст перекладывался бы каждый кадр. Выставляется один раз, когда
    она встала. Уезжающие вкладки высоту не меняют (transform). */
 const dockObservers = new WeakSet();
-function syncDock(card) {
+export function syncDock(card) {
   const dock = card && card.querySelector(':scope > .node-dock');
   if (!dock || dock.classList.contains('is-moving')) return;
   card.style.setProperty('--dock-h', dock.offsetHeight + 'px');
