@@ -13,9 +13,7 @@
     "x": -175,
     "y": -130,
     "submap": {
-      "type": "dzi",
-      "source": "phenom-tiles/phenom.dzi",
-      "initialZoom": 2.2
+      "type": "ship"
     }
   },
   {

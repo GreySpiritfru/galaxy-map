@@ -1190,12 +1190,15 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     const card = document.getElementById('card');
     if (!hit) { card.classList.remove('open'); return; }
     let html;
-    if (hit.kind === 'zone') {
-      const z = zones[hit.i], n = z.buildings.length;
+    if (hit.kind === 'bld') {
+      const b = blds[hit.i];
+      html = `<h2>${esc(b.name)}</h2><div class="sub">${esc(zones[b.zi].name)} · здание</div><p>Набросок: место примерное, описание появится позже.</p>`;
+    } else if (hit.kind === 'zone') {
+      const z = zones[hit.i], names = blds.filter(b => b.zi === hit.i).map(b => b.name), n = names.length;
       const part = z.part === 'front' ? 'Передняя оболочка' : 'Феном-Сити';
       html = z.free ? `<h2>Свободная зона</h2><div class="sub">Феном-Сити</div><p>Здесь были «Технические помещения» и край «Района модулей». Место под новый район.</p>`
         : `<h2>${esc(z.name)}</h2><div class="sub">${part} · ${n ? n + ' ' + (n === 1 ? 'здание' : n < 5 ? 'здания' : 'зданий') : 'зданий пока нет'}</div>`
-          + `<div class="chips">${z.buildings.map(b => `<span>${esc(b)}</span>`).join('')}</div>`;
+          + `<div class="chips">${names.map(b => `<span>${esc(b)}</span>`).join('')}</div>`;
     } else {
       const [t, sub, text] = INFO[hit.kind];
       html = `<h2>${t}${hit.kind === 'ring' ? ' ' + (hit.i + 1) : ''}</h2><div class="sub">${sub}</div><p>${text}</p>`;
@@ -1204,6 +1207,117 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     card.classList.add('open');
   }
   document.getElementById('cardClose').onclick = () => showCard(null);
+
+  // ---------- здания и персонажи ----------
+  // Здания — НАБРОСОК: названия из schema.json (z.buildings), в пустых районах — по типовому из BLD_EXTRA;
+  // место случайное внутри района, но одно и то же при каждом открытии (зерно — имя). Персонажи — из окна
+  // Фенома (setChars), submapX/submapY — единицы мира (пиксели бокового вида × 10). Значки — в экранных
+  // пикселях поверх подписей районов: размер не зависит от приближения.
+  const BLD_EXTRA = {'Капитанский мостик': ['Рубка'], 'Район модулей': ['Склад модулей', 'Сборочный цех'],
+    'Район космопорта': ['Ангар', 'Диспетчерская'], 'Район ферм': ['Теплицы', 'Элеватор'], 'Район лесов': ['Лесничество'],
+    'Район аквакультуры': ['Садки', 'Рыбный рынок'], 'Пригород': ['Посёлок'], 'Спальный район': ['Жилой блок'],
+    'Центральный город': ['Ратуша'], 'Заводской район': ['Цех'], 'Ночной район': ['Клуб'], 'Пустоши': ['Свалка'],
+    'Тюремный район': ['Тюрьма'], 'Район новой застройки': ['Стройка'], 'Район Фронтира': ['Застава']};
+  const seedOf = str => { let h = 2166136261; for (const ch of String(str)) h = Math.imul(h ^ ch.codePointAt(0), 16777619); return h >>> 0; };
+  const rngOf = seed => () => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const edgeDist = (x, y, poly) => {
+    let m = Infinity;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const [ax, ay] = poly[j], [bx, by] = poly[i], dx = bx - ax, dy = by - ay, L = dx * dx + dy * dy;
+      const t = L ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L)) : 0;
+      m = Math.min(m, Math.hypot(x - ax - t * dx, y - ay - t * dy));
+    }
+    return m;
+  };
+  // «лучший из кандидатов» (Mitchell): точка внутри района, подальше от края, подписи и уже стоящих
+  function spotIn(poly, taken, rnd, margin) {
+    const [x0, y0, x1, y1] = bbox(poly);
+    let best = null, bestD = -1;
+    for (let k = 0; k < 40; k++) {
+      const x = x0 + rnd() * (x1 - x0), y = y0 + rnd() * (y1 - y0);
+      if (!inside(x, y, poly) || edgeDist(x, y, poly) < margin) continue;
+      const d = taken.reduce((m, [tx, ty]) => Math.min(m, Math.hypot(x - tx, y - ty)), Infinity);
+      if (d > bestD) { bestD = d; best = [x, y]; }
+    }
+    return best || centroid(poly);
+  }
+  const markC = new PIXI.Container(); app.stage.addChildAt(markC, app.stage.getChildIndex(zoneLabels) + 1);
+  const bldTex = canvasTex(64, 64, g => {
+    g.fillStyle = '#0c1116'; g.strokeStyle = '#fff'; g.lineWidth = 5;
+    g.beginPath(); g.roundRect(5, 5, 54, 54, 12); g.fill(); g.stroke();
+    g.fillStyle = '#fff';
+    g.fillRect(16, 30, 9, 19); g.fillRect(28, 18, 9, 31); g.fillRect(40, 25, 9, 24);   // три корпуса
+  });
+  const markLabel = text => { const t = new PIXI.Text({text, style: {...labelStyle, fontSize: 22, fontWeight: '500', wordWrapWidth: 220}, resolution: 2}); t.anchor.set(0.5, 0); return t; };
+  const blds = [];
+  zones.forEach((z, zi) => {
+    const names = z.buildings.length ? z.buildings : (BLD_EXTRA[z.name] || []);
+    const rnd = rngOf(seedOf(z.name)), taken = [centroid(z.poly)];
+    const [x0, y0, x1, y1] = bbox(z.poly), margin = Math.min(x1 - x0, y1 - y0) * 0.12;
+    for (const name of names) {
+      const w = spotIn(z.poly, taken, rnd, margin); taken.push(w);
+      const c = new PIXI.Container(), ic = new PIXI.Sprite(bldTex), lb = markLabel(name);
+      ic.anchor.set(0.5); ic.tint = ZONE_COLORS[z.name] ?? 0xffffff; lb.y = 12;
+      c.addChild(ic, lb); markC.addChild(c);
+      blds.push({name, zi, w, c, ic, lb});
+    }
+  });
+  // персонажи: круглый аватар (или буква) в бирюзовом кольце — как на карте галактики
+  let chars = [], onChar = null, pickCb = null;
+  const charTex = (img, name) => canvasTex(96, 96, (g, w) => {
+    g.save(); g.beginPath(); g.arc(48, 48, 42, 0, Math.PI * 2); g.clip();
+    if (img) g.drawImage(img, 0, 0, w, w);
+    else { g.fillStyle = '#1d3a40'; g.fillRect(0, 0, w, w); g.fillStyle = '#AFEEEE'; g.font = '600 44px system-ui, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText((name || '?').trim().charAt(0).toUpperCase(), 48, 51); }
+    g.restore(); g.lineWidth = 6; g.strokeStyle = '#AFEEEE'; g.beginPath(); g.arc(48, 48, 43, 0, Math.PI * 2); g.stroke();
+  });
+  function setChars(list, cb) {
+    for (const ch of chars) { ch.c.destroy({children: true}); }
+    onChar = cb || null;
+    chars = (list || []).filter(c => Number.isFinite(c.x) && Number.isFinite(c.y)).map(d => {
+      const c = new PIXI.Container(), ic = new PIXI.Sprite(charTex(null, d.name)), lb = markLabel(String(d.name || '').split(/\s+/).slice(0, 2).join(' '));
+      ic.anchor.set(0.5); lb.y = 14; c.addChild(ic, lb); markC.addChild(c);
+      const ch = {id: d.id, name: d.name, w: [d.x, d.y], c, ic, lb};
+      // путь к аватару — от корня сайта (страница схемы лежит в ship/); только свои картинки
+      if (d.image && /^images\/[\w\-./%]+(\?[\w=.&-]*)?$/.test(d.image)) {
+        const im = new Image();
+        im.onload = () => { if (!ic.destroyed) { ic.texture = charTex(im, d.name); } };
+        im.src = '../' + d.image;
+      }
+      return ch;
+    });
+  }
+  // выбор места для редактора: следующий тап по схеме отдаётся колбэку (единицы мира, целые)
+  function pick(cb) { pickCb = cb || null; document.body.classList.toggle('picking', !!pickCb); }
+  function placeMarks() {
+    const show = zonesOn, k = cam.z;
+    for (const b of blds) {
+      const z = zones[b.zi], [x0, , x1] = z.__b || (z.__b = bbox(z.poly)), wpx = (x1 - x0) * k;
+      const a = Math.max(0, Math.min(1, (wpx - 70) / 50));
+      b.c.visible = show && a > 0.02;
+      if (!b.c.visible) continue;
+      const [sx, sy] = toScreen(...b.w), sel = selected && selected.kind === 'bld' && blds[selected.i] === b;
+      b.c.position.set(sx, sy); b.c.alpha = a;
+      b.ic.scale.set((sel ? 30 : 22) / 64);
+      b.lb.visible = sel || wpx > 260; b.lb.scale.set(0.5);
+    }
+    const ca = Math.max(0, Math.min(1, (k - 0.035) / 0.02));
+    for (const ch of chars) {
+      ch.c.visible = ca > 0.02;
+      if (!ch.c.visible) continue;
+      const [sx, sy] = toScreen(...ch.w);
+      ch.c.position.set(sx, sy); ch.c.alpha = ca;
+      ch.ic.scale.set(28 / 96); ch.lb.visible = k > 0.12; ch.lb.scale.set(0.5);
+    }
+  }
+  // попадание по значку — в экранных пикселях (палец), персонажи поверх зданий
+  function markHit(sx, sy) {
+    let best = null, bd = 20;
+    for (const ch of chars) if (ch.c.visible) { const d = Math.hypot(ch.c.x - sx, ch.c.y - sy); if (d < bd) { bd = d; best = {kind: 'char', id: ch.id}; } }
+    if (best) return best;
+    bd = 18;
+    blds.forEach((b, i) => { if (b.c.visible) { const d = Math.hypot(b.c.x - sx, b.c.y - sy); if (d < bd) { bd = d; best = {kind: 'bld', i}; } } });
+    return best;
+  }
 
   // ---------- фокус на части ----------
   const FOCUS = {
@@ -1334,7 +1448,10 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   }, {passive: false});
   const sameHit = (a, b) => a && b && a.kind === b.kind && a.i === b.i;
   function tap(sx, sy) {
-    const hit = hitTest(...toWorld(sx, sy));
+    if (pickCb) { const cb = pickCb, [wx, wy] = toWorld(sx, sy); pick(null); cb({x: Math.round(wx), y: Math.round(wy)}); return; }
+    const mh = markHit(sx, sy);
+    if (mh && mh.kind === 'char') { showCard(null); if (onChar) onChar(mh.id); return; }
+    const hit = mh || hitTest(...toWorld(sx, sy));
     showCard(sameHit(hit, selected) ? null : hit);
   }
   document.getElementById('modes').addEventListener('click', e => {
@@ -1370,7 +1487,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       if (!ringsOn) { clearMesh(ringsBack); clearMesh(ringsFront); ringCamKey = ''; }
       else if (due) { drawRings(t); ringT = t; ringCamKey = camKey; ringMs = ringMs * 0.9 + (performance.now() - t0) * 0.1; }
     }
-    placeLabels();
+    placeLabels(); placeMarks();
     const pl = Math.max(0, Math.min(1, (0.06 - cam.z) / 0.025));
     partLabels.visible = pl > 0.01;
     for (const lb of partLabels.children) { const [x, y] = toScreen(...lb.__w); lb.position.set(x, y); lb.scale.set(0.5); lb.alpha = pl; }
@@ -1463,7 +1580,7 @@ ${guide.join('\n')}
 </svg>
 `;
   };
-  window.__ship = {fx: fxC, cam, setFocus, flyTo, showCard, hitTest, toWorld, toScreen, zones, setEditing, setT: v => { tFixed = v; }, rings: v => { ringsOn = v; },
+  window.__ship = {app, setChars, pick, fx: fxC, cam, setFocus, flyTo, showCard, hitTest, toWorld, toScreen, zones, setEditing, setT: v => { tFixed = v; }, rings: v => { ringsOn = v; },
     benchRings: (n = 60) => { const t0 = performance.now(); for (let i = 0; i < n; i++) drawRings(20 + i * 0.016); return +((performance.now() - t0) / n).toFixed(2); }};
   const q = new URLSearchParams(location.search);
   if (q.get('f')) setFocus(q.get('f'));

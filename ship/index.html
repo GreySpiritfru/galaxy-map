@@ -55,6 +55,7 @@ html, body { margin:0; height:100%; background:#06070b; color:var(--text); font:
 #card { position:fixed; left:10px; right:10px; bottom:calc(76px + var(--safe-bottom)); z-index:11; max-width:560px; margin:0 auto; box-sizing:border-box;
         background:rgba(16,16,24,.95); box-shadow:0 8px 26px rgba(0,0,0,.45), inset 0 0 0 1px rgba(255,255,255,.08); border-radius:18px; padding:12px 40px 12px 14px; display:none; }
 #card.open { display:block; }
+body.picking canvas { cursor:crosshair; }
 #card h2 { margin:0 0 2px; font-size:17px; font-weight:600; }
 #card .sub { color:var(--muted); font-size:13px; }
 #card p { margin:6px 0 0; font-size:14px; }
@@ -93,6 +94,6 @@ html, body { margin:0; height:100%; background:#06070b; color:var(--text); font:
 <div id="fps"></div>
 <div id="loading">Загрузка…</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/8.19.0/pixi.min.js"></script>
-<script src="ship.js?v=16"></script>
+<script src="ship.js?v=18"></script>
 </body>
 </html>

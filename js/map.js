@@ -1266,7 +1266,7 @@ function finishMapPick(p) {
 
   /* Открывает submap-окно ЛЮБОГО маркера с полем "submap" в markers.json
      (сейчас физически это одно и то же окно-вкладыш из js/phenom.js — оно
-     переоткрывает свой OpenSeadragon-вид на нужный source, см. openSubmap).
+     показывает схему корабля ship/, см. openSubmapView).
      Персонажи ВНУТРИ этой карты — дети узла в графе с заполненными
      submapX/submapY (см. characters.json): они одновременно рисуются
      орбитой вокруг САМОГО маркера на карте галактики (обычный механизм
@@ -2464,14 +2464,13 @@ function finishMapPick(p) {
     /* Поля, уходящие в стили и загрузчики, — в известном виде (v=201, аудит):
        color — только #hex/rgb()/rgba(), как пускает бот (url(http://…) в fill
        маркера дёргал бы чужой сервер у каждого, кто открыл карту);
-       submap.source — только свой относительный путь к .dzi (адрес на .js
-       OpenSeadragon грузит как <script>). Прочее — как будто поля нет. */
+       submap — только {type: 'ship'} (схема корабля, с 07.10.2026; раньше тайлы
+       .dzi через OpenSeadragon). Прочее — как будто поля нет. */
     const COLOR_OK = /^(#[0-9a-fA-F]{3,8}|rgba?\([\d\s.,%]+\))$/;
-    const DZI_OK = /^(?![a-z][a-z0-9+.-]*:)(?!\/)(?!.*\.\.)[\w\-\/.]+\.dzi$/i;
     [...world, ...characters].forEach(it => {
       if (!it || typeof it !== 'object') return;
       if ('color' in it && !(typeof it.color === 'string' && COLOR_OK.test(it.color))) delete it.color;
-      if (it.submap && !(typeof it.submap.source === 'string' && DZI_OK.test(it.submap.source))) delete it.submap;
+      if (it.submap && !(it.submap.type === 'ship')) delete it.submap;   // своя карта — только схема корабля ship/
       // Текстовые поля — строки: число в shortTitle ронял открытие окна (.trim).
       ['id', 'title', 'shortTitle', 'code', 'name', 'race', 'role', 'description', 'recruit', 'parent', 'image', 'sheetUrl']
         .forEach(k => { if (k in it && it[k] != null && typeof it[k] !== 'string') it[k] = String(it[k]); });
@@ -2657,7 +2656,7 @@ function finishMapPick(p) {
       closeCharacter();
       closeStory();
     };
-    /* Место выбирается на pointerup (panzoom) / отпускании пальца (OpenSeadragon),
+    /* Место выбирается на pointerup (panzoom) / тапу по схеме корабля,
        а на телефоне браузер ПОСЛЕ этого досылает синтетический click в ту же
        точку экрана. Открой форму сразу — click попадал в неё: чаще всего в
        «📝 Изменить описание» (стоит как раз посередине), и карта закрывалась,

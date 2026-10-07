@@ -7,9 +7,6 @@
   <!-- Скрипт Telegram — своя копия (v=199): telegram.org из РФ без VPN не
        отвечает, и этот блокирующий <script> вешал страницу на ~35 с. -->
   <script src="js/vendor/telegram-web-app.js?v=207"></script>
-  <!-- OpenSeadragon (тайловая карта Фенома) здесь больше не подключается: его
-       догружает js/phenom.js при первом открытии карты (v=187) — раньше 271 КБ
-       с cdnjs задерживали запуск всей страницы. -->
   <!-- Самый тяжёлый файл на странице (~2.7 МБ после пережатия подложки в WebP,
        см. tools/optimize-map-svg.py) — без preload браузер начинает качать его
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
@@ -197,8 +194,8 @@
 </div>
 
 <!-- Окно-вкладыш "Корабль-город Феном" — открывается поверх карты галактики,
-     сама карта карта остаётся видна (затемнена) по краям. Внутри — карта Феном
-     (тайлы + OpenSeadragon, см. js/phenom.js). -->
+     сама карта карта остаётся видна (затемнена) по краям. Своя карта Фенома —
+     схема корабля ship/ во фрейме (js/phenom.js). -->
 <div class="phenom-overlay" id="phenomOverlay" role="dialog" aria-modal="true" aria-label="Точка карты">
   <div class="phenom-card" id="phenomCard">
     <!-- Плашка окна — ВНИЗУ, как панель карты (v=178): сверху строка «где я и
@@ -226,16 +223,10 @@
       <button class="tabbar-btn" id="phenomGameTab" style="display:none">
         <span class="tabbar-btn-icon" aria-hidden="true">♟️</span><span class="tabbar-btn-label">Игра</span>
       </button>
-      <!-- Своя карта точки (поле submap, сейчас у Фенома) — ВИД поверх
-           тела окна: ✕ превращается в ↩ и возвращает к нему
-           (openSubmapView в js/phenom.js). -->
+      <!-- Своя карта точки (поле submap, сейчас у Фенома) — схема корабля
+           ship/ во фрейме, вкладкой (openSubmapView в js/phenom.js). -->
       <button class="tabbar-btn" id="phenomMapTab" hidden>
         <span class="tabbar-btn-icon" aria-hidden="true">🗺️</span><span class="tabbar-btn-label">Карта</span>
-      </button>
-      <!-- Схема корабля — тест нового вида Фенома (страница ship/, PixiJS) во
-           фрейме; вкладка, как «Карта» (openShipView в js/phenom.js, v=205). -->
-      <button class="tabbar-btn" id="phenomShipTab" hidden>
-        <span class="tabbar-btn-icon" aria-hidden="true">🚀</span><span class="tabbar-btn-label">Схема</span>
       </button>
       <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
       <button class="tabbar-btn" id="phenomEdit" hidden>
@@ -244,26 +235,7 @@
     </div>
     </div>
     <div class="phenom-content" id="phenomContent">
-      <!-- Персонажи, привязанные прямо к самой карте Феном (submapX/submapY в
-           characters.json) — кнопка слева сверху над картой открывает их
-           список, тап по пункту наводит вид OpenSeadragon на маркер. Список
-           наполняется из графа связей при каждом открытии окна, см.
-           openSubmapNode в js/map.js и setSubmapCharacters в js/phenom.js —
-           руками сюда ничего не добавляется. Кнопка прячется сама, если
-           таких персонажей пока нет. -->
-      <div class="phenom-char-nav" id="phenomCharNav" hidden>
-        <button class="phenom-char-nav-btn" id="phenomCharNavBtn" title="Персонажи на карте Феном" aria-label="Персонажи на карте">👥</button>
-        <div class="phenom-char-nav-list" id="phenomCharNavList" hidden></div>
-      </div>
-      <div class="phenom-viewer" id="phenomViewer"></div>
       <div class="phenom-ship" id="phenomShip" hidden></div>
-      <!-- Содержимое для локаций без карты ("submap.type": "info", см.
-           markers.json/CLAUDE.md) — баннер(ы) + заголовок + сворачиваемое
-           описание, тот же визуальный язык, что у окна сюжета (переиспользует
-           .story-banner-img/.story-title/.story-accordion), только тут это не
-           сюжет, а локация без тайловой карты внутри (напр. "Кольцо Авалона").
-           Показывается ВМЕСТО #phenomViewer/#phenomCharNav, а не рядом — см.
-           openSubmap в js/phenom.js. -->
       <div class="story-content phenom-info-content" id="phenomInfoContent" hidden></div>
     </div>
   </div>

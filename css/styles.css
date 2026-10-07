@@ -1619,9 +1619,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 /* Своя карта точки — вкладка окна (openSubmapView в js/phenom.js). На карте
    строки и панели переходов нет, на описании нет 👥: это разные задачи, и
    вместе они дублировали персонажей и отнимали у карты место. */
-.phenom-overlay.map-view .node-links,
-.phenom-overlay.ship-view .node-links { display: none; }
-/* Схема корабля (v=205, js/phenom.js openShipView) — фрейм страницы ship/,
+.phenom-overlay.map-view .node-links { display: none; }
+/* Схема корабля (своя карта Фенома, js/phenom.js) — фрейм страницы ship/,
    кончается над плашкой окна (внизу у страницы своя панель частей). */
 .phenom-ship {
   position: absolute;
@@ -1630,7 +1629,6 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 }
 .phenom-ship[hidden] { display: none; }
 .phenom-ship iframe { display: block; width: 100%; height: 100%; border: 0; }
-.phenom-overlay:not(.map-view) .phenom-char-nav { display: none; }
 
 /* Маркер Фенома на кнопке в углу карты вместо 🚀 — переход к точке. */
 .corner-node-icon { width: 20px; height: 20px; font-size: 11px; border-width: 1px; }
@@ -1872,8 +1870,7 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
 /* Строки нет (своя карта Фенома, система без точек) — вкладки одни,
    скругление со всех сторон. */
 .node-dock > .node-links[hidden] + .tabbar,
-.phenom-overlay.map-view .node-dock > .tabbar,
-.phenom-overlay.ship-view .node-dock > .tabbar {
+.phenom-overlay.map-view .node-dock > .tabbar {
   border-radius: 20px;
   border-top: none;
 }
@@ -1936,7 +1933,6 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
 }
 /* Своя карта точки (Феном) — на непрозрачном фоне: по бокам от картинки
    иначе просвечивала бы карта галактики. */
-.phenom-viewer { background: #0e0e14; }
 /* Персонаж — третий, самый верхний слой окна точки (под модалом 300). */
 /* Двойной класс (v=201): у слоя есть и .story-overlay, чьё правило z-index 251
    стоит в файле ниже и перебивало одиночный .char-overlay — персонаж лежал
@@ -1958,15 +1954,9 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   -webkit-user-select: none;
   user-select: none;
 }
-.phenom-viewer {
-  position: absolute;
-  inset: 0;
-}
-/* Содержимое локации без карты (submap.type: "info", см. js/phenom.js) —
-   переиспользует .story-content (тот же скролл/паддинг/шрифт, что у окна
-   сюжета), но живёт ВНУТРИ #phenomContent рядом с #phenomViewer, а не как
-   отдельный флекс-child в .phenom-card — тот же трюк с position:absolute,
-   что и у .phenom-viewer, чтобы полностью занять место карты. .phenom-content
+/* Тело окна точки — переиспользует .story-content (тот же скролл/паддинг/
+   шрифт, что у окна сюжета), но живёт ВНУТРИ #phenomContent рядом со схемой
+   корабля (#phenomShip), position:absolute на всё место. .phenom-content
    выше даёт user-select:none/touch-action:none всему контенту окна локации
    разом — для текста тут это неверно (нужно выделять/скроллить), поэтому
    переопределяем оба свойства обратно. */
@@ -2345,105 +2335,6 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
 }
 
 
-/* Кнопка "персонажи на карте Феном" (слева сверху над самой картой, а не в
-   общем таб-баре — это навигация ВНУТРИ карты, а не смена вкладки окна) и её
-   выпадающий список. z-index выше .phenom-viewer, но ниже общего тулбара
-   сверху, чтобы не перекрывать крестик закрытия при узком экране. */
-.phenom-char-nav {
-  position: absolute;
-  top: calc(var(--safe-top) + 10px); /* под полосой Telegram (плашка окна — внизу) */
-  left: 10px;
-  z-index: 5;
-  touch-action: auto; /* .phenom-content целиком touch-action:none — кнопке и списку нужны обычные тапы/скролл */
-}
-.phenom-char-nav-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 1px solid rgba(175,238,238,0.45);
-  background: rgba(14,14,20,0.85);
-  color: #AFEEEE;
-  font-size: 16px;
-  cursor: pointer;
-}
-/* Ряд-портретов (не текстовый список) — карточки .story-character-chip
-   переиспользованы отсюда же (см. .phenom-char-nav-item ниже), тот же
-   визуальный язык, что у персонажей внутри окна сюжета. В один ряд помещается
-   2-3 карточки, остальные — горизонтальным скроллом вбок, а не вниз: ширина
-   контейнера ФИКСИРОВАННАЯ (168px ≈ 3 чипа по 46px + зазоры), лишнее уходит
-   за край и скроллится по X. */
-.phenom-char-nav-list {
-  position: absolute;
-  top: 44px;
-  left: 0;
-  width: 168px;
-  background: rgba(14,14,20,0.94);
-  border: 1px solid rgba(175,238,238,0.35);
-  border-radius: 10px;
-  padding: 8px;
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-/* [hidden] — атрибут, не класс; UA-стиль display:none у него ниже по
-   специфичности, чем display:flex выше, и без этого правила список остаётся
-   видимым, даже когда JS выставляет .hidden = true (грабля, отловленная на
-   этом же компоненте — см. аналогичный список выпадающего меню Феном). */
-.phenom-char-nav-list[hidden] { display: none; }
-
-/* Маркер персонажа ПРЯМО НА карте Феном (оверлей OpenSeadragon, координаты —
-   submapX/submapY в characters.json, см. js/phenom.js). Квадрат со
-   скруглением — тот же язык, что у персонажей на карте галактики
-   (см. .hotspot/makeIconShape в js/map.js), только это обычный HTML/CSS
-   элемент, а не SVG: OpenSeadragon кладёт оверлеи в DOM поверх канваса.
-   ⚠️ Раньше показывал только плашку цвета без портрета, даже если c.image
-   был заполнен (14.09.2026, нашёл игрок) — теперь картинка/заглушка-буква
-   рисуются как везде (.story-character-chip), overflow:hidden тут и
-   отвечает за то, чтобы <img> обрезался по скруглённому квадрату. */
-.phenom-char-marker {
-  /* 22px на телефоне терялись среди арта города — подняли до 32. */
-  width: 42px;
-  height: 42px;
-  border-radius: 9px;
-  background: rgba(175,238,238,0.92);
-  border: 2px solid #0b2b2b;
-  box-shadow: 0 0 0 1px rgba(175,238,238,0.6);
-  overflow: hidden;
-  cursor: pointer;
-  touch-action: auto;
-}
-.phenom-char-marker img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-/* Заглушка-буква переиспользует .story-character-fallback, но там шрифт
-   18px — для этого маркера (32px целиком) он великоват, поэтому
-   размер шрифта тут свой, поменьше. */
-.phenom-char-marker .story-character-fallback {
-  font-size: 15px;
-}
-
-/* ===== Окно-вкладыш сюжетного маркера =====
-   Использует ту же карточку/анимацию, что и .phenom-overlay/.phenom-card
-   (см. index.html — оба класса навешаны на один элемент), здесь только то,
-   что отличается: текст вместо карты, а значит обычный вертикальный скролл
-   внутри карточки, а не туда, зафиксированное под OpenSeadragon. */
-
-/* 13.09.2026: сюжет, привязанный к маркеру-локации (напр. "Переворот" к
-   Феному), теперь ОТКРЫВАЕТСЯ ПОВЕРХ окна этой локации, а не заменяет его
-   (см. setPhenomChildren в js/phenom.js) — это даёт настоящую вложенность
-   3-го уровня (локация -> сюжет -> персонаж) вместо замены на том же
-   уровне, и делает возможным реальный "шаг назад" от сюжета к локации.
-   .story-overlay делит класс .phenom-overlay (и его z-index 250) с окном
-   локации — на случай, если оба одновременно .open, явно поднимаем сюжет
-   выше, а не полагаемся на порядок в index.html (тот факт, что #storyOverlay
-   объявлен позже #phenomOverlay, тоже даёт этот эффект, но так это не
-   сломается, если разметку когда-нибудь переставят). */
 .story-overlay {
   z-index: 251;
 }
@@ -2720,7 +2611,6 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 
 /* Та же защита от меню «сохранить картинку», что у маркеров карты (см.
    .hotspot image выше) — здесь аватары это обычные HTML-картинки. */
-.phenom-char-marker img,
 .story-character-chip img {
   pointer-events: none;
   -webkit-user-drag: none;
@@ -3644,30 +3534,3 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 
 /* Своя карта точки: «Загрузка карты…» / ошибка с «Повторить» (js/phenom.js,
    v=202) — поверх области viewer'а, по центру. */
-.phenom-viewer-status {
-  position: absolute;
-  left: 50%;
-  top: 45%;
-  transform: translate(-50%, -50%);
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  max-width: 80%;
-  color: rgba(255,255,255,0.8);
-  font-size: 14px;
-  text-align: center;
-  pointer-events: none;
-}
-.phenom-viewer-status button {
-  pointer-events: auto;
-  padding: 8px 16px;
-  border-radius: 10px;
-  border: 1px solid rgba(175,238,238,0.5);
-  background: rgba(255,255,255,0.06);
-  color: #AFEEEE;
-  font: inherit;
-  cursor: pointer;
-}
-.phenom-overlay:not(.map-view) .phenom-viewer-status { display: none; }

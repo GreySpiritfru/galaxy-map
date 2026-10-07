@@ -505,14 +505,14 @@ export function showEditorList() {
    ============================================================ */
 
 // Ближайший предок (по черновому parent), у которого есть своя карта
-// (submap типа dzi) — туда и ставится персонаж «внутри локации».
+// (submap — схема корабля) — туда и ставится персонаж «внутри локации».
 function submapLocationFor(draft) {
   if (!hooks) return null;
   let node = draft.parent ? hooks.graph.get(draft.parent) : null;
   const seen = new Set();
   while (node && !seen.has(node)) {
     seen.add(node);
-    if (node.kind === 'world' && node.data.submap && node.data.submap.type === 'dzi') return node;
+    if (node.kind === 'world' && node.data.submap && node.data.submap.type === 'ship') return node;
     node = node.parent;
   }
   return null;
