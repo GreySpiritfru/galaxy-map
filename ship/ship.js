@@ -15,8 +15,8 @@
   // c/c2 — фаски наружных/внутренних рёбер; k — насколько кольца развёрнуты к зрителю
   const RING = {R: 360 * S, th: 46 * S, bw: 30 * S, c: 8 * S, c2: 6 * S, k: 0.34, depth: 0.05, speed: 0.07};
   RING.Ri = RING.R - RING.th;
-  const RINGS = [{cx: 1180 * S, cy: CY, dir: 1, phase: 0}, {cx: 1384 * S, cy: CY, dir: -1, phase: 0.5}];
-  const BOUNDS = {x0: -300, y0: -1600, x1: 21800, y1: 9200};
+  const RINGS = [{cx: 1220 * S, cy: CY, dir: 1, phase: 0}, {cx: 1424 * S, cy: CY, dir: -1, phase: 0.5}];
+  const BOUNDS = {x0: -300, y0: -1600, x1: 24600, y1: 9200};     // справа — место под факел двигателя
   const C = {hull: 0xa9b5b6, hullHi: 0xbac6c7, hullLo: 0x95a2a4, hullDark: 0x7f8c8f, line: 0x0d1114, navy: 0x1f3b7d, navyDk: 0x14275a,
              dash: 0xe9f0f4, hole: 0x1b2427, hole2: 0x2a3538, glow: 0x7fe3ff, warm: 0xffd27a};
   const ZONE_COLORS = {
@@ -105,12 +105,11 @@
   const FT = 146, FB = 572;
   const DOME = [...bez([211, 334], [222, 292], [292, 214], [410, 178]), ...bez([410, 178], [470, 160], [540, 148], [640, FT])];
   const BEND_T = [[800, FT], [836, 157], [872, 165], [910, TOP]], BEND_B = [[910, BOT], [872, 546], [836, 555], [800, 567], [786, FB]];
-  // пазы колец: выемка в обшивке сверху и снизу, где ходят шарниры лифтов (сквозная — дно за корпусом)
-  const NW = 9, ND = 15, RX = RINGS.map(r => r.cx / S);
-  const NOTCH_T = RX.flatMap(x => [[x - NW, TOP], [x - NW, TOP + ND], [x + NW, TOP + ND], [x + NW, TOP]]);
-  const NOTCH_B = RX.slice().reverse().flatMap(x => [[x + NW, BOT], [x + NW, BOT - ND], [x - NW, BOT - ND], [x - NW, BOT]]);
+  // кольца сидят на обоймах вокруг корпуса (рисует ship.svg) — кольцевой жёлоб, в который входят сваи лифтов;
+  // силуэт корпуса без выреза. NW/ND — размеры шарнира для запасного рисунка кодом
+  const NW = 6, ND = 15, RX = RINGS.map(r => r.cx / S);
   const HULL = [[10, 385], [51, 378], [93, 394], [130, 402], [168, 407], [210, 400], [253, 386], [272, 366], [282, 362],
-    [250, 352], [211, 334], ...DOME, ...BEND_T, ...NOTCH_T, [1602, TOP], [1602, BOT], ...NOTCH_B, ...BEND_B, [330, FB], [300, 563], [264, 541],
+    [250, 352], [211, 334], ...DOME, ...BEND_T, [1602, TOP], [1602, BOT], ...BEND_B, [330, FB], [300, 563], [264, 541],
     [168, 494], [157, 483], [72, 428], [10, 392]];
   const domeY = x => { for (let i = 1; i < DOME.length; i++) if (DOME[i][0] >= x) { const [ax, ay] = DOME[i - 1], [bx, by] = DOME[i]; return ay + (by - ay) * (x - ax) / (bx - ax); } return FT; };
   // разрез: мостик (под куполом, над визором), клинок (модули и космопорт), город
@@ -153,12 +152,452 @@
   const STERN_BOXES = [[[1612, 301], [1700, 302], [1717, 355], [1618, 355]], [[1767, 305], [1943, 308], [1985, 355], [1785, 357]]].map(p => p.map(AX));
   const STERN_VENTS = [[[1616, 245], [1763, 250], [1773, 283], [1625, 281]]].map(p => p.map(AX));     // длинная решётка
   const STERN_SLOTS = [[1812, 257], [1878, 257], [1889, 283], [1827, 284]].map(AX);                    // решётка-короб с прорезями
+  // геометрия для сборки черновой модели в Blender (blender_ship.py), единицы — пиксели бокового вида
+  window.__geom = () => ({TOP, BOT, FT, FB, CY: CY / S, HH: HH / S, HULL, DOME, BEND_T, BEND_B, NW, ND, RX,
+    CAV_BRIDGE, CAV_JAW, CAV_CITY, BRIDGE_IN, STERN, STERN_SIDE, STERN_UNDER, STERN_BOXES, STERN_PANELS, STERN_TRIS, STERN_VENTS, STERN_SLOTS,
+    STERN_EDGE: [[1583, 163], [1612, 300], [1612, 412], [1562, 665]].map(AX),
+    RING: {R: RING.R / S, th: RING.th / S, bw: RING.bw / S, c: RING.c / S, c2: RING.c2 / S, k: RING.k}});
 
+
+  // ---------- статичная часть корабля из ship.svg ----------
+  // Корпус, детали и корма — файл ship.svg (правится в Inkscape). Кодом — только
+  // кольца, лифты, районы. Нет файла или ?code=1 — рисует код ниже (по нему же
+  // выгружается файл: __exportSvg). Единицы файла — пиксели бокового вида.
+  // Слои по порядку: «Корпус…» — под районами, «Детали…» — над районами, «Корма…» —
+  // над всем; слой с другим именем идёт туда же, куда предыдущий. «Референс…» и
+  // «Ориентир…» пропускаются.
+  // Вектор (быстро, чётко на любом зуме): заливки, обводки, градиенты, дыры.
+  // Запекается браузером в картинку при загрузке (мягкое, на кадр не влияет):
+  // фигуры с размытием/фильтром, маской, обрезкой, клоны (use), текст и весь слой,
+  // чьё имя начинается с «Мягкое». Режим наложения слоя — по имени: «умножение»,
+  // «экран», «добавление» (свечение).
+  // Тёмные обводки (яркость < 15%) держат толщину на экране, прочие — в единицах корабля.
+  // мигалки: кружки слоя «Мигалки…» в ship.svg — рисует и анимирует код (цвет — заливка; data-mode
+  // blink | strobe | pulse | flicker | room (окно: свет то включается, то гаснет), data-period и data-phase в секундах)
+  const LAMPS = [];
+  const T_STATIC = performance.now();
+  const STATIC_REF = {v: await (async () => {
+    if (new URLSearchParams(location.search).has('code')) return null;
+    let txt;
+    try { const r = await fetch('ship.svg?' + Date.now()); if (!r.ok) return null; txt = await r.text(); } catch (e) { return null; }
+    const doc = new DOMParser().parseFromString(txt, 'image/svg+xml');
+    const root0 = doc.documentElement;
+    if (!root0 || root0.nodeName !== 'svg') return null;
+    root0.querySelectorAll('script, foreignObject').forEach(n => n.remove());
+    for (const n of root0.querySelectorAll('*')) for (const a of [...n.attributes]) if (/^on/i.test(a.name)) n.removeAttribute(a.name);
+    root0.querySelectorAll('image').forEach(n => { const h = n.getAttribute('href') || n.getAttribute('xlink:href') || ''; if (!/^data:image\//.test(h)) n.remove(); });
+    const host = document.createElement('div');
+    host.style.cssText = 'position:fixed;left:0;top:0;width:10px;height:10px;overflow:hidden;opacity:0;pointer-events:none';
+    const root = document.importNode(root0, true);
+    host.appendChild(root); document.body.appendChild(host);
+    const DM = q => new DOMMatrix([q.a, q.b, q.c, q.d, q.e, q.f]);      // getCTM бывает SVGMatrix без transformPoint
+    const inv = DM(root.getCTM()).inverse();
+    const num = v => { const x = parseFloat(v); return Number.isFinite(x) ? x : 0; };
+    const rgb = v => { const m = /rgba?\(([^)]+)\)/.exec(v || ''); if (!m) return null; const [r, g, b, a] = m[1].split(',').map(Number); return {c: (r << 16) | (g << 8) | b, a: a ?? 1}; };
+    const urlId = v => { const m = /url\(\s*["']?#([^"')]+)["']?\s*\)/.exec(v || ''); return m ? m[1] : null; };
+    const byId = id => { try { return root.querySelector('#' + CSS.escape(id)); } catch (e) { return null; } };
+    const dOf = el => {
+      const g = n => num(el.getAttribute(n));
+      switch (el.nodeName) {
+        case 'path': return el.getAttribute('d') || '';
+        case 'rect': {
+          const x = g('x'), y = g('y'), w = g('width'), h = g('height');
+          const rx = Math.min(w / 2, g('rx') || g('ry')), ry = Math.min(h / 2, g('ry') || rx);
+          if (!rx) return `M${x} ${y}h${w}v${h}h${-w}Z`;
+          return `M${x + rx} ${y}h${w - 2 * rx}a${rx} ${ry} 0 0 1 ${rx} ${ry}v${h - 2 * ry}a${rx} ${ry} 0 0 1 ${-rx} ${ry}h${2 * rx - w}a${rx} ${ry} 0 0 1 ${-rx} ${-ry}v${2 * ry - h}a${rx} ${ry} 0 0 1 ${rx} ${-ry}Z`;
+        }
+        case 'circle': case 'ellipse': {
+          const c = el.nodeName === 'circle', cx = g('cx'), cy = g('cy'), rx = c ? g('r') : g('rx'), ry = c ? g('r') : g('ry');
+          return `M${cx - rx} ${cy}a${rx} ${ry} 0 1 0 ${2 * rx} 0a${rx} ${ry} 0 1 0 ${-2 * rx} 0Z`;
+        }
+        case 'polygon': case 'polyline': {
+          const p = (el.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number);
+          let d = ''; for (let i = 0; i + 1 < p.length; i += 2) d += (i ? 'L' : 'M') + p[i] + ' ' + p[i + 1];
+          return d + (el.nodeName === 'polygon' ? 'Z' : '');
+        }
+        case 'line': return `M${g('x1')} ${g('y1')}L${g('x2')} ${g('y2')}`;
+      }
+      return '';
+    };
+    // градиент SVG → FillGradient в координатах мира (у сложных — запекание)
+    const frac = (v, def) => { if (v == null || v === '') return def; return /%$/.test(v) ? parseFloat(v) / 100 : num(v); };
+    function gradientOf(el, id, m, op) {
+      const chain = [], seen = new Set();
+      for (let n = byId(id); n && !seen.has(n) && /Gradient$/.test(n.nodeName); ) {
+        seen.add(n); chain.push(n);
+        const h = n.getAttribute('href') || n.getAttribute('xlink:href');
+        n = h && h[0] === '#' ? byId(h.slice(1)) : null;
+      }
+      if (!chain.length) return null;
+      const attr = k => { for (const c of chain) if (c.hasAttribute(k)) return c.getAttribute(k); return null; };
+      const sEl = chain.find(c => c.querySelector('stop'));
+      if (!sEl) return null;
+      let last = 0;
+      const stops = [...sEl.querySelectorAll('stop')].map(st => {
+        const cs = getComputedStyle(st), c = rgb(cs.stopColor) || {c: 0, a: 1};
+        const a = c.a * (cs.stopOpacity === '' ? 1 : num(cs.stopOpacity)) * op;
+        last = Math.max(last, Math.min(1, Math.max(0, frac(st.getAttribute('offset'), 0))));
+        return {offset: last, color: `rgba(${c.c >> 16},${(c.c >> 8) & 255},${c.c & 255},${+a.toFixed(4)})`};
+      });
+      let T = m;
+      if ((attr('gradientUnits') || 'objectBoundingBox') === 'objectBoundingBox') {
+        let b; try { b = el.getBBox(); } catch (e) { return null; }
+        T = T.multiply(new DOMMatrix([b.width, 0, 0, b.height, b.x, b.y]));
+      }
+      const gtEl = chain.find(c => c.hasAttribute('gradientTransform'));
+      if (gtEl) { const t = gtEl.gradientTransform.baseVal.consolidate(); if (t) { const q = t.matrix; T = T.multiply(new DOMMatrix([q.a, q.b, q.c, q.d, q.e, q.f])); } }
+      const P = (x, y) => { const p = T.transformPoint({x, y}); return {x: p.x * S, y: p.y * S}; };
+      if (chain[0].nodeName === 'linearGradient') {
+        return new PIXI.FillGradient({type: 'linear', textureSpace: 'global', colorStops: stops,
+          start: P(frac(attr('x1'), 0), frac(attr('y1'), 0)), end: P(frac(attr('x2'), 1), frac(attr('y2'), 0))});
+      }
+      const cx = frac(attr('cx'), 0.5), cy = frac(attr('cy'), 0.5), r = frac(attr('r'), 0.5);
+      const fx = frac(attr('fx'), cx), fy = frac(attr('fy'), cy);
+      // эллипс — образ окружности: оси через разложение 2×2
+      const E = (T.a + T.d) / 2, Fv = (T.a - T.d) / 2, G = (T.b + T.c) / 2, H = (T.b - T.c) / 2;
+      const Q = Math.hypot(E, H), R = Math.hypot(Fv, G), s1 = Q + R, s2 = Math.abs(Q - R);
+      const rot = (Math.atan2(G, Fv) + Math.atan2(H, E)) / 2;
+      return new PIXI.FillGradient({type: 'radial', textureSpace: 'global', colorStops: stops, center: P(fx, fy), innerRadius: 0,
+        outerCenter: P(cx, cy), outerRadius: r * s1 * S, scale: s1 ? s2 / s1 : 1, rotation: rot});
+    }
+    const paint = (el, prop, opProp, m, op) => {
+      const cs = getComputedStyle(el), v = cs[prop], o = (cs[opProp] === '' ? 1 : num(cs[opProp])) * op;
+      const gid = urlId(v);
+      if (gid) { const fg = gradientOf(el, gid, m, o); return fg ? {fill: fg, alpha: 1} : null; }
+      const c = rgb(v); return c ? {color: c.c, alpha: c.a * o} : null;
+    };
+    const DRAW = 'path, rect, circle, ellipse, polygon, polyline, line, text, use, image';
+    const inDefs = n => !!n.closest('defs, clipPath, mask, pattern, marker, symbol, linearGradient, radialGradient, filter');
+    const hasFx = n => { const cs = getComputedStyle(n); return n.hasAttribute('filter') || n.hasAttribute('mask') || n.hasAttribute('clip-path') ||
+      (cs.filter && cs.filter !== 'none') || (cs.mask && cs.mask !== 'none') || (cs.clipPath && cs.clipPath !== 'none'); };
+    let maxBlur = 0;
+    root.querySelectorAll('feGaussianBlur').forEach(b => { for (const v of (b.getAttribute('stdDeviation') || '0').split(/[\s,]+/)) maxBlur = Math.max(maxBlur, num(v)); });
+    const blendOf = l => /умнож|multiply/i.test(l) ? 'multiply' : /экран|screen|освет/i.test(l) ? 'screen' : /добав|свеч|add/i.test(l) ? 'add' : 'normal';
+
+    const chunks = [];                     // {target, kind: 'vec', items} | {target, kind: 'bake', els, blend}
+    let target = 'hull', bakeN = 0;
+    for (const layer of root.children) {
+      if (layer.nodeName !== 'g') continue;
+      const label = layer.getAttribute('inkscape:label') || layer.getAttribute('id') || '';
+      if (/^(ref|референс|ориентир)/i.test(label) || getComputedStyle(layer).display === 'none') continue;
+      if (/^(мигалк|blink)/i.test(label)) {
+        for (const el of layer.querySelectorAll('circle, ellipse, path, rect')) {
+          let b; try { b = el.getBBox(); } catch (e) { continue; }
+          const m = inv.multiply(DM(el.getCTM())), c = m.transformPoint({x: b.x + b.width / 2, y: b.y + b.height / 2});
+          const sc = Math.sqrt(Math.abs(m.a * m.d - m.b * m.c)), col = rgb(getComputedStyle(el).fill) || {c: 0xffffff};
+          const nm = k => { const v = parseFloat(el.getAttribute('data-' + k)); return Number.isFinite(v) ? v : null; };
+          const cs = getComputedStyle(el);
+          if (el.nodeName === 'path' && cs.fill === 'none' && rgb(cs.stroke)) {                // штрих-окно: от первой до последней точки
+            let a, z; try { const L = el.getTotalLength(); a = m.transformPoint(el.getPointAtLength(0)); z = m.transformPoint(el.getPointAtLength(L)); } catch (e) { continue; }
+            LAMPS.push({seg: true, x: (a.x + z.x) / 2, y: (a.y + z.y) / 2, len: Math.hypot(z.x - a.x, z.y - a.y), ang: Math.atan2(z.y - a.y, z.x - a.x),
+                        r: num(cs.strokeWidth) * sc, color: rgb(cs.stroke).c, mode: el.getAttribute('data-mode') || 'room', period: nm('period') ?? 6, phase: nm('phase') ?? 0});
+            continue;
+          }
+          LAMPS.push({x: c.x, y: c.y, r: Math.max(b.width, b.height) / 2 * sc, color: col.c, mode: el.getAttribute('data-mode') || 'blink',
+                      period: nm('period') ?? 1.6, phase: nm('phase') ?? 0});
+        }
+        continue;
+      }
+      if (/корма|stern/i.test(label)) target = 'stern'; else if (/детал|detail/i.test(label)) target = 'detail'; else if (/корпус|hull/i.test(label)) target = 'hull';
+      const soft = /^(мягк|soft)/i.test(label), blend = blendOf(label);
+      const push = (kind, x) => {
+        let c = chunks[chunks.length - 1];
+        if (!c || c.kind !== kind || c.target !== target || c.blend !== blend || c.layer !== layer) { c = {target, kind, blend, layer, items: [], els: []}; chunks.push(c); }
+        (kind === 'vec' ? c.items : c.els).push(x);
+      };
+      for (const el of layer.querySelectorAll(DRAW)) {
+        if (inDefs(el)) continue;
+        let op = 1, hidden = false, fx = false;
+        for (let n = el; n && n !== layer.parentNode; n = n.parentNode) {
+          const cs = getComputedStyle(n);
+          if (cs.display === 'none' || cs.visibility === 'hidden') { hidden = true; break; }
+          if (cs.opacity !== '') op *= num(cs.opacity);
+          if (n !== layer && hasFx(n)) fx = true;
+        }
+        if (hidden) continue;
+        if (soft || fx || el.nodeName === 'text' || el.nodeName === 'use' || el.nodeName === 'image') { el.setAttribute('data-bk', String(bakeN++)); push('bake', el); continue; }
+        const d = dOf(el); if (!d) continue;
+        const m = inv.multiply(DM(el.getCTM()));
+        let path;
+        try { path = new PIXI.GraphicsPath(d).transform(new PIXI.Matrix(m.a * S, m.b * S, m.c * S, m.d * S, m.e * S, m.f * S)); } catch (e) { continue; }
+        path.checkForHoles = true;
+        const cs = getComputedStyle(el), sc = Math.sqrt(Math.abs(m.a * m.d - m.b * m.c));
+        const fill = el.nodeName !== 'line' && el.nodeName !== 'polyline' ? paint(el, 'fill', 'fillOpacity', m, op) : null;
+        let stroke = null;
+        if (num(cs.strokeWidth) > 0) {
+          const p = paint(el, 'stroke', 'strokeOpacity', m, op);
+          if (p) {
+            const lum = p.fill ? 1 : (0.3 * (p.color >> 16) + 0.59 * ((p.color >> 8) & 255) + 0.11 * (p.color & 255)) / 255;
+            stroke = {...p, w: num(cs.strokeWidth) * sc, dark: lum < 0.15,
+                      join: ['round', 'bevel'].includes(cs.strokeLinejoin) ? cs.strokeLinejoin : 'miter',
+                      cap: ['round', 'square'].includes(cs.strokeLinecap) ? cs.strokeLinecap : 'butt'};
+          }
+        }
+        if (fill || stroke) push('vec', {path, fill, stroke});
+      }
+    }
+    // запекание: каждый кусок — свой обрезанный по рамке SVG, отрисованный браузером
+    const svgText = new XMLSerializer().serializeToString(root);
+    for (const c of chunks) {
+      if (c.kind !== 'bake') continue;
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const el of c.els) {
+        let b; try { b = el.getBBox(); } catch (e) { continue; }
+        const m = inv.multiply(DM(el.getCTM()));
+        for (const [x, y] of [[b.x, b.y], [b.x + b.width, b.y], [b.x, b.y + b.height], [b.x + b.width, b.y + b.height]]) {
+          const p = m.transformPoint({x, y}); x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y);
+        }
+      }
+      if (!(x1 > x0 && y1 > y0)) continue;
+      const pad = 3 + 3.2 * maxBlur + 2;
+      x0 -= pad; y0 -= pad; x1 += pad; y1 += pad;
+      const w = x1 - x0, h = y1 - y0, res = Math.min(2, 4096 / Math.max(w, h));   // мягкому много не надо: 2 пикселя на единицу
+      const keep = new Set(c.els.map(e => e.getAttribute('data-bk')));
+      const d2 = new DOMParser().parseFromString(svgText, 'image/svg+xml'), r2 = d2.documentElement;
+      for (const n of [...r2.querySelectorAll(DRAW)]) if (!inDefs(n) && !keep.has(n.getAttribute('data-bk'))) n.remove();
+      for (const l of [...r2.children]) {
+        const lb = l.getAttribute('inkscape:label') || l.getAttribute('id') || '';
+        if (l.nodeName === 'g' && /^(ref|референс|ориентир)/i.test(lb)) l.remove();
+      }
+      r2.setAttribute('viewBox', `${x0} ${y0} ${w} ${h}`);
+      r2.setAttribute('width', Math.ceil(w * res)); r2.setAttribute('height', Math.ceil(h * res));
+      r2.setAttribute('preserveAspectRatio', 'none');
+      const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(r2)], {type: 'image/svg+xml'}));
+      try {
+        const img = new Image(); img.src = url; await img.decode();
+        const cv = document.createElement('canvas'); cv.width = Math.ceil(w * res); cv.height = Math.ceil(h * res);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        c.tex = PIXI.Texture.from(cv); c.box = {x: x0, y: y0, w, h};
+      } catch (e) { console.warn('ship.svg: не запеклось', e); } finally { URL.revokeObjectURL(url); }
+    }
+    host.remove();
+    window.__bakeInfo = chunks.filter(c => c.tex).map(c => [c.layer.getAttribute('inkscape:label'), c.tex.width, c.tex.height]);
+    const ready = chunks.filter(c => c.kind === 'vec' ? c.items.length : c.tex);
+    if (!ready.length) return null;
+    // контейнеры вместо трёх Graphics кода: по порядку — вектор и запечённое вперемешку
+    const C = {hull: new PIXI.Container(), detail: new PIXI.Container(), stern: new PIXI.Container()};
+    for (const [k, g] of [['hull', hullG], ['detail', detailG], ['stern', sternG]]) { const i = world.getChildIndex(g); world.removeChild(g); world.addChildAt(C[k], i); }
+    for (const c of ready) {
+      if (c.kind === 'vec') { c.g = new PIXI.Graphics(); C[c.target].addChild(c.g); continue; }
+      const sp = new PIXI.Sprite(c.tex);
+      sp.position.set(c.box.x * S, c.box.y * S); sp.width = c.box.w * S; sp.height = c.box.h * S;
+      sp.blendMode = c.blend; C[c.target].addChild(sp);
+    }
+    return ready;
+  })()};
+  window.__staticMs = Math.round(performance.now() - T_STATIC);
+
+  // ---------- фон районов (ship/bg/ — build_bg.py из PSB) ----------
+  // Город: картинка 1/8 всегда, плитки 1/4 и 1/2 — только видимые и по приближению (ушли с экрана — выгружаются).
+  // Нос: по картинке на район. Лежит под заливкой районов: их цвет — лёгкий оттенок поверх арта.
+  const bgC = new PIXI.Container(), frameC = new PIXI.Container();             // фон — под заливкой районов, рамка-«Гигаструктура» — над ней
+  world.addChildAt(bgC, world.getChildIndex(zonesG));
+  world.addChildAt(frameC, world.getChildIndex(zonesG) + 1);
+  const BG = await (async () => { try { const r = await fetch('bg/bg.json?' + Date.now()); return r.ok ? await r.json() : null; } catch (e) { return null; } })();
+  const BG_SETS = [];
+  if (BG) {
+    const BV = '?v=' + (BG.v || 1);                                              // версия набора — плитки не из кэша после пересборки
+    const put = (sp, x0, y0, x1, y1) => { sp.position.set(x0 * S, y0 * S); sp.width = (x1 - x0) * S; sp.height = (y1 - y0) * S; };
+    for (const [c, cont] of [[BG.city, bgC], [BG.frame, frameC]]) {
+      if (!c) continue;
+      const base = c.levels.find(l => l.file);
+      if (base) PIXI.Assets.load('bg/' + base.file + BV).then(t => { const sp = new PIXI.Sprite(t); put(sp, c.X0, c.Y0, c.X1, c.Y1); cont.addChildAt(sp, 0); }).catch(() => {});
+      BG_SETS.push({c, cont, BV, tiles: new Map(), have: Object.fromEntries(c.levels.filter(l => l.have).map(l => [l.dir, new Set(l.have)]))});
+    }
+    for (const f of BG.front) PIXI.Assets.load('bg/' + f.file + BV).then(t => { const sp = new PIXI.Sprite(t); put(sp, f.x0, f.y0, f.x1, f.y1); bgC.addChild(sp); }).catch(() => {});
+  }
+  function syncBg(now) {
+    for (const set of BG_SETS) {
+      const {c, cont, tiles, BV} = set, kx = (c.X1 - c.X0) * S / c.w, ky = (c.Y1 - c.Y0) * S / c.h;
+      const tiled = c.levels.filter(l => l.cols).sort((a, b) => a.f - b.f);
+      const pxPerPsb = cam.z * kx;
+      let L = null;
+      if ((1 / c.levels.find(l => l.file).f) * pxPerPsb > 1.6) { L = tiled[tiled.length - 1]; for (const t of tiled) if ((1 / t.f) * pxPerPsb <= 1.6) { L = t; break; } }
+      if (L) {
+        const [wx0, wy0] = toWorld(0, 0), [wx1, wy1] = toWorld(sw(), sh());
+        const tp = c.tile / L.f;                                   // плитка в пикселях PSB
+        const cA = Math.max(0, Math.floor((wx0 - c.X0 * S) / kx / tp)), cB = Math.min(L.cols - 1, Math.floor((wx1 - c.X0 * S) / kx / tp));
+        const rA = Math.max(0, Math.floor((wy0 - c.Y0 * S) / ky / tp)), rB = Math.min(L.rows - 1, Math.floor((wy1 - c.Y0 * S) / ky / tp));
+        const have = set.have[L.dir];
+        for (let r = rA; r <= rB; r++) for (let q = cA; q <= cB; q++) {
+          if (have && !have.has(`${r}_${q}`)) continue;            // у рамки пустых плиток нет в наборе
+          const key = `${L.dir}/${r}_${q}`; let e = tiles.get(key);
+          if (!e) {
+            e = {sp: null, seen: now, url: 'bg/' + key + '.webp' + BV}; tiles.set(key, e);
+            PIXI.Assets.load(e.url).then(t => {
+              if (tiles.get(key) !== e) { PIXI.Assets.unload(e.url); return; }
+              const sp = e.sp = new PIXI.Sprite(t);
+              sp.position.set(c.X0 * S + q * tp * kx, c.Y0 * S + r * tp * ky);
+              sp.width = (t.width + 1) / L.f * kx; sp.height = (t.height + 1) / L.f * ky;   // +1 текстель — без щелей на стыках
+              sp.zIndex = L.f; cont.addChild(sp); cont.sortChildren();
+            }).catch(() => tiles.delete(key));
+          }
+          e.seen = now;
+        }
+      }
+      for (const [key, e] of tiles) if (now - e.seen > 4000) {
+        tiles.delete(key);
+        if (e.sp) { cont.removeChild(e.sp); e.sp.destroy(); PIXI.Assets.unload(e.url); }
+      }
+    }
+  }
+
+  // ---------- анимация: мигалки, главный двигатель, маневровые сопла ----------
+  // Только спрайты (позиция/размер/прозрачность раз в кадр) — без перерисовки векторов.
+  const canvasTex = (w, h, draw) => { const cv = document.createElement('canvas'); cv.width = w; cv.height = h; draw(cv.getContext('2d'), w, h); return PIXI.Texture.from(cv); };
+  const glowTex = canvasTex(128, 128, (g, w) => {
+    const gr = g.createRadialGradient(w / 2, w / 2, 0, w / 2, w / 2, w / 2);
+    for (const [o, a] of [[0, 1], [0.18, 0.62], [0.45, 0.2], [0.75, 0.05], [1, 0]]) gr.addColorStop(o, `rgba(255,255,255,${a})`);
+    g.fillStyle = gr; g.fillRect(0, 0, w, w);
+  });
+  const dotTex = canvasTex(32, 32, (g, w) => { g.fillStyle = '#fff'; g.beginPath(); g.arc(w / 2, w / 2, w / 2 - 1, 0, 7); g.fill(); });
+  // факел: ярко у сопла, к хвосту гаснет и сужается
+  const flameTex = canvasTex(256, 64, (g, w, h) => {
+    const im = g.createImageData(w, h);
+    for (let x = 0; x < w; x++) for (let y = 0; y < h; y++) {
+      const u = x / (w - 1), v = (y - (h - 1) / 2) / ((h - 1) / 2), wid = 0.95 - 0.7 * u;
+      const a = Math.pow(1 - u, 1.6) * Math.exp(-Math.pow(v / wid, 2) * 2.2) * Math.pow(Math.max(0, 1 - v * v), 2) * Math.min(1, x / 6);   // края гаснут в ноль
+      const k = (y * w + x) * 4; im.data[k] = im.data[k + 1] = im.data[k + 2] = 255; im.data[k + 3] = Math.round(255 * Math.min(1, a));
+    }
+    g.putImageData(im, 0, 0);
+  });
+  const fxC = new PIXI.Container();
+  world.addChildAt(fxC, world.getChildIndex(turbG));
+  // огонь главного двигателя — ПОД кораблём: выходит из-за задней грани, будто изнутри блока
+  const engC = new PIXI.Container();
+  world.addChildAt(engC, world.getChildIndex(artC) + 1);
+  const spr = (tex, tint, blend = 'add', ax = 0.5, parent = fxC) => { const s = new PIXI.Sprite(tex); s.anchor.set(ax, 0.5); s.tint = tint; s.blendMode = blend; parent.addChild(s); return s; };
+  // главный двигатель — большой центральный блок кормы (path201/path197 в ship.svg), огонь — с его задней грани-шеврона
+  const ENG = {x: 2020, y: 305, h: 96, power: 1};                // начало факела — внутри блока, за задней гранью; power — яркость (0…1.5)
+  const eng = {
+    light: spr(glowTex, 0x5fc8ff, 'add', 0.5, engC), outer: spr(flameTex, 0x4fb8ff, 'add', 0, engC), mid: spr(flameTex, 0x9fe6ff, 'add', 0, engC),
+    core: spr(flameTex, 0xf2fdff, 'add', 0, engC), mouth: spr(glowTex, 0xbff4ff, 'add', 0.5, engC),
+    diamonds: [0, 1, 2, 3, 4].map(() => spr(glowTex, 0xe8fbff, 'add', 0.5, engC)),
+  };
+  // маневровые сопла у передней кромки кормы — смотрят к носу
+  const THR = [{x: 1576, y: 587.8}, {x: 1573, y: 626.5}].map(p => ({...p, flame: spr(flameTex, 0x9fe6ff, 'add', 0), glow: spr(glowTex, 0x7fe3ff)}));
+  for (const l of LAMPS) {
+    l.glow = spr(glowTex, l.color); l.core = spr(l.seg ? PIXI.Texture.WHITE : dotTex, l.color, 'normal');
+    if (l.seg) { l.glow.rotation = l.core.rotation = l.ang; }
+  }
+  // ремонтный дрон: облетает корму по рабочим точкам, на каждой зависает и варит (вспышки и искры)
+  const DRONE_PX = 0.1875;                                         // единиц корабля на пиксель текстуры (96 px = 18 ед.)
+  const droneTex = canvasTex(96, 56, g => {
+    const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); };
+    g.lineJoin = 'round'; g.strokeStyle = '#0d1114';
+    g.lineWidth = 3; g.beginPath(); g.moveTo(52, 37); g.lineTo(60, 47); g.lineTo(75, 49); g.strokeStyle = '#3d484e'; g.stroke();   // рука-манипулятор
+    g.strokeStyle = '#0d1114'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(27, 15); g.lineTo(23, 6); g.stroke();                                   // антенна
+    rr(4, 18, 12, 16, 3); g.fillStyle = '#56636a'; g.fill(); g.stroke();                              // кормовой движок
+    rr(14, 13, 56, 26, 8); g.fillStyle = '#b9c5c6'; g.fill(); g.stroke();                              // корпус
+    g.fillStyle = '#d6e0e1'; g.fillRect(20, 16, 40, 4);                                                // светлый верх
+    g.fillStyle = '#1f3b7d'; g.fillRect(15, 30, 54, 4);                                                // синяя полоса
+    rr(53, 18, 14, 10, 3); g.fillStyle = '#1b2427'; g.fill(); g.stroke();                              // окуляр
+    g.fillStyle = '#7fe3ff'; g.beginPath(); g.arc(62, 23, 2.6, 0, 7); g.fill();
+  });
+  const DRONE_SPOTS = [[1700, 122], [1930, 150], [2006, 272], [1962, 468], [1764, 538], [1664, 384]];
+  const DRONE_HOME = [1840, 330], DR_MOVE = 5, DR_WELD = 4;
+  const drone = {thr: spr(glowTex, 0x7fe3ff), body: spr(droneTex, 0xffffff, 'normal'), lamp: spr(glowTex, 0xff4a4a),
+                 flash: spr(glowTex, 0xcfe8ff), sparks: [...Array(8)].map(() => spr(dotTex, 0xffd27a, 'add'))};
+  // где дрон при заданном t: центр, куда смотрит, варит ли (кончик инструмента — справа снизу от центра)
+  const TIP = [(75 - 48) * DRONE_PX, (49 - 28) * DRONE_PX];
+  function droneAt(t) {
+    const cyc = DR_MOVE + DR_WELD, n = DRONE_SPOTS.length, k = Math.floor(t / cyc), u = t - k * cyc;
+    const A = DRONE_SPOTS[((k % n) + n) % n], B = DRONE_SPOTS[(((k + 1) % n) + n) % n];
+    const dirB = B[0] >= DRONE_HOME[0] ? 1 : -1, dirA = A[0] >= DRONE_HOME[0] ? 1 : -1;          // к корме лицом: справа — смотрит влево и наоборот
+    const at = (P, d) => [P[0] - d * TIP[0], P[1] - TIP[1]];                                           // центр так, чтобы инструмент касался точки
+    if (u >= DR_MOVE) { const c = at(B, -dirB); return {x: c[0], y: c[1], face: -dirB, weld: u - DR_MOVE, move: 0}; }
+    const e = u / DR_MOVE, q = e * e * (3 - 2 * e), P0 = at(A, -dirA), P2 = at(B, -dirB);
+    const mx = (P0[0] + P2[0]) / 2, my = (P0[1] + P2[1]) / 2, ox = mx - DRONE_HOME[0], oy = my - DRONE_HOME[1], ol = Math.hypot(ox, oy) || 1;
+    const P1 = [mx + ox / ol * 70, my + oy / ol * 70];                                                // дугой в стороне от корпуса
+    const x = (1 - q) ** 2 * P0[0] + 2 * (1 - q) * q * P1[0] + q * q * P2[0], y = (1 - q) ** 2 * P0[1] + 2 * (1 - q) * q * P1[1] + q * q * P2[1];
+    const dx = 2 * (1 - q) * (P1[0] - P0[0]) + 2 * q * (P2[0] - P1[0]);
+    return {x, y, face: q < 0.85 ? (dx >= 0 ? 1 : -1) : -dirB, weld: -1, move: Math.sin(Math.PI * e)};
+  }
+  const hash = n => { const h = Math.sin(n * 12.9898) * 43758.5453; return h - Math.floor(h); };
+  const lampLevel = (l, t) => {
+    const f = (((t + l.phase) / l.period) % 1 + 1) % 1;
+    switch (l.mode) {
+      case 'strobe': return f < 0.035 || (f > 0.11 && f < 0.145) ? 1 : 0;              // двойная вспышка
+      case 'pulse': return 0.5 - 0.5 * Math.cos(f * Math.PI * 2);
+      case 'room': {                                                                  // окно-комната: свет то горит, то нет (раз в период — решение заново)
+        const u = (t + l.phase) / l.period, k = Math.floor(u), on = n => hash(n * 3.1 + l.x * 0.37 + l.y * 1.3) > 0.32 ? 1 : 0.06;
+        const a = on(k - 1), b = on(k), q = Math.min(1, (u - k) / 0.12);
+        return a + (b - a) * q;
+      }
+      case 'flicker': { const k = Math.floor((t + l.phase) * 9); return hash(k + l.x) < 0.07 ? 0.25 : 0.85 + 0.15 * hash(k * 1.7 + l.y); }   // окно: изредка моргает
+      default: return Math.max(0, Math.min(1, (0.5 - Math.abs(f - 0.25)) * 8 - 1.5));    // мягкий включился/погас
+    }
+  };
+  function animFx(t) {
+    const z = cam.z, px = v => v / z;                              // экранные пиксели → единицы мира
+    for (const l of LAMPS) {
+      if (l.seg) {                                                     // штрих-окно: горит — светлый с ореолом, погас — тусклый
+        const lv = lampLevel(l, t), X = l.x * S, Y = l.y * S;
+        l.core.position.set(X, Y); l.core.width = l.len * S; l.core.height = Math.max(l.r * S, px(1.1)); l.core.alpha = 0.22 + 0.78 * lv;
+        l.glow.position.set(X, Y); l.glow.width = (l.len + l.r * 3) * S; l.glow.height = Math.max(l.r * 3.2 * S, px(3)); l.glow.alpha = lv * 0.22;
+        continue;
+      }
+      const lv = lampLevel(l, t), g = Math.max(l.r * 7 * S, px(5 + 3 * l.r)) * (0.75 + 0.25 * lv);
+      l.glow.position.set(l.x * S, l.y * S); l.glow.width = l.glow.height = g; l.glow.alpha = lv * 0.95 * Math.min(1, l.r / 2);   // у окон свечение слабее, чем у ходовых огней
+      const c = Math.max(l.r * 1.6 * S, px(1.6)); l.core.position.set(l.x * S, l.y * S); l.core.width = l.core.height = c; l.core.alpha = 0.3 + 0.7 * lv;
+    }
+    // факел: дрожит по длине и яркости, вдоль бегут «ромбы» (ударные волны)
+    const fl = 1 + 0.06 * Math.sin(t * 31) + 0.04 * Math.sin(t * 53 + 1.3) + 0.05 * (hash(Math.floor(t * 24)) - 0.5);
+    const X = ENG.x * S, Y = ENG.y * S, H = ENG.h * S;
+    eng.light.position.set(X + 60 * S, Y); eng.light.width = eng.light.height = 560 * S * (0.96 + 0.04 * fl); eng.light.alpha = 0.1 * ENG.power;
+    eng.outer.position.set(X, Y); eng.outer.width = 440 * S * fl; eng.outer.height = H * 1.3; eng.outer.alpha = 0.34 * ENG.power;
+    eng.mid.position.set(X, Y); eng.mid.width = 290 * S * fl; eng.mid.height = H * 0.85; eng.mid.alpha = 0.45 * ENG.power;
+    eng.core.position.set(X, Y); eng.core.width = 170 * S * (2 - fl); eng.core.height = H * 0.5; eng.core.alpha = 0.6 * ENG.power;
+    eng.mouth.position.set(X + 26 * S, Y); eng.mouth.width = 50 * S; eng.mouth.height = H * 1.1 * fl; eng.mouth.alpha = 0.45 * ENG.power;
+    eng.diamonds.forEach((d, i) => {
+      const u = ((t * 0.7 + i / eng.diamonds.length) % 1), x = X + (70 + u * 280) * S * fl;
+      d.position.set(x, Y); d.width = (28 - 14 * u) * S; d.height = (H * 0.34) * (1 - 0.6 * u); d.alpha = (1 - u) * 0.32 * ENG.power;
+    });
+    {
+      const d = droneAt(t), bob = Math.sin(t * 2.1) * 0.8 * (d.weld >= 0 ? 0.3 : 1), x = d.x * S, y = (d.y + bob) * S;
+      const b = drone.body; b.position.set(x, y); b.width = 96 * DRONE_PX * S; b.height = 56 * DRONE_PX * S; b.scale.x = Math.abs(b.scale.x) * d.face;
+      drone.thr.position.set(x - d.face * 8 * S, y); drone.thr.width = drone.thr.height = 9 * S * (0.7 + 0.3 * Math.sin(t * 27));
+      drone.thr.alpha = 0.25 + 0.6 * d.move;
+      const lb = ((t * 0.8) % 1) < 0.15 ? 1 : 0.15;                                                   // огонёк на антенне
+      drone.lamp.position.set(x - d.face * 4.5 * S, y - 4 * S); drone.lamp.width = drone.lamp.height = Math.max(3 * S, px(5)); drone.lamp.alpha = lb;
+      const tx = x + d.face * TIP[0] * S, ty = y + TIP[1] * S, weld = d.weld >= 0 && d.weld < DR_WELD - 0.4;
+      const fk = Math.floor(t * 22), on = weld && hash(fk) > 0.25;
+      drone.flash.position.set(tx, ty); drone.flash.width = drone.flash.height = (9 + 7 * hash(fk + 3)) * S; drone.flash.alpha = on ? 0.6 + 0.4 * hash(fk + 7) : 0;
+      drone.sparks.forEach((sp, i) => {
+        const life = 0.45, a = ((t + i * life / drone.sparks.length) % life) / life, id = Math.floor((t + i * life / drone.sparks.length) / life) * 8 + i;
+        const ang = (d.face > 0 ? Math.PI : 0) + (hash(id) - 0.5) * 2.2, v = 18 + 16 * hash(id + 1);
+        sp.position.set(tx + Math.cos(ang) * v * a * S, ty + (Math.sin(ang) * v * a + 14 * a * a) * S);
+        sp.width = sp.height = Math.max(0.9 * S, px(1.5)); sp.alpha = weld ? (1 - a) : 0;
+      });
+    }
+    THR.forEach((p, i) => {
+      const f = 0.8 + 0.2 * Math.sin(t * 23 + i * 2.1) + 0.1 * (hash(Math.floor(t * 18) + i * 7) - 0.5);
+      p.flame.position.set((p.x - 3) * S, p.y * S); p.flame.width = 30 * S * f; p.flame.height = 11 * S;
+      p.flame.scale.x = -Math.abs(p.flame.scale.x); p.flame.alpha = 0.85;                              // факел влево, к носу
+      p.glow.position.set(p.x * S, p.y * S); p.glow.width = 22 * S * f; p.glow.height = 34 * S * f; p.glow.alpha = 0.7;
+    });
+  }
 
   let drawnFor = 0;
   function drawShip() {
     const lw = Math.max(4, 2 / cam.z), thin = lw * 0.6, hair = lw * 0.38;
     drawnFor = cam.z;
+    if (STATIC_REF.v) {
+      for (const c of STATIC_REF.v) {
+        if (c.kind !== 'vec') continue;
+        const g = c.g; g.clear();
+        for (const e of c.items) {
+          g.path(e.path);
+          if (e.fill) g.fill(e.fill);
+          if (e.stroke) {
+            const k = e.stroke, width = k.dark ? k.w / 0.4 * lw : Math.max(k.w * S, 2 / cam.z);
+            g.stroke(k.fill ? {fill: k.fill, width, join: k.join, cap: k.cap} : {width, color: k.color, alpha: k.alpha, join: k.join, cap: k.cap});
+          }
+        }
+      }
+      return;
+    }
     hullG.clear();
     hullG.poly(PL(HULL), true).fill({color: C.hull});
     // верх носа и купол чуть светлее (смотрят вверх), киль — темнее
@@ -383,13 +822,14 @@
   };
   // палитра: материал → [тень, свет, непрозрачность]
   const PAL = {
-    tread: [0x0b1840, 0x21408f, 1], tread2: [0x08133a, 0x1a3578, 1], edge: [0x142a66, 0x4670cc, 1], side: [0x566c78, 0xbfd1d9, 1],
-    inner: [0x2c393f, 0x8fa4ac, 1], iedge: [0x44545c, 0xb6c9d1, 1], solar: [0x06102c, 0x16337a, 1],
-    shaft: [0x52626a, 0xd0dde2, 1], foot: [0x44545b, 0xb8c8ce, 1], cab: [0x76858c, 0xf1f5f7, 1],
+    tread: [0x0b1840, 0x21408f, 1], tread2: [0x0a173d, 0x1e3b86, 1], edge: [0x142a66, 0x4670cc, 1], side: [0x566c78, 0xbfd1d9, 1],
+    inner: [0x2c393f, 0x8fa4ac, 1], iedge: [0x44545c, 0xb6c9d1, 1],
+    shaft: [0x52626a, 0xd0dde2, 1], foot: [0x44545b, 0xb8c8ce, 1], liftCab: [0xffc061, 0xffc061, 1], liftCabGlow: [0xff9a3c, 0xff9a3c, 0.34],   // кабина лифта — тёплый огонь в шахте с ореолом cab: [0x76858c, 0xf1f5f7, 1],
     ink: [C.line, C.line, 1], ink85: [C.line, C.line, 0.85], ink6: [C.line, C.line, 0.6],
     light: [0xe9fbff, 0xe9fbff, 0.95], light7: [0xe9fbff, 0xe9fbff, 0.7], lightDim: [0xe9fbff, 0xe9fbff, 0.32],
     glow: [0x8fdcff, 0x8fdcff, 0.13], glowDim: [0x8fdcff, 0x8fdcff, 0.08], halo: [0xbfe6ff, 0xbfe6ff, 0.16],
-    grid: [0x5d88e6, 0x5d88e6, 0.55], gridHi: [0x5d88e6, 0x5d88e6, 0.75], warm: [C.warm, C.warm, 1],
+panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint: [0xd8ecff, 0xd8ecff, 0.07], glint2: [0xd8ecff, 0xd8ecff, 0.14], glint3: [0xe8f6ff, 0xe8f6ff, 0.24],
+    warm: [C.warm, C.warm, 1],
     slot: [0x17232a, 0x17232a, 1], warmGlow: [C.warm, C.warm, 0.22], hinge: [0x93a2a8, 0x93a2a8, 1], notch: [0x161d22, 0x2f3b42, 1], shade: [0x000000, 0x000000, 0.24],
   };
   const PAL_KEYS = Object.keys(PAL), PAL_W = 64, ROW = {};
@@ -471,8 +911,12 @@
   const DISC = [...Array(14)].map((_, k) => [Math.cos(k * Math.PI / 7), Math.sin(k * Math.PI / 7)]);
   const MB_BACK = new MeshBuf(), MB_FRONT = new MeshBuf();
   const LIGHT = (() => { const v = [-0.3, -0.62, 0.72], L = Math.hypot(...v); return v.map(x => x / L); })();
-  const P_RING = 24, NLIFT = 4;                                    // панелей по кругу, лифтов на кольцо
+  const P_RING = 24, NLIFT = 4, TREAD_SHEEN = 0.22;                                    // панелей по кругу, лифтов на кольцо
+  const SIDE_DASH = [[[0.06, 0.5], [0.56, 0.63], [0.69, 0.94]], [[0.06, 0.3], [0.36, 0.43], [0.49, 0.94]], [[0.06, 0.64], [0.7, 0.77], [0.83, 0.9]]];
   const tone = n => 0.5 + 0.62 * (n[0] * LIGHT[0] + n[1] * LIGHT[1] + n[2] * LIGHT[2]);
+  // середина между светом и взглядом (взгляд в косой проекции: (-k, 0, 1)) — по ней блик на панелях ленты
+  // (у нормали ленты нет составляющей вдоль оси — берём проекцию на плоскость кольца, иначе максимум блика < 1)
+  const HALF = (() => { const v = [-RING.k, 0, 1], L = Math.hypot(...v), h = LIGHT.map((x, i) => x + v[i] / L), M = Math.hypot(h[1], h[2]); return [0, h[1] / M, h[2] / M]; })();
   const nrm3 = (f, ph) => [f.na, f.nr * Math.sin(ph), f.nr * Math.cos(ph)];
   const faceVis = (f, ph) => -RING.k * f.na + f.nr * Math.cos(ph) > 1e-4;
   // точка кольца: угол, радиус, сдвиг вдоль оси → экран (у ближних точек чуть больше масштаб)
@@ -537,7 +981,7 @@
       if ((c > 0) === front) list.push({s, ph, z: c});
     }
     list.sort((a, b) => a.z - b.z);                                 // дальние раньше
-    const r0 = HH - 13 * S, r1 = RING.Ri + 2 * S, wa = 4 * S, wt = 4 * S;   // основание — на дне паза в обшивке
+    const r0 = HH + 3 * S, r1 = RING.Ri + 2 * S, wa = 4 * S, wt = 4 * S;    // основание — в жёлобе обоймы (её радиус HH + 6)
     for (const {s, ph} of list) {
       const at = (a, rho, tau = 0) => S3(W3(r, ph, a, rho, tau));
       // свая: на грани к носу — стеклянная шахта с огнями, внутри едут кабины (одна вверх, другая вниз)
@@ -546,8 +990,9 @@
         const a0 = r0 + 16 * S, a1 = r1 - 22 * S;
         mb.line([at(-wa, a0), at(-wa, a1)], Math.max(1.2, 3.2 * S * cam.z), 'slot');
         for (let q = a0 + 10 * S; q < a1 - 4 * S; q += 20 * S) mb.disc(...at(-wa, q), Math.max(0.7, 1.1 * S * cam.z), 'lightDim');
-        const u = (Math.sin(t * 0.42 + s * 1.9 + ri * 2.4) + 1) / 2, rc = a0 + (a1 - a0 - 7 * S) * u;   // кабина — огонь в шахте
-        mb.line([at(-wa, rc), at(-wa, rc + 7 * S)], Math.max(1, 2.4 * S * cam.z), 'warm');
+        const u = (Math.sin(t * 0.42 + s * 1.9 + ri * 2.4) + 1) / 2, rc = a0 + (a1 - a0 - 7 * S) * u;   // кабина — тёплый огонь в шахте
+        mb.line([at(-wa, rc - 1.5 * S), at(-wa, rc + 8.5 * S)], Math.max(2, 5.5 * S * cam.z), 'liftCabGlow');
+        mb.line([at(-wa, rc), at(-wa, rc + 7 * S)], Math.max(1, 2.4 * S * cam.z), 'liftCab');
       });
       // обоймы на свае
       for (const q of [0.34, 0.67]) {
@@ -559,12 +1004,6 @@
     }
   }
 
-  function drawNotches(mb) {
-    for (const r of RINGS) for (const top of [true, false]) {
-      const x0 = r.cx - NW * S, x1 = r.cx + NW * S, y0 = (top ? TOP : BOT - ND) * S, y1 = (top ? TOP + ND : BOT) * S;
-      mb.poly([[x0, y0], [x1, y0], [x1, y1], [x0, y1]].map(([x, y]) => toScreen(x, y)), 'notch', top ? [0, 0, 0.8, 0.8] : [0.8, 0.8, 0, 0]);
-    }
-  }
   function drawRingShadow(mb, G) {
     const dx = 9 * S * cam.z, dy = 15 * S * cam.z, o = p => [p[0] + dx, p[1] + dy];
     for (const i of halfSegs(G, true)) {
@@ -574,28 +1013,34 @@
   }
   function drawRingHalf(mb, r, ri, G, front, t) {
     const segs = halfSegs(G, front), lw = Math.max(2, 4 * cam.z);
-    // грани: тон — в каждой вершине по нормали, между вершинами плавно; у ленты панели через одну темнее
+    // грани: тон — в каждой вершине по нормали, между вершинами плавно; лента — синие сегменты со швами (как на арте), через один чуть темнее
     for (const i of segs) {
       const p0 = G.pos[i], p1 = G.pos[i + 1];
       for (const f of PROF) {
         if (!G.vis[i][f.j]) continue;
-        const row = f.mat === 'tread' && Math.floor(i / G.sub) % 2 ? 'tread2' : f.mat;
-        mb.quad(p0[f.j], p0[f.j2], p1[f.j2], p1[f.j], row, G.tn[i][f.j], G.tn[i + 1][f.j]);
+        let ta = G.tn[i][f.j], tb = G.tn[i + 1][f.j], row = f.mat;
+        if (f.mat === 'tread') {
+          // сегмент ленты — гладкая пластина: свет переливается от одного шва к другому
+          if (Math.floor(i / G.sub) % 2) row = 'tread2';
+          const q0 = (i % G.sub) / G.sub, q1 = (i % G.sub + 1) / G.sub;
+          ta += TREAD_SHEEN * (0.55 - q0); tb += TREAD_SHEEN * (0.55 - q1);
+        }
+        mb.quad(p0[f.j], p0[f.j2], p1[f.j2], p1[f.j], row, ta, tb);
       }
     }
     const dP = Math.PI * 2 / P_RING, inHalf = ph => (Math.cos(ph) > 0) === front;
     if (front) {
-      // солнечные панели на ленте: тёмные, с сеткой ячеек
-      const e = (RING.bw - RING.c) * 0.8;
+      // детали солнечных панелей на ленте: утопленная рамка, две продольные шины, блик-диагональ на сегментах к свету
+      const e = (RING.bw - RING.c) * 0.84, eb = e * 0.36;
       for (let p = 0; p < P_RING; p++) {
-        const a0 = G.rot + (p + 0.1) * dP, a1 = G.rot + (p + 0.9) * dP, am = (a0 + a1) / 2;
-        if (!inHalf(am) || Math.cos(am) < 0.1) continue;
-        const along = ax => [0, 1, 2, 3, 4].map(q => rp(r, a0 + (a1 - a0) * q / 4, RING.R, ax));
-        const L = along(-e), Rt = along(e), M = along(0), tt = tone(nrm3(PROF[2], am));
-        for (let q = 0; q < 4; q++) mb.poly([L[q], L[q + 1], Rt[q + 1], Rt[q]], 'solar', tt);
-        mb.line([...L, ...Rt.slice().reverse()], lw * 0.4, 'gridHi', true);
-        mb.line(M, lw * 0.3, 'grid');
-        for (const q of [1, 2, 3]) mb.line([L[q], Rt[q]], lw * 0.3, 'grid');
+        const a0 = G.rot + (p + 0.05) * dP, a1 = G.rot + (p + 0.95) * dP, am = (a0 + a1) / 2;
+        if (!inHalf(am) || Math.cos(am) < 0.12) continue;
+        const at = (q, ax) => rp(r, a0 + (a1 - a0) * q, RING.R, ax), Q = [0, 0.25, 0.5, 0.75, 1];
+        const L = Q.map(q => at(q, -e)), Rt = Q.map(q => at(q, e));
+        mb.line([...L, ...Rt.slice().reverse()], lw * 0.32, 'panelEdge', true);
+        for (const ax of [-eb, eb]) mb.line(Q.map(q => at(0.03 + q * 0.94, ax)), lw * 0.24, 'busbar');
+        const n = nrm3(PROF[2], am), sp = Math.pow(Math.max(0, n[0] * HALF[0] + n[1] * HALF[1] + n[2] * HALF[2]), 70);
+        if (sp > 0.12) mb.poly([at(0.16, -e), at(0.27, -e), at(0.45, e), at(0.34, e)], sp > 0.6 ? 'glint3' : sp > 0.3 ? 'glint2' : 'glint');
       }
     }
     // обводка вдоль кольца: по контуру видимого — толще, по рёбрам между гранями — тоньше
@@ -615,14 +1060,15 @@
       if (i % G.sub) continue;
       for (const f of PROF) if (G.vis[i][f.j]) mb.line([G.pos[i][f.j], G.pos[i][f.j2]], lw * 0.55, 'ink85');
     }
-    // пунктир огней на боковине (как на арте) — с ореолом
-    const rm = (RING.Ri + RING.c2 + RING.R - RING.c) / 2;
-    for (let p = 0; p < P_RING; p++) for (const [u0, u1] of [[0.1, 0.32], [0.39, 0.61], [0.68, 0.9]]) {
+    // огни на боковине (как на арте): тонкая линия ближе к внутренней кромке — длинный штрих и пара коротких,
+    // рисунок чередуется по панелям; ореол узкий
+    const rm = RING.Ri + RING.c2 + (RING.R - RING.c - RING.Ri - RING.c2) * 0.36;
+    for (let p = 0; p < P_RING; p++) for (const [u0, u1] of SIDE_DASH[p % 3]) {
       const a0 = G.rot + (p + u0) * dP, a1 = G.rot + (p + u1) * dP;
       if (!inHalf((a0 + a1) / 2)) continue;
-      const pts = [rp(r, a0, rm, -RING.bw), rp(r, (a0 + a1) / 2, rm, -RING.bw), rp(r, a1, rm, -RING.bw)];
-      mb.line(pts, Math.max(2, 8 * S * cam.z), front ? 'glow' : 'glowDim');
-      mb.line(pts, Math.max(1.1, 3.4 * S * cam.z), front ? 'light' : 'light7');
+      const pts = [0, 0.25, 0.5, 0.75, 1].map(q => rp(r, a0 + (a1 - a0) * q, rm, -RING.bw));
+      mb.line(pts, Math.max(1.6, 3.6 * S * cam.z), front ? 'glow' : 'glowDim');
+      mb.line(pts, Math.max(1, 1.6 * S * cam.z), front ? 'light' : 'light7');
     }
     if (front) {
       // бегущие огни на швах ленты
@@ -631,22 +1077,21 @@
         if (!inHalf(a) || Math.cos(a) < 0.05) continue;
         const h = Math.sin((p + 1) * 12.9898 + ri * 78.233) * 43758.5453, rnd = h - Math.floor(h);   // свой ритм у каждого огня
         const [x, y] = rp(r, a, RING.R, 0), on = ((t * (0.22 + 0.2 * rnd) + rnd * 7.3) % 1) < 0.35;
-        if (on) mb.disc(x, y, Math.max(2, 6.5 * S * cam.z), 'halo');
-        mb.disc(x, y, Math.max(1, 2.8 * S * cam.z), on ? 'light' : 'lightDim');
+        if (on) mb.disc(x, y, Math.max(1.6, 3.4 * S * cam.z), 'halo');
+        mb.disc(x, y, Math.max(0.8, 1.4 * S * cam.z), on ? 'light' : 'lightDim');
       }
     } else {
       // внутренняя сторона: два ряда окон
       for (let p = 0; p < P_RING; p++) for (const u of [0.18, 0.4, 0.62, 0.84]) {
         const a = G.rot + (p + u) * dP;
         if (!inHalf(a) || Math.cos(a) > -0.02) continue;
-        for (const ax of [-RING.bw * 0.42, RING.bw * 0.42]) mb.line([rp(r, a - dP * 0.07, RING.Ri, ax), rp(r, a + dP * 0.07, RING.Ri, ax)], Math.max(1, 3.4 * S * cam.z), 'light7');
+        for (const ax of [-RING.bw * 0.42, RING.bw * 0.42]) mb.line([rp(r, a - dP * 0.07, RING.Ri, ax), rp(r, a + dP * 0.07, RING.Ri, ax)], Math.max(1, 1.8 * S * cam.z), 'light7');
       }
     }
   }
   function drawRings(t) {
     const geo = RINGS.map(r => ringGeom(r, t)), back = MB_BACK.reset(), front = MB_FRONT.reset();
     RINGS.forEach((r, i) => drawRingHalf(back, r, i, geo[i], false, t));
-    drawNotches(back);                                                    // дно пазов в обшивке
     RINGS.forEach((r, i) => drawLifts(back, r, i, geo[i], false, t));     // дальние лифты — поверх дальних граней
     RINGS.forEach((r, i) => drawRingShadow(front, geo[i]));               // тень ближней половины — на корпус
     RINGS.forEach((r, i) => drawLifts(front, r, i, geo[i], true, t));     // ближние — под ближними гранями
@@ -655,12 +1100,13 @@
   }
 
   // ---------- районы ----------
-  // v4: районы носа переделаны — их правка из v3 не переносится, правка городских районов переносится
-  const STORE = 'phenomSchemaZones4', STORE_OLD = 'phenomSchemaZones3';
+  // v5 (07.10.2026): свободные зоны ушли в фермы/аквакультуру, нос — по вырезам ship.svg, город до 1482 —
+  // прежняя правка в браузере не переносится (старые контуры перебили бы новые)
+  const STORE = 'phenomSchemaZones5', STORE_OLD = null;
   let zones = SCHEMA.zones.map(z => ({...z, poly: z.poly.map(p => [...p])}));
   try {
     let saved = JSON.parse(localStorage.getItem(STORE) || 'null');
-    if (!saved) saved = (JSON.parse(localStorage.getItem(STORE_OLD) || 'null') || []).filter(s => zones.find(z => z.id === s.id)?.part === 'city');
+    if (!saved && STORE_OLD) saved = (JSON.parse(localStorage.getItem(STORE_OLD) || 'null') || []).filter(s => zones.find(z => z.id === s.id)?.part === 'city');
     if (saved && Array.isArray(saved)) for (const s of saved) { const z = zones.find(z => z.id === s.id); if (z && Array.isArray(s.poly)) z.poly = s.poly; }
   } catch (e) { /* без сохранённой правки */ }
   const labelStyle = {fontFamily: 'system-ui, Segoe UI, sans-serif', fontSize: 26, fontWeight: '600', fill: 0xffffff,
@@ -682,7 +1128,7 @@
     const lw = Math.max(3, 1.6 / cam.z);
     for (const z of zones) {
       const col = z.free ? 0x8a9aa0 : (ZONE_COLORS[z.name] ?? 0xffffff);
-      zonesG.poly(z.poly.flat(), true).fill({color: col, alpha: z.free ? 0.12 : 0.34}).stroke({width: lw, color: z.free ? 0x5b6a70 : col, alpha: 0.95, join: 'round'});
+      zonesG.poly(z.poly.flat(), true).fill({color: col, alpha: z.free ? 0.12 : BG ? 0.14 : 0.34}).stroke({width: lw, color: z.free ? 0x5b6a70 : col, alpha: 0.95, join: 'round'});
     }
   }
   function placeLabels() {
@@ -761,11 +1207,11 @@
 
   // ---------- фокус на части ----------
   const FOCUS = {
-    all: {box: {x0: 0, y0: -700, x1: 21200, y1: 7800}},
+    all: {box: {x0: 0, y0: -700, x1: 22600, y1: 7800}},           // справа — начало факела двигателя
     nose: {box: {x0: 0, y0: 950, x1: 9600, y1: 6000}, keep: ['front']},
     city: {box: {x0: 5300, y0: 1300, x1: 15200, y1: 5800}, keep: ['city']},
     rings: {box: {x0: 9700, y0: -700, x1: 16300, y1: 7800}, keep: ['rings']},
-    stern: {box: {x0: 14600, y0: 300, x1: 21300, y1: 7600}, keep: ['stern']},
+    stern: {box: {x0: 14600, y0: 300, x1: 23400, y1: 7600}, keep: ['stern']},
   };
   let focus = 'all';
   const lens = document.getElementById('lens');
@@ -915,7 +1361,7 @@
     }
     if (Math.abs(Math.log(cam.z / drawnFor)) > 0.2) drawShip();
     if (zonesDirty || Math.abs(Math.log(cam.z / zonesFor)) > 0.2) drawZones();
-    applyLayer(world, 0); applyLayer(artTop, 0);
+    applyLayer(world, 0); applyLayer(artTop, 0); animFx(t); syncBg(now);
     stars.width = sw(); stars.height = sh();
     stars.tilePosition.set(-cam.x * cam.z * 0.03 + sw() / 2, -cam.y * cam.z * 0.03);
     {
@@ -938,7 +1384,86 @@
       document.getElementById('fps').innerHTML = `кадр ${med.toFixed(1)} мс · кольца ${ringMs.toFixed(1)} мс · пропуски ${drop.toFixed(0)}% · текстура до ${maxTex}`;
     }
   });
-  window.__ship = {cam, setFocus, flyTo, showCard, hitTest, toWorld, toScreen, zones, setEditing, setT: v => { tFixed = v; }, rings: v => { ringsOn = v; },
+  // выгрузка статичной части (как её рисует код) в SVG со слоями — для ship.svg
+  window.__exportSvg = () => {
+    const f = v => +(v / S).toFixed(2), hex = c => '#' + ((c >>> 0) & 0xffffff).toString(16).padStart(6, '0');
+    const layers = {hull: [], detail: [], stern: []};
+    const saved = [], z0 = cam.z;
+    for (const [key, g] of [['hull', hullG], ['detail', detailG], ['stern', sternG]]) {
+      const out = layers[key];
+      let cur = '', tick = 0, last = '';
+      const commit = (act, st) => {
+        const d = (tick === 0 && last) ? last : cur.trim();
+        if (d) {
+          const prev = out[out.length - 1], a = st.alpha ?? 1;
+          if (act === 'fill') out.push({d, fill: hex(st.color ?? 0), fo: a});
+          else {
+            const item = {stroke: hex(st.color ?? 0), so: a, sw: f(st.width ?? 1), join: st.join || 'miter', cap: st.cap || 'butt'};
+            if (prev && prev.d === d && !prev.stroke) Object.assign(prev, item); else out.push({d, ...item});
+          }
+        }
+        last = d; cur = ''; tick = 0;
+      };
+      const add = t => { cur += t + ' '; tick++; };
+      const rec = {
+        clear() { cur = ''; tick = 0; last = ''; return rec; },
+        poly(p, close) { let t = ''; for (let i = 0; i + 1 < p.length; i += 2) t += (i ? 'L' : 'M') + f(p[i]) + ' ' + f(p[i + 1]) + ' '; add(t + (close ? 'Z' : '')); return rec; },
+        rect(x, y, w, h) { add(`M${f(x)} ${f(y)} h${f(w)} v${f(h)} h${-f(w)} Z`); return rec; },
+        roundRect(x, y, w, h, r) {
+          const X = f(x), Y = f(y), W = f(w), H = f(h), R = Math.min(f(r), W / 2, H / 2), q = v => +v.toFixed(2);
+          add(`M${q(X + R)} ${Y} h${q(W - 2 * R)} a${R} ${R} 0 0 1 ${R} ${R} v${q(H - 2 * R)} a${R} ${R} 0 0 1 ${-R} ${R} h${q(2 * R - W)} a${R} ${R} 0 0 1 ${-R} ${-R} v${q(2 * R - H)} a${R} ${R} 0 0 1 ${R} ${-R} Z`);
+          return rec;
+        },
+        ellipse(x, y, rx, ry) { add(`M${f(x - rx)} ${f(y)} a${f(rx)} ${f(ry)} 0 1 0 ${f(2 * rx)} 0 a${f(rx)} ${f(ry)} 0 1 0 ${-f(2 * rx)} 0 Z`); return rec; },
+        circle(x, y, r) { return rec.ellipse(x, y, r, r); },
+        moveTo(x, y) { add(`M${f(x)} ${f(y)}`); return rec; },
+        lineTo(x, y) { add(`L${f(x)} ${f(y)}`); return rec; },
+        fill(st) { commit('fill', st || {}); return rec; },
+        stroke(st) { commit('stroke', st || {}); return rec; },
+      };
+      const own = {};
+      for (const k of Object.keys(rec)) { own[k] = Object.prototype.hasOwnProperty.call(g, k) ? g[k] : undefined; g[k] = rec[k]; }
+      saved.push([g, own]);
+    }
+    const st0 = STATIC_REF.v; STATIC_REF.v = null;
+    try { cam.z = 1; drawShip(); } finally {
+      cam.z = z0; STATIC_REF.v = st0;
+      for (const [g, own] of saved) for (const k of Object.keys(own)) { if (own[k] === undefined) delete g[k]; else g[k] = own[k]; }
+      drawShip();
+    }
+    const el = e => {
+      let a = `<path d="${e.d}"`;
+      a += e.fill ? ` fill="${e.fill}"${e.fo !== 1 ? ` fill-opacity="${+e.fo.toFixed(3)}"` : ''}` : ' fill="none"';
+      if (e.stroke) a += ` stroke="${e.stroke}" stroke-width="${e.sw}"${e.so !== 1 ? ` stroke-opacity="${+e.so.toFixed(3)}"` : ''}${e.join !== 'miter' ? ` stroke-linejoin="${e.join}"` : ''}${e.cap !== 'butt' ? ` stroke-linecap="${e.cap}"` : ''}`;
+      return '    ' + a + '/>';
+    };
+    const L = (id, label, items) => `  <g id="${id}" inkscape:groupmode="layer" inkscape:label="${label}">\n${items.map(el).join('\n')}\n  </g>`;
+    const guide = [];
+    for (const r of RINGS) {
+      const cx = r.cx / S, cy = r.cy / S;
+      for (const rad of [RING.R / S, RING.Ri / S]) guide.push(`    <ellipse cx="${cx}" cy="${cy}" rx="${+(rad * RING.k).toFixed(2)}" ry="${rad}" fill="none" stroke="#00e5ff" stroke-width="1.5" stroke-dasharray="6 4"/>`);
+    }
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<!-- Феном: статичная часть корабля для схемы (страница ship/). Единицы — пиксели бокового вида.
+     Слои рисуются на странице так: «Корпус» → районы (schema.json) → «Детали» → «Корма».
+     Слои с именем на «Референс…» / «Ориентир…» страница пропускает. Кольца и лифты рисует код,
+     их место — в слое «Ориентир». Тёмные обводки держат толщину на экране при отдалении,
+     остальное масштабируется вместе с кораблём. Картинки (image) страница не показывает. -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+     xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" width="2180" height="900" viewBox="-40 -80 2180 900">
+  <g id="ref-art" inkscape:groupmode="layer" inkscape:label="Референс: вид сбоку (ship_side.png рядом с файлом)" sodipodi:insensitive="true" style="display:none" opacity="0.5">
+    <image href="ship_side.png" xlink:href="ship_side.png" x="0" y="0" width="2000" height="758"/>
+  </g>
+${L('hull', 'Корпус', layers.hull)}
+${L('detail', 'Детали', layers.detail)}
+${L('stern', 'Корма', layers.stern)}
+  <g id="ref-rings" inkscape:groupmode="layer" inkscape:label="Ориентир: кольца (рисует код)" sodipodi:insensitive="true">
+${guide.join('\n')}
+  </g>
+</svg>
+`;
+  };
+  window.__ship = {fx: fxC, cam, setFocus, flyTo, showCard, hitTest, toWorld, toScreen, zones, setEditing, setT: v => { tFixed = v; }, rings: v => { ringsOn = v; },
     benchRings: (n = 60) => { const t0 = performance.now(); for (let i = 0; i < n; i++) drawRings(20 + i * 0.016); return +((performance.now() - t0) / n).toFixed(2); }};
   const q = new URLSearchParams(location.search);
   if (q.get('f')) setFocus(q.get('f'));

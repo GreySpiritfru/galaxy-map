@@ -6,7 +6,7 @@
   <title>Карта галактики — Феном</title>
   <!-- Скрипт Telegram — своя копия (v=199): telegram.org из РФ без VPN не
        отвечает, и этот блокирующий <script> вешал страницу на ~35 с. -->
-  <script src="js/vendor/telegram-web-app.js?v=205"></script>
+  <script src="js/vendor/telegram-web-app.js?v=207"></script>
   <!-- OpenSeadragon (тайловая карта Фенома) здесь больше не подключается: его
        догружает js/phenom.js при первом открытии карты (v=187) — раньше 271 КБ
        с cdnjs задерживали запуск всей страницы. -->
@@ -16,7 +16,7 @@
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
   <link rel="preload" href="images/splash-logo.webp" as="image" />
-  <link rel="stylesheet" href="css/styles.css?v=205" />
+  <link rel="stylesheet" href="css/styles.css?v=207" />
 </head>
 <body>
 
@@ -339,6 +339,6 @@
      не в модуле, — за ним следит navigation.js (Esc / «назад» закрывают игру). -->
 <div class="flappy-overlay" id="flappyOverlay" role="dialog" aria-modal="true" aria-label="Мини-игра Flappy Phenome"></div>
 
-<script type="module" src="js/main.js?v=205" onerror="window.__bootFail && window.__bootFail()"></script>
+<script type="module" src="js/main.js?v=207" onerror="window.__bootFail && window.__bootFail()"></script>
 </body>
 </html>
