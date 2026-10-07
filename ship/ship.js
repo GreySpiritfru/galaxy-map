@@ -1181,6 +1181,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   let selected = null;
   function drawHighlight() {
     hiG.clear();
+    if (selected && selected.kind === 'bld' && blds[selected.i].art) { const r = blds[selected.i].art; hiG.rect(r.x0, r.y0, r.x1 - r.x0, r.y1 - r.y0).stroke({width: Math.max(4, 2.5 / cam.z), color: 0xAFEEEE}); return; }
     if (!selected || selected.kind !== 'zone') return;
     hiG.poly(zones[selected.i].poly.flat(), true).stroke({width: Math.max(5, 3.5 / cam.z), color: 0xAFEEEE});
   }
@@ -1192,7 +1193,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     let html;
     if (hit.kind === 'bld') {
       const b = blds[hit.i];
-      html = `<h2>${esc(b.name)}</h2><div class="sub">${esc(zones[b.zi].name)} · здание</div><p>Набросок: место примерное, описание появится позже.</p>`;
+      html = `<h2>${esc(b.name)}</h2><div class="sub">${esc(zones[b.zi].name)} · здание</div><p>${b.art ? 'Описание появится позже.' : 'Набросок: место примерное, описание появится позже.'}</p>`;
     } else if (hit.kind === 'zone') {
       const z = zones[hit.i], names = blds.filter(b => b.zi === hit.i).map(b => b.name), n = names.length;
       const part = z.part === 'front' ? 'Передняя оболочка' : 'Феном-Сити';
@@ -1262,6 +1263,27 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       blds.push({name, zi, w, c, ic, lb});
     }
   });
+
+  // Арты зданий из PSB (bld/buildings.json — cut_buildings.py): картинка в единицах мира на своём месте из
+  // Photoshop (тот же перенос, что у фона, без растяжения), под деталями корпуса. Здание с артом заменяет
+  // значок-набросок с тем же названием; подпись — экранная, при приближении.
+  const bldArtC = new PIXI.Container();
+  world.addChildAt(bldArtC, world.getChildIndex(frameC) + 1);
+  const normName = n => String(n).toLowerCase().replace(/[«»"'.\s]/g, '').replace(/ё/g, 'е');
+  try {
+    const BJ = await (await fetch('bld/buildings.json?' + Date.now())).json();
+    for (const it of BJ.items || []) {
+      const zi = zones.findIndex(z => inside(it.x, it.y, z.poly));
+      const old = blds.findIndex(b => !b.art && normName(b.name) === normName(it.name));
+      if (old >= 0) { blds[old].c.destroy({children: true}); blds.splice(old, 1); }
+      const lb = markLabel(it.name); lb.anchor.set(0.5, 0); markC.addChild(lb);
+      const b = {name: it.name, zi: zi >= 0 ? zi : 0, w: [it.x, it.y], art: {x0: it.x - it.w / 2, y0: it.y - it.h / 2, x1: it.x + it.w / 2, y1: it.y + it.h / 2}, lb};
+      blds.push(b);
+      PIXI.Assets.load('bld/' + it.file + '?v=' + (BJ.v || 1)).then(t => {
+        const sp = new PIXI.Sprite(t); sp.position.set(b.art.x0, b.art.y0); sp.width = it.w; sp.height = it.h; bldArtC.addChild(sp); b.sp = sp;
+      }).catch(() => {});
+    }
+  } catch (e) { /* без артов — остаются значки */ }
   // персонажи: круглый аватар (или буква) в бирюзовом кольце — как на карте галактики
   let chars = [], onChar = null, pickCb = null;
   const charTex = (img, name) => canvasTex(96, 96, (g, w) => {
@@ -1291,11 +1313,18 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   function placeMarks() {
     const show = zonesOn, k = cam.z;
     for (const b of blds) {
+      const sel = selected && selected.kind === 'bld' && blds[selected.i] === b;
+      if (b.art) {                                    // арт рисует мир; здесь только подпись под ним
+        const hpx = (b.art.y1 - b.art.y0) * k;
+        b.lb.visible = show && (sel || hpx > 70);
+        if (b.lb.visible) { const [sx, sy] = toScreen(b.w[0], b.art.y1); b.lb.position.set(sx, sy + 2); b.lb.scale.set(0.5); }
+        continue;
+      }
       const z = zones[b.zi], [x0, , x1] = z.__b || (z.__b = bbox(z.poly)), wpx = (x1 - x0) * k;
       const a = Math.max(0, Math.min(1, (wpx - 70) / 50));
       b.c.visible = show && a > 0.02;
       if (!b.c.visible) continue;
-      const [sx, sy] = toScreen(...b.w), sel = selected && selected.kind === 'bld' && blds[selected.i] === b;
+      const [sx, sy] = toScreen(...b.w);
       b.c.position.set(sx, sy); b.c.alpha = a;
       b.ic.scale.set((sel ? 30 : 22) / 64);
       b.lb.visible = sel || wpx > 260; b.lb.scale.set(0.5);
@@ -1315,7 +1344,9 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     for (const ch of chars) if (ch.c.visible) { const d = Math.hypot(ch.c.x - sx, ch.c.y - sy); if (d < bd) { bd = d; best = {kind: 'char', id: ch.id}; } }
     if (best) return best;
     bd = 18;
-    blds.forEach((b, i) => { if (b.c.visible) { const d = Math.hypot(b.c.x - sx, b.c.y - sy); if (d < bd) { bd = d; best = {kind: 'bld', i}; } } });
+    const [wx, wy] = toWorld(sx, sy);
+    for (let i = blds.length - 1; i >= 0; i--) { const r = blds[i].art; if (r && zonesOn && wx > r.x0 && wx < r.x1 && wy > r.y0 && wy < r.y1) return {kind: 'bld', i}; }
+    blds.forEach((b, i) => { if (b.c && b.c.visible) { const d = Math.hypot(b.c.x - sx, b.c.y - sy); if (d < bd) { bd = d; best = {kind: 'bld', i}; } } });
     return best;
   }
 
@@ -1487,7 +1518,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       if (!ringsOn) { clearMesh(ringsBack); clearMesh(ringsFront); ringCamKey = ''; }
       else if (due) { drawRings(t); ringT = t; ringCamKey = camKey; ringMs = ringMs * 0.9 + (performance.now() - t0) * 0.1; }
     }
-    placeLabels(); placeMarks();
+    placeLabels(); placeMarks(); bldArtC.visible = zonesOn;
     const pl = Math.max(0, Math.min(1, (0.06 - cam.z) / 0.025));
     partLabels.visible = pl > 0.01;
     for (const lb of partLabels.children) { const [x, y] = toScreen(...lb.__w); lb.position.set(x, y); lb.scale.set(0.5); lb.alpha = pl; }
