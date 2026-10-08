@@ -12,10 +12,10 @@
    Данные — characters.json, что показать (view) собирает map.js: там граф,
    камера и переходы.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=207';
-import { canEdit, showEditor } from './editor.js?v=207';
-import { renderSheet, renderNodeLinks } from './node-window.js?v=207';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average } from './rolls.js?v=207';
+import { escapeHtml } from './modal.js?v=208';
+import { canEdit, showEditor } from './editor.js?v=208';
+import { renderSheet, renderNodeLinks } from './node-window.js?v=208';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average } from './rolls.js?v=208';
 
 const overlay = document.getElementById('charOverlay');
 const content = document.getElementById('charContent');
@@ -88,8 +88,9 @@ function showSheet() {
 
 /* view — {char, parentMeta, characters, children} (собирает map.js),
    handlers — {onParent, onCharacter, onChild}, opts.edit — сразу открыть
-   форму правки поверх окна (возврат после выбора места на карте). */
-export function openCharacter(view, handlers, {edit = false} = {}) {
+   форму правки поверх окна (возврат после выбора места на карте), opts.rolls —
+   сразу вкладку «Броски» (кнопка под броском в группе: startapp=<id>--rolls). */
+export function openCharacter(view, handlers, {edit = false, rolls = false} = {}) {
   const changed = !current || current.id !== view.char.id;
   current = view.char;
   editBtn.hidden = !canEdit(current.id);
@@ -97,7 +98,7 @@ export function openCharacter(view, handlers, {edit = false} = {}) {
   // Другой персонаж — старую анкету долой, даже если тот же адрес не сменился
   // бы (у разных персонажей он разный, но заглушка «Заметок» могла остаться).
   if (changed) { content.innerHTML = ''; content.__sheetScroll = 0; }
-  showSheet();
+  if (rolls) showRolls(); else showSheet();
   overlay.classList.add('open');
   if (edit && canEdit(current.id)) showEditor(current);
 }
@@ -135,7 +136,7 @@ async function showRolls() {
   if (current !== char || !rollsBtn.classList.contains('active')) return;
   const list = rollsOf(data, 'characters', char.id);
   const how = `В группе: <code>/d20 ${escapeHtml((char.name || '').split(' ').pop() || 'Имя')} действие сл15</code>. `
-    + 'В чате бросок виден сразу, здесь — в течение ~20 минут.';
+    + 'В чате бросок виден сразу, здесь — через несколько минут.';
   if (!list.length) {
     body.innerHTML = `<div class="char-stub"><div class="char-stub-title">Бросков пока нет</div><div>${how}</div></div>`;
     return;

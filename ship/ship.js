@@ -1100,9 +1100,10 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   }
 
   // ---------- районы ----------
-  // v5 (07.10.2026): свободные зоны ушли в фермы/аквакультуру, нос — по вырезам ship.svg, город до 1482 —
-  // прежняя правка в браузере не переносится (старые контуры перебили бы новые)
-  const STORE = 'phenomSchemaZones5', STORE_OLD = null;
+  // v5 (07.10.2026): свободные зоны ушли в фермы/аквакультуру, нос — по вырезам ship.svg, город до 1482;
+  // v6 (08.10.2026): аквакультура — от уровня лесов, фермы забрали её верх (фон
+  // перерисован под это). Прежняя правка в браузере не переносится (старые контуры перебили бы новые)
+  const STORE = 'phenomSchemaZones6', STORE_OLD = null;
   let zones = SCHEMA.zones.map(z => ({...z, poly: z.poly.map(p => [...p])}));
   try {
     let saved = JSON.parse(localStorage.getItem(STORE) || 'null');
@@ -1284,6 +1285,235 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       }).catch(() => {});
     }
   } catch (e) { /* без артов — остаются значки */ }
+  // ---------- маглев (08.10.2026) ----------
+  // По статье «Районы Фенома», 2.1, и решениям игрока (метро не рисуем). Сеть — замкнутые маршруты по
+  // опорным точкам (прямые и диагонали 45°, углы скруглены); общие участки совпадают точь-в-точь, расхождение
+  // на углу выглядит стрелкой-съездом. Поезд никогда не едет назад (кроме технического).
+  //   A — кольцо по краям полости с уступами; Bi — встречное кольцо внутри него;
+  //   C — от главной станции через Пригородную и Центральную башни, вниз через город на нижний путь;
+  //   D — кольцо с петлёй через башню Ночного района.
+  // Техническая линия — на самой обшивке сверху (над деталями корпуса), один жёлтый состав туда-обратно.
+  // Станции редкие: главная — арт «Станция маглева» (стык ферм/мостика/модулей), у башен — площадки,
+  // по краям — отсеки цвета обшивки ship.svg. Масштаб: единица ≈ 1,5 м, вагон 70 ед. (~100 м — крупнее
+  // жизни в ~4 раза), издали вагон не мельче 7 px. Вид поездов — сверху (как карта районов), с тенью.
+  const MG = {T: 2005, B: 5180, L: 5662, R: 14772, J: 90, gap: 26, r: 150, tech: 1850, carL: 70, carW: 14, carGap: 6};
+  const mgC = new PIXI.Container(), mgG = new PIXI.Graphics(), mgTrains = new PIXI.Container();
+  mgC.addChild(mgG, mgTrains);
+  world.addChildAt(mgC, world.getChildIndex(bldArtC) + 1);
+  const techC = new PIXI.Container(), techG = new PIXI.Graphics();               // на обшивке — поверх деталей корпуса
+  techC.addChild(techG);
+  world.addChildAt(techC, world.getChildIndex(fxC));        // detailG к этому времени заменён контейнером ship.svg — кладём под огни
+  // скругление углов ломаной: дуга радиуса r (не длиннее 45 % соседних отрезков)
+  function mgFillet(w, closed, r) {
+    const n = w.length, out = [], at = i => w[(i + n) % n];
+    for (let i = 0; i < n; i++) {
+      const p = at(i);
+      if (!closed && (i === 0 || i === n - 1)) { out.push(p); continue; }
+      const a = at(i - 1), b = at(i + 1);
+      const lu = Math.hypot(p[0] - a[0], p[1] - a[1]), lv = Math.hypot(b[0] - p[0], b[1] - p[1]);
+      const ex = (p[0] - a[0]) / lu, ey = (p[1] - a[1]) / lu, fx = (b[0] - p[0]) / lv, fy = (b[1] - p[1]) / lv;
+      const th = Math.acos(Math.max(-1, Math.min(1, ex * fx + ey * fy))), sg = Math.sign(ex * fy - ey * fx);
+      if (th < 1e-3) { out.push(p); continue; }
+      const t = Math.min(r * Math.tan(th / 2), 0.45 * lu, 0.45 * lv), rr = t / Math.tan(th / 2);
+      const p1 = [p[0] - ex * t, p[1] - ey * t], c = [p1[0] - ey * sg * rr, p1[1] + ex * sg * rr];
+      const a0 = Math.atan2(p1[1] - c[1], p1[0] - c[0]), k = Math.max(3, Math.ceil(th / 0.12));
+      for (let j = 0; j <= k; j++) { const g = a0 + sg * th * j / k; out.push([c[0] + rr * Math.cos(g), c[1] + rr * Math.sin(g)]); }
+    }
+    return out;
+  }
+  // параллель замкнутой ломаной (по часовой на экране — внутрь)
+  function mgOffset(w, d) {
+    const n = w.length, nr = (a, b) => { const l = Math.hypot(b[0] - a[0], b[1] - a[1]); return [-(b[1] - a[1]) / l, (b[0] - a[0]) / l]; };
+    return w.map((p, i) => {
+      const n1 = nr(w[(i - 1 + n) % n], p), n2 = nr(p, w[(i + 1) % n]), mx = n1[0] + n2[0], my = n1[1] + n2[1], ml = Math.hypot(mx, my);
+      const k = d / ((mx / ml) * n1[0] + (my / ml) * n1[1]);
+      return [p[0] + mx / ml * k, p[1] + my / ml * k];
+    });
+  }
+  // путь: точки + длины с начала; at(s) — точка и угол; near(p) — длина до ближайшей точки пути и расстояние
+  function mgPath(pts, closed) {
+    if (closed) pts = [...pts, pts[0]];
+    const cum = [0];
+    for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    const len = cum[cum.length - 1];
+    const at = s => {
+      s = closed ? ((s % len) + len) % len : Math.max(0, Math.min(len, s));
+      let lo = 0, hi = cum.length - 1;
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cum[m] <= s) lo = m; else hi = m; }
+      const [ax, ay] = pts[lo], [bx, by] = pts[hi], k = (s - cum[lo]) / ((cum[hi] - cum[lo]) || 1);
+      return [ax + (bx - ax) * k, ay + (by - ay) * k, Math.atan2(by - ay, bx - ax)];
+    };
+    const near = ([x, y]) => {
+      let best = [Infinity, 0];
+      for (let i = 1; i < pts.length; i++) {
+        const [ax, ay] = pts[i - 1], [bx, by] = pts[i], dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+        const t = L2 ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L2)) : 0, d = Math.hypot(x - ax - t * dx, y - ay - t * dy);
+        if (d < best[0]) best = [d, cum[i - 1] + t * (cum[i] - cum[i - 1])];
+      }
+      return best;
+    };
+    return {pts, len, closed, at, near};
+  }
+  const {T, B, L, R, J} = MG;
+  const ringA = [[L, 3450], [L, T], [6600, T], [6600 + J, T + J], [7350, T + J], [7350 + J, T], [10500, T], [10500 + J, T + J],
+    [11300, T + J], [11300 + J, T], [R, T], [R, B], [13400, B], [13400 - J, B - J], [12600, B - J], [12600 - J, B], [9300, B],
+    [9300 - J, B - J], [8300, B - J], [8300 - J, B], [L, B]];
+  const iTop = ringA.findIndex(p => p[0] === 11300 + J), iR = ringA.findIndex(p => p[0] === R && p[1] === T);
+  const iBot = ringA.findIndex(p => p[0] === 9300 && p[1] === B);
+  const routeC = [...ringA.slice(0, 5), [7600, 2345], [7600, 3000], [7850, 3250], [8500, 3250], [8670, 3080], [9930, 3080], [10090, 3240],
+    [10400, 3240], [10700, 3540], [10700, 4880], [10400, B], ...ringA.slice(iBot)];
+  const routeD = [...ringA.slice(0, iTop + 1), [11800, T], [12000, T + 200], [12000, 3100], [12200, 3300], [12330, 3300], [12530, 3100],
+    [12530, T + 200], [12730, T], ...ringA.slice(iR)];
+  const MP = {
+    A: mgPath(mgFillet(ringA, true, MG.r), true), Bi: mgPath(mgFillet(mgOffset(ringA, MG.gap), true, MG.r - MG.gap), true),
+    C: mgPath(mgFillet(routeC, true, MG.r), true), D: mgPath(mgFillet(routeD, true, MG.r), true),
+  };
+  const techLine = mgPath([[5560, MG.tech], [14860, MG.tech]], false);
+  // станции: kind — вид отсека; e — край, к которому прижат (top/bot/stern)
+  const mainSt = blds.find(b => b.art && /маглев/i.test(b.name));
+  const ST = [{x: L, y: mainSt ? mainSt.w[1] : 3450, kind: 'main'},
+    {x: 9000, y: T, kind: 'bay', e: 'top', v: 0}, {x: 13150, y: T, kind: 'bay', e: 'top', v: 1},
+    {x: 7600, y: B, kind: 'bay', e: 'bot', v: 1}, {x: 10950, y: B, kind: 'bay', e: 'bot', v: 0}, {x: R, y: 3570, kind: 'bay', e: 'stern', v: 2},
+    {x: 8191, y: 3250, kind: 'tower'}, {x: 10192, y: 3240, kind: 'tower'}, {x: 12263, y: 3300, kind: 'tower'}];
+  const stopsOf = p => ST.map(st => p.near([st.x, st.y])).filter(([d]) => d < 45).map(([, s]) => s).sort((a, b) => a - b);
+  // вагоны сверху: капсула с тенью; на «крыше» — продольная полоса и оборудование, снизу (камера чуть сбоку) —
+  // светлая полоса окон. Голова/хвост — обтекатель с остеклением кабины. Текстура 128×32, кузов — y 9..23.
+  const carTex = (o, nose) => canvasTex(128, 32, g => {
+    const body = (dy) => {
+      g.beginPath();
+      if (nose) { g.moveTo(4, 9 + dy); g.lineTo(70, 9 + dy); g.bezierCurveTo(104, 9 + dy, 124, 13 + dy, 125, 16 + dy); g.bezierCurveTo(124, 19 + dy, 104, 23 + dy, 70, 23 + dy); g.lineTo(4, 23 + dy); g.closePath(); }
+      else g.roundRect(3, 9 + dy, 122, 14, 4);
+    };
+    g.fillStyle = 'rgba(0,0,0,0.38)'; body(5); g.fill();                              // тень — вниз-вбок
+    const gr = g.createLinearGradient(0, 9, 0, 23); gr.addColorStop(0, o.hi); gr.addColorStop(0.55, o.body); gr.addColorStop(1, o.lo);
+    g.fillStyle = gr; body(0); g.fill();
+    g.save(); body(0); g.clip();
+    g.fillStyle = o.win; g.fillRect(0, 19.5, 128, 2.2);                               // окна — бок, видный сверху-сбоку
+    g.fillStyle = o.ridge; g.fillRect(6, 14.6, nose ? 66 : 116, 1.6);                // продольная полоса крыши
+    g.fillStyle = o.gear; for (const x of nose ? [16, 40] : [14, 52, 90]) g.fillRect(x, 11.5, 14, 2.4);   // оборудование на крыше
+    if (nose) { g.fillStyle = o.cab; g.beginPath(); g.ellipse(100, 15.5, 13, 3.6, 0, 0, 7); g.fill(); }     // остекление кабины
+    g.restore();
+    g.strokeStyle = 'rgba(8,12,16,0.85)'; g.lineWidth = 1.2; body(0); g.stroke();
+  });
+  const LOOK = {
+    civ: {hi: '#ffffff', body: '#dfe7eb', lo: '#9eadb4', win: '#7fe3ff', ridge: '#8fa1a9', gear: '#b9c6cc', cab: '#1d3a48', glow: 0x9feeff},
+    tech: {hi: '#ffe2a8', body: '#ffb84d', lo: '#b9741f', win: '#fff2c0', ridge: '#3a2a10', gear: '#6b4a1a', cab: '#2a1d0c', glow: 0xffc061},
+  };
+  const TEX = Object.fromEntries(Object.entries(LOOK).map(([k, o]) => [k, {car: carTex(o, false), nose: carTex(o, true), glow: o.glow}]));
+  const mgList = [];
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  function mgTrain(kind, path, dir, s, cars, o = {}) {
+    const Tx = TEX[kind], sp = [], parent = o.parent || mgTrains;
+    const glow = new PIXI.Sprite(glowTex); glow.anchor.set(0.5); glow.tint = Tx.glow; glow.blendMode = 'add'; parent.addChild(glow);
+    for (let i = 0; i < cars; i++) {
+      const end = i === 0 || i === cars - 1, c = new PIXI.Sprite(end ? Tx.nose : Tx.car);
+      c.anchor.set(0.5, 0.5); c.__flip = end && i === cars - 1 && cars > 1; parent.addChild(c); sp.push(c);
+    }
+    const tr = {path, dir, s, v: 0, cars: sp, glow, stops: path.closed ? stopsOf(path) : [], vmax: o.vmax ?? 260, acc: o.acc ?? 90,
+                dwell: o.wait0 ?? 0, wait: o.wait ?? [2.5, 4], shuttle: !path.closed};
+    mgList.push(tr); return tr;
+  }
+  // s — середина состава. До следующей остановки по ходу; у открытого пути — пока хвост не упрётся в конец
+  function mgAhead(tr, half) {
+    const {path: p, dir, s} = tr;
+    if (!p.closed) return dir > 0 ? p.len - half - s : s - half;
+    let best = Infinity;
+    for (const st of tr.stops) { const d = ((dir > 0 ? st - s : s - st) % p.len + p.len) % p.len; if (d > 1 && d < best) best = d; }
+    return best;
+  }
+  // составы: по маршрутам, разнесены по длине; Bi — навстречу
+  for (const [k, dir, n] of [['A', 1, 2], ['Bi', -1, 3], ['C', 1, 2], ['D', 1, 2]]) {
+    const p = MP[k];
+    for (let i = 0; i < n; i++) mgTrain('civ', p, dir, (i + 0.15 + Math.random() * 0.3) / n * p.len + (k === 'C' ? 900 : 0), 4, {wait0: rnd(0, 2)});
+  }
+  mgTrain('tech', techLine, -1, techLine.len, 6, {vmax: 180, acc: 40, wait0: 4, wait: [12, 25], parent: techC});
+  // отсек станции у края: местные оси u — вдоль края, v — внутрь полости; v = 0 — обшивка (край города)
+  function mgBay(st, lw) {
+    const ed = {top: [st.x, 1920, 1, 0, 0, 1], bot: [st.x, 5220, 1, 0, 0, -1], stern: [14820, st.y, 0, 1, -1, 0]}[st.e];
+    const [ox, oy, ux, uy, vx, vy] = ed, pt = (u, v) => [ox + ux * u + vx * v, oy + uy * u + vy * v];
+    const h = (st.e === 'stern' ? 14820 - R : st.e === 'top' ? T - 1920 : 5220 - B) - 12;
+    const poly = (pts, fill, a = 1) => mgG.poly(pts.flatMap(([u, v]) => pt(u, v)), true).fill({color: fill, alpha: a}).stroke({width: lw, color: C.line, alpha: 0.9, join: 'round'});
+    if (st.v === 0) {                                                       // трапеция с тёмной полосой и огнями
+      poly([[-170, -6], [170, -6], [135, h], [-135, h]], C.hull);
+      poly([[-120, h * 0.3], [120, h * 0.3], [110, h * 0.62], [-110, h * 0.62]], C.navy);
+      for (let u = -95; u <= 95; u += 38) mgG.poly([...pt(u - 9, h * 0.4), ...pt(u + 9, h * 0.4), ...pt(u + 9, h * 0.52), ...pt(u - 9, h * 0.52)], true).fill({color: C.dash, alpha: 0.95});
+    } else if (st.v === 1) {                                                // ступенчатый отсек с двумя павильонами
+      poly([[-190, -6], [190, -6], [190, h * 0.45], [120, h * 0.45], [100, h], [-100, h], [-120, h * 0.45], [-190, h * 0.45]], C.hullLo);
+      poly([[-80, h * 0.2], [-20, h * 0.2], [-20, h * 0.8], [-80, h * 0.8]], C.hullHi);
+      poly([[20, h * 0.2], [80, h * 0.2], [80, h * 0.8], [20, h * 0.8]], C.hullHi);
+    } else {                                                                // полукруглый шлюз
+      const arc = []; for (let k = 0; k <= 16; k++) { const a = Math.PI * k / 16; arc.push([-150 * Math.cos(a), Math.min(h, h * 1.05 * Math.sin(a)) - 6]); }
+      poly(arc, C.hull); poly([[-70, 0], [70, 0], [55, h * 0.55], [-55, h * 0.55]], C.navyDk);
+    }
+    mgG.poly([...pt(-120, h + 2), ...pt(120, h + 2)], false).stroke({width: lw * 1.6, color: C.glow, alpha: 0.9});   // кромка платформы
+  }
+  let mgFor = 0;   // приближение, под которое нарисованы пути
+  function drawMaglev() {
+    mgFor = cam.z; mgG.clear(); techG.clear();
+    // направляющая — светлая балка цвета обшивки с тёмным контуром (как линии ship.svg), посередине — шина
+    const base = Math.max(14, 2.6 / cam.z), edge = base + Math.max(4, 1.2 / cam.z), mid = Math.max(2.5, 0.55 / cam.z), lw = Math.max(2.5, 0.6 / cam.z);
+    const routes = Object.values(MP);
+    for (const p of routes) mgG.poly(p.pts.flat(), false).stroke({width: edge, color: C.line, alpha: 0.85, join: 'round', cap: 'round'});
+    for (const p of routes) mgG.poly(p.pts.flat(), false).stroke({width: base, color: C.hullLo, alpha: 0.95, join: 'round', cap: 'round'});
+    for (const p of routes) mgG.poly(p.pts.flat(), false).stroke({width: mid, color: 0x5d6b70, alpha: 0.9, join: 'round', cap: 'round'});
+    // опоры-«шпалы» направляющей — редкие поперечины (только вблизи)
+    if (cam.z > 0.25) for (const p of routes) for (let s = 0; s < p.len; s += 120) {
+      const [x, y, a] = p.at(s), nx = -Math.sin(a) * base * 0.62, ny = Math.cos(a) * base * 0.62;
+      mgG.poly([x - nx, y - ny, x + nx, y + ny], false).stroke({width: lw, color: C.hullDark, alpha: 0.9});
+    }
+    for (const st of ST) {
+      if (st.kind === 'bay') mgBay(st, lw);
+      else if (st.kind === 'tower') {                                        // площадка у башни: на путь, края светятся
+        mgG.roundRect(st.x - 80, st.y - 22, 160, 44, 10).fill({color: C.hull, alpha: 0.92}).stroke({width: lw, color: C.line, alpha: 0.9});
+        mgG.rect(st.x - 70, st.y - 4, 140, 8).fill({color: 0x161d21, alpha: 0.9});
+        for (const sy of [-17, 13]) mgG.rect(st.x - 64, st.y + sy, 128, 4).fill({color: C.glow, alpha: 0.85});
+      }
+    }
+    // техническая линия на обшивке: тонкая тёмная направляющая с опорами
+    techG.poly(techLine.pts.flat(), false).stroke({width: Math.max(10, 1.6 / cam.z), color: 0x3b464b, alpha: 0.9, cap: 'round'});
+    techG.poly(techLine.pts.flat(), false).stroke({width: Math.max(2.5, 0.5 / cam.z), color: 0xffb84d, alpha: 0.75});
+    for (let x = 5700; x < 14800; x += 400) techG.rect(x - 4, MG.tech - 12, 8, 24).fill({color: 0x3b464b, alpha: 0.8});
+  }
+  function animMaglev(dt) {
+    mgC.visible = techC.visible = zonesOn;
+    if (!zonesOn) return;
+    if (!mgFor || Math.abs(Math.log(cam.z / mgFor)) > 0.2) drawMaglev();
+    const m = Math.max(1, 7 / (MG.carL * cam.z));            // издали вагон не мельче 7 px
+    const step = (MG.carL + MG.carGap) * m, sx = MG.carL * m / 122, sy = MG.carW * m / 14;
+    for (const tr of mgList) {
+      const n = tr.cars.length, half = (n - 1) / 2 * step + MG.carL * m / 2;
+      if (!tr.path.closed) tr.s = Math.max(half, Math.min(tr.path.len - half, tr.s));
+      if (tr.dwell > 0) tr.dwell -= dt;
+      else {
+        const d = mgAhead(tr, half);
+        // интервал: вагон другого состава впереди на том же направлении (±60°) — тормозим за ним
+        const [hx, hy, ha] = tr.path.at(tr.s + tr.dir * half), hd = ha + (tr.dir < 0 ? Math.PI : 0), cs = Math.cos(hd), sn = Math.sin(hd);
+        let free = Infinity;
+        for (const o of mgList) if (o !== tr && o.path !== techLine) for (const c of o.cars) {
+          const dx = c.x - hx, dy = c.y - hy, al = dx * cs + dy * sn;
+          if (al > 0 && al < 400 * m && Math.abs(-dx * sn + dy * cs) < MG.carW * m && Math.cos(c.rotation - hd) > 0.5) free = Math.min(free, al - MG.carL * m / 2);
+        }
+        tr.v = Math.min(tr.v + tr.acc * dt, tr.vmax, Math.sqrt(2 * tr.acc * Math.max(0, d - 0.5)) + 4, Math.sqrt(2 * tr.acc * Math.max(0, free - 40 * m)));
+        const st = Math.min(tr.v * dt, Math.max(0, d));
+        tr.s += tr.dir * st;
+        if (d - st <= 0.5) {
+          tr.v = 0; tr.dwell = rnd(...tr.wait);
+          if (tr.shuttle) tr.dir = -tr.dir;                  // технический: голова — с другой стороны (вагоны одинаковые)
+          if (tr.path.closed) tr.s = ((tr.s % tr.path.len) + tr.path.len) % tr.path.len;
+        }
+      }
+      // вагон 0 — головной, по ходу; последний — хвост, обтекатель развёрнут назад
+      for (let i = 0; i < n; i++) {
+        const [x, y, a] = tr.path.at(tr.s + tr.dir * ((n - 1) / 2 - i) * step);
+        const c = tr.cars[i]; c.position.set(x, y);
+        c.rotation = a + (tr.dir < 0 ? Math.PI : 0);
+        c.scale.set(c.__flip ? -sx : sx, Math.cos(c.rotation) >= 0 ? sy : -sy);   // хвост — обтекателем назад; тень — всегда вниз
+      }
+      const [hx, hy] = tr.path.at(tr.s + tr.dir * half);
+      tr.glow.position.set(hx, hy); tr.glow.width = tr.glow.height = MG.carW * m * 3.4;
+      tr.glow.alpha = tr.dwell > 0 ? 0.22 : 0.5;
+    }
+  }
   // персонажи: круглый аватар (или буква) в бирюзовом кольце — как на карте галактики
   let chars = [], onChar = null, pickCb = null;
   const charTex = (img, name) => canvasTex(96, 96, (g, w) => {
@@ -1519,6 +1749,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       else if (due) { drawRings(t); ringT = t; ringCamKey = camKey; ringMs = ringMs * 0.9 + (performance.now() - t0) * 0.1; }
     }
     placeLabels(); placeMarks(); bldArtC.visible = zonesOn;
+    animMaglev(tFixed !== null ? 0 : Math.min(0.1, tk.deltaMS / 1000));
     const pl = Math.max(0, Math.min(1, (0.06 - cam.z) / 0.025));
     partLabels.visible = pl > 0.01;
     for (const lb of partLabels.children) { const [x, y] = toScreen(...lb.__w); lb.position.set(x, y); lb.scale.set(0.5); lb.alpha = pl; }
@@ -1611,7 +1842,7 @@ ${guide.join('\n')}
 </svg>
 `;
   };
-  window.__ship = {app, setChars, pick, fx: fxC, cam, setFocus, flyTo, showCard, hitTest, toWorld, toScreen, zones, setEditing, setT: v => { tFixed = v; }, rings: v => { ringsOn = v; },
+  window.__ship = {app, maglev: mgList, setChars, pick, fx: fxC, cam, setFocus, flyTo, showCard, hitTest, toWorld, toScreen, zones, setEditing, setT: v => { tFixed = v; }, rings: v => { ringsOn = v; },
     benchRings: (n = 60) => { const t0 = performance.now(); for (let i = 0; i < n; i++) drawRings(20 + i * 0.016); return +((performance.now() - t0) / n).toFixed(2); }};
   const q = new URLSearchParams(location.search);
   if (q.get('f')) setFocus(q.get('f'));

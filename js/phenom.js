@@ -15,8 +15,8 @@
    submapX/submapY рисуются САМОЙ схемой (window.__ship.setChars, фрейм того же
    сайта — доступ напрямую), координаты — единицы схемы (пиксели бокового
    вида × 10). */
-import { closeModal } from './modal.js?v=207';
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks, syncDock } from './node-window.js?v=207';
+import { closeModal } from './modal.js?v=208';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks, syncDock } from './node-window.js?v=208';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomInfoContent = document.getElementById('phenomInfoContent');
@@ -135,7 +135,7 @@ export function openSubmapView() {
   // мог промолчать (плашка в этот момент «в движении»), меряем сами.
   if (card) syncDock(card);
   const frame = document.createElement('iframe');
-  frame.src = 'ship/?v=207';
+  frame.src = 'ship/?v=208';
   frame.title = 'Схема корабля Феном';
   phenomShipEl.appendChild(frame);
   shipFrame = frame;

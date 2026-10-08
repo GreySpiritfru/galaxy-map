@@ -5,10 +5,10 @@
    игрока, к сайту/репозиторию отношения не имеет) кнопка мягко пульсирует,
    чтобы её было видно, но не мигает резко и не лезет с окном сама.
    ============================================================ */
-import { showLoadError } from './net.js?v=207';
-import { openModal, closeModal } from './modal.js?v=207';
-import { startTour, tourSeen } from './tour.js?v=207';
-import { quoteHtml, initQuotes } from './quotes.js?v=207';
+import { showLoadError } from './net.js?v=208';
+import { openModal, closeModal } from './modal.js?v=208';
+import { startTour, tourSeen } from './tour.js?v=208';
+import { quoteHtml, initQuotes } from './quotes.js?v=208';
 
 const ONBOARDING_SEEN_KEY = 'galaxyMapOnboardingSeen';
 const helpBtn = document.getElementById('helpBtn');
@@ -98,7 +98,7 @@ helpBtn.addEventListener('click', () => {
   });
   document.getElementById('helpGameBtn')?.addEventListener('click', () => {
     closeModal();
-    import('./flappy.js?v=207').then(m => m.openFlappy(),
+    import('./flappy.js?v=208').then(m => m.openFlappy(),
       () => showLoadError('Игра не загрузилась — проверь соединение.'));
   });
   helpBtn.classList.remove('pulse');
