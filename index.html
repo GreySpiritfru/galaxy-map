@@ -6,14 +6,14 @@
   <title>Карта галактики — Феном</title>
   <!-- Скрипт Telegram — своя копия (v=199): telegram.org из РФ без VPN не
        отвечает, и этот блокирующий <script> вешал страницу на ~35 с. -->
-  <script src="js/vendor/telegram-web-app.js?v=208"></script>
+  <script src="js/vendor/telegram-web-app.js?v=209"></script>
   <!-- Самый тяжёлый файл на странице (~2.7 МБ после пережатия подложки в WebP,
        см. tools/optimize-map-svg.py) — без preload браузер начинает качать его
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
   <link rel="preload" href="images/splash-logo.webp" as="image" />
-  <link rel="stylesheet" href="css/styles.css?v=208" />
+  <link rel="stylesheet" href="css/styles.css?v=209" />
 </head>
 <body>
 
@@ -236,7 +236,7 @@
     </div>
     <div class="phenom-content" id="phenomContent">
       <div class="phenom-ship" id="phenomShip" hidden></div>
-      <div class="story-content phenom-info-content" id="phenomInfoContent" hidden></div>
+      <div class="story-content phenom-info-content" id="phenomInfoContent"></div>
     </div>
   </div>
 </div>
@@ -311,6 +311,6 @@
      не в модуле, — за ним следит navigation.js (Esc / «назад» закрывают игру). -->
 <div class="flappy-overlay" id="flappyOverlay" role="dialog" aria-modal="true" aria-label="Мини-игра Flappy Phenome"></div>
 
-<script type="module" src="js/main.js?v=208" onerror="window.__bootFail && window.__bootFail()"></script>
+<script type="module" src="js/main.js?v=209" onerror="window.__bootFail && window.__bootFail()"></script>
 </body>
 </html>

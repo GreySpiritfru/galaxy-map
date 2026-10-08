@@ -1,10 +1,10 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=208';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=208';
-import { renderNodeLinks } from './node-window.js?v=208';
-import { fetchT } from './net.js?v=208';
+import { createPanZoom } from './panzoom.js?v=209';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=209';
+import { renderNodeLinks } from './node-window.js?v=209';
+import { fetchT } from './net.js?v=209';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');

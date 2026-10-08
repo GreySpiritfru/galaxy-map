@@ -15,8 +15,8 @@
    submapX/submapY рисуются САМОЙ схемой (window.__ship.setChars, фрейм того же
    сайта — доступ напрямую), координаты — единицы схемы (пиксели бокового
    вида × 10). */
-import { closeModal } from './modal.js?v=208';
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks, syncDock } from './node-window.js?v=208';
+import { closeModal } from './modal.js?v=209';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks, syncDock } from './node-window.js?v=209';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomInfoContent = document.getElementById('phenomInfoContent');
@@ -97,6 +97,9 @@ let phenomArmed = false;
 export function openWorldWindow(view, handlers) {
   currentSubmap = view.submap || null;
   showBase();
+  // Тело окна видно всегда, кроме вкладки «Карта» (v=209: в разметке оставался
+  // hidden от старой карты, и без захода на «Карту» тело не показывалось вовсе).
+  phenomInfoContent.hidden = false;
   phenomOverlay.classList.add('open');
   renderNodeContent(phenomInfoContent, view);
   // «Описание»/«Статья» со своей карты — сначала уйти с карты.
@@ -135,7 +138,7 @@ export function openSubmapView() {
   // мог промолчать (плашка в этот момент «в движении»), меряем сами.
   if (card) syncDock(card);
   const frame = document.createElement('iframe');
-  frame.src = 'ship/?v=208';
+  frame.src = 'ship/?v=209';
   frame.title = 'Схема корабля Феном';
   phenomShipEl.appendChild(frame);
   shipFrame = frame;
