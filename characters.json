@@ -10,8 +10,8 @@
     "links": ["foks", "ket-uollen"],
     "image": "images/naito.jpg",
     "color": "",
-    "submapX": 13696,
-    "submapY": 3026,
+    "submapX": 4063,
+    "submapY": 2990,
     "x": -200,
     "y": -90
   },
@@ -26,8 +26,8 @@
     "links": [],
     "image": "images/markers/fox.webp",
     "color": "",
-    "submapX": 5769,
-    "submapY": 2382,
+    "submapX": 12130,
+    "submapY": 3680,
     "x": -200,
     "y": -90
   },
@@ -42,8 +42,8 @@
     "links": [],
     "image": "images/characters/ket-uollen.jpg?v=1789493214",
     "color": "",
-    "submapX": 8826,
-    "submapY": 4454,
+    "submapX": 14010,
+    "submapY": 4240,
     "x": -200,
     "y": -90
   },
@@ -58,8 +58,8 @@
     "links": ["stil"],
     "image": "images/markers/soren.webp",
     "color": "",
-    "submapX": 10776,
-    "submapY": 2626,
+    "submapX": 13720,
+    "submapY": 4240,
     "x": -200,
     "y": -90
   },
@@ -74,8 +74,8 @@
     "links": [],
     "image": "images/markers/stil.webp",
     "color": "",
-    "submapX": 11904,
-    "submapY": 4979,
+    "submapX": 13870,
+    "submapY": 4420,
     "x": -200,
     "y": -90
   },
@@ -90,8 +90,8 @@
     "links": ["teodor-dreiser"],
     "image": "images/markers/paul.webp",
     "color": "",
-    "submapX": 6343,
-    "submapY": 4946,
+    "submapX": 13420,
+    "submapY": 4240,
     "x": -200,
     "y": -90
   },
@@ -106,8 +106,8 @@
     "links": [],
     "image": "",
     "color": "",
-    "submapX": 14247,
-    "submapY": 4982,
+    "submapX": 13570,
+    "submapY": 4420,
     "x": -200,
     "y": -90
   },
@@ -122,8 +122,8 @@
     "links": ["mina-vulpina"],
     "image": "images/markers/rain.webp",
     "color": "",
-    "submapX": 8164,
-    "submapY": 2587,
+    "submapX": 12400,
+    "submapY": 3780,
     "x": -200,
     "y": -90
   },
@@ -138,8 +138,8 @@
     "links": [],
     "image": "images/markers/shell.webp",
     "color": "",
-    "submapX": 12267,
-    "submapY": 2275,
+    "submapX": 12350,
+    "submapY": 4330,
     "x": -200,
     "y": -90
   },
@@ -252,6 +252,8 @@
     "links": [],
     "image": "images/markers/mina.webp",
     "color": "",
+    "submapX": 5070,
+    "submapY": 3690,
     "x": -200,
     "y": -40
   },
@@ -266,6 +268,8 @@
     "links": [],
     "image": "images/markers/fiva.webp",
     "color": "",
+    "submapX": 4770,
+    "submapY": 3880,
     "x": -200,
     "y": -40
   },
@@ -294,8 +298,8 @@
     "links": [],
     "image": "images/markers/ledo.webp",
     "color": "",
-    "submapX": 10265,
-    "submapY": 4595,
+    "submapX": 10320,
+    "submapY": 4030,
     "x": -175,
     "y": -130
   },
@@ -310,8 +314,8 @@
     "links": ["ledo-plazac"],
     "image": "images/markers/teki.webp",
     "color": "",
-    "submapX": 7134,
-    "submapY": 3604,
+    "submapX": 10060,
+    "submapY": 4030,
     "x": -175,
     "y": -130
   },
@@ -326,6 +330,8 @@
     "links": [],
     "image": "images/characters/orbi.jpg?v=1790939603",
     "color": "",
+    "submapX": 5070,
+    "submapY": 3880,
     "x": -175,
     "y": -100
   },
@@ -340,6 +346,8 @@
     "links": [],
     "image": "images/characters/valkan.jpg?v=1790939683",
     "color": "",
+    "submapX": 4770,
+    "submapY": 3690,
     "x": -175,
     "y": -100
   }

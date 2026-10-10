@@ -7,6 +7,8 @@
    Единицы мира = пиксели бокового вида × 10. ?art=1 — подложить вид сбоку. */
 (async () => {
   const SCHEMA = await (await fetch('schema.json?' + Date.now())).json();
+  // лор карточек (районы, здания, маглев…) — lore.json; без него карточки как раньше
+  const LORE = await (async () => { try { return await (await fetch('lore.json?' + Date.now())).json(); } catch (e) { return {}; } })();
   const S = SCHEMA.scale;
   const P = (x, y) => [x * S, y * S];
   const PL = pts => pts.flatMap(([x, y]) => [x * S, y * S]);
@@ -1194,6 +1196,15 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   }
   function hitTest(wx, wy) {
     let i = ringHit(wx, wy, true); if (i >= 0) return {kind: 'ring', i};
+    // космопорт (ворота, верфь, лифт), станции и линии маглева — до районов: они лежат поверх них
+    const inR = (x0, y0, x1, y1) => wx > x0 && wx < x1 && wy > y0 && wy < y1;
+    if (inR(PORT.GX0, PORT.GY0, PORT.GX1, PORT.GY1)) return {kind: 'gate'};
+    if (inR(YARD.CREW[0], YARD.Y0, YARD.DOCKS[1][1], YARD.Y1)) return {kind: 'yard'};
+    if (inR(PAX.LX0 - 12, PAX.LY0 - 50, PAX.LX1 + 6, PAX.LY1) || inR(PAX.HX0, PAX.HY0, PAX.HX1, PAX.HY1)) return {kind: 'lift'};
+    const tol = Math.max(24, 14 / cam.z);
+    if (ST.some(st => st.kind === 'bay' && Math.hypot(wx - st.x, wy - st.y) < Math.max(140, tol))) return {kind: 'bay'};
+    if (Object.values(MP).some(p => p.near([wx, wy])[0] < tol)) return {kind: 'maglev'};
+    if (techLine.near([wx, wy])[0] < tol) return {kind: 'techline'};
     if (inside(wx, wy, STERN_W) || inside(wx, wy, STERN_SIDE_W)) return {kind: 'stern'};
     if (zonesOn) { i = zones.findIndex(z => inside(wx, wy, z.poly)); if (i >= 0) return {kind: 'zone', i}; }
     if (inside(wx, wy, HULL_W)) return {kind: 'shell'};
@@ -1208,12 +1219,26 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     hiG.poly(zones[selected.i].poly.flat(), true).stroke({width: Math.max(5, 3.5 / cam.z), color: 0xAFEEEE});
   }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  // лор карточки: районы — по названию, здания — по названию (без «»/регистра), прочее — по виду (maglev, bay, gate…)
+  const normL = n => String(n).toLowerCase().replace(/[«»"'.\s]/g, '').replace(/ё/g, 'е');
+  const loreOf = hit => {
+    if (!LORE) return null;
+    if (hit.kind === 'zone') return (LORE.zones || {})[zones[hit.i].name] || null;
+    if (hit.kind === 'bld') { const n = normL(blds[hit.i].name), B = LORE.buildings || {}; const k = Object.keys(B).find(k => normL(k) === n); return k ? B[k] : null; }
+    return (LORE.other || {})[hit.kind] || null;
+  };
+  const loreHtml = L => (L.img && L.img.length ? `<div class="imgs">${L.img.map(u => `<img src="${esc(u)}" alt="" loading="lazy">`).join('')}</div>` : '')
+    + (L.text ? L.text.split(/\n\n+/).map(p => `<p>${esc(p)}</p>`).join('') : '');
   function showCard(hit) {
     selected = hit; drawHighlight();
     const card = document.getElementById('card');
     if (!hit) { card.classList.remove('open'); return; }
     let html;
-    if (hit.kind === 'bld') {
+    const L = loreOf(hit), more = L ? loreHtml(L) : '';
+    if (hit.kind === 'bld' && L) {
+      const b = blds[hit.i];
+      html = `<h2>${esc(b.name)}</h2><div class="sub">${esc(zones[b.zi].name)} · здание</div>${more}`;
+    } else if (hit.kind === 'bld') {
       const b = blds[hit.i];
       html = `<h2>${esc(b.name)}</h2><div class="sub">${esc(zones[b.zi].name)} · здание</div><p>${b.art ? 'Описание появится позже.' : 'Набросок: место примерное, описание появится позже.'}</p>`;
     } else if (hit.kind === 'zone') {
@@ -1221,10 +1246,12 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       const part = z.part === 'front' ? 'Передняя оболочка' : 'Феном-Сити';
       html = z.free ? `<h2>Свободная зона</h2><div class="sub">Феном-Сити</div><p>Здесь были «Технические помещения» и край «Района модулей». Место под новый район.</p>`
         : `<h2>${esc(z.name)}</h2><div class="sub">${part} · ${n ? n + ' ' + (n === 1 ? 'здание' : n < 5 ? 'здания' : 'зданий') : 'зданий пока нет'}</div>`
-          + `<div class="chips">${names.map(b => `<span>${esc(b)}</span>`).join('')}</div>`;
-    } else {
+          + more + `<div class="chips">${names.map(b => `<span>${esc(b)}</span>`).join('')}</div>`;
+    } else if (INFO[hit.kind]) {
       const [t, sub, text] = INFO[hit.kind];
-      html = `<h2>${t}${hit.kind === 'ring' ? ' ' + (hit.i + 1) : ''}</h2><div class="sub">${sub}</div><p>${text}</p>`;
+      html = `<h2>${t}${hit.kind === 'ring' ? ' ' + (hit.i + 1) : ''}</h2><div class="sub">${sub}</div><p>${text}</p>` + (L && L.img ? loreHtml({img: L.img}) : '');
+    } else {
+      html = `<h2>${esc(L.title)}</h2><div class="sub">${esc(L.sub || '')}</div>${more}`;
     }
     document.getElementById('cardBody').innerHTML = html;
     card.classList.add('open');
