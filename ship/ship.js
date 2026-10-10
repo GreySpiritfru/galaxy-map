@@ -10,6 +10,19 @@
   const S = SCHEMA.scale;
   const P = (x, y) => [x * S, y * S];
   const PL = pts => pts.flatMap(([x, y]) => [x * S, y * S]);
+  // кругов нет — грани (игрок, 10.10.2026): r < 20 ед. — 8 граней, < 80 — 12, крупнее — 16; плоская грань сверху
+  // (было 8/20 → 8/12/16; игрок: «12 и меньше — норма», грани должны читаться). Восьмиугольник — 8 вершин против
+  // ~25–45 у круга PixiJS (notes/vector-craft.md). Плоский массив для poly().
+  const nOf = r => r < 20 ? 8 : r < 80 ? 12 : 16;
+  const ngon = (x, y, rx, ry = rx, n = nOf(Math.max(rx, ry))) => {
+    const o = [];
+    for (let k = 0; k < n; k++) { const a = -Math.PI / 2 + Math.PI * (2 * k + 1) / n; o.push(x + rx * Math.cos(a), y + ry * Math.sin(a)); }
+    return o;
+  };
+  // прямоугольник со скошенными углами вместо скруглённого (roundRect): c — срез угла
+  const arcN = (r, span) => Math.max(2, Math.round(nOf(r) * span / (2 * Math.PI)));   // граней у дуги: как у круга того же радиуса
+  const cvPoly = (g, f) => { g.beginPath(); g.moveTo(f[0], f[1]); for (let i = 2; i < f.length; i += 2) g.lineTo(f[i], f[i + 1]); g.closePath(); };   // холст: плоский массив
+  const cham = (x, y, w, h, c) => [x + c, y, x + w - c, y, x + w, y + c, x + w, y + h - c, x + w - c, y + h, x + c, y + h, x, y + h - c, x, y + c];
   const TOP = 170, BOT = 540, CY = (TOP + BOT) / 2 * S, HH = (BOT - TOP) / 2 * S;   // корпус полной высоты
   // кольцо: R — наружная поверхность (синяя лента), th — толщина, bw — половина ширины вдоль корабля,
   // c/c2 — фаски наружных/внутренних рёбер; k — насколько кольца развёрнуты к зрителю
@@ -82,6 +95,7 @@
   const ringsFront = mkMesh();
   const zoneLabels = new PIXI.Container(), partLabels = new PIXI.Container(), editG = new PIXI.Graphics();
   world.addChild(artC, hullG, zonesG, detailG, sternG, turbG, hiG);
+  for (const [k, g] of Object.entries({hullG, zonesG, detailG, sternG, turbG, hiG, editG})) g.label = k;   // имена слоёв — для отладки и замеров
   app.stage.addChild(stars, ringsBack, world, ringsFront, zoneLabels, partLabels, editG);
   const artTop = new PIXI.Container(); app.stage.addChild(artTop);
 
@@ -208,7 +222,9 @@
         }
         case 'circle': case 'ellipse': {
           const c = el.nodeName === 'circle', cx = g('cx'), cy = g('cy'), rx = c ? g('r') : g('rx'), ry = c ? g('r') : g('ry');
-          return `M${cx - rx} ${cy}a${rx} ${ry} 0 1 0 ${2 * rx} 0a${rx} ${ry} 0 1 0 ${-2 * rx} 0Z`;
+          const q = ngon(cx, cy, rx, ry, nOf(Math.max(rx, ry) * S));               // грани, не круг
+          let d = ''; for (let i = 0; i < q.length; i += 2) d += (i ? 'L' : 'M') + q[i] + ' ' + q[i + 1];
+          return d + 'Z';
         }
         case 'polygon': case 'polyline': {
           const p = (el.getAttribute('points') || '').trim().split(/[\s,]+/).map(Number);
@@ -329,8 +345,9 @@
           if (p) {
             const lum = p.fill ? 1 : (0.3 * (p.color >> 16) + 0.59 * ((p.color >> 8) & 255) + 0.11 * (p.color & 255)) / 255;
             stroke = {...p, w: num(cs.strokeWidth) * sc, dark: lum < 0.15,
-                      join: ['round', 'bevel'].includes(cs.strokeLinejoin) ? cs.strokeLinejoin : 'miter',
-                      cap: ['round', 'square'].includes(cs.strokeLinecap) ? cs.strokeLinecap : 'butt'};
+                      // круглые стыки и концы — острыми/прямоугольными: вершин в 3–7 раз меньше (notes/vector-craft.md)
+                      join: cs.strokeLinejoin === 'bevel' ? 'bevel' : 'miter',
+                      cap: ['round', 'square'].includes(cs.strokeLinecap) ? 'square' : 'butt'};
           }
         }
         if (fill || stroke) push('vec', {path, fill, stroke});
@@ -378,7 +395,7 @@
     const C = {hull: new PIXI.Container(), detail: new PIXI.Container(), stern: new PIXI.Container()};
     for (const [k, g] of [['hull', hullG], ['detail', detailG], ['stern', sternG]]) { const i = world.getChildIndex(g); world.removeChild(g); world.addChildAt(C[k], i); }
     for (const c of ready) {
-      if (c.kind === 'vec') { c.g = new PIXI.Graphics(); C[c.target].addChild(c.g); continue; }
+      if (c.kind === 'vec') { c.g = new PIXI.Graphics({label: `svg:${c.target}:${c.layer.getAttribute('inkscape:label') || c.layer.id}`}); C[c.target].addChild(c.g); continue; }
       const sp = new PIXI.Sprite(c.tex);
       sp.position.set(c.box.x * S, c.box.y * S); sp.width = c.box.w * S; sp.height = c.box.h * S;
       sp.blendMode = c.blend; C[c.target].addChild(sp);
@@ -450,7 +467,7 @@
     for (const [o, a] of [[0, 1], [0.18, 0.62], [0.45, 0.2], [0.75, 0.05], [1, 0]]) gr.addColorStop(o, `rgba(255,255,255,${a})`);
     g.fillStyle = gr; g.fillRect(0, 0, w, w);
   });
-  const dotTex = canvasTex(32, 32, (g, w) => { g.fillStyle = '#fff'; g.beginPath(); g.arc(w / 2, w / 2, w / 2 - 1, 0, 7); g.fill(); });
+  const dotTex = canvasTex(32, 32, (g, w) => { g.fillStyle = '#fff'; cvPoly(g, ngon(w / 2, w / 2, w / 2 - 1, w / 2 - 1, 8)); g.fill(); });   // огонёк — восьмиугольник
   // факел: ярко у сопла, к хвосту гаснет и сужается
   const flameTex = canvasTex(256, 64, (g, w, h) => {
     const im = g.createImageData(w, h);
@@ -483,8 +500,8 @@
   // ремонтный дрон: облетает корму по рабочим точкам, на каждой зависает и варит (вспышки и искры)
   const DRONE_PX = 0.1875;                                         // единиц корабля на пиксель текстуры (96 px = 18 ед.)
   const droneTex = canvasTex(96, 56, g => {
-    const rr = (x, y, w, h, r) => { g.beginPath(); g.roundRect(x, y, w, h, r); };
-    g.lineJoin = 'round'; g.strokeStyle = '#0d1114';
+    const rr = (x, y, w, h, r) => cvPoly(g, cham(x, y, w, h, r));                 // скошенные углы
+    g.lineJoin = 'miter'; g.strokeStyle = '#0d1114';
     g.lineWidth = 3; g.beginPath(); g.moveTo(52, 37); g.lineTo(60, 47); g.lineTo(75, 49); g.strokeStyle = '#3d484e'; g.stroke();   // рука-манипулятор
     g.strokeStyle = '#0d1114'; g.lineWidth = 2;
     g.beginPath(); g.moveTo(27, 15); g.lineTo(23, 6); g.stroke();                                   // антенна
@@ -493,7 +510,7 @@
     g.fillStyle = '#d6e0e1'; g.fillRect(20, 16, 40, 4);                                                // светлый верх
     g.fillStyle = '#1f3b7d'; g.fillRect(15, 30, 54, 4);                                                // синяя полоса
     rr(53, 18, 14, 10, 3); g.fillStyle = '#1b2427'; g.fill(); g.stroke();                              // окуляр
-    g.fillStyle = '#7fe3ff'; g.beginPath(); g.arc(62, 23, 2.6, 0, 7); g.fill();
+    g.fillStyle = '#7fe3ff'; cvPoly(g, ngon(62, 23, 2.6)); g.fill();
   });
   const DRONE_SPOTS = [[1700, 122], [1930, 150], [2006, 272], [1962, 468], [1764, 538], [1664, 384]];
   const DRONE_HOME = [1840, 330], DR_MOVE = 5, DR_WELD = 4;
@@ -592,7 +609,7 @@
           if (e.fill) g.fill(e.fill);
           if (e.stroke) {
             const k = e.stroke, width = k.dark ? k.w / 0.4 * lw : Math.max(k.w * S, 2 / cam.z);
-            g.stroke(k.fill ? {fill: k.fill, width, join: k.join, cap: k.cap} : {width, color: k.color, alpha: k.alpha, join: k.join, cap: k.cap});
+            g.stroke(k.fill ? {fill: k.fill, width, join: k.join, cap: k.cap, miterLimit: 3} : {width, color: k.color, alpha: k.alpha, join: k.join, cap: k.cap, miterLimit: 3});
           }
         }
       }
@@ -617,11 +634,11 @@
     for (const cav of [CAV_BRIDGE, CAV_JAW, CAV_CITY]) hullG.poly(PL(cav), true).fill({color: 0x121820}).stroke({width: thin, color: C.line});
     {   // обводка корпуса без торца у кормы: торец уходит в корму, а на отдалении толстая линия вылезала из-под неё
       const iT = HULL.findIndex(([x, y]) => x === 1602 && y === TOP), path = [...HULL.slice(iT + 1), ...HULL.slice(0, iT + 1)];
-      hullG.poly(PL(path), false).stroke({width: lw * 1.4, color: C.line, join: 'round'});
+      hullG.poly(PL(path), false).stroke({width: lw * 1.4, color: C.line, join: 'miter', miterLimit: 3});
     }
 
     detailG.clear();
-    const seam = (pts, w = hair, a = 0.75) => { detailG.moveTo(...P(...pts[0])); for (const p of pts.slice(1)) detailG.lineTo(...P(...p)); detailG.stroke({width: w, color: C.line, alpha: a, join: 'round'}); };
+    const seam = (pts, w = hair, a = 0.75) => { detailG.moveTo(...P(...pts[0])); for (const p of pts.slice(1)) detailG.lineTo(...P(...p)); detailG.stroke({width: w, color: C.line, alpha: a, join: 'miter', miterLimit: 3}); };
     // пунктир по дуге длины: штрих dash, пропуск gap (пиксели арта)
     const dashPath = (pts, dash, gap) => {
       let on = true, left = dash;
@@ -638,8 +655,8 @@
       }
     };
     const lights = (pts, dash = 9, gap = 6, w = 3.2) => {             // светящаяся полоса огней: ореол + ядро
-      dashPath(pts, dash, gap); detailG.stroke({width: Math.max(lw * 1.2, w * 2.6 * S), color: C.glow, alpha: 0.16, cap: 'round'});
-      dashPath(pts, dash, gap); detailG.stroke({width: Math.max(2.2, w * S), color: C.dash, alpha: 0.95, cap: 'round'});
+      dashPath(pts, dash, gap); detailG.stroke({width: Math.max(lw * 1.2, w * 2.6 * S), color: C.glow, alpha: 0.16, cap: 'square'});
+      dashPath(pts, dash, gap); detailG.stroke({width: Math.max(2.2, w * S), color: C.dash, alpha: 0.95, cap: 'square'});
     };
     const dots = (x0, y0, cols, rows, dx = 5, dy = 4) => {            // ряды иллюминаторов
       for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) detailG.rect(...P(x0 + c * dx, y0 + r * dy), 2.4 * S, 1.6 * S);
@@ -676,11 +693,11 @@
         detailG.poly(q([[sgn * 21, 0], [sgn * 26, 0], [sgn * 26, 20], [sgn * 21, 20]]), true).fill({color: top ? 0x95a2a4 : 0x8a979a});
       }
       detailG.poly(q([[-NW, ND], [NW, ND], [NW, 20], [-NW, 20]]), true).fill({color: top ? 0x95a2a4 : 0x6f7b80});  // дно-кромка под щелью
-      detailG.poly(q([[-26, 0], [26, 0], [26, 20], [-26, 20]]), true).stroke({width: thin, color: C.line, join: 'round'});
-      detailG.poly(q([[-NW, 0], [NW, 0], [NW, ND], [-NW, ND]]), true).stroke({width: thin, color: C.line, join: 'round'});
+      detailG.poly(q([[-26, 0], [26, 0], [26, 20], [-26, 20]]), true).stroke({width: thin, color: C.line, join: 'miter', miterLimit: 3});
+      detailG.poly(q([[-NW, 0], [NW, 0], [NW, ND], [-NW, ND]]), true).stroke({width: thin, color: C.line, join: 'miter', miterLimit: 3});
       // опоры шарнира в стенках паза
-      for (const sgn of [-1, 1]) detailG.circle(...P(...f([sgn * 15, ND - 5.2])), 3.2 * S).fill({color: 0x56636a}).stroke({width: hair, color: C.line});
-      detailG.circle(...P(...f([-23.5, 16])), 1.3 * S).circle(...P(...f([23.5, 16])), 1.3 * S).fill({color: C.glow, alpha: 0.9});
+      for (const sgn of [-1, 1]) detailG.poly(ngon(...P(...f([sgn * 15, ND - 5.2])), 3.2 * S), true).fill({color: 0x56636a}).stroke({width: hair, color: C.line});
+      detailG.poly(ngon(...P(...f([-23.5, 16])), 1.3 * S), true).poly(ngon(...P(...f([23.5, 16])), 1.3 * S), true).fill({color: C.glow, alpha: 0.9});
     }
     // шлюзы космопорта в киле, под ними гравитационный щит
     for (const [x0, x1] of [[400, 470], [490, 560]]) {
@@ -688,31 +705,31 @@
       detailG.moveTo(...P(x0 + 4, FB + 4)).lineTo(...P(x1 - 4, FB + 4)).stroke({width: lw * 1.6, color: C.glow, alpha: 0.85});
     }
     // маневровые дюзы на киле
-    for (const x of [612, 680]) detailG.roundRect(...P(x, 553), 24 * S, 9 * S, 2 * S).fill({color: C.hole2}).stroke({width: hair, color: C.line});
+    for (const x of [612, 680]) detailG.poly(cham(...P(x, 553), 24 * S, 9 * S, 2 * S), true).fill({color: C.hole2}).stroke({width: hair, color: C.line});
     // шипы-антенны на крыше носа и спойлер на сгибе — по арту
     for (const [x, h] of [[596, 34], [686, 30], [764, 24]]) {               // светлая и тёмная грань — объём
       const y = domeY(x) + 1, tip = [x + 20, FT - h];
       detailG.poly(PL([[x - 5, y], [x - 1, y], tip]), true).fill({color: 0xc6d1d3});
       detailG.poly(PL([[x - 1, y], [x + 3, y], tip]), true).fill({color: 0x66727a});
-      detailG.poly(PL([[x - 5, y], [x + 3, y], tip]), true).stroke({width: hair, color: C.line, join: 'round'});
+      detailG.poly(PL([[x - 5, y], [x + 3, y], tip]), true).stroke({width: hair, color: C.line, join: 'miter', miterLimit: 3});
     }
     detailG.poly(PL([[778, FT], [792, 131], [828, 127], [850, 138], [846, 158], [836, 157], [800, FT]]), true)
-      .fill({color: C.hull}).stroke({width: thin, color: C.line, join: 'round'});
+      .fill({color: C.hull}).stroke({width: thin, color: C.line, join: 'miter', miterLimit: 3});
     detailG.moveTo(...P(842, 132)).lineTo(...P(866, 118)).stroke({width: lw, color: C.line});
     detailG.poly(PL([[816, 121], [870, 110], [906, 108], [894, 120], [834, 126]]), true)
-      .fill({color: C.hullHi}).stroke({width: thin, color: C.line, join: 'round'});
+      .fill({color: C.hullHi}).stroke({width: thin, color: C.line, join: 'miter', miterLimit: 3});
     detailG.poly(PL([[836, 121], [890, 112], [886, 116], [838, 124]]), true).fill({color: C.navy});
     // корпус между городом и кормой: стык-муфта (швы), без синей полосы
     seam([[1490, TOP + 2], [1490, BOT - 2]], hair, 0.5);
     lights([[1494, 300], [1540, 300]], 6, 4, 2.4); lights([[1494, 412], [1540, 412]], 6, 4, 2.4);
     dots(1496, 214, 8, 2); dots(1496, 470, 8, 2);
-    detailG.roundRect(...P(1500, 336), 38 * S, 52 * S, 3 * S).fill({color: C.hole2}).stroke({width: thin, color: C.line});
+    detailG.poly(cham(...P(1500, 336), 38 * S, 52 * S, 3 * S), true).fill({color: C.hole2}).stroke({width: thin, color: C.line});
     for (let k = 1; k < 9; k++) detailG.moveTo(...P(1500, 336 + k * 5.8)).lineTo(...P(1538, 336 + k * 5.8));
     detailG.stroke({width: hair, color: C.line, alpha: 0.7});
     seam([[1494, 250], [1540, 250]]); seam([[1494, 454], [1540, 454]]);
     // клинок: щели вентиляции и треугольный воздухозаборник — как на арте
     for (const k of [0, 1, 2]) detailG.poly(PL([[96 + k * 7, 424], [102 + k * 7, 413], [105 + k * 7, 413], [99 + k * 7, 424]]), true).fill({color: C.line});
-    detailG.poly(PL([[128, 452], [168, 426], [168, 452]]), true).fill({color: C.hole}).stroke({width: thin, color: C.line, join: 'round'});
+    detailG.poly(PL([[128, 452], [168, 426], [168, 452]]), true).fill({color: C.hole}).stroke({width: thin, color: C.line, join: 'miter', miterLimit: 3});
     lights([[52, 387], [93, 402], [130, 410], [170, 414]], 7, 5, 2.4);
     // купол над мостиком: шов панели и иллюминаторы в освободившейся обшивке
     seam(DOME.filter(([x]) => x > 290 && x < 556).map(([x, y]) => [x, y + 19]), hair, 0.55);
@@ -732,7 +749,7 @@
     };
     // задняя плита видна только над и под корпусом: на высоте корпуса она позади него
     for (const part of [clipY(STERN_SIDE, TOP, true), clipY(STERN_SIDE, BOT, false)])
-      if (part.length > 2) sternG.poly(PL(part), true).fill({color: 0x46525a}).stroke({width: lw, color: C.line, join: 'round'});
+      if (part.length > 2) sternG.poly(PL(part), true).fill({color: 0x46525a}).stroke({width: lw, color: C.line, join: 'miter', miterLimit: 3});
     // корпус заходит в корму до кромки крыла
     {
       const xs = STERN_EDGE_X(TOP), xb = STERN_EDGE_X(BOT), xm = STERN_EDGE_X(CY / S);
@@ -747,13 +764,13 @@
     }
     // нижняя часть двигателя: блок под корпусом у кормы, два сопла
     const eng = [[1540, BOT + 10], [1640, BOT + 10], [1640, BOT + 112], [1576, BOT + 112], [1548, BOT + 92], [1540, BOT + 60]];
-    sternG.poly(PL(eng), true).fill({color: 0x5a666c}).stroke({width: lw, color: C.line, join: 'round'});
+    sternG.poly(PL(eng), true).fill({color: 0x5a666c}).stroke({width: lw, color: C.line, join: 'miter', miterLimit: 3});
     sternG.poly(PL([[1540, BOT + 10], [1640, BOT + 10], [1640, BOT + 20], [1543, BOT + 20]]), true).fill({color: 0x6f7b81});
     for (const [x, y] of [[1530, BOT + 42], [1538, BOT + 78]]) {          // раструб расширяется к носу, срез виден эллипсом
-      sternG.poly(PL([[x + 22, y - 9], [x, y - 14], [x, y + 14], [x + 22, y + 9]]), true).fill({color: 0x3d484e}).stroke({width: thin, color: C.line, join: 'round'});
+      sternG.poly(PL([[x + 22, y - 9], [x, y - 14], [x, y + 14], [x + 22, y + 9]]), true).fill({color: 0x3d484e}).stroke({width: thin, color: C.line, join: 'miter', miterLimit: 3});
       sternG.poly(PL([[x + 22, y - 9], [x + 6, y - 12], [x + 6, y - 6], [x + 22, y - 4]]), true).fill({color: 0x6f7b81});
-      sternG.ellipse(...P(x, y), 5 * S, 14 * S).fill({color: 0x1b2226}).stroke({width: thin, color: C.line});
-      sternG.ellipse(...P(x - 1, y), 2.6 * S, 9 * S).fill({color: C.glow, alpha: 0.45});
+      sternG.poly(ngon(...P(x, y), 5 * S, 14 * S), true).fill({color: 0x1b2226}).stroke({width: thin, color: C.line});
+      sternG.poly(ngon(...P(x - 1, y), 2.6 * S, 9 * S), true).fill({color: C.glow, alpha: 0.45});
     }
     sternG.poly(PL(STERN), true).fill({color: C.hull});
     sternG.poly(PL(clipY(STERN, AX([0, 404])[1], false)), true).fill({color: 0x9eabad});     // нижняя плита (под балкой) — в тени
@@ -761,18 +778,18 @@
     // скос у левой кромки: тонкая тёмная грань, как на арте
     sternG.poly(PL([[1583, 163], [1612, 300], [1612, 412], [1562, 665], [1572, 665], [1621, 412], [1621, 300], [1592, 163]].map(AX)), true)
       .fill({color: 0x000000, alpha: 0.12});
-    sternG.poly(PL(STERN), true).stroke({width: lw * 1.4, color: C.line, join: 'round'});
+    sternG.poly(PL(STERN), true).stroke({width: lw * 1.4, color: C.line, join: 'miter', miterLimit: 3});
     // короба (выступают): светлая верхняя кромка, тень снизу
-    sternG.poly(PL(STERN_UNDER), true).fill({color: 0xa2afb1}).stroke({width: thin, color: C.line, join: 'round'});
+    sternG.poly(PL(STERN_UNDER), true).fill({color: 0xa2afb1}).stroke({width: thin, color: C.line, join: 'miter', miterLimit: 3});
     for (const p of STERN_BOXES) {
       sternG.poly(PL(p.map(([x, y]) => [x + 2, y + 5])), true).fill({color: 0x000000, alpha: 0.16});
-      sternG.poly(PL(p), true).fill({color: C.hullHi}).stroke({width: thin, color: C.line, join: 'round'});
+      sternG.poly(PL(p), true).fill({color: C.hullHi}).stroke({width: thin, color: C.line, join: 'miter', miterLimit: 3});
     }
     for (const p of STERN_PANELS) {
       sternG.poly(PL(p.map(([x, y]) => [x, y + 2.5])), true).fill({color: 0xd2dcdd});   // светлая кромка снизу — панель утоплена
-      sternG.poly(PL(p), true).fill({color: C.hullLo}).stroke({width: thin, color: C.line, join: 'round'});
+      sternG.poly(PL(p), true).fill({color: C.hullLo}).stroke({width: thin, color: C.line, join: 'miter', miterLimit: 3});
     }
-    for (const p of STERN_TRIS) sternG.poly(PL(p), true).fill({color: C.hullLo}).stroke({width: thin, color: C.line, join: 'round'});
+    for (const p of STERN_TRIS) sternG.poly(PL(p), true).fill({color: C.hullLo}).stroke({width: thin, color: C.line, join: 'miter', miterLimit: 3});
     for (const p of STERN_VENTS) {
       sternG.poly(PL(p), true).fill({color: C.hole2}).stroke({width: thin, color: C.line});
       const [[ax, ay], [bx, by], [cx, cy], [dx, dy]] = p;             // решётка: косые рёбра и продольная планка
@@ -783,12 +800,12 @@
       sternG.moveTo(...P((ax + dx) / 2, (ay + dy) / 2)).lineTo(...P((bx + cx) / 2, (by + cy) / 2));
       sternG.stroke({width: hair, color: C.line, alpha: 0.8});
     }
-    sternG.poly(PL(STERN_SLOTS), true).fill({color: C.hullLo}).stroke({width: thin, color: C.line, join: 'round'});
+    sternG.poly(PL(STERN_SLOTS), true).fill({color: C.hullLo}).stroke({width: thin, color: C.line, join: 'miter', miterLimit: 3});
     {
       const [[ax, ay], [bx, by], [cx, cy], [dx, dy]] = STERN_SLOTS;
       for (const v of [0.32, 0.7]) for (let k = 0; k < 4; k++) {
         const u = 0.14 + k * 0.22, x0 = ax + (bx - ax) * u + (dx - ax) * v, y0 = ay + (by - ay) * u + (dy - ay) * v;
-        sternG.roundRect(...P(x0, y0 - 3), 6 * S, 8 * S, 2 * S);
+        sternG.poly(cham(...P(x0, y0 - 3), 6 * S, 8 * S, 2 * S), true);
       }
       sternG.fill({color: 0x1d2529});
     }
@@ -901,14 +918,16 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       }
       for (let i = 0; i < segs; i++) { const a = base + i * 2, b = base + ((i + 1) % n) * 2; this.tri(a, a + 1, b + 1); this.tri(a, b + 1, b); }
     }
-    disc(x, y, r, row) { const pts = []; for (const [cx, cy] of DISC) pts.push([x + r * cx, y + r * cy]); this.poly(pts, row); }
+    disc(x, y, r, row, D = DISC) { const pts = []; for (const [cx, cy] of D) pts.push([x + r * cx, y + r * cy]); this.poly(pts, row); }
     flush(mesh) {
       const g = mesh.geometry;
       g.positions = this.P.subarray(0, this.n * 2); g.uvs = this.U.subarray(0, this.n * 2); g.indices = this.I.subarray(0, this.m);
     }
   }
   const LX = new Float64Array(4096), LY = new Float64Array(4096), LNX = new Float64Array(4096), LNY = new Float64Array(4096);
-  const DISC = [...Array(14)].map((_, k) => [Math.cos(k * Math.PI / 7), Math.sin(k * Math.PI / 7)]);
+  // огни колец — грани, плоская сверху: 8 (огонёк), 12 (ореол); было 14
+  const facet = n => [...Array(n)].map((_, k) => { const a = -Math.PI / 2 + Math.PI * (2 * k + 1) / n; return [Math.cos(a), Math.sin(a)]; });
+  const DISC = facet(8), DISC12 = facet(12);
   const MB_BACK = new MeshBuf(), MB_FRONT = new MeshBuf();
   const LIGHT = (() => { const v = [-0.3, -0.62, 0.72], L = Math.hypot(...v); return v.map(x => x / L); })();
   const P_RING = 24, NLIFT = 4, TREAD_SHEEN = 0.22;                                    // панелей по кругу, лифтов на кольцо
@@ -933,7 +952,9 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
 
   function ringGeom(r, t) {                                        // расчёты кольца на кадр — общие для половин
     const rot = r.phase + r.dir * t * RING.speed, Rpx = RING.R * cam.z;
-    // сегменты мелкие: у узкого эллипса сверху и снизу изгиб резкий, крупный шаг даёт изломы
+    // сегменты мелкие: у узкого эллипса сверху и снизу изгиб резкий, крупный шаг даёт изломы. Кольцо — большая форма:
+    // плавное (игрок, 10.10.2026; проба 24 гранями — v90–91: кусок-панель целиком прыгал между половинами на
+    // границе сверху и снизу — окна «из воздуха», дребезг линий; notes/vector-craft.md, «Анимация псевдо-3D»)
     const sub = Rpx > 700 ? 12 : Rpx > 260 ? 8 : 5;
     const N = P_RING * sub, d = Math.PI * 2 / N, ang = i => rot + i * d;
     const pos = [], vis = [], tn = [];
@@ -1077,7 +1098,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
         if (!inHalf(a) || Math.cos(a) < 0.05) continue;
         const h = Math.sin((p + 1) * 12.9898 + ri * 78.233) * 43758.5453, rnd = h - Math.floor(h);   // свой ритм у каждого огня
         const [x, y] = rp(r, a, RING.R, 0), on = ((t * (0.22 + 0.2 * rnd) + rnd * 7.3) % 1) < 0.35;
-        if (on) mb.disc(x, y, Math.max(1.6, 3.4 * S * cam.z), 'halo');
+        if (on) mb.disc(x, y, Math.max(1.6, 3.4 * S * cam.z), 'halo', DISC12);
         mb.disc(x, y, Math.max(0.8, 1.4 * S * cam.z), on ? 'light' : 'lightDim');
       }
     } else {
@@ -1129,7 +1150,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     const lw = Math.max(3, 1.6 / cam.z);
     for (const z of zones) {
       const col = z.free ? 0x8a9aa0 : (ZONE_COLORS[z.name] ?? 0xffffff);
-      zonesG.poly(z.poly.flat(), true).fill({color: col, alpha: z.free ? 0.12 : BG ? 0.14 : 0.34}).stroke({width: lw, color: z.free ? 0x5b6a70 : col, alpha: 0.95, join: 'round'});
+      zonesG.poly(z.poly.flat(), true).fill({color: col, alpha: z.free ? 0.12 : BG ? 0.14 : 0.34}).stroke({width: lw, color: z.free ? 0x5b6a70 : col, alpha: 0.95, join: 'miter', miterLimit: 3});
     }
   }
   function placeLabels() {
@@ -1336,15 +1357,15 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, 'rgba(255,240,200,0.9)'); gr.addColorStop(1, 'rgba(255,240,200,0)');
     g.fillStyle = gr; g.beginPath(); g.moveTo(0, h / 2 - 2); g.lineTo(w, 0); g.lineTo(w, h); g.lineTo(0, h / 2 + 2); g.closePath(); g.fill();
   });
-  const ringTex = canvasTex(64, 64, (g, w) => { g.strokeStyle = 'rgba(255,255,255,0.9)'; g.lineWidth = 4; g.beginPath(); g.arc(w / 2, w / 2, w / 2 - 4, 0, 7); g.stroke(); });
+  const ringTex = canvasTex(64, 64, (g, w) => { g.strokeStyle = 'rgba(255,255,255,0.9)'; g.lineWidth = 4; g.lineJoin = 'miter'; cvPoly(g, ngon(w / 2, w / 2, w / 2 - 4, w / 2 - 4, 12)); g.stroke(); });
   const LW = 3.5, TH = 1.8;                                  // контур и тонкие линии — в единицах мира
-  const wP = (sd, pts, fill, a = 1) => gfx.poly(wpoly(sd, pts), true).fill({color: fill, alpha: a}).stroke({width: LW, color: C.line, join: 'round'});
+  const wP = (sd, pts, fill, a = 1) => gfx.poly(wpoly(sd, pts), true).fill({color: fill, alpha: a}).stroke({width: LW, color: C.line, join: 'miter', miterLimit: 3});
   const wF = (sd, pts, fill, a = 1) => gfx.poly(wpoly(sd, pts), true).fill({color: fill, alpha: a});
-  const wLine = (sd, pts, w, color, a = 1) => gfx.poly(wpoly(sd, pts), false).stroke({width: w, color, alpha: a, cap: 'round', join: 'round'});
+  const wLine = (sd, pts, w, color, a = 1) => gfx.poly(wpoly(sd, pts), false).stroke({width: w, color, alpha: a, cap: 'square', join: 'miter', miterLimit: 3});
   const wRect = (sd, u0, v0, u1, v1, fill, a = 1) => wF(sd, [[u0, v0], [u1, v0], [u1, v1], [u0, v1]], fill, a);
-  const wDot = (sd, u, v, r, fill, a = 1) => gfx.circle(...wpt(sd, u, v), r).fill({color: fill, alpha: a});
-  const wallPoly = (sd, pts) => gfx.poly(wpoly(sd, pts), true).stroke({width: LW, color: C.line, join: 'round'});
-  const wRing = (sd, u, v, r, fill, a = 1) => gfx.circle(...wpt(sd, u, v), r).fill({color: fill, alpha: a}).stroke({width: LW, color: C.line});
+  const wDot = (sd, u, v, r, fill, a = 1) => gfx.poly(ngon(...wpt(sd, u, v), r), true).fill({color: fill, alpha: a});
+  const wallPoly = (sd, pts) => gfx.poly(wpoly(sd, pts), true).stroke({width: LW, color: C.line, join: 'miter', miterLimit: 3});
+  const wRing = (sd, u, v, r, fill, a = 1) => gfx.poly(ngon(...wpt(sd, u, v), r), true).fill({color: fill, alpha: a}).stroke({width: LW, color: C.line});
   // живое
   const wFx = {blink: [], lift: [], smoke: [], fall: [], neon: [], flame: [], beam: [], ripple: [], win: [], drone: [], screen: [], crane: []};
   // убранное (игрок) всё равно «съедает» вызовы wr: иначе перетасуется вся раскладка башен
@@ -1402,7 +1423,8 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     const pts = [], ph = wr() * 6.28, k = wR(0.8, 1.6);
     for (let s = 0; s <= L; s += 5) pts.push([u + Math.sin(s / L * Math.PI * k + ph) * sway * (s / L), v + s]);
     const n = pts.length, cut = [0, Math.floor(n * 0.45), Math.floor(n * 0.8), n - 1];
-    for (let i = 0; i < 3; i++) if (cut[i + 1] > cut[i]) wLine(sd, pts.slice(cut[i], cut[i + 1] + 1), w0 * (1 - i * 0.28), 0x3f6a30, 0.95);
+    const st = Math.max(1, Math.round(n / 4)), on = j => j % st === 0 || cut.includes(j);   // стебель гранями: опорные точки, листья — по всем
+    for (let i = 0; i < 3; i++) if (cut[i + 1] > cut[i]) wLine(sd, pts.slice(cut[i], cut[i + 1] + 1).filter((_, j) => on(cut[i] + j)), w0 * (1 - i * 0.28), 0x3f6a30, 0.95);
     for (let i = 2; i < n; i += 2) {                         // листья поочерёдно по сторонам
       const [a, b] = pts[i], [pa, pb] = pts[i - 1], tl = Math.hypot(a - pa, b - pb) || 1, tu = (a - pa) / tl, tv = (b - pb) / tl;
       const side = i % 4 ? 1 : -1, nu = -tv * side, nv = tu * side, sz = wR(6.5, 10) * (1 - i / n * 0.4);
@@ -1416,7 +1438,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     if (!sd.v[1]) return;                                   // на боковых стенах «вниз» — вдоль стены, гирлянд нет
     sag *= sd.v[1]; const pts = [];
     for (let i = 0; i <= 16; i++) { const f = i / 16; pts.push([u0 + (u1 - u0) * f, v + sag * 4 * f * (1 - f)]); }
-    wLine(sd, pts, 2.2, 0x3f6a30, 0.9);
+    wLine(sd, pts.filter((_, i) => i % 4 === 0), 2.2, 0x3f6a30, 0.9);   // провис гранями
     for (let i = 1; i < 16; i++) { const [a, b] = pts[i]; wDot(sd, a + wR(-2, 2), b + wR(1, 4), wR(2.5, 4.5), wPick(LEAF)); }
   }
   function bush(sd, u, v, r) {                              // куст: тень, несколько крон, блик
@@ -1596,7 +1618,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       }
       tipV = v0 + d; ribs = false;
       panels = [[-w * 0.3, w * 0.3, d * 0.46, d * 0.68]];
-    } else if (shape === 'round') { const o = [[-w / 2, 0], [w / 2, 0]]; for (let k = 0; k <= 14; k++) { const g = Math.PI * k / 14; o.push([w / 2 * Math.cos(g), d * 0.25 + d * 0.45 * Math.sin(g)]); } solid(o); tipV = v0 + d * 0.66; }
+    } else if (shape === 'round') { const o = [[-w / 2, 0], [w / 2, 0]]; const n = arcN(w / 2, Math.PI); for (let k = 0; k <= n; k++) { const g = Math.PI * k / n; o.push([w / 2 * Math.cos(g), d * 0.25 + d * 0.45 * Math.sin(g)]); } solid(o); tipV = v0 + d * 0.66; }
     else if (shape === 'chamfer') { const c = Math.min(d * 0.35, w * 0.3); solid([[-w / 2, 0], [w / 2, 0], [w * 0.38, d * 0.5], [w * 0.38, d - c], [w * 0.38 - c, d], [-w * 0.38 + c, d], [-w * 0.38, d - c], [-w * 0.38, d * 0.5]]); tipV = v0 + d * 0.85; }
     else if (shape === 'twin') { solid([[-w / 2, 0], [w / 2, 0], [w / 2, d * 0.45], [w * 0.36, d], [w * 0.16, d * 0.52], [-w * 0.16, d * 0.52], [-w * 0.36, d], [-w / 2, d * 0.45]]); tipV = v0 + d * 0.98; panels = [[-w * 0.14, w * 0.14, d * 0.12, d * 0.45]]; }
     else if (shape === 'disc') {                              // диск на стебле: кольца, огни по кругу
@@ -1709,7 +1731,8 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   // парящий сад у ферм: платформа-полукруг (вглубь ~140), ярусы грядок, купол-оранжерея, свисающая зелень
   function gardenDeck(sd, u, scale = 1) {
     const v0 = sd.t - 3, w = 380 * scale, d = 140 * scale, deck = [[-w / 2, 0], [w / 2, 0], [w / 2, d * 0.35]];
-    for (let k = 0; k <= 16; k++) { const g = Math.PI * k / 16; deck.push([w / 2 * Math.cos(g), d * 0.35 + d * 0.65 * Math.sin(g)]); }
+    const dn = arcN(w / 2, Math.PI);
+    for (let k = 0; k <= dn; k++) { const g = Math.PI * k / dn; deck.push([w / 2 * Math.cos(g), d * 0.35 + d * 0.65 * Math.sin(g)]); }
     deck.push([-w / 2, d * 0.35]);
     wP(sd, deck.map(([a, b]) => [u + a, v0 + b]), WG.mid);
     wF(sd, deck.map(([a, b]) => [u + Math.max(a, w * 0.1), v0 + b]), WG.dark, 0.45);
@@ -1719,20 +1742,21 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
         const g = Math.PI * k / 20, a = w / 2 * rr * Math.cos(g), b = d * 0.3 + d * 0.62 * rr * Math.sin(g);
         bush(sd, u + a, v0 + b, wR(5, 8) * scale);
       }
-      if (r < 2) { const pts = []; for (let k = 0; k <= 20; k++) { const g = Math.PI * k / 20; pts.push([u + w / 2 * (rr - 0.12) * Math.cos(g), v0 + d * 0.3 + d * 0.62 * (rr - 0.12) * Math.sin(g)]); } wLine(sd, pts, 3, WG.pool, 0.55); }   // полив
+      if (r < 2) { const pts = []; for (let k = 0; k <= dn; k++) { const g = Math.PI * k / dn; pts.push([u + w / 2 * (rr - 0.12) * Math.cos(g), v0 + d * 0.3 + d * 0.62 * (rr - 0.12) * Math.sin(g)]); } wLine(sd, pts, 3, WG.pool, 0.55); }   // полив
     }
     // оранжерея: сводчатая стеклянная теплица (сверху — прямоугольник со сводом): растения внутри, рёбра, конёк, блик
     const gw = w * 0.46, gd = d * 0.32, gu = u, gv = v0 + d * 0.3, rr = gd / 2, cu0 = gu - gw / 2 + rr, cu1 = gu + gw / 2 - rr, cv = gv + rr;
     const caps = [];
-    for (let k = 0; k <= 10; k++) { const g = -Math.PI / 2 + Math.PI * k / 10; caps.push([cu1 + Math.cos(g) * rr, cv + Math.sin(g) * rr]); }
-    for (let k = 0; k <= 10; k++) { const g = Math.PI / 2 + Math.PI * k / 10; caps.push([cu0 + Math.cos(g) * rr, cv + Math.sin(g) * rr]); }
+    const cn = arcN(rr, Math.PI);                             // свод оранжереи — гранями
+    for (let k = 0; k <= cn; k++) { const g = -Math.PI / 2 + Math.PI * k / cn; caps.push([cu1 + Math.cos(g) * rr, cv + Math.sin(g) * rr]); }
+    for (let k = 0; k <= cn; k++) { const g = Math.PI / 2 + Math.PI * k / cn; caps.push([cu0 + Math.cos(g) * rr, cv + Math.sin(g) * rr]); }
     wF(sd, caps, 0x1f2a1c, 0.55);                                                                                      // почва под стеклом
     for (let x = cu0 - rr * 0.5; x < cu1 + rr * 0.5; x += 9) for (const f of [-0.45, 0, 0.45]) wDot(sd, x + wR(-2, 2), cv + rr * f, wR(3, 5.5), wPick(LEAF), 0.9);   // ряды растений
     wF(sd, caps, 0xd8f2c8, 0.2);
     wF(sd, caps.map(([a, b]) => [a, Math.min(b, cv - rr * 0.35)]), 0xffffff, 0.18);                                // блик на своде
     for (let x = cu0; x <= cu1 + 0.1; x += (cu1 - cu0) / 6) wLine(sd, [[x, gv + 1], [x, gv + gd - 1]], 1.6, WG.hi, 0.85);   // рёбра
     wLine(sd, [[cu0 - rr * 0.7, cv], [cu1 + rr * 0.7, cv]], 2, WG.hi, 0.9);                                       // конёк
-    gfx.poly(wpoly(sd, caps), true).stroke({width: 2.5, color: WG.hi, alpha: 0.95, join: 'round'});
+    gfx.poly(wpoly(sd, caps), true).stroke({width: 2.5, color: WG.hi, alpha: 0.95, join: 'miter', miterLimit: 3});
     wSkip(2);                                                 // фонари у оранжереи убраны (игрок)
     for (let k = 2; k < 15; k += 2) {                         // зелень свисает с края платформы
       const g = Math.PI * k / 16, a = w / 2 * Math.cos(g), b = d * 0.35 + d * 0.65 * Math.sin(g);
@@ -1744,10 +1768,11 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   function bigFall(sd, u) {
     const t = sd.t, v0 = t - 3, bw = 380, bd = 120, fw = 70, fl = 230;
     const basin = [[-bw / 2, 0], [bw / 2, 0], [bw / 2, bd * 0.45]];
-    for (let k = 0; k <= 16; k++) { const g = Math.PI * k / 16; basin.push([bw / 2 * Math.cos(g), bd * 0.45 + bd * 0.55 * Math.sin(g)]); }
+    const bn = arcN(bw / 2, Math.PI);
+    for (let k = 0; k <= bn; k++) { const g = Math.PI * k / bn; basin.push([bw / 2 * Math.cos(g), bd * 0.45 + bd * 0.55 * Math.sin(g)]); }
     basin.push([-bw / 2, bd * 0.45]);
     wP(sd, basin.map(([a, b]) => [u + a, v0 + b]), WG.mid);
-    const water = []; for (let k = 0; k <= 16; k++) { const g = Math.PI * k / 16; water.push([u + (bw / 2 - 22) * Math.cos(g), v0 + bd * 0.4 + (bd * 0.5) * Math.sin(g)]); }
+    const water = []; for (let k = 0; k <= bn; k++) { const g = Math.PI * k / bn; water.push([u + (bw / 2 - 22) * Math.cos(g), v0 + bd * 0.4 + (bd * 0.5) * Math.sin(g)]); }
     wF(sd, [[u - bw / 2 + 22, v0 + 14], [u + bw / 2 - 22, v0 + 14], ...water], WG.pool, 0.9);
     for (let k = 1; k <= 3; k++) wLine(sd, [[u - bw * 0.3, v0 + bd * 0.2 * k + 10], [u + bw * 0.3, v0 + bd * 0.2 * k + 10]], 2, WG.foam, 0.35);
     wRect(sd, u - fw / 2 - 8, v0 + bd - 8, u + fw / 2 + 8, v0 + bd + 4, WG.lit, 1);           // водослив
@@ -1860,17 +1885,18 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       wP(sd, [[u - 22, E - 7], [u + 22, E - 7], [u + 22, E + 1], [u - 22, E + 1]], WG.lit);
       wRect(sd, u - 6, E - 5, u + 6, E - 1, WG.deep, 0.9);
     }
-    // угловые башни — круглые, ступенями к центру, целиком внутри полости
+    // угловые башни — 12 граней (по 12 секторам: спицы — в вершины), ступенями к центру, целиком внутри полости
+    const g12 = (x, y, r) => ngon(x, y, r, r, 12);
     for (const [cx, cy] of [[WL.x0, WL.y0], [WL.x1, WL.y0], [WL.x0, WL.y1], [WL.x1, WL.y1]]) {
       const ix = cx === WL.x0 ? 1 : -1, iy = cy === WL.y0 ? 1 : -1, x = cx + ix * 124, y = cy + iy * 124;
-      wallG.circle(x, y, 122).fill({color: WG.base}).stroke({width: LW, color: C.line});
-      wallG.circle(x + ix * 12, y + iy * 12, 98).fill({color: WG.dark, alpha: 0.7});
-      wallG.circle(x, y, 83).fill({color: WG.mid}).stroke({width: LW, color: C.line});
-      wallG.circle(x - ix * 10, y - iy * 10, 57).fill({color: WG.lit, alpha: 0.35});
-      wallG.circle(x, y, 42).fill({color: WG.deep}).stroke({width: TH, color: C.line});
-      for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; wallG.poly([x + Math.cos(a) * 86, y + Math.sin(a) * 86, x + Math.cos(a) * 120, y + Math.sin(a) * 120], false).stroke({width: TH, color: C.line, alpha: 0.6}); }
-      for (let k = 0; k < 12; k++) { const a = (k + 0.5) / 12 * Math.PI * 2; wallG.circle(x + Math.cos(a) * 103, y + Math.sin(a) * 103, 3).fill({color: WG.white, alpha: 0.8}); }
-      wallG.circle(x, y, 10).fill({color: WG.warm, alpha: 0.9});
+      wallG.poly(g12(x, y, 122), true).fill({color: WG.base}).stroke({width: LW, color: C.line});
+      wallG.poly(g12(x + ix * 12, y + iy * 12, 98), true).fill({color: WG.dark, alpha: 0.7});
+      wallG.poly(g12(x, y, 83), true).fill({color: WG.mid}).stroke({width: LW, color: C.line});
+      wallG.poly(g12(x - ix * 10, y - iy * 10, 57), true).fill({color: WG.lit, alpha: 0.35});
+      wallG.poly(g12(x, y, 42), true).fill({color: WG.deep}).stroke({width: TH, color: C.line});
+      for (let k = 0; k < 12; k++) { const a = (k + 0.5) / 12 * Math.PI * 2; wallG.poly([x + Math.cos(a) * 86, y + Math.sin(a) * 86, x + Math.cos(a) * 120, y + Math.sin(a) * 120], false).stroke({width: TH, color: C.line, alpha: 0.6}); }
+      for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; wallG.poly(ngon(x + Math.cos(a) * 99, y + Math.sin(a) * 99, 3), true).fill({color: WG.white, alpha: 0.8}); }
+      wallG.poly(ngon(x, y, 10), true).fill({color: WG.warm, alpha: 0.9});
     }
     drawNoseTrims();
   }
@@ -2076,9 +2102,8 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   // светлая полоса окон. Голова/хвост — обтекатель с остеклением кабины. Текстура 128×32, кузов — y 9..23.
   const carTex = (o, nose) => canvasTex(128, 32, g => {
     const body = (dy) => {
-      g.beginPath();
-      if (nose) { g.moveTo(4, 9 + dy); g.lineTo(70, 9 + dy); g.bezierCurveTo(104, 9 + dy, 124, 13 + dy, 125, 16 + dy); g.bezierCurveTo(124, 19 + dy, 104, 23 + dy, 70, 23 + dy); g.lineTo(4, 23 + dy); g.closePath(); }
-      else g.roundRect(3, 9 + dy, 122, 14, 4);
+      if (nose) cvPoly(g, [4, 9, 70, 9, 99, 10.2, 118, 12.9, 125, 16, 118, 19.1, 99, 21.8, 70, 23, 4, 23].map((v, i) => i % 2 ? v + dy : v));   // обтекатель гранями
+      else cvPoly(g, cham(3, 9 + dy, 122, 14, 3.5));
     };
     g.fillStyle = 'rgba(0,0,0,0.38)'; body(5); g.fill();                              // тень — вниз-вбок
     const gr = g.createLinearGradient(0, 9, 0, 23); gr.addColorStop(0, o.hi); gr.addColorStop(0.55, o.body); gr.addColorStop(1, o.lo);
@@ -2087,7 +2112,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     g.fillStyle = o.win; g.fillRect(0, 19.5, 128, 2.2);                               // окна — бок, видный сверху-сбоку
     g.fillStyle = o.ridge; g.fillRect(6, 14.6, nose ? 66 : 116, 1.6);                // продольная полоса крыши
     g.fillStyle = o.gear; for (const x of nose ? [16, 40] : [14, 52, 90]) g.fillRect(x, 11.5, 14, 2.4);   // оборудование на крыше
-    if (nose) { g.fillStyle = o.cab; g.beginPath(); g.ellipse(100, 15.5, 13, 3.6, 0, 0, 7); g.fill(); }     // остекление кабины
+    if (nose) { g.fillStyle = o.cab; cvPoly(g, ngon(100, 15.5, 13, 3.6, 8)); g.fill(); }     // остекление кабины
     g.restore();
     g.strokeStyle = 'rgba(8,12,16,0.85)'; g.lineWidth = 1.2; body(0); g.stroke();
   });
@@ -2127,6 +2152,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   // поезд просто заезжает внутрь кормы; потом крыло станет прозрачным в слоёном режиме, там — техническая стоянка:
   // тогда маску снять/сдвинуть, путь до TECH.end уже есть). Тоннель-кожух со створками (v76–78) убран.
   const techTop = new PIXI.Graphics(); techC.addChild(techTop);
+  for (const [k, g] of Object.entries({wallG, towerG, mgG, mgTop, techG, techTop, stG})) g.label = k;
   {
     const g = techTop, {sx, wx, ty} = TECH, yt = x => ty(x) + 13;   // yt — верхняя кромка станции
     // платформа между путём и крышей станции: плиты в такт кромке станции, жёлтая кромка у пути, люки в крышу, упор
@@ -2210,7 +2236,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   const STN = {XW: 5150, XE: SL.jx - 9, pa: 3304, pb: 3586, bx: SL.jx + 39, bw: 52, wf: WL.x0 + 96,   // bw — ширина платформы Bi, wf — грань носовой стены
     yt: x => 3246 + 0.0317 * (x - 4500) - 4, yb: x => 3638 - 0.0127 * (x - 4500) - 6};   // кромки полосы обшивки (замер __ship.toScreen), верх — до самого края
   const mixC = (a, b, t) => { const m = (s) => Math.round(((a >> s) & 255) + (((b >> s) & 255) - ((a >> s) & 255)) * t); return (m(16) << 16) | (m(8) << 8) | m(0); };
-  const rrect = (x0, y0, x1, y1, r) => { const o = []; for (const [cx, cy, a0] of [[x1 - r, y0 + r, -Math.PI / 2], [x1 - r, y1 - r, 0], [x0 + r, y1 - r, Math.PI / 2], [x0 + r, y0 + r, Math.PI]]) for (let k = 0; k <= 4; k++) { const g = a0 + Math.PI / 2 * k / 4; o.push([cx + Math.cos(g) * r, cy + Math.sin(g) * r]); } return o; };
+  const rrect = (x0, y0, x1, y1, r) => { const o = []; for (const [cx, cy, a0] of [[x1 - r, y0 + r, -Math.PI / 2], [x1 - r, y1 - r, 0], [x0 + r, y1 - r, Math.PI / 2], [x0 + r, y0 + r, Math.PI]]) for (let k = 0; k <= 1; k++) { const g = a0 + Math.PI / 2 * k; o.push([cx + Math.cos(g) * r, cy + Math.sin(g) * r]); } return o; };
   const FRAME = 0xd9dcd6, RUST = 0xa9553c, AMBER = 0xffb84d;  // рамы-порталы, терракотовая полоса и табло — по арту-референсу
   // рама-портал: светлая, тонкий контур (жирный контур игроку читался «решёткой»), тень с одной стороны
   // ---- живое на станции и в вестибюле: кабина лифта, бегущие ступени и ленты, голо-экраны, уборочные дроны ----
@@ -2220,7 +2246,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   const beltBars = (x, y0, y1, dir, n, sp, w = 10, tint = 0xb8c2c4, a = 0.6) => { for (let i = 0; i < n; i++) SFX.bars.push({s: sSpr(w, 1.8, tint, 0), x, y0, y1, dir, sp, off: (y1 - y0) * i / n, a}); };
   function cleanDrone(pts) {                                    // уборочный дрон: квадратный корпус, жёлтая полоса, ездит по кругу
     const c = new PIXI.Container();
-    c.addChild(new PIXI.Graphics().roundRect(-5, -5, 10, 10, 2.5).fill({color: WG.lit}).stroke({width: 1, color: C.line}).rect(-5, -1, 10, 2).fill({color: ROBO}).rect(3, -3, 2, 6).fill({color: 0x1a1f22}));
+    c.addChild(new PIXI.Graphics().poly(cham(-5, -5, 10, 10, 2.5), true).fill({color: WG.lit}).stroke({width: 1, color: C.line}).rect(-5, -1, 10, 2).fill({color: ROBO}).rect(3, -3, 2, 6).fill({color: 0x1a1f22}));
     stFx.addChild(c);
     const cum = [0]; for (let i = 1; i <= pts.length; i++) { const a = pts[i - 1], b = pts[i % pts.length]; cum.push(cum[i - 1] + Math.hypot(b[0] - a[0], b[1] - a[1])); }
     SFX.drone.push({c, pts, cum, len: cum[cum.length - 1], sp: 9, ph: wr2() * 100});
@@ -2248,7 +2274,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     wP(S0, [[x - r * 0.6, y - r * 0.6], [x + r * 0.6, y - r * 0.6], [x + r * 0.6, y + r * 0.6], [x - r * 0.6, y + r * 0.6]], 0x1a1f22);
     holo(x, y, r * 1.1, r * 1.1, c1, c2);
   };
-  const frameBar = (pts, shade) => { wF(S0, pts, FRAME, 0.93); gfx.poly(wpoly(S0, pts), true).stroke({width: 1.1, color: C.line, alpha: 0.5, join: 'round'}); if (shade) wF(S0, shade, WG.dark, 0.28); };
+  const frameBar = (pts, shade) => { wF(S0, pts, FRAME, 0.93); gfx.poly(wpoly(S0, pts), true).stroke({width: 1.1, color: C.line, alpha: 0.5, join: 'miter', miterLimit: 3}); if (shade) wF(S0, shade, WG.dark, 0.28); };
   // пересечение вертикали x с многоугольником: [ymin, ymax]
   const spanAt = (pts, x) => {
     let lo = Infinity, hi = -Infinity;
@@ -2277,7 +2303,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
         if (run >= next - 0.01) { wLine(S0, [P(body, fb), P(rim, fb)], 1.2, C.line, 0.5); dark = wr2() < 0.45; run = 0; next = wR2(18, 46); }
       }
     }
-    gfx.poly(wpoly(S0, rim), true).stroke({width: 1.4, color: C.line, alpha: 0.6, join: 'round'});
+    gfx.poly(wpoly(S0, rim), true).stroke({width: 1.4, color: C.line, alpha: 0.6, join: 'miter', miterLimit: 3});
     return rim;
   }
   const blockAt = (x0, y0, x1, y1, fill, sh = 0.45) => {         // плита с контуром и тенью справа
@@ -2329,7 +2355,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     }
     for (let x = D0 + 80; x < D1 - 75; x += 20) { const [y0, y1] = spanAt(hull, x); if (y1 > y0) wLine(S0, [[x, y0], [x, y1]], 1.8, WG.hi, 0.85); }   // рёбра
     wLine(S0, [[D0 + 70, dcy], [D1 - 72, dcy]], 3, WG.mid, 0.95);                                       // киль
-    gfx.poly(wpoly(S0, hull), true).stroke({width: 1.6, color: C.line, alpha: 0.85, join: 'round'});
+    gfx.poly(wpoly(S0, hull), true).stroke({width: 1.6, color: C.line, alpha: 0.85, join: 'miter', miterLimit: 3});
     for (const x of [D0 + 250, D0 + 520, D0 + 790]) {                                                    // мостовые краны поперёк дока
       wF(S0, [[x + 4, DY0 - 2], [x + 18, DY0 - 2], [x + 18, DY1 + 10], [x + 4, DY1 + 10]], 0x000000, 0.25);
       wP(S0, [[x - 6, DY0 - 4], [x + 6, DY0 - 4], [x + 6, DY1 + 4], [x - 6, DY1 + 4]], ROBO);
@@ -2395,7 +2421,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       wP(S0, pod, WG.mid);
       const inner = pod.map(([a, b]) => [x + 20 + (a - x - 20) * 0.8, y + 13 + (b - y - 13) * 0.75]);
       wP(S0, inner, 0x22262f);
-      gfx.poly(wpoly(S0, inner), true).stroke({width: 1.6, color: c, alpha: 0.9, join: 'round'});
+      gfx.poly(wpoly(S0, inner), true).stroke({width: 1.6, color: c, alpha: 0.9, join: 'miter', miterLimit: 3});
       for (let q = 0; q < 4; q++) wRect(S0, x + 9 + q * 6, y + 15, x + 13 + q * 6, y + 19, [0xe9f0f4, c, 0xffd27a, 0xb3bec0][(q + k) % 4], 0.9);   // товар на витрине
       holo(x + 20, y + 8, 18, 5, c, c2);
     }
@@ -2441,7 +2467,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       // осевая: от проёма на запад, плавный поворот вниз, в зал к стойкам регистрации
       const mid = [];
       for (let x = VX1 + 2; x > ex + R; x -= 8) mid.push([x, cy]);
-      for (let k = 0; k <= 10; k++) { const g = -Math.PI / 2 - Math.PI / 2 * k / 10; mid.push([ex + R + Math.cos(g) * R, cy + R + Math.sin(g) * R]); }
+      const tn = arcN(R, Math.PI / 2); for (let k = 0; k <= tn; k++) { const g = -Math.PI / 2 - Math.PI / 2 * k / tn; mid.push([ex + R + Math.cos(g) * R, cy + R + Math.sin(g) * R]); }
       for (let y = cy + R + 8; y <= ey; y += 8) mid.push([ex, y]);
       const nrm = mid.map((q, i) => { const a = mid[Math.max(0, i - 1)], b = mid[Math.min(mid.length - 1, i + 1)], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return [-(b[1] - a[1]) / L, (b[0] - a[0]) / L]; });
       const sideA = mid.map(([x, y], i) => [x + nrm[i][0] * hw, y + nrm[i][1] * hw]), sideB = mid.map(([x, y], i) => [x - nrm[i][0] * hw, y - nrm[i][1] * hw]);
@@ -2656,7 +2682,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
         if (run >= next - 0.01) { wLine(S0, [P(body, fb), P(rim, fb)], 1.2, C.line, 0.5); dark = wr2() < 0.45; run = 0; next = wR2(18, 46); }
       }
     }
-    gfx.poly(wpoly(S0, rim), true).stroke({width: 1.4, color: C.line, alpha: 0.6, join: 'round'});
+    gfx.poly(wpoly(S0, rim), true).stroke({width: 1.4, color: C.line, alpha: 0.6, join: 'miter', miterLimit: 3});
     // нос: угловой пост управления с полосой окон
     const nx = XW + 30, ny = yt(XW) + 52;
     wP(S0, [[nx, ny], [nx + 40, ny], [nx + 52, ny + 14], [nx + 52, ny + 30], [nx, ny + 30]], WG.mid);
@@ -2683,7 +2709,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       frameBar([[x - 4, y0], [x + 4, y0], [x + 4, y1], [x - 4, y1]], [[x + 1.5, y0], [x + 4, y0], [x + 4, y1], [x + 1.5, y1]]);
     }
     for (const f of [0.3, 0.7]) wLine(S0, [[XW + 90, yt(XW + 90) + (yb(XW + 90) - yt(XW + 90)) * f], [XE - 80, yt(XE - 80) + (yb(XE - 80) - yt(XE - 80)) * f]], 1.6, FRAME, 0.6);
-    gfx.poly(wpoly(S0, hall), true).stroke({width: 2.5, color: FRAME, alpha: 0.9, join: 'round'});
+    gfx.poly(wpoly(S0, hall), true).stroke({width: 2.5, color: FRAME, alpha: 0.9, join: 'miter', miterLimit: 3});
     // ---- верхний уровень: платформы и ложе путей между ними ----
     wP(S0, [[XE, pa], [bx, pa], [bx, pb], [XE, pb]], 0x2a2f31);                                                   // ложе: решётка
     for (let y = pa + 4; y < pb - 2; y += 6) wLine(S0, [[XE + 2, y], [bx - 2, y]], 1, WG.mid, 0.35);
@@ -2721,9 +2747,9 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     // направляющая — светлая балка цвета обшивки с тёмным контуром (как линии ship.svg), посередине — шина
     const base = Math.max(14, 2.6 / cam.z), edge = base + Math.max(4, 1.2 / cam.z), mid = Math.max(2.5, 0.55 / cam.z), lw = Math.max(2.5, 0.6 / cam.z);
     const routes = Object.values(MP);
-    for (const p of routes) mgG.poly(p.pts.flat(), false).stroke({width: edge, color: C.line, alpha: 0.85, join: 'round', cap: 'round'});
-    for (const p of routes) mgG.poly(p.pts.flat(), false).stroke({width: base, color: C.hullLo, alpha: 0.95, join: 'round', cap: 'round'});
-    for (const p of routes) mgG.poly(p.pts.flat(), false).stroke({width: mid, color: 0x5d6b70, alpha: 0.9, join: 'round', cap: 'round'});
+    for (const p of routes) mgG.poly(p.pts.flat(), false).stroke({width: edge, color: C.line, alpha: 0.85, join: 'miter', miterLimit: 3, cap: 'square'});
+    for (const p of routes) mgG.poly(p.pts.flat(), false).stroke({width: base, color: C.hullLo, alpha: 0.95, join: 'miter', miterLimit: 3, cap: 'square'});
+    for (const p of routes) mgG.poly(p.pts.flat(), false).stroke({width: mid, color: 0x5d6b70, alpha: 0.9, join: 'miter', miterLimit: 3, cap: 'square'});
     // опоры-«шпалы» направляющей — редкие поперечины (только вблизи)
     if (cam.z > 0.25) for (const p of routes) for (let s = 0; s < p.len; s += 120) {
       const [x, y, a] = p.at(s), nx = -Math.sin(a) * base * 0.62, ny = Math.cos(a) * base * 0.62;
@@ -2757,14 +2783,14 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
           const c0 = sgn * off, c1 = sgn * (off + pw);
           mgG.poly(R4(-pl, pl, c0, c1), true).fill({color: WG.lit}).stroke({width: lw * 0.7, color: C.line, alpha: 0.9});       // платформа
           mgG.poly(R4(-pl * 0.7, pl * 0.7, c1, c1 + sgn * pw * 0.6), true).fill({color: WG.deep, alpha: 0.95});                  // навес
-          for (let k = -2; k <= 2; k++) mgG.circle(...L(k * pl * 0.32, (c0 + c1) / 2), Math.max(1.6, 0.3 / cam.z)).fill({color: WG.warm, alpha: 0.95});
+          for (let k = -2; k <= 2; k++) mgG.poly(ngon(...L(k * pl * 0.32, (c0 + c1) / 2), Math.max(1.6, 0.3 / cam.z)), true).fill({color: WG.warm, alpha: 0.95});
         }
         mgG.poly(R4(-pl - 4, -pl + 4, -off - pw, off + pw), true).fill({color: WG.mid}).stroke({width: lw * 0.6, color: C.line, alpha: 0.8});   // торцы-перемычки
         mgG.poly(R4(pl - 4, pl + 4, -off - pw, off + pw), true).fill({color: WG.mid}).stroke({width: lw * 0.6, color: C.line, alpha: 0.8});
       }
     }
     // техническая линия на обшивке: тонкая тёмная направляющая с опорами
-    techG.poly(techLine.pts.flat(), false).stroke({width: Math.max(10, 1.6 / cam.z), color: 0x3b464b, alpha: 0.9, cap: 'round'});
+    techG.poly(techLine.pts.flat(), false).stroke({width: Math.max(10, 1.6 / cam.z), color: 0x3b464b, alpha: 0.9, cap: 'square'});
     techG.poly(techLine.pts.flat(), false).stroke({width: Math.max(2.5, 0.5 / cam.z), color: 0xffb84d, alpha: 0.75});
     for (let x = 5800; x < TECH.wing(MG.tech) - 20; x += 400) techG.rect(x - 4, MG.tech - 12, 8, 24).fill({color: 0x3b464b, alpha: 0.8});
     for (let y = 2150; y < 3100; y += 300) techG.rect(TECH.sx - 12, y - 4, 24, 8).fill({color: 0x3b464b, alpha: 0.8});
