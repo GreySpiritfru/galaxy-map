@@ -2261,6 +2261,13 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       const L = b.y1 - b.y0, d = (b.off + t * b.sp) % L;
       b.s.position.set(b.x, b.dir > 0 ? b.y0 + d : b.y1 - d); b.s.alpha = b.a * Math.min(1, d / 10, (L - d) / 10);
     }
+    if (SFX.yard && SFX.yard.crane) {                           // мостовой кран верфи: балка вдоль доков, тележка вдоль балки
+      const Y = SFX.yard, e = (per, ph = 0) => 0.5 - 0.5 * Math.cos(2 * Math.PI * (t / per + ph));
+      Y.crane.c.x = Y.crane.x0 + (Y.crane.x1 - Y.crane.x0) * e(Y.crane.per);
+      Y.trolley.c.y = Y.trolley.y0 + (Y.trolley.y1 - Y.trolley.y0) * e(Y.trolley.per, 0.3);
+      for (const f of Y.flash) { const k = (t * f.sp + f.ph) % 1; f.g.alpha = k < 0.22 ? (Math.sin(t * 47 + f.ph * 9) > -0.2 ? 0.95 : 0.25) : 0; }   // сварка вспышками
+    }
+    for (const p of SFX.port) { const ph = ((t * 0.9 - (p.n - 1 - p.k) / p.n) % 1 + 1) % 1; p.s.alpha = ph < 0.18 ? 0.95 * (1 - ph / 0.18) : 0; }   // огни захода бегут к воротам
     for (const h of SFX.holo) { h.s.tint = mixC(h.c1, h.c2, 0.5 + 0.5 * Math.sin(t * 0.8 + h.ph)); h.s.alpha = Math.sin(t * 11 + h.ph) > 0.96 ? 0.25 : 0.6 + 0.15 * Math.sin(t * 2.3 + h.ph); }
     for (const d of SFX.drone) {
       const s_ = (t * d.sp + d.ph) % d.len; let i = 1; while (d.cum[i] < s_) i++;
@@ -2338,59 +2345,308 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
     }
     for (const [x, y] of oct) wRect(S0, x + (cx - x) * 0.1 - 2.5, y + (cy - y) * 0.1 - 2.5, x + (cx - x) * 0.1 + 2.5, y + (cy - y) * 0.1 + 2.5, AMBER, 0.9);
   };
-  function drawSpaceport() {
-    const SH = (pts, dx = 12, dy = 14, a = 0.3) => wF(S0, pts.map(([x, y]) => [x + dx, y + dy]), 0x000000, a);
-    // ================= район ангаров =================
-    // верфь (у носа): сухой док с рельсами кранов, строящийся корабль — каркас из рёбер, часть обшивки; мостовые краны
-    const D0 = 2580, D1 = 3480, DY0 = 4905, DY1 = 5190, dcy = (DY0 + DY1) / 2;
-    SH([[D0, DY0], [D1, DY0], [D1, DY1], [D0, DY1]]);
-    wP(S0, [[D0, DY0], [D1, DY0], [D1, DY1], [D0, DY1]], 0x30373a);
-    for (const y of [DY0 + 9, DY1 - 9]) { wLine(S0, [[D0 + 6, y], [D1 - 6, y]], 4, WG.hi, 0.8); wLine(S0, [[D0 + 6, y + 2], [D1 - 6, y + 2]], 1.2, C.line, 0.6); }
-    for (let x = D0 + 12; x < D1 - 30; x += 70) wRect(S0, x, DY0 - 30, x + 54, DY0 - 4, wr2() < 0.5 ? WG.mid : WG.base, 1);   // мастерские вдоль дока
-    const hull = [[D0 + 60, dcy], [D0 + 190, dcy - 72], [D1 - 130, dcy - 84], [D1 - 70, dcy - 62], [D1 - 70, dcy + 62], [D1 - 130, dcy + 84], [D0 + 190, dcy + 72]];
-    wF(S0, hull, 0x9aa6a8, 0.25);
-    for (let x = D0 + 70; x < D1 - 80; x += 40) if (wr2() < 0.55) {                                     // уже обшитые секции
-      const [a0, a1] = spanAt(hull, x + 1), [b0, b1] = spanAt(hull, x + 39);
-      if (a1 > a0 && b1 > b0) wF(S0, [[x + 1, a0], [x + 39, b0], [x + 39, b1], [x + 1, a1]], 0xb8c2c4, 0.95);
-    }
-    for (let x = D0 + 80; x < D1 - 75; x += 20) { const [y0, y1] = spanAt(hull, x); if (y1 > y0) wLine(S0, [[x, y0], [x, y1]], 1.8, WG.hi, 0.85); }   // рёбра
-    wLine(S0, [[D0 + 70, dcy], [D1 - 72, dcy]], 3, WG.mid, 0.95);                                       // киль
-    gfx.poly(wpoly(S0, hull), true).stroke({width: 1.6, color: C.line, alpha: 0.85, join: 'miter', miterLimit: 3});
-    for (const x of [D0 + 250, D0 + 520, D0 + 790]) {                                                    // мостовые краны поперёк дока
-      wF(S0, [[x + 4, DY0 - 2], [x + 18, DY0 - 2], [x + 18, DY1 + 10], [x + 4, DY1 + 10]], 0x000000, 0.25);
-      wP(S0, [[x - 6, DY0 - 4], [x + 6, DY0 - 4], [x + 6, DY1 + 4], [x - 6, DY1 + 4]], ROBO);
-      for (let y = DY0 + 8; y < DY1 - 4; y += 14) wLine(S0, [[x - 5, y], [x + 5, y + 10]], 1.2, C.line, 0.45);
-      const ty = DY0 + 40 + wr2() * (DY1 - DY0 - 80);
-      wP(S0, [[x - 11, ty - 8], [x + 11, ty - 8], [x + 11, ty + 8], [x - 11, ty + 8]], WG.mid);
-    }
-    // шлюз в киле (нижний край носа): гравитационный щит в жёлто-чёрной раме; перед ним — площадка с кораблём
-    const LX0 = 3560, LX1 = 3940, LY = 5440;
-    wP(S0, [[LX0, LY - 22], [LX1, LY - 22], [LX1, LY + 20], [LX0, LY + 20]], 0x1a1f22);
-    wF(S0, [[LX0 + 10, LY - 14], [LX1 - 10, LY - 14], [LX1 - 10, LY + 12], [LX0 + 10, LY + 12]], C.glow, 0.3);
-    for (let y = LY - 10; y < LY + 10; y += 5) wLine(S0, [[LX0 + 12, y], [LX1 - 12, y]], 1, 0xe6fffb, 0.35);
-    for (let x = LX0; x < LX1 - 6; x += 12) for (const y of [LY - 22, LY + 14]) wF(S0, [[x, y], [x + 6, y], [x + 9, y + 6], [x + 3, y + 6]], ROBO, 0.95);
-    octPad(3750, 5205, 74); craft(3756, 5205, Math.PI, 1);
-    wLine(S0, [[3750, 5280], [3750, LY - 24]], 14, 0x30373a, 0.9);                                       // выезд к шлюзу
-    for (let y = 5286; y < LY - 30; y += 22) wLine(S0, [[3750, y], [3750, y + 11]], 1.6, ROBO, 0.85);
-    // ангары (у города): два ряда боксов лицом к перрону; в боксах — космолёты; кровли уступами (ярусы)
-    const HX0 = 4510, HX1 = 5568, AY0 = 5072, AY1 = 5228;
-    wP(S0, [[HX0, AY0], [HX1, AY0], [HX1, AY1], [HX0, AY1]], 0x30373a);                                  // перрон
-    for (let x = HX0 + 10; x < HX1 - 20; x += 30) wLine(S0, [[x, (AY0 + AY1) / 2], [x + 16, (AY0 + AY1) / 2]], 2, ROBO, 0.85);
-    for (const [y0, y1, open, xe] of [[4886, AY0, 1, 5470], [AY1, 5410, -1, HX1]]) {   // у северного ряда в конце — посадочный павильон
-      for (let x = HX0; x + 96 <= xe + 1; x += 96) {
-        const mouth = open > 0 ? y1 : y0, back = open > 0 ? y0 : y1;
-        SH([[x, y0], [x + 96, y0], [x + 96, y1], [x, y1]], 10, 12, 0.3);
-        wP(S0, [[x, y0], [x + 96, y0], [x + 96, y1], [x, y1]], WG.base);
-        wF(S0, [[x + 9, mouth - open * 120], [x + 87, mouth - open * 120], [x + 87, mouth], [x + 9, mouth]], 0x262c2f, 1);   // открытый бокс
-        for (let k = 0; k < 3; k++) {                                                                      // кровля уступами (этажи)
-          const ya = back + open * k * 22, yb = ya + open * 22;
-          wF(S0, [[x + 4, ya], [x + 92, ya], [x + 92, yb], [x + 4, yb]], [WG.mid, WG.lit, WG.mid][k], 0.95);
-          wLine(S0, [[x + 4, yb], [x + 92, yb]], 1.2, C.line, 0.5);
-        }
-        for (let q = x + 10; q < x + 86; q += 9) wF(S0, [[q, mouth - open * 4], [q + 5, mouth - open * 4], [q + 7, mouth], [q + 2, mouth]], ROBO, 0.9);   // разметка у ворот
-        if (wr2() < 0.75) craft(x + 48, mouth - open * 62, open > 0 ? Math.PI / 2 : -Math.PI / 2, 0.92);
+  // ================= космопорт / космоверфь (10.10.2026, v101: всё в правой половине) =================
+  // Зона «Космопорт» — полоса под Районом модулей; кромка зала (замер по снимку): скос ~(2446, 5131)→(3307, 5439),
+  // дальше ~5440. Игрок (v100): верфь и ворота — в правой половине у лифта в вестибюль; левее арта «Ангары»
+  // (3981–4487 × 4883–5385) — ничего; пассажирский причал убран, у подножия лифта — холл. Ворота — ангарные
+  // гермоворота в борту у кромки (корабль виден сбоку, вход сбоку), приоткрыты щелью со щитом. Палитра вестибюля.
+  // Своё зерно prR (wr2 не трогать — на нём вестибюль).
+  const PORT = {GX0: 4880, GX1: 5260, GY0: 5292, GY1: 5410, GC: 5070,
+    APRON: [[4520, 5214], [5548, 5214], [5570, 5236], [5570, 5404], [5556, 5418], [4534, 5418], [4520, 5404]]};
+  const prR = rngOf(seedOf('космоверфь v1')), pR = (a, b) => a + prR() * (b - a);
+  SFX.port = [];
+  function portRim(body, w, pal = [WG.mid, WG.deep]) {           // как plateRim, но на своём зерне
+    const rim = mgOffset(body, w);
+    for (let i = 0, run = 0, dark = false, next = pR(18, 46); i < body.length; i++) {
+      const j = (i + 1) % body.length, L = Math.hypot(body[j][0] - body[i][0], body[j][1] - body[i][1]);
+      for (let a = 0; a < L - 0.01;) {
+        const b = Math.min(L, a + (next - run)), fa = a / L, fb = b / L;
+        const P = (q, f) => [q[i][0] + (q[j][0] - q[i][0]) * f, q[i][1] + (q[j][1] - q[i][1]) * f];
+        wF(S0, [P(body, fa), P(body, fb), P(rim, fb), P(rim, fa)], dark ? pal[1] : pal[0], 0.9);
+        run += b - a; a = b;
+        if (run >= next - 0.01) { wLine(S0, [P(body, fb), P(rim, fb)], 1.2, C.line, 0.5); dark = prR() < 0.45; run = 0; next = pR(18, 46); }
       }
     }
+    gfx.poly(wpoly(S0, rim), true).stroke({width: 1.4, color: C.line, alpha: 0.6, join: 'miter', miterLimit: 3});
+    return rim;
+  }
+  function drawPort() {
+    const {GX0, GX1, GY0, GY1, GC, APRON} = PORT, box = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+    const unflat = f => { const o = []; for (let i = 0; i < f.length; i += 2) o.push([f[i], f[i + 1]]); return o; };
+    // ---- перрон: плита со скосами, кромка плитами, пол со швами ----
+    wP(S0, APRON, WG.base);
+    const inner = portRim(APRON, 10);
+    wP(S0, inner, 0x454d50);
+    for (let x = 4540; x < 5560; x += 24) { const [ya, yb] = spanAt(inner, x); if (yb > ya + 6) wLine(S0, [[x, ya + 2], [x, yb - 2]], 1, 0x000000, 0.12); }
+    // ---- осевые для кораблей: от ворот вверх и в стороны к докам, стрелки «›» ----
+    const guide = path => {
+      wLine(S0, path, 2, AMBER, 0.85);
+      for (let i = 0; i + 1 < path.length; i++) {
+        const [x0, y0] = path[i], [x1, y1] = path[i + 1], L = Math.hypot(x1 - x0, y1 - y0), ux = (x1 - x0) / L, uy = (y1 - y0) / L;
+        for (let d = 40; d < L - 30; d += 90) {
+          const cx = x0 + ux * d, cy = y0 + uy * d, nx = -uy, ny = ux;
+          wLine(S0, [[cx - ux * 5 + nx * 6, cy - uy * 5 + ny * 6], [cx + ux * 4, cy + uy * 4], [cx - ux * 5 - nx * 6, cy - uy * 5 - ny * 6]], 1.8, AMBER, 0.9);
+        }
+      }
+    };
+    guide([[GC - 40, GY0 - 8], [GC - 40, 5234], [4800, 5234]]);
+    guide([[GC + 40, GY0 - 8], [GC + 40, 5234], [5420, 5234]]);
+    // ---- ангарные гермоворота в борту у кромки: тяжёлые створки, приоткрыты щелью со щитом ----
+    wF(S0, unflat(cham(GX0 + 8, GY0 + 10, GX1 - GX0, GY1 - GY0, 14)), 0x000000, 0.32);            // тень рамы
+    wP(S0, unflat(cham(GX0, GY0, GX1 - GX0, GY1 - GY0, 14)), WG.mid);                               // рама
+    wF(S0, unflat(cham(GX0, GY0, GX1 - GX0, 7, 3)), 0xffffff, 0.2);                                  // светлая северная кромка рамы
+    const D0 = GX0 + 14, D1 = GX1 - 14, DY0 = GY0 + 14, DY1 = GY1 - 12, SL = 18;                      // проём и щель
+    wP(S0, box(GC - SL, DY0, GC + SL, DY1), 0x06080c);                                              // в щели — космос
+    for (const [x, y] of [[GC - 8, DY0 + 18], [GC + 6, DY0 + 52], [GC - 3, DY0 + 80]]) gfx.poly(ngon(x, y, 1.3), true).fill({color: 0xffffff, alpha: 0.8});
+    wF(S0, box(GC - SL, DY0, GC + SL, DY1), C.glow, 0.3);                                           // щит
+    for (const [x0, x1, edge] of [[D0, GC - SL, GC - SL], [GC + SL, D1, GC + SL]]) {               // створки: панели, рёбра, тень
+      wP(S0, box(x0, DY0, x1, DY1), WG.base);
+      for (let x = x0 + 22; x < x1 - 6; x += 30) wLine(S0, [[x, DY0 + 4], [x, DY1 - 4]], 1.2, C.line, 0.35);   // панели
+      wF(S0, box(x0, DY0, x1, DY0 + 10), WG.lit, 0.9);                                              // верхний пояс
+      wF(S0, box(x0, (DY0 + DY1) / 2 - 3, x1, (DY0 + DY1) / 2 + 3), WG.dark, 0.6);                   // средний пояс-ребро
+      wLine(S0, [[edge, DY0 + 2], [edge, DY1 - 2]], 3, AMBER, 0.95);                                 // кромка створки — янтарь
+    }
+    for (const x of [GX0 + 26, GX1 - 46]) { wP(S0, box(x, GY0 - 12, x + 20, GY0 + 4), WG.dark); wRect(S0, x + 4, GY0 - 8, x + 16, GY0 - 4, 0x1a1f22, 1); }   // приводы створок
+    wRect(S0, GX0 + 60, GY0 + 4, GX1 - 60, GY0 + 9, RUST, 0.95);                                     // терракота по перемычке
+    for (const [x, c] of [[GX0 + 8, 0x7fe36a], [GX1 - 14, 0xff5a4a]]) { wRect(S0, x - 1, GY0 + 3, x + 7, GY0 + 11, 0x1a1f22, 1); wRect(S0, x + 0.5, GY0 + 4.5, x + 5.5, GY0 + 9.5, c, 0.95); }
+    // огни на пороге: бегут от краёв к щели (SFX.port)
+    const N = 7;
+    for (let i = 0; i < N; i++) for (const sx of [-1, 1]) {
+      const x = GC + sx * (176 - i * 22), y = GY1 - 6;
+      wRect(S0, x - 3, y - 2.5, x + 3, y + 2.5, 0x1a1f22, 1); wRect(S0, x - 2, y - 1.5, x + 2, y + 1.5, AMBER, 0.45);
+      const sp = sSpr(7, 5, AMBER, 0); sp.position.set(x, y); SFX.port.push({s: sp, k: i, n: N});
+    }
+
+    drawYard();
+    drawPax();
+  }
+  // ---- верфь (этап 2): три сухих дока над левой частью перрона, мостовой кран, клин мастерских и складов ----
+  // v99 (игрок): два дока вместо трёх, сдвинуты вправо; слева от них — площадка бригады (CREW); клин слева свободен
+  // v101 (игрок): вся верфь — в правой половине у лифта: бригада, док 1, док 2, дальше — холл у лифта
+  const YARD = {Y0: 4898, Y1: 5200, DOCKS: [[4806, 5106], [5122, 5422]], CREW: [4530, 4790], CX0: 4820, CX1: 5408};
+  SFX.yard = {crane: null, trolley: null, flash: []};
+  // корпус корабля сверху: нос в (nx, ny), ось — угол ang (куда смотрит нос), L — длина, W — ширина; HP — половина
+  // профиля [доля длины от носа, доля ширины]; T(u, v) — точка (u — доля длины назад от носа, v — доля ширины вбок)
+  const HP = [[0, 0.04], [0.08, 0.2], [0.2, 0.38], [0.36, 0.5], [0.7, 0.5], [0.76, 0.42], [0.92, 0.42], [1, 0.34]];
+  const shipT = (nx, ny, ang, L, W) => { const dx = Math.cos(ang), dy = Math.sin(ang); return (u, v) => [nx - dx * u * L - dy * v * W, ny - dy * u * L + dx * v * W]; };
+  const hpAt = u => { for (let i = 1; i < HP.length; i++) if (u <= HP[i][0]) { const [a, va] = HP[i - 1], [b, vb] = HP[i]; return va + (vb - va) * (u - a) / (b - a); } return HP[HP.length - 1][1]; };
+  const shipOutline = (T, u0 = 0, u1 = 1) => {
+    const us = [u0, ...HP.map(h => h[0]).filter(u => u > u0 && u < u1), u1];
+    return [...us.map(u => T(u, hpAt(u))), ...us.slice().reverse().map(u => T(u, -hpAt(u)))];
+  };
+  function yardShip(nx, ny, ang, L, W, {stripe = RUST, frame = false, open = [], cut = 1, shadow = [8, 10]} = {}) {
+    const T = shipT(nx, ny, ang, L, W), out = shipOutline(T, 0, cut);
+    const lit = Math.sin(ang) - Math.cos(ang) >= 0 ? 1 : -1;                                       // какой борт (знак v) к северо-западу — освещён
+    wF(S0, out.map(([x, y]) => [x + shadow[0], y + shadow[1]]), 0x000000, 0.35);                    // тень на дно дока / перрон
+    if (frame) {                                                                                   // строится: киль, рёбра, стрингеры, часть обшивки
+      wF(S0, out, 0x2a3033, 0.6);
+      for (let u = 0.06; u < cut - 0.02; u += 0.055) { const v = hpAt(u) - 0.02; wLine(S0, [T(u, -v), T(u, v)], 2.2, WG.hi, 0.85); }
+      for (const v of [-0.3, 0.3]) wLine(S0, [T(0.12, v * 0.6), T(0.36, v), T(Math.min(cut, 0.92), v)], 1.6, WG.lit, 0.8);
+      wLine(S0, [T(0.03, 0), T(cut - 0.01, 0)], 3.2, WG.mid, 0.95);                                  // киль
+      for (const [a, b] of [[0.5, 0.62], [0.68, 0.86]]) {                                           // уже обшитые секции
+        const sec = [...[a, b].map(u => T(u, hpAt(u))), ...[b, a].map(u => T(u, -hpAt(u)))];
+        wP(S0, sec, C.hull); wF(S0, [T(a, 0), T(b, 0), T(b, -lit * hpAt(b)), T(a, -lit * hpAt(a))], 0x000000, 0.1);   // тень — на теневом борту
+      }
+      gfx.poly(wpoly(S0, out), true).stroke({width: 1.4, color: C.line, alpha: 0.6, join: 'miter', miterLimit: 3});
+      return T;
+    }
+    wP(S0, out, C.hull);
+    wF(S0, shipOutline((u, v) => T(u, v * lit < 0 ? v : 0), 0, cut), 0x000000, 0.12);             // теневой борт
+    wLine(S0, [T(0.1, 0.16 * lit), T(0.3, 0.44 * lit), T(Math.min(cut, 0.7) - 0.02, 0.44 * lit)], 2.4, C.hullHi, 0.9);   // блик по освещённому борту
+    for (let u = 0.2; u < cut - 0.04; u += 0.13) wLine(S0, [T(u, -hpAt(u) + 0.03), T(u, hpAt(u) - 0.03)], 1.1, C.line, 0.35);   // швы обшивки
+    wLine(S0, [T(0.24, -0.05 * lit), T(Math.min(cut, 0.9) - 0.03, -0.05 * lit)], 3, stripe, 0.9);                // полоса окраски
+    wP(S0, [T(0.07, -0.12), T(0.07, 0.12), T(0.17, 0.2), T(0.17, -0.2)], 0x1d3a48);               // остекление рубки
+    wF(S0, [T(0.08, 0.1 * lit), T(0.08, 0), T(0.16, 0), T(0.16, 0.17 * lit)], 0xffffff, 0.14);     // блик на стекле — с освещённой стороны
+    for (const [a, b, v0, v1] of open) {                                                           // снятые панели: проём, видны трубы
+      const q = [T(a, v0), T(b, v0), T(b, v1), T(a, v1)];
+      wP(S0, q, 0x1a1f22); for (let k = 1; k < 3; k++) { const v = v0 + (v1 - v0) * k / 3; wLine(S0, [T(a + 0.01, v), T(b - 0.01, v)], 1.2, WG.mid, 0.9); }
+    }
+    if (cut >= 0.99) for (const v of [-0.2, 0.2]) wP(S0, [T(0.98, v - 0.09), T(0.98, v + 0.09), T(1.05, v + 0.08), T(1.05, v - 0.08)], 0x3d484e);   // сопла
+    else wLine(S0, [T(cut, -hpAt(cut)), T(cut, hpAt(cut))], 2.4, 0x1a1f22, 0.9);                   // срез: двигатель снят
+    return T;
+  }
+  const flashAt = (x, y) => {                                                                       // вспышка сварки: белый восьмиугольник + искры
+    const g = new PIXI.Graphics().poly(ngon(0, 0, 4), true).fill({color: 0xffffff}).poly(ngon(0, 0, 9), true).fill({color: 0xcfe8ff, alpha: 0.35});
+    for (let k = 0; k < 4; k++) g.rect(Math.cos(k * 1.7) * 9 - 1, Math.sin(k * 1.7) * 9 - 1, 2, 2).fill({color: 0xffd27a});
+    g.position.set(x, y); g.alpha = 0; stFx.addChild(g); SFX.yard.flash.push({g, ph: prR() * 10, sp: pR(0.35, 0.6)});
+  };
+  function dockPit(x0, x1) {
+    const {Y0, Y1} = YARD, body = [[x0, Y0], [x1, Y0], [x1, Y1], [x0, Y1]];
+    wP(S0, body, WG.base);
+    portRim(body, 9);
+    for (const [d, c] of [[12, 0x5d666a], [18, 0x4b5457], [24, 0x3c4447]]) wF(S0, mgOffset(body, d), c);   // стены уступами вниз
+    const fl = mgOffset(body, 28); wP(S0, fl, 0x2a3033);                                          // дно — ниже и темнее
+    for (let y = Y0 + 58; y < Y1 - 30; y += 30) wLine(S0, [[x0 + 30, y], [x1 - 30, y]], 1, 0x000000, 0.2);
+    const cx = (x0 + x1) / 2;
+    for (let y = Y0 + 46; y < Y1 - 40; y += 24) wRect(S0, cx - 7, y, cx + 7, y + 6, 0x1a1f22, 0.9);   // кильблоки
+    wP(S0, [[x0 + 18, Y1 - 6], [x1 - 18, Y1 - 6], [x1 - 18, Y1 + 4], [x0 + 18, Y1 + 4]], WG.lit);    // затвор дока на перрон
+    wLine(S0, [[x0 + 22, Y1 - 1], [x1 - 22, Y1 - 1]], 2, AMBER, 0.9);
+    return cx;
+  }
+  function drawYard() {
+    const {Y0, Y1, DOCKS, CX0, CX1, CREW} = YARD, box = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+    // ---- площадка бригады верфи (игрок: вместо коробок — нормальная площадка со зданием ремонтников) ----
+    const [P0, P1] = CREW, pb = box(P0, Y0, P1, Y1);
+    wP(S0, pb, WG.base);
+    const pf = portRim(pb, 9);
+    wP(S0, pf, 0x4b5457);                                                                          // уровень перрона — светлее дна доков
+    for (let y = Y0 + 30; y < Y1 - 12; y += 26) wLine(S0, [[P0 + 12, y], [P1 - 12, y]], 1, 0x000000, 0.12);
+    wP(S0, box(P0 + 18, Y1 - 6, P1 - 18, Y1 + 4), WG.lit); wLine(S0, [[P0 + 22, Y1 - 1], [P1 - 22, Y1 - 1]], 2, AMBER, 0.9);   // выезд на перрон
+    // здание бригады: кровля уступами, окна, дверь на юг, терракотовая вывеска над дверью, вентиляция
+    const bx0 = P0 + 16, bx1 = P0 + 150, by0 = Y0 + 16, by1 = Y0 + 112;
+    wF(S0, box(bx0 + 10, by0 + 12, bx1 + 10, by1 + 12), 0x000000, 0.28);
+    wP(S0, box(bx0, by0, bx1, by1), WG.mid);
+    wF(S0, box(bx0 + 8, by0 + 8, bx1 - 8, by0 + 52), WG.lit, 0.95);                               // верхний ярус кровли
+    wF(S0, box(bx0 + 8, by0 + 52, bx1 - 8, by0 + 58), 0x000000, 0.18);                            // ступень яруса
+    for (const x of [bx0 + 22, bx0 + 62, bx0 + 102]) { wP(S0, box(x, by0 + 18, x + 16, by0 + 30), WG.base); wRect(S0, x + 4, by0 + 21, x + 12, by0 + 24, 0x1a1f22, 1); }
+    for (let x = bx0 + 14; x < bx1 - 16; x += 20) wRect(S0, x, by1 - 26, x + 10, by1 - 20, WG.warm, 0.85);   // окна — тёплый свет
+    wRect(S0, bx0 + 52, by1 - 8, bx0 + 82, by1 + 2, 0x262c2f, 1);                                 // дверь
+    wRect(S0, bx0 + 46, by1 - 14, bx0 + 88, by1 - 10, RUST, 0.95);                                // вывеска над дверью
+    // будка диспетчера верфи: стекло на три стороны, блик, антенна-мачта (квадратная)
+    const kx0 = P1 - 70, kx1 = P1 - 20, ky0 = Y0 + 18, ky1 = Y0 + 60;
+    wF(S0, box(kx0 + 8, ky0 + 10, kx1 + 8, ky1 + 10), 0x000000, 0.3);
+    wP(S0, box(kx0, ky0, kx1, ky1), WG.lit);
+    wP(S0, box(kx0 + 5, ky0 + 5, kx1 - 5, ky1 - 12), 0x1d3a48);
+    wF(S0, box(kx0 + 5, ky0 + 5, kx0 + 22, ky1 - 12), 0xffffff, 0.12);
+    wRect(S0, kx1 - 12, ky1 - 9, kx1 - 6, ky1 - 3, C.glow, 0.85);                                  // пульт
+    wP(S0, box(kx0 - 8, ky0 - 2, kx0 - 2, ky0 + 4), WG.mid);
+    // ремонт двигателя на ложементе (перенесён с третьего дока) — сварка
+    const ex = P1 - 52, ey0 = Y0 + 96, ey1 = Y0 + 196;
+    wF(S0, box(ex - 20 + 6, ey0 + 8, ex + 20 + 6, ey1 + 8), 0x000000, 0.35);
+    for (const y of [ey0 + 16, ey1 - 16]) wRect(S0, ex - 26, y - 4, ex + 26, y + 4, 0x1a1f22, 0.9);
+    wP(S0, box(ex - 20, ey0, ex + 20, ey1), 0x7f8c8f);
+    wF(S0, box(ex, ey0, ex + 20, ey1), 0x000000, 0.15);
+    for (let y = ey0 + 14; y < ey1 - 20; y += 14) wLine(S0, [[ex - 18, y], [ex + 18, y]], 1.2, C.line, 0.45);
+    for (const dx of [-10, 10]) wP(S0, [[ex + dx - 7, ey1 - 4], [ex + dx + 7, ey1 - 4], [ex + dx + 6, ey1 + 8], [ex + dx - 6, ey1 + 8]], 0x3d484e);
+    flashAt(ex - 16, ey0 + 34);
+    // штабели листов обшивки (2) и тележка с инструментом
+    for (const [x, y, n] of [[P0 + 22, Y0 + 150, 3], [P0 + 92, Y0 + 158, 2]]) {
+      const w = 52, h = 22, sh = 1.6 * n + 1;
+      wF(S0, box(x + 3 + 3 * n, y + 4 + 4 * n, x + w + 3 + 3 * n, y + h + 4 + 4 * n), 0x000000, 0.28);
+      wP(S0, box(x, y, x + w, y + h), C.hullHi);
+      wF(S0, box(x, y + h - sh, x + w, y + h), C.hullLo, 1);
+      wF(S0, box(x, y, x + w, y + 1.6), 0xffffff, 0.35);
+      for (let k = 1; k < n; k++) wLine(S0, [[x + 2, y + h - sh + k * 1.6], [x + w - 2, y + h - sh + k * 1.6]], 0.8, C.line, 0.4);
+    }
+    wF(S0, box(ex - 52 + 3, Y0 + 132 + 4, ex - 34 + 3, Y0 + 144 + 4), 0x000000, 0.3);
+    wP(S0, box(ex - 52, Y0 + 132, ex - 34, Y0 + 144), ROBO);
+    // заготовка: секция корпуса на транспортёре — поедет в стапель (заполняет низ площадки)
+    const fx0 = P0 + 24, fy0 = Y1 - 66;
+    wF(S0, box(fx0 + 8, fy0 + 10, fx0 + 178, fy0 + 46), 0x000000, 0.3);
+    wP(S0, box(fx0, fy0, fx0 + 150, fy0 + 36), 0x30373a);                                         // платформа
+    for (const x of [fx0 + 16, fx0 + 60, fx0 + 104]) wRect(S0, x, fy0 + 34, x + 22, fy0 + 38, 0x1a1f22, 1);   // колёса
+    wP(S0, box(fx0 + 150, fy0 + 4, fx0 + 172, fy0 + 32), ROBO); wRect(S0, fx0 + 163, fy0 + 8, fx0 + 169, fy0 + 28, 0x1d3a48, 0.95);   // кабина
+    const sec = [[fx0 + 10, fy0 + 3], [fx0 + 140, fy0 + 3], [fx0 + 132, fy0 + 33], [fx0 + 18, fy0 + 33]];
+    wP(S0, sec, C.hull);
+    wF(S0, [[fx0 + 14, fy0 + 18], [fx0 + 136, fy0 + 18], [fx0 + 132, fy0 + 33], [fx0 + 18, fy0 + 33]], 0x000000, 0.12);
+    wF(S0, [[fx0 + 12, fy0 + 3], [fx0 + 138, fy0 + 3], [fx0 + 138, fy0 + 5], [fx0 + 12, fy0 + 5]], 0xffffff, 0.35);
+    for (let x = fx0 + 32; x < fx0 + 130; x += 22) wLine(S0, [[x, fy0 + 5], [x, fy0 + 31]], 1, C.line, 0.4);
+    // ---- доки: 1) стапель — строится корабль; 2) ремонт — снятые панели, леса, сварка ----
+    const cx = DOCKS.map(([a, b]) => dockPit(a, b));
+    yardShip(cx[0], Y1 - 30, Math.PI / 2, 236, 120, {frame: true, shadow: [6, 8]});
+    const T2 = yardShip(cx[1], Y1 - 26, Math.PI / 2, 250, 118, {stripe: AMBER, open: [[0.3, 0.42, -0.36, -0.12], [0.55, 0.68, 0.1, 0.36], [0.8, 0.9, -0.3, 0.3]]});
+    for (const sx of [-1, 1]) {                                                                   // леса: настилы и стойки (без раскосов)
+      const x = cx[1] + sx * 78, ya = Y1 - 26 - 230, yb = Y1 - 26 - 60;
+      wP(S0, box(x - 7, ya, x + 7, yb), WG.lit);
+      for (let y = ya + 8; y < yb - 4; y += 20) wLine(S0, [[x - 7, y], [x + 7, y]], 1, C.line, 0.45);
+    }
+    wP(S0, box(cx[1] - 128, 5010, cx[1] - 100, 5060), C.hull);                                     // снятая панель на дне дока
+    for (const [u, v] of [[0.36, 0.4], [0.62, -0.42], [0.85, 0.1]]) flashAt(...T2(u, v));
+    // ---- корабль в очереди на ремонт — на перроне у доков ----
+    yardShip(4580, 5330, Math.PI, 150, 54, {stripe: 0x5f7f8f, shadow: [10, 12]});
+    // ---- мостовой кран над доками ----
+    for (const y of [Y0 - 4, Y1 + 8]) { wLine(S0, [[CX0, y], [CX1, y]], 3, WG.hi, 0.85); wLine(S0, [[CX0, y + 2], [CX1, y + 2]], 1, C.line, 0.6); }
+    const crane = new PIXI.Container(), cg = new PIXI.Graphics(), H0 = Y0 - 10, H1 = Y1 + 14;
+    cg.rect(22 - 8, H0 + 28, 16, H1 - H0).fill({color: 0x000000, alpha: 0.25});                   // тень (кран выше всего: 22, 28)
+    cg.rect(-8, H0, 16, H1 - H0).fill({color: ROBO}).stroke({width: 1.4, color: C.line});           // балка
+    for (let y = H0 + 10; y < H1 - 6; y += 16) cg.rect(-6, y, 12, 1.2).fill({color: C.line, alpha: 0.35});
+    for (const y of [H0 - 4, H1 - 6]) cg.rect(-15, y, 30, 10).fill({color: 0x8a6a2a}).stroke({width: 1.2, color: C.line});   // концевые тележки
+    crane.addChild(cg);
+    const trol = new PIXI.Container(), tg = new PIXI.Graphics();
+    tg.rect(-30 + 14, -6 + 18, 60, 20).fill({color: 0x000000, alpha: 0.25});                       // тень груза
+    tg.rect(-30, -6, 60, 20).fill({color: C.hullHi}).stroke({width: 1.2, color: C.line});          // груз — лист обшивки
+    tg.rect(-30, 10, 60, 4).fill({color: C.hullLo});
+    tg.rect(-13, -12, 26, 14).fill({color: 0x5a666c}).stroke({width: 1.2, color: C.line});         // тележка
+    trol.addChild(tg); crane.addChild(trol); stFx.addChild(crane);
+    crane.position.set((CX0 + CX1) / 2, 0);
+    SFX.yard.crane = {c: crane, x0: CX0 + 40, x1: CX1 - 40, per: 34};
+    SFX.yard.trolley = {c: trol, y0: Y0 + 40, y1: Y1 - 40, per: 17};
+  }
+  // ---- холл у подножия лифта и лифтовая шахта в вестибюль (v101: пассажирский причал убран, игрок) ----
+  const PAX = {HX0: 5436, HX1: 5592, HY0: 4886, HY1: 5150, LX0: 5540, LX1: 5592, LY0: 4044, LY1: 4886, NODE: [4420, 4482]};
+  function drawPax() {
+    const {HX0, HX1, HY0, HY1, LX0, LX1, LY0, LY1, NODE} = PAX;
+    const box = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+    // ---- холл: зал под стеклом как вестибюль; двери кабин сверху под шахтой, выход на перрон снизу ----
+    const hb = box(HX0, HY0, HX1, HY1);
+    wF(S0, hb.map(([x, y]) => [x + 10, y + 12]), 0x000000, 0.28);
+    wP(S0, hb, WG.base);
+    const hf = portRim(hb, 10);
+    wP(S0, hf, 0x3c4447);
+    for (let y = HY0 + 22; y < HY1 - 12; y += 22) wLine(S0, [[HX0 + 12, y], [HX1 - 12, y]], 1, 0x000000, 0.14);   // швы пола
+    for (const x of [LX0 + 4, LX0 + 30]) { wP(S0, box(x, HY0 + 12, x + 18, HY0 + 30), WG.lit); wLine(S0, [[x + 9, HY0 + 13], [x + 9, HY0 + 29]], 1, C.line, 0.5); }   // двери кабин
+    for (const y of [HY0 + 70, HY0 + 112]) {                                                       // скамьи: тёплое «дерево», спинка
+      wF(S0, [[HX0 + 23, y + 2], [HX0 + 77, y + 2], [HX0 + 77, y + 9], [HX0 + 23, y + 9]], 0x000000, 0.25);
+      wRect(S0, HX0 + 20, y, HX0 + 74, y + 6, 0xa0784f, 1); wRect(S0, HX0 + 20, y, HX0 + 74, y + 1.8, 0x6b4f34, 1);
+    }
+    wRect(S0, HX0 + 16, HY0 + 18, HX0 + 60, HY0 + 28, 0x1a1f22, 1);                                // табло прилётов
+    for (let q = 0; q < 5; q++) wRect(S0, HX0 + 19 + q * 8, HY0 + 21, HX0 + 24 + q * 8, HY0 + 25, AMBER, 0.9);
+    for (const y of [HY1 - 70, HY1 - 54, HY1 - 38]) wLine(S0, [[(HX0 + HX1) / 2 - 6, y - 5], [(HX0 + HX1) / 2, y + 2], [(HX0 + HX1) / 2 + 6, y - 5]], 1.8, AMBER, 0.9);   // «›» к выходу
+    wRect(S0, HX0 + 12, HY1 - 16, HX1 - 12, HY1 - 12, RUST, 0.95);                                  // терракота у выхода
+    wF(S0, box((HX0 + HX1) / 2 - 22, HY1 - 12, (HX0 + HX1) / 2 + 22, HY1 + 2), 0x262c2f, 1);        // выход на перрон
+    for (let x = (HX0 + HX1) / 2 - 18; x < (HX0 + HX1) / 2 + 18; x += 12) { wRect(S0, x, HY1 - 30, x + 3, HY1 - 22, WG.lit, 1); wRect(S0, x + 3, HY1 - 27, x + 5, HY1 - 25, C.glow, 0.9); }   // турникеты
+    wF(S0, box(HX0 + 10, HY0 + 10, HX1 - 10, HY1 - 10), GLASS, 0.16);                             // стеклянная кровля
+    for (let y = HY0 + 10; y <= HY1 - 10; y += 64) frameBar([[HX0 + 6, y - 3], [HX1 - 6, y - 3], [HX1 - 6, y + 3], [HX0 + 6, y + 3]]);
+    // ---- лифтовая шахта: два стеклянных ствола, рамы-обоймы с кронштейнами к стене, узел посередине ----
+    const A = [LX0 + 4, LX0 + 22], B = [LX0 + 30, LX0 + 48];
+    wF(S0, box(LX0 + 10, LY0 + 12, LX1 + 6, LY1 + 6), 0x000000, 0.25);                             // тень шахты
+    for (const [x0, x1] of [A, B]) {
+      wP(S0, box(x0, LY0, x1, LY1), 0x262c2f);
+      wLine(S0, [[(x0 + x1) / 2, LY0 + 4], [(x0 + x1) / 2, LY1 - 4]], 1, WG.mid, 0.8);                 // направляющая
+      wF(S0, box(x0 + 1, LY0, x1 - 1, LY1), GLASS, 0.32);
+      wLine(S0, [[x0 + 2.5, LY0], [x0 + 2.5, LY1]], 1.2, 0xffffff, 0.25);                        // блик на стекле — с запада
+    }
+    wF(S0, box(A[1], LY0, B[0], LY1), WG.dark, 0.9);                                              // простенок между стволами
+    for (let y = LY0 + 70; y < LY1 - 30; y += 104) {
+      if (y > NODE[0] - 30 && y < NODE[1] + 30) continue;
+      frameBar([[LX0 - 4, y - 4], [LX1 + 4, y - 4], [LX1 + 4, y + 4], [LX0 - 4, y + 4]], [[LX0 - 4, y], [LX1 + 4, y], [LX1 + 4, y + 4], [LX0 - 4, y + 4]]);
+      wRect(S0, LX1 + 4, y - 2, WL.x0 - 3, y + 2, WG.mid, 1);                                    // кронштейн к стене
+    }
+    const nd = box(LX0 - 10, NODE[0], LX1 + 4, NODE[1]);                                          // узел: техплощадка с окнами и огнями
+    wF(S0, nd.map(([x, y]) => [x + 8, y + 10]), 0x000000, 0.3);
+    wP(S0, nd, WG.mid);
+    wF(S0, box(LX0 - 10, NODE[0], LX1 + 4, NODE[0] + 6), 0xffffff, 0.18);
+    for (let x = LX0 - 2; x < LX1 - 4; x += 12) wRect(S0, x, NODE[0] + 16, x + 7, NODE[0] + 24, 0x7fe3ff, 0.7);
+    wRect(S0, LX0 - 8, NODE[1] - 14, LX1 + 2, NODE[1] - 10, RUST, 0.95);
+    for (const x of [LX0 - 6, LX1 - 2]) wRect(S0, x, NODE[0] + 34, x + 5, NODE[0] + 39, AMBER, 0.9);
+    // кабины едут навстречу (SFX.lift: стоят у станций, разгон и торможение)
+    for (const [[x0, x1], ph] of [[A, 0], [B, 0.5]]) {
+      const c = new PIXI.Container(), g = new PIXI.Graphics();
+      g.rect(-8 + 3, -10 + 4, 16, 20).fill({color: 0x000000, alpha: 0.3});
+      g.rect(-8, -10, 16, 20).fill({color: WG.lit}).stroke({width: 1.2, color: C.line});
+      g.rect(-5, -6, 10, 4).fill({color: 0x1d3a48}); g.rect(-2, 4, 4, 3).fill({color: AMBER});
+      c.addChild(g); stFx.addChild(c);
+      SFX.lift.push({c, x: (x0 + x1) / 2, y0: LY0 + 14, y1: LY1 - 14, per: 22, ph});
+    }
+  }
+  // верхняя станция шахты — под вестибюлем; дверь в его зал (рисуется после вестибюля, поверх его кромки)
+  function drawLiftTop() {
+    const {LX0, LX1, LY0} = PAX, box = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
+    wF(S0, box(LX0 - 4, 3994, LX1, LY0 + 2), 0x000000, 0.3);
+    wP(S0, box(LX0 - 8, 3996, LX1, LY0), WG.base);
+    wP(S0, box(LX0 - 2, 4002, LX1 - 6, LY0 - 6), 0x3c4447);
+    for (const x of [LX0 + 4, LX0 + 30]) wP(S0, box(x, LY0 - 18, x + 18, LY0 - 8), WG.lit);       // двери кабин
+    frameBar([[LX0 - 6, 3988], [LX1 - 2, 3988], [LX1 - 2, 3994], [LX0 - 6, 3994]]);               // проём в кромке вестибюля
+    wRect(S0, LX0 - 2, 3989, LX1 - 6, 3993, 0x262c2f, 1);
+    for (const x of [LX0 - 40, LX0 - 24]) wLine(S0, [[x - 4, 3976], [x + 3, 3982], [x - 4, 3988]], 1.8, AMBER, 0.9);   // «›» к лифту
+  }
+  function drawSpaceport() {
+    const SH = (pts, dx = 12, dy = 14, a = 0.3) => wF(S0, pts.map(([x, y]) => [x + dx, y + dy]), 0x000000, a);
+    // ================= космопорт =================
+    // Старый космопорт (док, площадка, шлюз, ряды ангаров) убран (игрок, 10.10.2026: переделка в космоверфь).
+    // Он брал 56 чисел из wr2 — пропуск, иначе перетасуются товары и голо вестибюля ниже по коду.
+    for (let i = 0; i < 56; i++) wr2();
+    drawPort();
     // ================= вестибюль под станцией маглева (Район модулей) =================
     // Он НАМНОГО ниже станции: на него падает длинная тень станции, стены спускаются уступами, пол темнее пола станции.
     const VX0 = 5160, VX1 = WL.x0 - 4, VY0 = STN.yb(5378) - 6, VY1 = 4000;
@@ -2486,31 +2742,8 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       wRect(S0, IW - 12, XY0 + 8, IW - 6, XY0 + 22, 0x1a1f22, 1); wRect(S0, IW - 11, XY0 + 10, IW - 7, XY0 + 20, C.glow, 0.85);   // табло «выход»
       for (const y of [XY1 + 12]) { wP(S0, [[IW - 14, y - 6], [IW - 2, y - 6], [IW - 2, y + 6], [IW - 14, y + 6]], WG.mid); bush(S0, IW - 8, y, 5); }   // кадки у проёма
     }
-    // ---- переход к космопорту: крытая галерея с траволаторами вдоль правого края Района модулей ----
-    const GX0 = 5548, GX1 = WL.x0 - 6, GY0 = VY1 - 6, GY1 = 4884;
-    wF(S0, [[GX0 + 8, GY0], [GX1 + 10, GY0], [GX1 + 10, GY1], [GX0 + 8, GY1]], 0x000000, 0.25);
-    wP(S0, [[GX0, GY0], [GX1, GY0], [GX1, GY1], [GX0, GY1]], WG.mid);
-    for (const [x0, dir] of [[GX0 + 6, 1], [GX0 + 24, -1]]) {      // две ленты: к космопорту и обратно
-      wF(S0, [[x0, GY0 + 4], [x0 + 14, GY0 + 4], [x0 + 14, GY1 - 4], [x0, GY1 - 4]], 0x262b2d, 1);
-      for (let y = GY0 + 14; y < GY1 - 10; y += 16) wLine(S0, [[x0 + 3, y - dir * 3], [x0 + 7, y + dir * 2], [x0 + 11, y - dir * 3]], 1.3, AMBER, 0.75);
-      beltBars(x0 + 7, GY0 + 6, GY1 - 6, dir, 26, 24, 11, 0xe9f0f4, 0.4);
-    }
-    wF(S0, [[GX0 + 2, GY0 + 2], [GX1 - 2, GY0 + 2], [GX1 - 2, GY1 - 2], [GX0 + 2, GY1 - 2]], GLASS, 0.4);
-    for (let y = GY0 + 20; y < GY1 - 6; y += 42) frameBar([[GX0 - 2, y - 2.5], [GX1 + 2, y - 2.5], [GX1 + 2, y + 2.5], [GX0 - 2, y + 2.5]]);
-    wLine(S0, [[GX0 + 1, GY0], [GX0 + 1, GY1]], 2.2, RUST, 0.95);
-    // посадочный павильон у перрона космопорта: выходы к кораблям
-    const PX0 = 5476, PX1 = WL.x0 - 6, PY0 = 4880, PY1 = 5070;
-    wF(S0, [[PX0 + 10, PY0 + 12], [PX1 + 10, PY0 + 12], [PX1 + 10, PY1 + 12], [PX0 + 10, PY1 + 12]], 0x000000, 0.3);
-    const pv = [[PX0, PY0], [PX1, PY0], [PX1, PY1], [PX0, PY1]];
-    wP(S0, pv, WG.base); plateRim(pv, 10);
-    const pf = mgOffset(pv, 12); wP(S0, pf, 0x3c4447);
-    for (let y = PY0 + 30; y < PY1 - 50; y += 18) for (let x = PX0 + 18; x < PX1 - 50; x += 30) wRect(S0, x, y, x + 22, y + 5, WG.lit, 0.9);   // кресла
-    wRect(S0, PX1 - 30, PY0 + 30, PX1 - 22, PY0 + 70, 0x1a1f22, 1); for (let r = PY0 + 33; r < PY0 + 68; r += 4) wRect(S0, PX1 - 28, r, PX1 - 24, r + 2, AMBER, 0.9);
-    for (let k = 0; k < 3; k++) {                             // три выхода на перрон
-      const x = PX0 + 14 + k * 34;
-      wRect(S0, x, PY1 - 14, x + 24, PY1 + 2, 0x262c2f, 1);
-      for (let q = x + 2; q < x + 22; q += 6) wF(S0, [[q, PY1 - 2], [q + 3, PY1 - 2], [q + 5, PY1 + 2], [q + 2, PY1 + 2]], ROBO, 0.95);
-    }
+    // переход к космопорту — лифтовая шахта (drawPax); верхняя станция с дверью в зал — поверх кромки вестибюля
+    drawLiftTop();
   }
   // посадочная зона депо у выхода из вестибюля: тот же асфальт; тротуар под стеклянным навесом, «зебра» к полосе
   // автобусов, столбики, табло; рамы-порталы на гранях стены поверх
@@ -3046,7 +3279,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
 
   // ---------- кадр ----------
   const times = [];
-  let fpsAt = 0, tFixed = null, ringsOn = true, ringMs = 0, ringT = -1, ringCamKey = '';
+  let fpsAt = 0, tFixed = null, stepDt = null, ringsOn = true, ringMs = 0, ringT = -1, ringCamKey = '';
   cam.z = fitZoom(FOCUS.all.box); cam.x = (FOCUS.all.box.x0 + FOCUS.all.box.x1) / 2; cam.y = (FOCUS.all.box.y0 + FOCUS.all.box.y1) / 2;
   clampCam(); syncCenter(); drawShip(); placeLens(false);
   document.getElementById('loading').remove();
@@ -3072,7 +3305,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
       else if (due) { drawRings(t); ringT = t; ringCamKey = camKey; ringMs = ringMs * 0.9 + (performance.now() - t0) * 0.1; }
     }
     placeLabels(); placeMarks(); bldArtC.visible = zonesOn;
-    animMaglev(tFixed !== null ? 0 : Math.min(0.1, tk.deltaMS / 1000));
+    animMaglev(stepDt ?? (tFixed !== null ? 0 : Math.min(0.1, tk.deltaMS / 1000)));
     const pl = Math.max(0, Math.min(1, (0.06 - cam.z) / 0.025));
     partLabels.visible = pl > 0.01;
     for (const lb of partLabels.children) { const [x, y] = toScreen(...lb.__w); lb.position.set(x, y); lb.scale.set(0.5); lb.alpha = pl; }
@@ -3165,7 +3398,18 @@ ${guide.join('\n')}
 </svg>
 `;
   };
-  window.__ship = {app, maglev: mgList, setChars, pick, fx: fxC, cam, setFocus, flyTo, showCard, hitTest, toWorld, toScreen, zones, towers: wTowers, setEditing, setT: v => { tFixed = v; }, rings: v => { ringsOn = v; },
+  // презентация (гифки для канала, testtg/tools/ship-shots/gif.py): без интерфейса, меток зданий и персонажей; время — по
+  // кадрам (frameAt: t — секунды анимаций, dt — шаг маглева), камера — view; надписи районов — по желанию
+  let presentOpt = null;
+  const present = (o = {}) => {
+    presentOpt = {labels: true, ...o};
+    for (const id of ['dock', 'fps', 'editBar', 'card']) { const el = document.getElementById(id); if (el) el.style.display = 'none'; }
+    markC.visible = false;
+    app.ticker.add(() => { if (!presentOpt.labels) { zoneLabels.visible = false; partLabels.visible = false; } }, null, -24);   // перед отрисовкой
+  };
+  const frameAt = (t, dt) => { app.ticker.stop(); tFixed = t; stepDt = dt; app.ticker.update(performance.now()); };
+  const view = (x, y, z) => { flight = null; cam.x = x; cam.y = y; cam.z = z; clampCam(); };
+  window.__ship = {app, maglev: mgList, setChars, pick, fx: fxC, cam, setFocus, flyTo, showCard, hitTest, toWorld, toScreen, zones, towers: wTowers, setEditing, setT: v => { tFixed = v; }, present, frameAt, view, rings: v => { ringsOn = v; },
     benchRings: (n = 60) => { const t0 = performance.now(); for (let i = 0; i < n; i++) drawRings(20 + i * 0.016); return +((performance.now() - t0) / n).toFixed(2); }};
   const q = new URLSearchParams(location.search);
   if (q.get('f')) setFocus(q.get('f'));
