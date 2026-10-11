@@ -350,5 +350,19 @@
     "submapY": 3690,
     "x": -175,
     "y": -100
+  },
+  {
+    "id": "ariman-madzhere",
+    "name": "Ариман Маджере",
+    "race": "",
+    "role": "",
+    "player": "",
+    "sheetUrl": "",
+    "parent": "",
+    "links": [],
+    "image": "",
+    "color": "",
+    "x": -175,
+    "y": -100
   }
 ]
