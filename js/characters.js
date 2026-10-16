@@ -12,10 +12,11 @@
    Данные — characters.json, что показать (view) собирает map.js: там граф,
    камера и переходы.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=209';
-import { canEdit, showEditor } from './editor.js?v=209';
-import { renderSheet, renderNodeLinks } from './node-window.js?v=209';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average } from './rolls.js?v=209';
+import { escapeHtml } from './modal.js?v=210';
+import { canEdit, showEditor } from './editor.js?v=210';
+import { renderSheet, renderNodeLinks } from './node-window.js?v=210';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average } from './rolls.js?v=210';
+import { loadNotes, notesOf, notesHtml, wireNotes } from './notes.js?v=210';
 
 const overlay = document.getElementById('charOverlay');
 const content = document.getElementById('charContent');
@@ -89,8 +90,9 @@ function showSheet() {
 /* view — {char, parentMeta, characters, children} (собирает map.js),
    handlers — {onParent, onCharacter, onChild}, opts.edit — сразу открыть
    форму правки поверх окна (возврат после выбора места на карте), opts.rolls —
-   сразу вкладку «Броски» (кнопка под броском в группе: startapp=<id>--rolls). */
-export function openCharacter(view, handlers, {edit = false, rolls = false} = {}) {
+   сразу вкладку «Броски» (кнопка под броском в группе: startapp=<id>--rolls),
+   opts.notes — сразу «Заметки» (кнопка под заметками в чате: <id>--notes). */
+export function openCharacter(view, handlers, {edit = false, rolls = false, notes = false} = {}) {
   const changed = !current || current.id !== view.char.id;
   current = view.char;
   editBtn.hidden = !canEdit(current.id);
@@ -98,7 +100,7 @@ export function openCharacter(view, handlers, {edit = false, rolls = false} = {}
   // Другой персонаж — старую анкету долой, даже если тот же адрес не сменился
   // бы (у разных персонажей он разный, но заглушка «Заметок» могла остаться).
   if (changed) { content.innerHTML = ''; content.__sheetScroll = 0; }
-  if (rolls) showRolls(); else showSheet();
+  if (rolls) showRolls(); else if (notes) showNotes(); else showSheet();
   overlay.classList.add('open');
   if (edit && canEdit(current.id)) showEditor(current);
 }
@@ -118,9 +120,21 @@ editBtn.addEventListener('click', () => {
   if (current && canEdit(current.id)) showEditor(current);
 });
 
-notesBtn.addEventListener('click', () => {
-  showStub(notesBtn, 'Заметки', 'Раздел в разработке: тут будут заметки по персонажу.');
-});
+/* Заметки (16.10.2026): снаряжение и памятки из notes.json — пишет бот
+   (character_notes.py), правят в чате кнопками; здесь только просмотр. */
+async function showNotes() {
+  if (!current) return;
+  const char = current;
+  setActive(notesBtn);
+  const body = tabBody();
+  if (!body.__notesWired) { wireNotes(body); body.__notesWired = true; }
+  body.innerHTML = '<div class="char-stub">Загрузка заметок…</div>';
+  const data = await loadNotes();
+  if (current !== char || !notesBtn.classList.contains('active')) return;
+  body.innerHTML = notesHtml(notesOf(data, char.id), char.name);
+}
+
+notesBtn.addEventListener('click', showNotes);
 
 /* Броски (24.09.2026). История — rolls.json (бот, dice_rolls.py), загрузка и
    строка броска — js/rolls.js, общие с «Игрой» сюжета. В группе:

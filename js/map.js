@@ -1,19 +1,19 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=209';
-import { closeModal } from './modal.js?v=209';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=209';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=209';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=209';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=209';
-import { openCharacter, closeCharacter } from './characters.js?v=209';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=209';
-import { markerEl } from './node-window.js?v=209';
-import { layoutSections, renderSections } from './sections.js?v=209';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=209';
-import { hideSplash } from './splash.js?v=209';
-import { fetchT, showLoadError } from './net.js?v=209';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=210';
+import { closeModal } from './modal.js?v=210';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=210';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=210';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=210';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=210';
+import { openCharacter, closeCharacter } from './characters.js?v=210';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=210';
+import { markerEl } from './node-window.js?v=210';
+import { layoutSections, renderSections } from './sections.js?v=210';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=210';
+import { hideSplash } from './splash.js?v=210';
+import { fetchT, showLoadError } from './net.js?v=210';
 
 const SVG_PATH = 'map.svg';
 
@@ -175,7 +175,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=209').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=210').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -2623,9 +2623,13 @@ function finishMapPick(p) {
        «🎲 … на карте» под броском в группе (dice_rolls.py). */
     const rollsTab = /--rolls$/.test(id);
     if (rollsTab) id = id.slice(0, -7);
+    // <id>--notes — сразу «Заметки» (16.10.2026): кнопка под заметками в чате (character_notes.py).
+    const notesTab = /--notes$/.test(id);
+    if (notesTab) id = id.slice(0, -7);
     const node = /^[A-Za-z0-9_-]{1,64}$/.test(id) ? graph.get(id) : null;
     if (!node || node.kind === 'system') return;
-    goToNode(node, false, rollsTab && node.kind === 'character' ? {rolls: true} : undefined);
+    const tab = node.kind !== 'character' ? undefined : rollsTab ? {rolls: true} : notesTab ? {notes: true} : undefined;
+    goToNode(node, false, tab);
   }
 
   /* Редактор персонажей (js/editor.js): выбор места тапом. Окна над картой
