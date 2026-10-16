@@ -276,22 +276,26 @@ html, body {
   margin: 6px 2px 8px; color: #fff; font-size: 14px; font-weight: 700;
 }
 .notes-count { color: rgba(255,255,255,0.5); font-size: 12px; font-weight: 400; }
+.notes-hint { margin-top: 14px; color: rgba(255,255,255,0.6); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.notes-status { margin-bottom: 12px; color: #ffd76a; font-size: 13px; line-height: 1.4; }
 .notes-gear {
   list-style: none; margin: 0 0 14px; padding: 0;
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(140px, 100%), 1fr)); gap: 10px;
 }
 .note-gear {
-  position: relative; display: flex; flex-direction: column; gap: 5px;
+  position: relative; display: flex; flex-direction: column; gap: 5px; min-width: 0;
   padding: 8px; border-radius: 12px;
   /* Плотнее, чем у бросков: окно полупрозрачное, а карточки — с картинкой и мелким текстом. */
   background: rgba(16,20,28,0.88); border: 1px solid rgba(255,255,255,0.1);
 }
-.note-gear.is-spent { opacity: 0.55; }
+.note-gear.is-spent { border-color: rgba(255,154,154,0.35); }
+.note-gear.is-spent .note-art { opacity: 0.65; }
 .note-art {
   display: block; width: 100%; aspect-ratio: 4 / 3; padding: 0; overflow: hidden;
   border: 0; border-radius: 8px; background: #151b22; cursor: zoom-in;
 }
 .note-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.note-art:focus-visible { outline: 2px solid #afeeee; outline-offset: 3px; }
 .note-art.is-blank {
   display: flex; align-items: center; justify-content: center; cursor: default;
   background: linear-gradient(135deg, rgba(175,238,238,0.14), rgba(175,238,238,0.03));
@@ -305,7 +309,7 @@ html, body {
 .note-qty {
   position: absolute; top: 12px; right: 12px; padding: 2px 7px; border-radius: 999px;
   background: rgba(10,14,20,0.85); border: 1px solid rgba(255,255,255,0.18);
-  color: #fff; font: 700 12px/1.3 sans-serif;
+  color: #fff; font: 700 12px/1.3 sans-serif; pointer-events: none;
 }
 .note-qty.is-empty { color: #ff9a9a; border-color: rgba(255,120,120,0.45); }
 .note-name { color: #fff; font-size: 14px; line-height: 1.3; font-weight: 600; overflow-wrap: anywhere; }
