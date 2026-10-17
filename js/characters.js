@@ -12,11 +12,11 @@
    Данные — characters.json, что показать (view) собирает map.js: там граф,
    камера и переходы.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=211';
-import { canEdit, showEditor } from './editor.js?v=211';
-import { renderSheet, renderNodeLinks } from './node-window.js?v=211';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average } from './rolls.js?v=211';
-import { loadNotes, notesOf, notesHtml, wireNotes } from './notes.js?v=211';
+import { escapeHtml } from './modal.js?v=212';
+import { canEdit, showEditor } from './editor.js?v=212';
+import { renderSheet, renderNodeLinks } from './node-window.js?v=212';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average } from './rolls.js?v=212';
+import { loadNotes, notesOf, notesHtml, wireNotes } from './notes.js?v=212';
 
 const overlay = document.getElementById('charOverlay');
 const content = document.getElementById('charContent');
@@ -28,6 +28,8 @@ const rollsBtn = document.getElementById('charRolls');
 // кнопкой из лички бота (см. js/editor.js).
 const editBtn = document.getElementById('charEdit');
 
+// Имя персонажа по id (из map.js) — владелец чужого предмета в «Заметках».
+let nameOf = () => '';
 // Персонаж, чьё окно открыто сейчас (запись из characters.json).
 let current = null;
 
@@ -95,6 +97,7 @@ function showSheet() {
 export function openCharacter(view, handlers, {edit = false, rolls = false, notes = false} = {}) {
   const changed = !current || current.id !== view.char.id;
   current = view.char;
+  nameOf = typeof view.nameOf === 'function' ? view.nameOf : () => '';
   editBtn.hidden = !canEdit(current.id);
   renderNodeLinks(links, view, handlers || {});
   // Другой персонаж — старую анкету долой, даже если тот же адрес не сменился
@@ -131,7 +134,7 @@ async function showNotes() {
   body.innerHTML = '<div class="char-stub">Загрузка заметок…</div>';
   const data = await loadNotes();
   if (current !== char || !notesBtn.classList.contains('active')) return;
-  body.innerHTML = notesHtml(notesOf(data, char.id), char.name);
+  body.innerHTML = notesHtml(notesOf(data, char.id), char.name, nameOf);
 }
 
 notesBtn.addEventListener('click', showNotes);

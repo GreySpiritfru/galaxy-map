@@ -8,10 +8,11 @@
    Формат: {"characters": {id: [запись, …]}}. Запись — {i, k, x, q?, c?, s?, d?,
    img?, t, u}: k — item (снаряжение) / note (памятка), x — текст, q —
    количество, c — [заряды, максимум], s — откуда/зачем, d — памятка выполнена,
-   img — арт в images/notes/. Автора записи нет: файл публичный.
+   img — арт в images/notes/, o — id персонажа-владельца чужого предмета, on —
+   имя владельца-НПС (17.10.2026). Автора записи нет: файл публичный.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=211';
-import { fetchT } from './net.js?v=211';
+import { escapeHtml } from './modal.js?v=212';
+import { fetchT } from './net.js?v=212';
 
 const NOTES_URL = 'notes.json';
 let notesCache = null; // {at, data}
@@ -46,6 +47,8 @@ function cleanNote(n) {
   if (Array.isArray(n.c) && n.c.length === 2 && n.c.every(Number.isInteger)
       && n.c[0] >= 0 && n.c[0] <= n.c[1] && n.c[1] > 0 && n.c[1] <= 99) note.c = n.c;
   if (typeof n.s === 'string') note.s = n.s.slice(0, 3500); // описание до 3500 (17.10.2026)
+  if (typeof n.o === 'string' && /^[A-Za-z0-9_-]{1,53}$/.test(n.o)) note.o = n.o;
+  else if (typeof n.on === 'string' && n.on.trim()) note.on = n.on.slice(0, 40);
   if (typeof n.img === 'string' && n.img.length <= 140 && !/\s/.test(n.img) && IMG_RE.test(n.img)) note.img = n.img;
   return note;
 }
@@ -79,7 +82,7 @@ function descHtml(s) {
   return `<details class="note-desc"><summary>${escapeHtml(head)}…</summary><div class="note-src">${escapeHtml(s)}</div></details>`;
 }
 
-function gearHtml(n) {
+function gearHtml(n, nameOf) {
   const img = typeof n.img === 'string' && IMG_RE.test(n.img) ? n.img : '';
   // ×1 не показываем: у предмета количество есть всегда (с 16.10.2026 — 1 по умолчанию).
   const qty = Number.isFinite(n.q) && n.q !== 1 ? `<span class="note-qty${n.q === 0 ? ' is-empty' : ''}">×${n.q}</span>` : '';
@@ -87,9 +90,12 @@ function gearHtml(n) {
     ? `<button class="note-art" type="button" aria-expanded="false" aria-label="Арт: ${escapeHtml(n.x)}"><img src="${escapeHtml(img)}" alt="" loading="lazy" decoding="async"></button>`
     : `<div class="note-art is-blank" aria-hidden="true">${escapeHtml((n.x.trim()[0] || '•').toUpperCase())}</div>`;
   const empty = (Number.isFinite(n.q) && n.q === 0) || (Array.isArray(n.c) && Number(n.c[0]) === 0);
-  return `<li class="note-gear${empty ? ' is-spent' : ''}">
+  // Персонаж-владелец не найден (удалён / данные разных версий) — пометка всё равно видна.
+  const owner = (n.o && (nameOf(n.o) || 'другой персонаж')) || n.on || '';
+  return `<li class="note-gear${empty ? ' is-spent' : ''}${img ? '' : ' no-art'}">
       ${art}${qty}
       <div class="note-name">${escapeHtml(n.x)}</div>
+      ${owner ? `<div class="note-owner">владелец: ${escapeHtml(owner)}</div>` : ''}
       ${Array.isArray(n.c) ? chargesHtml(n.c) : ''}
       ${descHtml(n.s)}
     </li>`;
@@ -107,8 +113,9 @@ function memoHtml(n) {
     </li>`;
 }
 
-/* Тело вкладки. name — имя для подсказки команды. */
-export function notesHtml(list, name) {
+/* Тело вкладки. name — имя для подсказки команды, nameOf(id) — имя владельца
+   чужого предмета. */
+export function notesHtml(list, name, nameOf = () => '') {
   const loadError = list?.loadError === true;
   list = Array.isArray(list) ? list.slice(0, 40).map(cleanNote).filter(Boolean) : [];
   // Первое настоящее слово имени: «О. Гил'ви» → «Гил'ви» (инициал в команде не найдётся).
@@ -123,7 +130,7 @@ export function notesHtml(list, name) {
   return `<div class="notes">
       ${loadError ? '<div class="notes-status" role="status">Обновить заметки не удалось. Показана сохранённая копия.</div>' : ''}
       ${gear.length ? `<div class="notes-head"><span>Снаряжение</span><span class="notes-count">${gear.length}</span></div>
-        <ul class="notes-gear">${gear.map(gearHtml).join('')}</ul>` : ''}
+        <ul class="notes-gear">${gear.map(n => gearHtml(n, nameOf)).join('')}</ul>` : ''}
       ${memos.length ? `<div class="notes-head"><span>📝 Заметки</span><span class="notes-count">${open ? `открыто ${open} из ${memos.length}` : memos.length}</span></div>
         <ul class="notes-memos">${memos.map(memoHtml).join('')}</ul>` : ''}
       <div class="notes-hint">${how}</div>
