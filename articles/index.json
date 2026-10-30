@@ -237,6 +237,16 @@
    "title": "Мина Вульпина",
    "updated": "2026-09-30"
   },
+  "https://teletype.in/@greyspirit/q0DxZfB2yaj": {
+   "file": "articles/tt/greyspirit/q0DxZfB2yaj.json",
+   "hash": "53448b2c1ec6b61c",
+   "images": [
+    "articles/img/39f4fa8a231cfc67.webp",
+    "articles/img/e4854e0e5679d698.webp"
+   ],
+   "title": "Птилопсис - модель P-017",
+   "updated": "2026-10-30"
+  },
   "https://teletype.in/@greyspirit/q9p6GSXr59j": {
    "file": "articles/tt/greyspirit/q9p6GSXr59j.json",
    "hash": "6585f6cbbb3874cb",
@@ -348,6 +358,18 @@
    ],
    "title": "Пауль Рудольф Лангерганс",
    "updated": "2026-09-30"
+  },
+  "https://teletype.in/@lagger_vpn/qSNQ4yis7ZE": {
+   "file": "articles/tt/lagger_vpn/qSNQ4yis7ZE.json",
+   "hash": "6f5fb3f160553541",
+   "images": [
+    "articles/img/6d32c5fc3e5342d9.webp",
+    "articles/img/e8a6f9507b778869.webp",
+    "articles/img/f3fcb5f9d547d9d9.webp",
+    "articles/img/ff42364400808c15.webp"
+   ],
+   "title": "Люциан Эдвард Вэллард",
+   "updated": "2026-10-30"
   },
   "https://teletype.in/@pacifeasting/Richard": {
    "file": "articles/tt/pacifeasting/Richard.json",
