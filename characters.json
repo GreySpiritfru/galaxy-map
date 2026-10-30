@@ -378,5 +378,19 @@
     "color": "",
     "x": -175,
     "y": -100
+  },
+  {
+    "id": "ptilo",
+    "name": "Птило",
+    "race": "",
+    "role": "",
+    "player": "",
+    "sheetUrl": "",
+    "parent": "",
+    "links": [],
+    "image": "",
+    "color": "",
+    "x": -175,
+    "y": -100
   }
 ]
