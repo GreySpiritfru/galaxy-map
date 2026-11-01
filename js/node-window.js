@@ -15,12 +15,12 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=215';
-import { REF_ARTICLES } from './articles.js?v=215';
-import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=215';
-import { renderSheetCard } from './sheet-card.js?v=215';
-import { frameHtml, safeHttps } from './net.js?v=215';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=215';
+import { escapeHtml } from './modal.js?v=216';
+import { REF_ARTICLES } from './articles.js?v=216';
+import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=216';
+import { renderSheetCard } from './sheet-card.js?v=216';
+import { frameHtml, safeHttps } from './net.js?v=216';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=216';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -143,6 +143,7 @@ export function renderNodeContent(container, view) {
   container.__gameScroll = 0;
   container.insertAdjacentHTML('afterbegin', `<div class="node-desc">${descriptionHtml(view)}</div>`);
   appendModules(container.firstElementChild, view, container);
+  appendDocument(container.firstElementChild, view, container);
   // Набор поверх статьи — плашка со своим ✕ (встроить её в чужую страницу
   // нельзя). Пересоздаётся на каждое открытие: набор могли поменять.
   const recruit = recruitHtml(view, true);
@@ -583,6 +584,23 @@ function appendModules(desc, view, scroller) {
   });
 }
 
+/* Статья окном записи (02.11.2026, шаг 4.4): тело — копия целиком (у неё
+   свой заголовок), прокрутка к якорю раздела, если пришли по нему. */
+function appendDocument(desc, view, scroller) {
+  if (!desc || !view.documentUrl) return;
+  const holder = document.createElement('div');
+  holder.className = 'node-document';
+  holder.innerHTML = '<div class="mirror-loading">Загрузка…</div>';
+  desc.appendChild(holder);
+  renderMirror(view.documentUrl, scroller).then(art => {
+    if (!holder.isConnected) return;
+    if (!art) { holder.innerHTML = '<p class="node-module-broken">Копии статьи нет.</p>'; return; }
+    holder.textContent = '';
+    holder.appendChild(art);
+    if (view.anchor) scrollToAnchor(scroller, view.anchor);
+  }).catch(() => { if (holder.isConnected) holder.innerHTML = '<p class="node-module-broken">Статья не загрузилась.</p>'; });
+}
+
 function descriptionHtml(view) {
   const imagesHtml = (Array.isArray(view.images) ? view.images : [])
     .map(src => `<img class="story-banner-img" src="${escapeHtml(src)}" alt="" loading="lazy">`)
@@ -599,7 +617,7 @@ function descriptionHtml(view) {
 
   return `
     ${imagesHtml}
-    <div class="story-title">${codeHtml}${escapeHtml(view.title || '')}${doneHtml}</div>
+    ${view.documentUrl ? '' : `<div class="story-title">${codeHtml}${escapeHtml(view.title || '')}${doneHtml}</div>`}
     ${view.subtitle ? `<div class="story-subtitle">${escapeHtml(view.subtitle)}</div>` : ''}
     ${recruitHtml(view, false)}
     ${descHtml}
@@ -741,7 +759,7 @@ function linkParts(view, go) {
     c.textContent = text;
     pointsCol.appendChild(c);
   };
-  if (kids.length && materials.length) caption(view.insideLabel || 'Внутри');
+  if (kids.length && (materials.length || view.insideLabel)) caption(view.insideLabel || 'Внутри');
   const pointChips = kids.map(p => linkChip(p, go.point));
   pointChips.forEach(c => pointsCol.appendChild(c));
   if (materials.length) {

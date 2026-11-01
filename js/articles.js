@@ -7,8 +7,9 @@
    "Магический лор" пока заглушка — заменить на настоящую статью, когда
    будет готова.
    ============================================================ */
-import { openIframeModal, isDockedWith, setModalArticle, isArticleOpen } from './modal.js?v=215';
-import { normalizeUrl } from './reader.js?v=215';
+import { openIframeModal, isDockedWith, setModalArticle, isArticleOpen } from './modal.js?v=216';
+import { normalizeUrl } from './reader.js?v=216';
+import { openRecord } from './open-record.js?v=216';
 
 export const REF_ARTICLES = {
   phenom: 'https://teletype.in/@greyspirit/4tRzyNaVfEQ#fvQz',
@@ -64,18 +65,26 @@ document.querySelectorAll('[data-ref]').forEach(btn => {
    копия (js/reader.js шлёт «mirror-open»). Статья справочника — во вкладку
    справочника (с якорем ссылки); любая другая — в том же модале, если он уже
    открыт, иначе в новом. */
+/* С 02.11.2026 (перенос планшета, шаг 4.4): справочник открыт в модале — всё
+   там же, как было; иначе (материал в окне точки, «Из статьи», ссылка из
+   статьи в окне) — статья окном записи (openRecord, js/map.js), со своим
+   «назад». Статьи нет в реестре — модал, как раньше. */
 window.addEventListener('mirror-open', (e) => {
   const url = e.detail && e.detail.url;
   if (!url) return;
   const key = normalizeUrl(url);
   const ref = Object.keys(REF_ARTICLES).find(k => k !== 'avalon' && normalizeUrl(REF_ARTICLES[k]) === key);
-  if (ref) { openRefArticle(ref, url); return; }
   if (isArticleOpen()) {
+    if (ref) { openRefArticle(ref, url); return; }
     refToolbarEl.querySelectorAll('[data-ref].active').forEach(b => b.classList.remove('active'));
     setModalArticle(url);
-  } else {
-    openIframeModal(url);
+    return;
   }
+  openRecord(url).then(ok => {
+    if (ok) return;
+    if (ref) openRefArticle(ref, url);
+    else openIframeModal(url);
+  });
 });
 
 // ✕ (#refToolbarClose) больше не вешается тут — js/navigation.js сам вешает

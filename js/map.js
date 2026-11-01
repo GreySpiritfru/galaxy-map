@@ -1,24 +1,24 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=215';
-import { closeModal } from './modal.js?v=215';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=215';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=215';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=215';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=215';
-import { openCharacter, closeCharacter } from './characters.js?v=215';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=215';
-import { markerEl } from './node-window.js?v=215';
-import { layoutSections, renderSections } from './sections.js?v=215';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=215';
-import { hideSplash } from './splash.js?v=215';
-import { fetchT, showLoadError } from './net.js?v=215';
-import { noteRecord, setRestorer } from './navigation.js?v=215';
-import { buildRecords, resolveAddress } from './records.js?v=215';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=215';
-import { decodeAddress } from './address.js?v=215';
-import { REF_ARTICLES } from './articles.js?v=215';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=216';
+import { closeModal } from './modal.js?v=216';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=216';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=216';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=216';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=216';
+import { openCharacter, closeCharacter } from './characters.js?v=216';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=216';
+import { markerEl } from './node-window.js?v=216';
+import { layoutSections, renderSections } from './sections.js?v=216';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=216';
+import { hideSplash } from './splash.js?v=216';
+import { fetchT, showLoadError } from './net.js?v=216';
+import { noteRecord, setRestorer } from './navigation.js?v=216';
+import { buildRecords, resolveAddress } from './records.js?v=216';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=216';
+import { decodeAddress } from './address.js?v=216';
+import { REF_ARTICLES } from './articles.js?v=216';
 
 const SVG_PATH = 'map.svg';
 
@@ -180,7 +180,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=215').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=216').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -2682,9 +2682,7 @@ function finishMapPick(p) {
   setRecordOpener('world', openGraphRecord);
   setRecordOpener('character', openGraphRecord);
   setRecordOpener('system', openGraphRecord);
-  setRecordOpener('article', (rec, anchor) => {
-    window.dispatchEvent(new CustomEvent('mirror-open', {detail: {url: rec.url + (anchor ? '#' + anchor : '')}}));
-  });
+  setRecordOpener('article', (rec, anchor) => { openArticleWindow(rec, anchor); return true; });
   /* Район и здание схемы Фенома (02.11.2026, перенос планшета, шаг 4.2) — окно
      записи в верхнем слое над Феномом, открытым на вкладке схемы: «назад» —
      обратно на схему, камера там же. Тап по району/зданию на схеме ведёт сюда
@@ -2721,6 +2719,39 @@ function finishMapPick(p) {
     });
     noteRecord(rec.id, 'story');
   }
+  /* Статья — окном записи (02.11.2026, шаг 4.4): тело — копия статьи целиком
+     (на якоре раздела, если пришли по нему), в панели «Используется в» — точки,
+     которые показывают её разделы (relations.json). Слой — как у мировой
+     точки: открыто окно — поверх него, иначе нижний. */
+  function articleView(rec) {
+    const reg = getRegistry();
+    const users = reg.records.filter(r => r.content.moduleRefs.some(ref => ref.recordId === rec.id));
+    return {
+      id: rec.id, code: '', title: rec.title, shortTitle: '', recruit: '', images: [], description: '',
+      documentUrl: rec.url, beacon: false, completed: false, article: null, modules: [], materials: [],
+      submap: null, parentMeta: null, self: {id: rec.id, kind: 'article', label: rec.title.replace(/\s*\(ред\.\)\s*$/, ''),
+        name: rec.title, letter: '📖', shape: 'square'},
+      canEdit: false, characters: [], insideLabel: 'Используется в',
+      children: users.map(r => recordMeta(r)), roster: [], branch: [],
+    };
+  }
+  function openArticleWindow(rec, anchor, layer) {
+    const view = {...articleView(rec), anchor: anchor || ''};
+    const handlers = {
+      onChild: (id) => openRecord(id),
+      onCharacter: (id) => openRecord(id),
+    };
+    const upper = layer ? layer === 'story' && isPhenomOpen() : isPhenomOpen();
+    if (upper) {
+      openStoryNodeCurrent = null;
+      openStory(view, handlers);
+    } else {
+      openWorldNodeCurrent = null;
+      if (isStoryOpen()) closeStory();
+      openWorldWindow(view, handlers);
+    }
+    noteRecord(rec.id, upper ? 'story' : 'phenom', {anchor: anchor || ''});
+  }
   const openShipRecord = (rec, anchor, options) => {
     const target = rec.mapTargets[0];
     const host = target && graphById.get(target.recordId);
@@ -2745,6 +2776,7 @@ function finishMapPick(p) {
     if (node) { openNode(node, {...entry.opts, layer: entry.layer}); return true; }
     const rec = getRegistry() && getRegistry().byId.get(entry.id);
     if (rec && (rec.kind === 'zone' || rec.kind === 'building')) { openShipWindow(rec); return true; }
+    if (rec && rec.kind === 'article') { openArticleWindow(rec, entry.opts.anchor, entry.layer); return true; }
     const sys = typeof entry.id === 'string' && entry.id.startsWith('system:')
       && systemChoices.find(s => s.id === entry.id);
     if (sys) { openSystem(sys.title); return true; }
