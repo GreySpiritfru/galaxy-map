@@ -61,7 +61,8 @@ export function worldFlags(item, migrated = true) {
 }
 
 /* data: {world, characters, articlesIndex, systems: {manifest, titles, lore},
-   shipRecords, modules, relations, refArticles}. Нет файла — пустое значение,
+   shipRecords, shipLore (ship/lore.json), shipArt (ship/bld/buildings.json),
+   modules, relations, refArticles}. Нет файла — пустое значение,
    реестр строится из того, что есть (сбой одного файла не роняет карту). */
 export function buildRecords(data) {
   const world = list(data.world), characters = list(data.characters);
@@ -139,15 +140,31 @@ export function buildRecords(data) {
       lore: (systems.lore || {})[slug] || null, mapTargets: [{type: 'system', systemId: 'system:' + slug}]});
   }
 
-  // Районы и здания схемы Фенома — постоянные id из ship/records.json.
+  // Районы и здания схемы Фенома — постоянные id из ship/records.json; текст и
+  // картинки — лор схемы (ship/lore.json, пути от ship/), арт здания — bld/.
+  const lore = data.shipLore || {};
+  const shipArt = data.shipArt || {};
+  const loreImages = l => list(l && l.img).filter(x => typeof x === 'string')
+    .map(x => x.startsWith('../') ? x.slice(3) : 'ship/' + x);
   for (const z of list(ship.zones)) {
+    const l = (lore.zones || {})[z.sourceKey] || {};
+    const images = loreImages(l);
     add({id: z.id, kind: 'zone', title: z.name, source: {type: 'ship-zone', key: z.sourceKey},
-      parentId: 'phenome', mapTargets: [{type: 'ship', recordId: 'phenome', key: z.sourceKey}]});
+      parentId: 'phenome', image: images[0] || '', images, text: l.text || '',
+      content: {intro: l.text || '', ownDocument: null, moduleRefs: []},
+      mapTargets: [{type: 'ship', recordId: 'phenome', key: z.sourceKey}]});
   }
   for (const b of list(ship.buildings)) {
     if (!b.zone) diagnostics.push({type: 'building-zone', id: b.id});
+    const l = (lore.buildings || {})[b.sourceKey] || {};
+    const art = list(shipArt.items).find(it => it && it.name === b.sourceKey);
+    const file = art && art.file ? `ship/bld/${art.file}?v=${shipArt.v || 1}` : '';
+    // Арт здания из лора тот же, что в bld/ (без ?v) — второй раз не нужен.
+    const images = [file, ...loreImages(l).filter(x => x !== file.split('?')[0])].filter(Boolean);
     add({id: b.id, kind: 'building', title: b.name, source: {type: 'ship-building', key: b.sourceKey},
-      parentId: b.zone || null, mapTargets: [{type: 'ship', recordId: 'phenome', key: b.sourceKey}]});
+      parentId: b.zone || null, image: images[0] || '', images, text: l.text || '',
+      content: {intro: l.text || '', ownDocument: null, moduleRefs: []},
+      mapTargets: [{type: 'ship', recordId: 'phenome', key: b.sourceKey}]});
   }
 
   // Модули и материалы (relations.json). Тексты модулей карта соберёт, когда
@@ -184,7 +201,7 @@ export function buildRecords(data) {
     if (id && byId.has(id)) refAlias[key] = {id, anchor: String(url).split('#')[1] || ''};
   }
 
-  return {records, byId, children, allies, diagnostics, refAlias, entryByUrl, migrated};
+  return {records, byId, children, allies, diagnostics, refAlias, entryByUrl, migrated, modules};
 }
 
 /* Адрес → {id, anchor}. Понимает id записи, ключ справочника (phenom) и адрес

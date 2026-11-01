@@ -1,24 +1,24 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=213';
-import { closeModal } from './modal.js?v=213';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=213';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap } from './phenom.js?v=213';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=213';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=213';
-import { openCharacter, closeCharacter } from './characters.js?v=213';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=213';
-import { markerEl } from './node-window.js?v=213';
-import { layoutSections, renderSections } from './sections.js?v=213';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=213';
-import { hideSplash } from './splash.js?v=213';
-import { fetchT, showLoadError } from './net.js?v=213';
-import { noteRecord, setRestorer } from './navigation.js?v=213';
-import { buildRecords } from './records.js?v=213';
-import { setRegistry, setRecordOpener, openRecord } from './open-record.js?v=213';
-import { decodeAddress } from './address.js?v=213';
-import { REF_ARTICLES } from './articles.js?v=213';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=214';
+import { closeModal } from './modal.js?v=214';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=214';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=214';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=214';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=214';
+import { openCharacter, closeCharacter } from './characters.js?v=214';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=214';
+import { markerEl } from './node-window.js?v=214';
+import { layoutSections, renderSections } from './sections.js?v=214';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=214';
+import { hideSplash } from './splash.js?v=214';
+import { fetchT, showLoadError } from './net.js?v=214';
+import { noteRecord, setRestorer } from './navigation.js?v=214';
+import { buildRecords, resolveAddress } from './records.js?v=214';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=214';
+import { decodeAddress } from './address.js?v=214';
+import { REF_ARTICLES } from './articles.js?v=214';
 
 const SVG_PATH = 'map.svg';
 
@@ -180,7 +180,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=213').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=214').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -1149,10 +1149,45 @@ function finishMapPick(p) {
      открытии — состав детей и аватары меняются через редактор, а окон всего
      два на весь проект и они переиспользуются (баг 14.09.2026, когда вкладки
      Фенома оставались висеть в окне Авалона, был ровно про это). */
+  /* Модули и материалы точки из реестра (02.11.2026, перенос планшета, шаг 4):
+     modules — разделы статей в теле окна (под описанием), materials — эти
+     статьи целиком в панели. Реестр ещё не готов — окно без них, как раньше. */
+  function recordContent(id) {
+    const reg = getRegistry();
+    const r = reg && reg.byId.get(id);
+    const modules = [], materials = [];
+    if (!r) return {modules, materials};
+    for (const ref of r.content.moduleRefs) {
+      const art = reg.byId.get(ref.recordId);
+      if (!art || art.kind !== 'article') continue;
+      const def = ref.moduleId ? reg.modules[ref.moduleId] : null;
+      if (ref.mode === 'embed' && def) {
+        modules.push({moduleId: ref.moduleId, title: def.title, selector: def.selector, url: art.url, articleTitle: art.title});
+      }
+      if (!materials.some(m => m.id === art.id)) {
+        materials.push({id: art.id, kind: 'article', label: art.title.replace(/\s*\(ред\.\)\s*$/, ''), name: art.title,
+          kindLabel: 'Статья', letter: '📖', shape: 'square', url: art.url, anchor: def ? def.selector.from : ''});
+      }
+    }
+    return {modules, materials};
+  }
+  // Статья точки (article.ref / url) уже среди материалов — вкладка «Статья» не нужна.
+  function articleCovered(article, materials) {
+    if (!article || !materials.length) return false;
+    // ref — ключ справочника (у Авалона он совпадает с id самой точки — только refAlias).
+    const reg = getRegistry();
+    const hit = article.ref ? reg && reg.refAlias[article.ref] : resolveAddress(reg, article.url || '');
+    return !!hit && materials.some(m => m.id === hit.id);
+  }
+
+  /* onMap больше не фильтрует переходы (02.11.2026): точка без маркера на
+     карте остаётся доступной из окна родителя; координаты нужны только карте. */
   function worldView(node) {
-    const chars = node.children.filter(c => c.kind === 'character' && c.onMap !== false);
-    const kids = node.children.filter(c => c.kind === 'world' && c.onMap !== false);
+    const chars = node.children.filter(c => c.kind === 'character');
+    const kids = node.children.filter(c => c.kind === 'world');
     const d = node.data;
+    const {modules, materials} = recordContent(node.id);
+    const article = d.article && (d.article.ref || d.article.url) ? d.article : null;
     return {
       id: node.id,
       code: d.code || '',
@@ -1163,7 +1198,9 @@ function finishMapPick(p) {
       images: Array.isArray(d.images) ? d.images : [],
       beacon: !!d.beacon,
       completed: isCompleted(node),
-      article: d.article && (d.article.ref || d.article.url) ? d.article : null,
+      article: articleCovered(article, materials) ? null : article,
+      modules,
+      materials,
       submap: d.submap || null,
       parentMeta: parentButtonMeta(node),
       // Маркер и короткое имя самой точки — для строки плашки окна (v=178).
@@ -1199,7 +1236,7 @@ function finishMapPick(p) {
   function rosterOf(node) {
     const sections = [];
     const visit = (n) => {
-      const chars = n.children.filter(c => c.kind === 'character' && c.onMap !== false);
+      const chars = n.children.filter(c => c.kind === 'character');
       if (chars.length) {
         sections.push({
           id: n.id,
@@ -1214,7 +1251,7 @@ function finishMapPick(p) {
           })),
         });
       }
-      n.children.filter(c => c.kind === 'world' && c.onMap !== false).forEach(visit);
+      n.children.filter(c => c.kind === 'world').forEach(visit);
     };
     visit(node);
     return sections;
@@ -1226,7 +1263,7 @@ function finishMapPick(p) {
      замена в том же слое, родитель — закрыть свой слой и перейти к нему (если
      его окно лежит позади, оно просто снова станет видно). */
   function openCharacterNode(node, opts) {
-    const allies = (node.links || []).filter(n => n.onMap !== false);
+    const allies = node.links || [];
     const view = {
       char: node.data,
       parentMeta: parentButtonMeta(node),
@@ -1717,7 +1754,7 @@ function finishMapPick(p) {
 
     setSystemDecorator(({slug, svg: sysSvg, pz: sysPz, focusId}) => {
       const sysNode = graph.get('system:' + slug);
-      const inside = sysNode ? sysNode.children.filter(c => c.onMap !== false) : [];
+      const inside = sysNode ? sysNode.children : [];
       setSystemTabs(inside.map(c => tabIconOf(c, {id: c.id})), (id) => {
         const node = graph.get(id);
         if (!node) return;
@@ -2614,14 +2651,14 @@ function finishMapPick(p) {
      него, карта работает как раньше. */
   async function loadRegistry(world, characters, anchors, readySlugs) {
     const get = path => fetchT(path, {cache: 'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null);
-    const [articlesIndex, systemLore, shipRecords, modules, relations] = await Promise.all([
+    const [articlesIndex, systemLore, shipRecords, modules, relations, shipLore, shipArt] = await Promise.all([
       get('articles/index.json'), get('systems/lore.json'), get('ship/records.json'),
-      get('modules.json'), get('relations.json'),
+      get('modules.json'), get('relations.json'), get('ship/lore.json'), get('ship/bld/buildings.json'),
     ]);
     const titles = {};
     anchors.forEach(a => { titles[a.slug] = a.title; });
     const reg = buildRecords({
-      world, characters, articlesIndex, shipRecords, modules, relations, refArticles: REF_ARTICLES,
+      world, characters, articlesIndex, shipRecords, shipLore, shipArt, modules, relations, refArticles: REF_ARTICLES,
       systems: {manifest: [...readySlugs], titles, lore: systemLore || {}},
     });
     if (reg.diagnostics.length) console.warn('Реестр записей:', reg.diagnostics);
@@ -2646,14 +2683,56 @@ function finishMapPick(p) {
   setRecordOpener('article', (rec, anchor) => {
     window.dispatchEvent(new CustomEvent('mirror-open', {detail: {url: rec.url + (anchor ? '#' + anchor : '')}}));
   });
-  const openShipRecord = (rec) => {
+  /* Район и здание схемы Фенома (02.11.2026, перенос планшета, шаг 4.2) — окно
+     записи в верхнем слое над Феномом, открытым на вкладке схемы: «назад» —
+     обратно на схему, камера там же. Тап по району/зданию на схеме ведёт сюда
+     же (setSubmapRecordHandler) — без перелёта камеры: она и так на нём. */
+  const recordMeta = (rec) => {
+    const node = graphById.get(rec.id);
+    if (node) return tabIconOf(node, {id: node.id});
+    return {id: rec.id, kind: rec.kind, label: rec.title, name: rec.title, image: rec.image,
+      letter: rec.title.replace(/^[^\p{L}]+/u, '').charAt(0).toUpperCase() || '?',
+      shape: rec.kind === 'zone' ? 'circle' : 'event-square', kindLabel: rec.kind === 'zone' ? 'Район' : 'Здание'};
+  };
+  function shipRecordView(rec) {
+    const reg = getRegistry();
+    const parent = rec.parentId ? reg.byId.get(rec.parentId) : null;
+    const kids = (reg.children.get(rec.id) || []).map(id => reg.byId.get(id)).filter(r => r && r.kind === 'building');
+    return {
+      id: rec.id, code: '', title: rec.title, shortTitle: '', recruit: '', images: rec.images || [],
+      subtitle: rec.kind === 'building' ? `Здание Фенома · ${parent ? parent.title : ''}` : 'Район Фенома',
+      description: rec.text || '', beacon: false, completed: false, article: null, modules: [], materials: [],
+      submap: null, parentMeta: parent ? recordMeta(parent) : null, self: recordMeta(rec), canEdit: false,
+      characters: [], children: kids.map(recordMeta), roster: [], branch: [],
+    };
+  }
+  function openShipWindow(rec) {
+    openStoryNodeCurrent = null;   // «Правки» у района/здания нет
+    openStory(shipRecordView(rec), {
+      onParent: () => {
+        const parent = rec.parentId;
+        if (parent && graphById.has(parent)) { closeStory(); return; }   // Феном лежит под окном
+        if (parent) openRecord(parent, '', {fromShip: true});
+      },
+      onChild: (id) => openRecord(id, '', {fromShip: true}),
+      onCharacter: () => {},
+    });
+    noteRecord(rec.id, 'story');
+  }
+  const openShipRecord = (rec, anchor, options) => {
     const target = rec.mapTargets[0];
     const host = target && graphById.get(target.recordId);
     if (!host) return false;
-    openNode(host);
-    focusSubmap(target.key);
+    if (!(isPhenomOpen() && openWorldNodeCurrent === host)) openNode(host, {layer: 'phenom'});
+    if (!options.fromShip) focusSubmap(target.key, false);
+    openShipWindow(rec);
     return true;
   };
+  setSubmapRecordHandler((key) => {
+    const reg = getRegistry();
+    const rec = reg && reg.records.find(r => (r.kind === 'zone' || r.kind === 'building') && r.source.key === key);
+    if (rec) openShipRecord(rec, '', {fromShip: true});
+  });
   setRecordOpener('zone', openShipRecord);
   setRecordOpener('building', openShipRecord);
 
@@ -2662,6 +2741,8 @@ function finishMapPick(p) {
   setRestorer((entry) => {
     const node = graphById.get(entry.id);
     if (node) { openNode(node, {...entry.opts, layer: entry.layer}); return true; }
+    const rec = getRegistry() && getRegistry().byId.get(entry.id);
+    if (rec && (rec.kind === 'zone' || rec.kind === 'building')) { openShipWindow(rec); return true; }
     const sys = typeof entry.id === 'string' && entry.id.startsWith('system:')
       && systemChoices.find(s => s.id === entry.id);
     if (sys) { openSystem(sys.title); return true; }

@@ -16,7 +16,8 @@
    (articles/img/<хеш>.webp).
    ============================================================ */
 
-import { fetchT } from './net.js?v=213';
+import { fetchT } from './net.js?v=214';
+import { resolveModule } from './records.js?v=214';
 
 const INDEX_URL = 'articles/index.json';
 const ANCHOR_RE = /^[A-Za-z0-9_-]{1,40}$/;
@@ -240,20 +241,49 @@ export async function renderMirror(url, scroller) {
   }
   art.appendChild(foot);
 
-  // Ссылки: #якорь — прокрутка здесь же; статья, у которой есть копия, —
-  // событие наружу (js/articles.js решает, где её открыть); остальное —
-  // во внешнем браузере / браузере Telegram.
-  art.addEventListener('click', (e) => {
+  // Статья целиком: якоря только здесь же (без «открыть заново» — её и так видно).
+  wireLinks(art, '', scroller);
+  return art;
+}
+
+/* Ссылки: #якорь — прокрутка здесь же (нет такого раздела рядом — статья
+   целиком на нём); статья, у которой есть копия, — событие наружу
+   (js/articles.js решает, где её открыть); остальное — во внешнем браузере /
+   браузере Telegram. */
+function wireLinks(root, url, scroller) {
+  root.addEventListener('click', (e) => {
     const a = e.target.closest('a[data-mirror-link]');
-    if (!a || !art.contains(a)) return;
+    if (!a || !root.contains(a)) return;
     e.preventDefault();
     const href = a.getAttribute('href') || '';
-    if (href.startsWith('#')) { scrollToAnchor(scroller, href.slice(1)); return; }
+    if (href.startsWith('#')) {
+      if (!scrollToAnchor(scroller, href.slice(1)) && url) {
+        window.dispatchEvent(new CustomEvent('mirror-open', {detail: {url: normalizeUrl(url) + href}}));
+      }
+      return;
+    }
     if (a.dataset.external) { openExternal(href); return; }
     mirrorOf(href).then(found => {
       if (found) window.dispatchEvent(new CustomEvent('mirror-open', {detail: {url: href}}));
       else openExternal(href);
     });
   });
-  return art;
+}
+
+/* Модуль — раздел статьи в окне точки (02.11.2026, перенос планшета, шаг 4):
+   блоки копии от selector.from до selector.to (js/records.js resolveModule),
+   тем же белым списком, что статья целиком. Готовый <div> или null: копии
+   нет, или границы не нашлись (статью на Teletype поменяли) — тогда окно
+   пишет «раздел недоступен», чужой текст не подставляется. */
+export async function renderModule(url, selector, scroller) {
+  const entry = await mirrorOf(url);
+  if (!entry) return null;
+  const doc = await loadDoc(entry);
+  const found = resolveModule(doc, selector);
+  if (found.status !== 'ok') return null;
+  const box = document.createElement('div');
+  box.className = 'mirror-article node-module-body';
+  build(found.blocks, box);
+  wireLinks(box, url, scroller);
+  return box;
 }

@@ -2769,6 +2769,41 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   white-space: normal;
 }
 
+/* Что это за запись — у района и здания схемы (окно записи, 02.11.2026). */
+.story-subtitle { margin: -6px 0 14px; font-size: 13px; color: rgba(232,232,238,0.6); }
+
+/* Модули — разделы статей под описанием (02.11.2026, перенос планшета, шаг 4;
+   вид — макет N5): черта, заголовок, текст копии статьи (своя вёрстка
+   .mirror-article), строка «Из статьи «…»». */
+.node-module {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+.node-module > h2 { margin: 0 0 8px; font-size: 19px; line-height: 1.3; color: #fff; }
+.node-module .node-module-body { max-width: none; margin: 0; }
+.node-module .node-module-body > :first-child { margin-top: 0; }
+.node-module-source { margin: 6px 0 0; font-size: 13px; color: rgba(232,232,238,0.6); }
+.node-module-source a { color: #AFEEEE; }
+.node-module-broken { color: #f0b37e; font-size: 14px; }
+
+/* Подписи групп в колонке мест нижней панели: «Внутри» / «Материалы». Во
+   всю ширину колонки, проявляются вместе с подписями маркеров. */
+.node-links-cap {
+  flex: 0 0 100%;
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(175,238,238,0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: calc((var(--p) - 0.6) * 2.5);
+}
+/* Статья — значок 📖 на тёмной заглушке (не цветной букве точки). */
+.node-marker.kind-article { background: rgba(175,238,238,0.14); font-size: 0.75em; }
+
 @media (max-width: 600px) {
   /* Окно точки — на весь экран и на телефоне (24.09.2026), полей тут нет. */
   /* Вкладок в таб-баре статей шесть (у Фенома двойная ячейка), и самая

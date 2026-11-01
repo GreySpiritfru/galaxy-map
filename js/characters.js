@@ -12,11 +12,11 @@
    Данные — characters.json, что показать (view) собирает map.js: там граф,
    камера и переходы.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=213';
-import { canEdit, showEditor } from './editor.js?v=213';
-import { renderSheet, renderNodeLinks } from './node-window.js?v=213';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average } from './rolls.js?v=213';
-import { loadNotes, notesOf, notesHtml, wireNotes } from './notes.js?v=213';
+import { escapeHtml } from './modal.js?v=214';
+import { canEdit, showEditor } from './editor.js?v=214';
+import { renderSheet, renderNodeLinks } from './node-window.js?v=214';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average } from './rolls.js?v=214';
+import { loadNotes, notesOf, notesHtml, wireNotes } from './notes.js?v=214';
 
 const overlay = document.getElementById('charOverlay');
 const content = document.getElementById('charContent');

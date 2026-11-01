@@ -15,8 +15,8 @@
    submapX/submapY рисуются САМОЙ схемой (window.__ship.setChars, фрейм того же
    сайта — доступ напрямую), координаты — единицы схемы (пиксели бокового
    вида × 10). */
-import { closeModal } from './modal.js?v=213';
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks, syncDock } from './node-window.js?v=213';
+import { closeModal } from './modal.js?v=214';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks, syncDock } from './node-window.js?v=214';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomInfoContent = document.getElementById('phenomInfoContent');
@@ -83,7 +83,13 @@ function armShipPick() {
    прокидывает map.js (там граф связей), рисует их схема. */
 let shipChars = [];
 let onShipCharSelect = null;
-const sendChars = api => api.setChars(shipChars, id => onShipCharSelect && onShipCharSelect(id));
+// Тап по району/зданию схемы → окно записи (map.js, setSubmapRecordHandler; 02.11.2026).
+let onShipRecord = null;
+const sendChars = api => {
+  api.setChars(shipChars, id => onShipCharSelect && onShipCharSelect(id));
+  if (api.setRecordHandler) api.setRecordHandler(onShipRecord);
+};
+export function setSubmapRecordHandler(fn) { onShipRecord = fn || null; }
 export function setSubmapCharacters(list, onSelect) {
   shipChars = list;
   onShipCharSelect = onSelect;
@@ -138,7 +144,7 @@ export function openSubmapView() {
   // мог промолчать (плашка в этот момент «в движении»), меряем сами.
   if (card) syncDock(card);
   const frame = document.createElement('iframe');
-  frame.src = 'ship/?v=213';
+  frame.src = 'ship/?v=214';
   frame.title = 'Схема корабля Феном';
   phenomShipEl.appendChild(frame);
   shipFrame = frame;
@@ -160,10 +166,10 @@ export function closeSubmapView() {
 /* Схема на районе или здании (02.11.2026, openRecord района/здания): вкладка
    «Карта» открытого окна, камера схемы — на ключ из ship/records.json
    (sourceKey = название в schema.json / bld/buildings.json). */
-export function focusSubmap(key) {
+export function focusSubmap(key, card = true) {
   if (!currentSubmap || !isPhenomOpen()) return;
   if (!isSubmapViewOpen()) openSubmapView();
-  withShip(api => { if (api.focusRecord) api.focusRecord(key); });
+  withShip(api => { if (api.focusRecord) api.focusRecord(key, card); });
 }
 
 export function isSubmapViewOpen() {

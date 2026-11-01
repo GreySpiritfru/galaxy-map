@@ -15,11 +15,11 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=213';
-import { REF_ARTICLES } from './articles.js?v=213';
-import { renderMirror, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=213';
-import { frameHtml, safeHttps } from './net.js?v=213';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=213';
+import { escapeHtml } from './modal.js?v=214';
+import { REF_ARTICLES } from './articles.js?v=214';
+import { renderMirror, renderModule, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=214';
+import { frameHtml, safeHttps } from './net.js?v=214';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=214';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -141,6 +141,7 @@ export function renderNodeContent(container, view) {
   delete container.dataset.tab;
   container.__gameScroll = 0;
   container.insertAdjacentHTML('afterbegin', `<div class="node-desc">${descriptionHtml(view)}</div>`);
+  appendModules(container.firstElementChild, view, container);
   // Набор поверх статьи — плашка со своим ✕ (встроить её в чужую страницу
   // нельзя). Пересоздаётся на каждое открытие: набор могли поменять.
   const recruit = recruitHtml(view, true);
@@ -514,6 +515,65 @@ export function renderSheet(container, url) {
   }).catch(fallback);
 }
 
+/* Модули (02.11.2026, перенос планшета, шаг 4; вид — макет N5): разделы
+   статей под описанием, каждый — заголовок, текст копии статьи и «Из статьи
+   «…»» (статья целиком на этом разделе). Какие — решает владелец
+   (modules.json + relations.json, js/records.js). Текст грузится после
+   открытия окна; окно успели сменить — не вставляем. */
+const wordsOf = text => (String(text || '').toLowerCase().replace(/ё/g, 'е').match(/[\p{L}\p{N}]+/gu) || [])
+  .filter(w => w.length > 2);
+/* Описание повторяет раздел статьи (у альянсов и Авалона оно и есть этот
+   раздел, слово в слово; владелец 02.11.2026: «описание убрать, если
+   повторяется») — в окне оно прячется, в world.json остаётся (им пользуются
+   бот и карточки). Короткое (меньше 12 слов) не прячем: у Фенома 5 слов
+   совпали бы случайно. */
+const REPEAT_MIN_WORDS = 12;
+const REPEAT_SHARE = 0.9;
+function repeatsModule(description, box) {
+  const words = wordsOf(description);
+  if (words.length < REPEAT_MIN_WORDS) return false;
+  const inModule = new Set(wordsOf(box.textContent));
+  return words.filter(w => inModule.has(w)).length / words.length >= REPEAT_SHARE;
+}
+
+function appendModules(desc, view, scroller) {
+  const mods = Array.isArray(view.modules) ? view.modules : [];
+  if (!desc || !mods.length) return;
+  mods.forEach(m => {
+    const sec = document.createElement('section');
+    sec.className = 'node-module';
+    const h = document.createElement('h2');
+    h.textContent = m.title;
+    const body = document.createElement('div');
+    body.innerHTML = '<div class="mirror-loading">Загрузка…</div>';
+    const src = document.createElement('p');
+    src.className = 'node-module-source';
+    const a = document.createElement('a');
+    a.href = '#';
+    a.textContent = `«${m.articleTitle}»`;
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.dispatchEvent(new CustomEvent('mirror-open', {detail: {url: m.url + '#' + m.selector.from}}));
+    });
+    src.append('Из статьи ', a);
+    sec.append(h, body, src);
+    desc.appendChild(sec);
+    const broken = () => {
+      if (!sec.isConnected) return;
+      body.innerHTML = '<p class="node-module-broken">Этот раздел статьи сейчас не найден — статью могли изменить. Целиком она открывается по ссылке ниже.</p>';
+    };
+    renderModule(m.url, m.selector, scroller).then(box => {
+      if (!sec.isConnected) return;
+      if (!box) { broken(); return; }
+      // Раздел сам начинается с заголовка («1. Передняя оболочка.») — второй сверху не нужен.
+      if (/^H[2-4]$/.test(box.firstElementChild ? box.firstElementChild.tagName : '')) h.remove();
+      body.replaceWith(box);
+      const acc = desc.querySelector(':scope > .story-accordion');
+      if (acc && repeatsModule(view.description, box)) acc.hidden = true;
+    }).catch(broken);
+  });
+}
+
 function descriptionHtml(view) {
   const imagesHtml = (Array.isArray(view.images) ? view.images : [])
     .map(src => `<img class="story-banner-img" src="${escapeHtml(src)}" alt="" loading="lazy">`)
@@ -531,6 +591,7 @@ function descriptionHtml(view) {
   return `
     ${imagesHtml}
     <div class="story-title">${codeHtml}${escapeHtml(view.title || '')}${doneHtml}</div>
+    ${view.subtitle ? `<div class="story-subtitle">${escapeHtml(view.subtitle)}</div>` : ''}
     ${recruitHtml(view, false)}
     ${descHtml}
   `;
@@ -651,15 +712,37 @@ const pinnedFirst = (list) => [...list.filter(i => i.pinned), ...list.filter(i =
    персонажи (группа союзников — одним элементом, не рвётся между рядами).
    Порядок персонажей — как в колонке (группы подряд): по нему же берутся
    лица для стопки, чтобы каждое лицо летело в свой маркер. */
+/* Материалы (02.11.2026, перенос планшета, шаг 4): статьи, куски которых
+   показаны в теле окна (modules.json + relations.json), — статья целиком.
+   В колонке мест, после них, с подписями групп «Внутри» / «Материалы»
+   (подписи — только когда групп больше одной, «Материалы» — всегда: значок
+   📖 сам не говорит, что это статья). */
 function linkParts(view, go) {
-  const points = pinnedFirst(Array.isArray(view.children) ? view.children : []);
+  const kids = pinnedFirst(Array.isArray(view.children) ? view.children : []);
+  const materials = Array.isArray(view.materials) ? view.materials : [];
+  const points = [...kids, ...materials];
   const groups = groupByLinks(pinnedFirst(Array.isArray(view.characters) ? view.characters : []));
   const chars = groups.flat();
   const pointsCol = document.createElement('div');
   // Мест больше трёх — колонка в два ряда, иначе вытягивалась бы вверх.
   pointsCol.className = 'node-links-col is-points' + (points.length > 3 ? ' is-wide' : '');
-  const pointChips = points.map(p => linkChip(p, go.point));
+  const caption = (text) => {
+    const c = document.createElement('span');
+    c.className = 'node-links-cap';
+    c.textContent = text;
+    pointsCol.appendChild(c);
+  };
+  if (kids.length && materials.length) caption(view.insideLabel || 'Внутри');
+  const pointChips = kids.map(p => linkChip(p, go.point));
   pointChips.forEach(c => pointsCol.appendChild(c));
+  if (materials.length) {
+    caption('Материалы');
+    materials.forEach(m => {
+      const chip = linkChip(m, () => go.material(m));
+      pointChips.push(chip);
+      pointsCol.appendChild(chip);
+    });
+  }
   const charsCol = document.createElement('div');
   charsCol.className = 'node-links-col is-chars';
   const charChips = [];
@@ -917,6 +1000,8 @@ export function renderNodeLinks(el, view, handlers, opts) {
     parent: () => { if (handlers.onParent) handlers.onParent(); },
     point: (id) => { if (handlers.onChild) handlers.onChild(id); },
     char: (id) => { if (handlers.onCharacter) handlers.onCharacter(id); },
+    // Статья целиком — в модале, на разделе, с которого начинается первый её кусок в окне.
+    material: (m) => window.dispatchEvent(new CustomEvent('mirror-open', {detail: {url: m.url + (m.anchor ? '#' + m.anchor : '')}})),
   };
   const parts = linkParts(view, go);
   const parent = view.parentMeta && view.parentMeta.id ? view.parentMeta : null;
@@ -925,7 +1010,8 @@ export function renderNodeLinks(el, view, handlers, opts) {
   el.hidden = !canOpen && !parent && !title;
   if (el.hidden) return;
 
-  const pointsStack = parts.points.length ? stackEl(parts.points, 'Места и сюжеты') : null;
+  const pointsStack = parts.points.length
+    ? stackEl(parts.points, view.materials && view.materials.length ? 'Внутри и материалы' : 'Места и сюжеты') : null;
   const charsStack = parts.chars.length ? stackEl(parts.chars, 'Персонажи') : null;
   const strip = stripEl(view, parent, title, [pointsStack, charsStack].filter(Boolean), canOpen, go);
   el.appendChild(strip.el);
