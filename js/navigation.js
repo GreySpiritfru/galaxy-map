@@ -38,12 +38,12 @@
    вложенность считается по ТИПАМ слоёв (модал/сюжет/локация/система), а не
    по конкретным id узлов, этого достаточно для всех текущих сценариев.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=210';
-import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=210';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=210';
-import { closeStory, isStoryOpen } from './stories.js?v=210';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=210';
-import { closeTour, isTourOpen } from './tour.js?v=210';
+import { closeModal, isArticleOpen } from './modal.js?v=211';
+import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=211';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=211';
+import { closeStory, isStoryOpen } from './stories.js?v=211';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=211';
+import { closeTour, isTourOpen } from './tour.js?v=211';
 
 /* Мини-игра (js/flappy.js, v=195) — модуль грузится только по нажатию, поэтому
    отсюда его не импортируем: смотрим на класс слоя, закрываем событием. */

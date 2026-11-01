@@ -10,8 +10,8 @@
    количество, c — [заряды, максимум], s — откуда/зачем, d — памятка выполнена,
    img — арт в images/notes/. Автора записи нет: файл публичный.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=210';
-import { fetchT } from './net.js?v=210';
+import { escapeHtml } from './modal.js?v=211';
+import { fetchT } from './net.js?v=211';
 
 const NOTES_URL = 'notes.json';
 let notesCache = null; // {at, data}
@@ -45,7 +45,7 @@ function cleanNote(n) {
   if (Number.isInteger(n.q) && n.q >= 0 && n.q <= 9999) note.q = n.q;
   if (Array.isArray(n.c) && n.c.length === 2 && n.c.every(Number.isInteger)
       && n.c[0] >= 0 && n.c[0] <= n.c[1] && n.c[1] > 0 && n.c[1] <= 99) note.c = n.c;
-  if (typeof n.s === 'string') note.s = n.s.slice(0, 120);
+  if (typeof n.s === 'string') note.s = n.s.slice(0, 3500); // описание до 3500 (17.10.2026)
   if (typeof n.img === 'string' && n.img.length <= 140 && !/\s/.test(n.img) && IMG_RE.test(n.img)) note.img = n.img;
   return note;
 }
@@ -71,6 +71,14 @@ function chargesHtml(c) {
     <div class="note-charges-num">⚡ ${cur}/${max}</div>`;
 }
 
+// Описание: короткое — строкой, длинное — свёрнутым блоком (тап — раскрыть).
+function descHtml(s) {
+  if (!s) return '';
+  if (s.length <= 140 && !s.includes('\n')) return `<div class="note-src">${escapeHtml(s)}</div>`;
+  const head = s.split('\n')[0].slice(0, 90);
+  return `<details class="note-desc"><summary>${escapeHtml(head)}…</summary><div class="note-src">${escapeHtml(s)}</div></details>`;
+}
+
 function gearHtml(n) {
   const img = typeof n.img === 'string' && IMG_RE.test(n.img) ? n.img : '';
   // ×1 не показываем: у предмета количество есть всегда (с 16.10.2026 — 1 по умолчанию).
@@ -83,7 +91,7 @@ function gearHtml(n) {
       ${art}${qty}
       <div class="note-name">${escapeHtml(n.x)}</div>
       ${Array.isArray(n.c) ? chargesHtml(n.c) : ''}
-      ${n.s ? `<div class="note-src">${escapeHtml(n.s)}</div>` : ''}
+      ${descHtml(n.s)}
     </li>`;
 }
 
@@ -93,7 +101,7 @@ function memoHtml(n) {
       <span class="note-check" role="img" aria-label="${n.d ? 'Выполнено' : 'Открыто'}">${n.d ? '✓' : ''}</span>
       <div class="note-memo-body">
         <div class="note-memo-text">${escapeHtml(n.x)}</div>
-        ${n.s ? `<div class="note-src">${escapeHtml(n.s)}</div>` : ''}
+        ${descHtml(n.s)}
         ${img ? `<button class="note-art is-inline" type="button" aria-expanded="false" aria-label="Арт: ${escapeHtml(n.x)}"><img src="${escapeHtml(img)}" alt="" loading="lazy" decoding="async"></button>` : ''}
       </div>
     </li>`;
@@ -114,7 +122,7 @@ export function notesHtml(list, name) {
   const open = memos.filter(n => !n.d).length;
   return `<div class="notes">
       ${loadError ? '<div class="notes-status" role="status">Обновить заметки не удалось. Показана сохранённая копия.</div>' : ''}
-      ${gear.length ? `<div class="notes-head"><span>🎒 Снаряжение</span><span class="notes-count">${gear.length}</span></div>
+      ${gear.length ? `<div class="notes-head"><span>Снаряжение</span><span class="notes-count">${gear.length}</span></div>
         <ul class="notes-gear">${gear.map(gearHtml).join('')}</ul>` : ''}
       ${memos.length ? `<div class="notes-head"><span>📝 Заметки</span><span class="notes-count">${open ? `открыто ${open} из ${memos.length}` : memos.length}</span></div>
         <ul class="notes-memos">${memos.map(memoHtml).join('')}</ul>` : ''}

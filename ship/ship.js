@@ -444,7 +444,6 @@
           if (!e) {
             e = {sp: null, seen: now, url: 'bg/' + key + '.webp' + BV}; tiles.set(key, e);
             PIXI.Assets.load(e.url).then(t => {
-              if (tiles.get(key) !== e) { PIXI.Assets.unload(e.url); return; }
               const sp = e.sp = new PIXI.Sprite(t);
               sp.position.set(c.X0 * S + q * tp * kx, c.Y0 * S + r * tp * ky);
               sp.width = (t.width + 1) / L.f * kx; sp.height = (t.height + 1) / L.f * ky;   // +1 текстель — без щелей на стыках
@@ -454,9 +453,11 @@
           e.seen = now;
         }
       }
-      for (const [key, e] of tiles) if (now - e.seen > 4000) {
+      // Выгружаем только загруженные: запись, удалённая до конца загрузки, при возврате камеры создавалась заново на тот же url
+      // (Assets отдаёт ту же текстуру), и старая по завершении выгружала её из-под новой — «alphaMode of null» (22.10, v104)
+      for (const [key, e] of tiles) if (e.sp && now - e.seen > 4000) {
         tiles.delete(key);
-        if (e.sp) { cont.removeChild(e.sp); e.sp.destroy(); PIXI.Assets.unload(e.url); }
+        cont.removeChild(e.sp); e.sp.destroy(); PIXI.Assets.unload(e.url);
       }
     }
   }
