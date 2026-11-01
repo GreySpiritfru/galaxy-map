@@ -1,0 +1,132 @@
+{
+  "v": 1,
+  "note": "Связи сверх parent/links (02.11.2026): material — содержание статьи у точки (embed — текст модуля в окне, link — переход), related — смысловая связь. Обратные группы считаются картой, зеркальных записей нет.",
+  "items": [
+    {
+      "id": "r-terrane-federation-alliance",
+      "type": "material",
+      "from": "terrane",
+      "to": "tt/greyspirit/toTVpow7sb1",
+      "moduleId": "federation-alliance",
+      "mode": "embed",
+      "order": 10
+    },
+    {
+      "id": "r-terrane-federation-population",
+      "type": "material",
+      "from": "terrane",
+      "to": "tt/greyspirit/y7G2E4B490h",
+      "moduleId": "federation-population",
+      "mode": "embed",
+      "order": 20
+    },
+    {
+      "id": "r-ekvestriytsy-triumvirate-alliance",
+      "type": "material",
+      "from": "ekvestriytsy",
+      "to": "tt/greyspirit/toTVpow7sb1",
+      "moduleId": "triumvirate-alliance",
+      "mode": "embed",
+      "order": 10
+    },
+    {
+      "id": "r-ekvestriytsy-triumvirate-population",
+      "type": "material",
+      "from": "ekvestriytsy",
+      "to": "tt/greyspirit/y7G2E4B490h",
+      "moduleId": "triumvirate-population",
+      "mode": "embed",
+      "order": 20
+    },
+    {
+      "id": "r-groksy-grox-alliance",
+      "type": "material",
+      "from": "groksy",
+      "to": "tt/greyspirit/toTVpow7sb1",
+      "moduleId": "grox-alliance",
+      "mode": "embed",
+      "order": 10
+    },
+    {
+      "id": "r-groksy-grox-population",
+      "type": "material",
+      "from": "groksy",
+      "to": "tt/greyspirit/y7G2E4B490h",
+      "moduleId": "grox-population",
+      "mode": "embed",
+      "order": 20
+    },
+    {
+      "id": "r-groksy-grox-race",
+      "type": "material",
+      "from": "groksy",
+      "to": "tt/greyspirit/y7G2E4B490h",
+      "moduleId": "grox-race",
+      "mode": "embed",
+      "order": 30
+    },
+    {
+      "id": "r-damasiytsy-council-alliance",
+      "type": "material",
+      "from": "damasiytsy",
+      "to": "tt/greyspirit/toTVpow7sb1",
+      "moduleId": "council-alliance",
+      "mode": "embed",
+      "order": 10
+    },
+    {
+      "id": "r-damasiytsy-council-population",
+      "type": "material",
+      "from": "damasiytsy",
+      "to": "tt/greyspirit/y7G2E4B490h",
+      "moduleId": "council-population",
+      "mode": "embed",
+      "order": 20
+    },
+    {
+      "id": "r-osvobozhdennye-territorii-liberated-alliance",
+      "type": "material",
+      "from": "osvobozhdennye-territorii",
+      "to": "tt/greyspirit/toTVpow7sb1",
+      "moduleId": "liberated-alliance",
+      "mode": "embed",
+      "order": 10
+    },
+    {
+      "id": "r-avalon-avalon-ring",
+      "type": "material",
+      "from": "avalon",
+      "to": "tt/greyspirit/SEOWfJxAewY",
+      "moduleId": "avalon-ring",
+      "mode": "embed",
+      "order": 10
+    },
+    {
+      "id": "r-phenome-phenome-front",
+      "type": "material",
+      "from": "phenome",
+      "to": "tt/greyspirit/4tRzyNaVfEQ",
+      "moduleId": "phenome-front",
+      "mode": "embed",
+      "order": 10
+    },
+    {
+      "id": "r-phenome-phenome-city",
+      "type": "material",
+      "from": "phenome",
+      "to": "tt/greyspirit/4tRzyNaVfEQ",
+      "moduleId": "phenome-city",
+      "mode": "embed",
+      "order": 20
+    },
+    {
+      "id": "r-phenome-phenome-rear",
+      "type": "material",
+      "from": "phenome",
+      "to": "tt/greyspirit/4tRzyNaVfEQ",
+      "moduleId": "phenome-rear",
+      "mode": "embed",
+      "order": 30
+    }
+  ]
+}

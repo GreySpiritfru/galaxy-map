@@ -1,0 +1,160 @@
+{
+  "v": 2,
+  "note": "Модули — разделы статей, которые показываются в окнах точек (02.11.2026). selector sibling-range: from/to — id блоков копии статьи (articles/), включительно, в одном контейнере. Подключение к точке — relations.json.",
+  "sources": {
+    "tt/greyspirit/toTVpow7sb1": {
+      "url": "https://teletype.in/@greyspirit/toTVpow7sb1"
+    },
+    "tt/greyspirit/y7G2E4B490h": {
+      "url": "https://teletype.in/@greyspirit/y7G2E4B490h"
+    },
+    "tt/greyspirit/SEOWfJxAewY": {
+      "url": "https://teletype.in/@greyspirit/SEOWfJxAewY"
+    },
+    "tt/greyspirit/4tRzyNaVfEQ": {
+      "url": "https://teletype.in/@greyspirit/4tRzyNaVfEQ"
+    }
+  },
+  "modules": {
+    "federation-alliance": {
+      "articleId": "tt/greyspirit/toTVpow7sb1",
+      "title": "Альянс",
+      "selector": {
+        "type": "sibling-range",
+        "from": "g7eU",
+        "to": "g7eU"
+      },
+      "order": 10
+    },
+    "federation-population": {
+      "articleId": "tt/greyspirit/y7G2E4B490h",
+      "title": "Кто там живёт и как попасть",
+      "selector": {
+        "type": "sibling-range",
+        "from": "9dXU",
+        "to": "9dXU"
+      },
+      "order": 20
+    },
+    "triumvirate-alliance": {
+      "articleId": "tt/greyspirit/toTVpow7sb1",
+      "title": "Альянс",
+      "selector": {
+        "type": "sibling-range",
+        "from": "p02L",
+        "to": "p02L"
+      },
+      "order": 10
+    },
+    "triumvirate-population": {
+      "articleId": "tt/greyspirit/y7G2E4B490h",
+      "title": "Кто там живёт и как попасть",
+      "selector": {
+        "type": "sibling-range",
+        "from": "B80r",
+        "to": "B80r"
+      },
+      "order": 20
+    },
+    "grox-alliance": {
+      "articleId": "tt/greyspirit/toTVpow7sb1",
+      "title": "Альянс",
+      "selector": {
+        "type": "sibling-range",
+        "from": "w3Pa",
+        "to": "w3Pa"
+      },
+      "order": 10
+    },
+    "grox-population": {
+      "articleId": "tt/greyspirit/y7G2E4B490h",
+      "title": "Кто там живёт",
+      "selector": {
+        "type": "sibling-range",
+        "from": "y2Nz",
+        "to": "y2Nz"
+      },
+      "order": 20
+    },
+    "grox-race": {
+      "articleId": "tt/greyspirit/y7G2E4B490h",
+      "title": "Раса гроксов",
+      "selector": {
+        "type": "sibling-range",
+        "from": "lad6",
+        "to": "RUbE"
+      },
+      "order": 30
+    },
+    "council-alliance": {
+      "articleId": "tt/greyspirit/toTVpow7sb1",
+      "title": "Альянс",
+      "selector": {
+        "type": "sibling-range",
+        "from": "ZV34",
+        "to": "ZV34"
+      },
+      "order": 10
+    },
+    "council-population": {
+      "articleId": "tt/greyspirit/y7G2E4B490h",
+      "title": "Кто там живёт и как попасть",
+      "selector": {
+        "type": "sibling-range",
+        "from": "5TlD",
+        "to": "5TlD"
+      },
+      "order": 20
+    },
+    "liberated-alliance": {
+      "articleId": "tt/greyspirit/toTVpow7sb1",
+      "title": "Альянс",
+      "selector": {
+        "type": "sibling-range",
+        "from": "dZls",
+        "to": "dZls"
+      },
+      "order": 10
+    },
+    "avalon-ring": {
+      "articleId": "tt/greyspirit/SEOWfJxAewY",
+      "title": "Кольцо Авалона",
+      "selector": {
+        "type": "sibling-range",
+        "from": "e5M4",
+        "to": "xZPA"
+      },
+      "order": 10
+    },
+    "phenome-front": {
+      "articleId": "tt/greyspirit/4tRzyNaVfEQ",
+      "title": "Передняя оболочка",
+      "selector": {
+        "type": "sibling-range",
+        "from": "ycV9",
+        "to": "ZEoA"
+      },
+      "order": 10
+    },
+    "phenome-city": {
+      "articleId": "tt/greyspirit/4tRzyNaVfEQ",
+      "title": "Город",
+      "selector": {
+        "type": "sibling-range",
+        "from": "zzhw",
+        "to": "WcDJ"
+      },
+      "order": 20
+    },
+    "phenome-rear": {
+      "articleId": "tt/greyspirit/4tRzyNaVfEQ",
+      "title": "Техническая задняя оболочка",
+      "selector": {
+        "type": "sibling-range",
+        "from": "76Qo",
+        "to": "khTl"
+      },
+      "order": 30
+    }
+  }
+}

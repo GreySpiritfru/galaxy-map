@@ -1260,15 +1260,11 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   document.getElementById('cardClose').onclick = () => showCard(null);
 
   // ---------- здания и персонажи ----------
-  // Здания — НАБРОСОК: названия из schema.json (z.buildings), в пустых районах — по типовому из BLD_EXTRA;
-  // место случайное внутри района, но одно и то же при каждом открытии (зерно — имя). Персонажи — из окна
-  // Фенома (setChars), submapX/submapY — единицы мира (пиксели бокового вида × 10). Значки — в экранных
-  // пикселях поверх подписей районов: размер не зависит от приближения.
-  const BLD_EXTRA = {'Капитанский мостик': ['Рубка'], 'Район модулей': ['Склад модулей', 'Сборочный цех'],
-    'Космопорт': ['Ангар', 'Верфь'], 'Район ферм': ['Теплицы', 'Элеватор'], 'Район лесов': ['Лесничество'],
-    'Район аквакультуры': ['Садки', 'Рыбный рынок'], 'Пригород': ['Посёлок'], 'Спальный район': ['Жилой блок'],
-    'Центральный город': ['Ратуша'], 'Заводской район': ['Цех'], 'Ночной район': ['Клуб'], 'Пустоши': ['Свалка'],
-    'Тюремный район': ['Тюрьма'], 'Район новой застройки': ['Стройка'], 'Район Фронтира': ['Застава']};
+  // Здания — названия из schema.json (z.buildings); место случайное внутри района, но одно и то же при
+  // каждом открытии (зерно — имя). Типовых набросков в пустых районах (BLD_EXTRA: Лесничество, Садки,
+  // Рыбный рынок, Цех, Тюрьма) больше нет — таких зданий нет (владелец 02.11.2026); постоянные id —
+  // records.json. Персонажи — из окна Фенома (setChars), submapX/submapY — единицы мира (пиксели бокового
+  // вида × 10). Значки — в экранных пикселях поверх подписей районов: размер не зависит от приближения.
   const seedOf = str => { let h = 2166136261; for (const ch of String(str)) h = Math.imul(h ^ ch.codePointAt(0), 16777619); return h >>> 0; };
   const rngOf = seed => () => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   const edgeDist = (x, y, poly) => {
@@ -1302,7 +1298,7 @@ panelEdge: [0x07102e, 0x07102e, 0.75], busbar: [0x7fa6ef, 0x7fa6ef, 0.4], glint:
   const markLabel = text => { const t = new PIXI.Text({text, style: {...labelStyle, fontSize: 22, fontWeight: '500', wordWrapWidth: 220}, resolution: 2}); t.anchor.set(0.5, 0); return t; };
   const blds = [];
   zones.forEach((z, zi) => {
-    const names = z.buildings.length ? z.buildings : (BLD_EXTRA[z.name] || []);
+    const names = z.buildings;
     const rnd = rngOf(seedOf(z.name)), taken = [centroid(z.poly)];
     const [x0, y0, x1, y1] = bbox(z.poly), margin = Math.min(x1 - x0, y1 - y0) * 0.12;
     for (const name of names) {

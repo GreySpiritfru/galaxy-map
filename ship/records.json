@@ -1,0 +1,221 @@
+{
+  "v": 1,
+  "note": "Постоянные id районов и зданий схемы Фенома (02.11.2026). id не меняется при переименовании; sourceKey — ключ в schema.json, bld/buildings.json и lore.json; zone — район здания (id).",
+  "zones": [
+    {
+      "id": "zone:phenome:forests",
+      "sourceKey": "Район лесов",
+      "name": "Район лесов"
+    },
+    {
+      "id": "zone:phenome:farms",
+      "sourceKey": "Район ферм",
+      "name": "Район ферм"
+    },
+    {
+      "id": "zone:phenome:aquaculture",
+      "sourceKey": "Район аквакультуры",
+      "name": "Район аквакультуры"
+    },
+    {
+      "id": "zone:phenome:residential",
+      "sourceKey": "Спальный район",
+      "name": "Спальный район"
+    },
+    {
+      "id": "zone:phenome:suburb",
+      "sourceKey": "Пригород",
+      "name": "Пригород"
+    },
+    {
+      "id": "zone:phenome:central-city",
+      "sourceKey": "Центральный город",
+      "name": "Центральный город"
+    },
+    {
+      "id": "zone:phenome:industrial",
+      "sourceKey": "Заводской район",
+      "name": "Заводской район"
+    },
+    {
+      "id": "zone:phenome:night",
+      "sourceKey": "Ночной район",
+      "name": "Ночной район"
+    },
+    {
+      "id": "zone:phenome:wastelands",
+      "sourceKey": "Пустоши",
+      "name": "Пустоши"
+    },
+    {
+      "id": "zone:phenome:prison",
+      "sourceKey": "Тюремный район",
+      "name": "Тюремный район"
+    },
+    {
+      "id": "zone:phenome:new-development",
+      "sourceKey": "Район новой застройки",
+      "name": "Район новой застройки"
+    },
+    {
+      "id": "zone:phenome:frontier",
+      "sourceKey": "Район Фронтира",
+      "name": "Район Фронтира"
+    },
+    {
+      "id": "zone:phenome:bridge",
+      "sourceKey": "Капитанский мостик",
+      "name": "Капитанский мостик"
+    },
+    {
+      "id": "zone:phenome:modules",
+      "sourceKey": "Район модулей",
+      "name": "Район модулей"
+    },
+    {
+      "id": "zone:phenome:spaceport",
+      "sourceKey": "Космопорт",
+      "name": "Космопорт"
+    }
+  ],
+  "buildings": [
+    {
+      "id": "building:phenome:construction",
+      "sourceKey": "Стройка",
+      "name": "Стройка",
+      "zone": "zone:phenome:wastelands"
+    },
+    {
+      "id": "building:phenome:frontier-hospital",
+      "sourceKey": "Больница «Фронтир»",
+      "name": "Больница «Фронтир»",
+      "zone": "zone:phenome:frontier"
+    },
+    {
+      "id": "building:phenome:dice-casino",
+      "sourceKey": "казино «Дайс»",
+      "name": "казино «Дайс»",
+      "zone": "zone:phenome:new-development"
+    },
+    {
+      "id": "building:phenome:artifact-shop",
+      "sourceKey": "Лавка артефактов",
+      "name": "Лавка артефактов",
+      "zone": "zone:phenome:new-development"
+    },
+    {
+      "id": "building:phenome:night-tower",
+      "sourceKey": "Башня «ночного района»",
+      "name": "Башня «ночного района»",
+      "zone": "zone:phenome:night"
+    },
+    {
+      "id": "building:phenome:central-tower",
+      "sourceKey": "Центральная башня",
+      "name": "Центральная башня",
+      "zone": "zone:phenome:central-city"
+    },
+    {
+      "id": "building:phenome:suburb-tower",
+      "sourceKey": "Пригородная башня",
+      "name": "Пригородная башня",
+      "zone": "zone:phenome:suburb"
+    },
+    {
+      "id": "building:phenome:foxhounds-tattoo",
+      "sourceKey": "Тату-салон «Foxhounds»",
+      "name": "Тату-салон «Foxhounds»",
+      "zone": "zone:phenome:night"
+    },
+    {
+      "id": "building:phenome:nayto-apartment",
+      "sourceKey": "Квартира Найто",
+      "name": "Квартира Найто",
+      "zone": "zone:phenome:night"
+    },
+    {
+      "id": "building:phenome:town-hall",
+      "sourceKey": "Ратуша",
+      "name": "Ратуша",
+      "zone": "zone:phenome:central-city"
+    },
+    {
+      "id": "building:phenome:guild-hotel",
+      "sourceKey": "Отель «Гильдейский»",
+      "name": "Отель «Гильдейский»",
+      "zone": "zone:phenome:suburb"
+    },
+    {
+      "id": "building:phenome:ms-woker-bar",
+      "sourceKey": "Бар «ms W'oker»",
+      "name": "Бар «ms W'oker»",
+      "zone": "zone:phenome:residential"
+    },
+    {
+      "id": "building:phenome:pawnshop",
+      "sourceKey": "Ломбард",
+      "name": "Ломбард",
+      "zone": "zone:phenome:suburb"
+    },
+    {
+      "id": "building:phenome:mexican-cafe",
+      "sourceKey": "Мексиканское кафе",
+      "name": "Мексиканское кафе",
+      "zone": "zone:phenome:suburb"
+    },
+    {
+      "id": "building:phenome:metro-station",
+      "sourceKey": "Станция метро",
+      "name": "Станция метро",
+      "zone": "zone:phenome:residential"
+    },
+    {
+      "id": "building:phenome:hydroponics",
+      "sourceKey": "Станции гидропоники",
+      "name": "Станции гидропоники",
+      "zone": "zone:phenome:farms"
+    },
+    {
+      "id": "building:phenome:regional-hospital",
+      "sourceKey": "Областная больница",
+      "name": "Областная больница",
+      "zone": "zone:phenome:suburb"
+    },
+    {
+      "id": "building:phenome:maglev-station",
+      "sourceKey": "Станция маглева",
+      "name": "Станция маглева",
+      "zone": "zone:phenome:modules"
+    },
+    {
+      "id": "building:phenome:three-eyes-embassy",
+      "sourceKey": "Дип. корпус Трехглазиков",
+      "name": "Дип. корпус Трехглазиков",
+      "zone": "zone:phenome:bridge"
+    },
+    {
+      "id": "building:phenome:diplomatic-corps",
+      "sourceKey": "Дипломатические корпуса",
+      "name": "Дипломатические корпуса",
+      "zone": "zone:phenome:modules"
+    },
+    {
+      "id": "building:phenome:hangars",
+      "sourceKey": "Ангары",
+      "name": "Ангары",
+      "zone": "zone:phenome:spaceport"
+    },
+    {
+      "id": "building:phenome:police-station",
+      "sourceKey": "Полицейский участок",
+      "name": "Полицейский участок",
+      "zone": "zone:phenome:residential"
+    },
+    {
+      "id": "building:phenome:vestibule",
+      "sourceKey": "Вестибюль",
+      "name": "Вестибюль",
+      "zone": "zone:phenome:modules"
+    }
+  ]
+}
