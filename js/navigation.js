@@ -39,12 +39,13 @@
    + записи стопки; по ней, как и раньше, — History API, фокус и ✕/↩.
    Временные слои (Flappy, обучение, статья в модале) — по-прежнему по DOM.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=214';
-import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap, getOpenSystem } from './system-view.js?v=214';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=214';
-import { closeStory, isStoryOpen } from './stories.js?v=214';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=214';
-import { closeTour, isTourOpen } from './tour.js?v=214';
+import { closeModal, isArticleOpen } from './modal.js?v=215';
+import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap, getOpenSystem } from './system-view.js?v=215';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=215';
+import { closeStory, isStoryOpen } from './stories.js?v=215';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=215';
+import { closeTour, isTourOpen } from './tour.js?v=215';
+import { isViewerOpen, closeViewer } from './viewer.js?v=215';
 
 /* Мини-игра (js/flappy.js, v=195) — модуль грузится только по нажатию, поэтому
    отсюда его не импортируем: смотрим на класс слоя, закрываем событием. */
@@ -87,6 +88,7 @@ export function noteRecord(id, layer, opts) {
 
 // Слой закрыт — его записей больше нет (синхронно: «закрыть и тут же открыть
 // другое» в одном клике не должно оставить старые записи под новыми).
+document.addEventListener('viewer-change', () => scheduleSync());
 document.addEventListener('layer-closed', (e) => {
   screens = screens.filter(s => s.layer !== e.detail);
   scheduleSync();
@@ -107,6 +109,8 @@ function syncScreens() {
 
 function transientDepth() {
   let d = 0;
+  // Просмотр картинки (js/viewer.js, 02.11.2026) — самый верхний: «назад» закрывает сначала его.
+  if (isViewerOpen()) d++;
   if (isFlappyOpen()) d++;
   // Читалка комикса внутри игры — свой уровень: «назад» закрывает сначала её
   // (flappy.js сам решает, что закрыть по flappy-close), v=200.
@@ -139,6 +143,7 @@ function depth() {
    статья расы (isSystemLoreOpen), а сама система закрывается последней, как
    самый нижний слой. */
 function closeTop() {
+  if (closeViewer()) return;
   if (isFlappyOpen()) { closeFlappy(); return; }
   if (isTourOpen()) { closeTour(); return; }
   if (isArticleOpen()) { if (isSystemLoreOpen()) showSystemMap(); else closeModal(); return; }

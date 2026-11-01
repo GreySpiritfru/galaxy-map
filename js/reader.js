@@ -16,8 +16,8 @@
    (articles/img/<хеш>.webp).
    ============================================================ */
 
-import { fetchT } from './net.js?v=214';
-import { resolveModule } from './records.js?v=214';
+import { fetchT } from './net.js?v=215';
+import { resolveModule } from './records.js?v=215';
 
 const INDEX_URL = 'articles/index.json';
 const ANCHOR_RE = /^[A-Za-z0-9_-]{1,40}$/;
@@ -83,7 +83,7 @@ function loadDoc(entry) {
 const INLINE = {strong: 'strong', em: 'em', s: 's', u: 'u', code: 'code'};
 const BLOCK = {p: 'p', h2: 'h2', h3: 'h3', h4: 'h4', blockquote: 'blockquote', pre: 'pre', li: 'li'};
 
-function build(nodes, parent) {
+export function build(nodes, parent) {
   if (!Array.isArray(nodes)) return;
   for (const n of nodes) {
     if (typeof n === 'string') parent.appendChild(document.createTextNode(n));
@@ -250,7 +250,7 @@ export async function renderMirror(url, scroller) {
    целиком на нём); статья, у которой есть копия, — событие наружу
    (js/articles.js решает, где её открыть); остальное — во внешнем браузере /
    браузере Telegram. */
-function wireLinks(root, url, scroller) {
+export function wireLinks(root, url, scroller) {
   root.addEventListener('click', (e) => {
     const a = e.target.closest('a[data-mirror-link]');
     if (!a || !root.contains(a)) return;
@@ -268,6 +268,12 @@ function wireLinks(root, url, scroller) {
       else openExternal(href);
     });
   });
+}
+
+/* Копия статьи (AST) по адресу — или null, если копии нет. */
+export async function mirrorDoc(url) {
+  const entry = await mirrorOf(url);
+  return entry ? loadDoc(entry) : null;
 }
 
 /* Модуль — раздел статьи в окне точки (02.11.2026, перенос планшета, шаг 4):

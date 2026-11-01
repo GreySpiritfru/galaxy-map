@@ -1865,9 +1865,12 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 }
 /* Окна лежат слоями (Феном → сюжет → персонаж). Раз края полупрозрачные,
    нижнее окно под верхним просвечивало бы — прячем его, когда верхнее уже
-   проявилось (задержка = время появления), а возвращаем сразу. */
-body:has(#storyOverlay.open) #phenomOverlay > .phenom-card,
-body:has(#charOverlay.open) #phenomOverlay > .phenom-card,
+   проявилось (задержка = время появления), а возвращаем сразу.
+   Кроме Фенома на вкладке схемы (02.11.2026): окно здания, района или
+   персонажа, открытое тапом по схеме, лежит НАД ней — схема под ним должна
+   оставаться видна, а не меняться на карту галактики (замечание игрока). */
+body:has(#storyOverlay.open) #phenomOverlay:not(.map-view) > .phenom-card,
+body:has(#charOverlay.open) #phenomOverlay:not(.map-view) > .phenom-card,
 body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   visibility: hidden;
   transition-delay: 0.24s;
@@ -3652,3 +3655,51 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 
 /* Своя карта точки: «Загрузка карты…» / ошибка с «Повторить» (js/phenom.js,
    v=202) — поверх области viewer'а, по центру. */
+
+/* ===== Анкета по шаблону (02.11.2026, перенос планшета, шаг 4.3; вид — макет N5) =====
+   js/sheet-card.js. Шапка: слева имя, прозвища и факты, справа арт 3:4. */
+.pc-card { max-width: 720px; margin: 0 auto; color: #e8e8ee; }
+.pc-top { display: grid; grid-template-columns: 1fr 54%; gap: 12px; align-items: start; }
+.pc-name { font-size: 24px; line-height: 1.1; margin: 0; color: #fff; }
+.pc-alias { color: rgba(232,232,238,0.7); font-size: 14px; margin-top: 4px; }
+.pc-facts { margin: 12px 0 0; display: grid; gap: 8px; }
+.pc-facts dt { color: rgba(232,232,238,0.55); font-size: 12px; }
+.pc-facts dd { margin: 1px 0 0; font-size: 14px; line-height: 1.3; }
+.pc-facts dd.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+.pc-art { display: block; width: 100%; aspect-ratio: 3 / 4; padding: 0; border: 0; border-radius: 14px;
+  background: rgba(255,255,255,0.06) center top / cover no-repeat; box-shadow: 0 0 0 1px rgba(255,255,255,0.12); cursor: zoom-in; }
+.pc-art.ph { display: grid; place-items: center; font-size: 54px; font-weight: 700; color: rgba(175,238,238,0.25); cursor: default; }
+.pc-sec { margin-top: 22px; }
+.pc-sec > h2 { font-size: 17px; margin: 0 0 6px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.12); color: #fff; }
+.pc-text { max-width: none; margin: 0; }
+.pc-text p { margin: 6px 0; }
+.pc-text > :first-child { margin-top: 0; }
+.pc-voice { color: #AFEEEE; }
+.pc-long { position: relative; max-height: 230px; overflow: hidden; }
+.pc-long::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 70px;
+  background: linear-gradient(180deg, rgba(14,14,20,0), rgba(14,14,20,0.95)); }
+.pc-long.open { max-height: none; }
+.pc-long.open::after { display: none; }
+.pc-more { margin-top: 4px; height: 32px; padding: 0; border: 0; background: none; color: #AFEEEE; font-size: 14px; font-weight: 600; cursor: pointer; }
+.pc-arts { margin-top: 26px; }
+.pc-arts > h2 { font-size: 17px; margin: 0 0 8px; color: #fff; }
+.pc-gallery { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x proximity; }
+.pc-gallery::-webkit-scrollbar { display: none; }
+.pc-gallery button { flex: none; padding: 0; border: 0; background: none; scroll-snap-align: start; cursor: zoom-in; }
+.pc-gallery img { display: block; height: 190px; max-width: 80vw; object-fit: cover; border-radius: 12px; }
+.sheet-rest, .sheet-full { margin-top: 22px; }
+.sheet-rest > summary, .sheet-full > summary { color: #AFEEEE; cursor: pointer; padding: 12px 0; font-weight: 600; }
+.sheet-full .pc-text, .sheet-rest .pc-text { margin-top: 6px; }
+.pc-source { margin: 22px 0 0; font-size: 13px; color: rgba(232,232,238,0.6); }
+.pc-source a { color: #AFEEEE; }
+@media (max-width: 380px) { .pc-top { grid-template-columns: 1fr 48%; } }
+
+/* Просмотр картинок на весь экран (js/viewer.js) — поверх всех окон и модала. */
+.lb { position: fixed; inset: 0; z-index: 400; background: rgba(5,5,10,0.95); outline: none; }
+.lb-stage { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; touch-action: none; }
+.lb-stage img { max-width: 100%; max-height: 100%; user-select: none; -webkit-user-drag: none; transform-origin: center; will-change: transform; }
+.lb button { position: absolute; width: 44px; height: 44px; border: 0; border-radius: 22px; background: rgba(22,22,31,0.8); color: #e8e8ee; font-size: 22px; cursor: pointer; }
+.lb-x { top: calc(var(--safe-top, 0px) + 10px); right: 10px; }
+.lb-prev { left: 8px; top: 50%; margin-top: -22px; }
+.lb-next { right: 8px; top: 50%; margin-top: -22px; }
+.lb-count { position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); left: 0; right: 0; text-align: center; color: rgba(232,232,238,0.7); font-size: 14px; }

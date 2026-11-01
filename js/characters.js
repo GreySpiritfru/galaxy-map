@@ -12,11 +12,11 @@
    Данные — characters.json, что показать (view) собирает map.js: там граф,
    камера и переходы.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=214';
-import { canEdit, showEditor } from './editor.js?v=214';
-import { renderSheet, renderNodeLinks } from './node-window.js?v=214';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average } from './rolls.js?v=214';
-import { loadNotes, notesOf, notesHtml, wireNotes } from './notes.js?v=214';
+import { escapeHtml } from './modal.js?v=215';
+import { canEdit, showEditor } from './editor.js?v=215';
+import { renderSheet, renderNodeLinks } from './node-window.js?v=215';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average } from './rolls.js?v=215';
+import { loadNotes, notesOf, notesHtml, wireNotes } from './notes.js?v=215';
 
 const overlay = document.getElementById('charOverlay');
 const content = document.getElementById('charContent');
@@ -32,6 +32,8 @@ const editBtn = document.getElementById('charEdit');
 let nameOf = () => '';
 // Персонаж, чьё окно открыто сейчас (запись из characters.json).
 let current = null;
+// Родитель (сюжет или место) — строка «Сюжет:» / «Где:» в шапке анкеты.
+let currentParent = null;
 
 function setActive(btn) {
   [sheetBtn, notesBtn, rollsBtn].forEach(b => b.classList.toggle('active', b === btn));
@@ -82,7 +84,7 @@ function showSheet() {
     setActive(sheetBtn);
     return;
   }
-  if (current.sheetUrl) renderSheet(content, current.sheetUrl);
+  if (current.sheetUrl) renderSheet(content, current.sheetUrl, current, currentParent);
   // Анкеты нет — окно всё равно открывается, иначе тап по маркеру выглядел
   // бы так, будто ничего не произошло.
   else showStub(sheetBtn, current.name || 'Персонаж', 'Анкета пока не заполнена.');
@@ -97,6 +99,7 @@ function showSheet() {
 export function openCharacter(view, handlers, {edit = false, rolls = false, notes = false} = {}) {
   const changed = !current || current.id !== view.char.id;
   current = view.char;
+  currentParent = view.parentMeta ? {title: view.parentMeta.name || view.parentMeta.label || '', story: view.parentMeta.kindLabel === 'Сюжет'} : null;
   nameOf = typeof view.nameOf === 'function' ? view.nameOf : () => '';
   editBtn.hidden = !canEdit(current.id);
   renderNodeLinks(links, view, handlers || {});

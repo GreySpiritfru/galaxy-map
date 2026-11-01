@@ -15,11 +15,12 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=214';
-import { REF_ARTICLES } from './articles.js?v=214';
-import { renderMirror, renderModule, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=214';
-import { frameHtml, safeHttps } from './net.js?v=214';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=214';
+import { escapeHtml } from './modal.js?v=215';
+import { REF_ARTICLES } from './articles.js?v=215';
+import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=215';
+import { renderSheetCard } from './sheet-card.js?v=215';
+import { frameHtml, safeHttps } from './net.js?v=215';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=215';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -490,7 +491,10 @@ function luckEl(heroes, npcs) {
    во фрейме (renderFrame). Та же анкета уже показана — не трогаем (место
    чтения остаётся). Пока копия грузилась, игрок ушёл на «Броски» — holder
    уже вынут из контейнера, и поздний ответ ничего не портит. */
-export function renderSheet(container, url) {
+/* Анкета (02.11.2026, шаг 4.3): по шаблону (js/sheet-card.js), а если разбор
+   не узнал ни одного пункта — целиком, как раньше; нет копии — чужая страница.
+   char — {name, race, role, image}, parent — {title, story} для шапки. */
+export function renderSheet(container, url, char, parent) {
   const existing = container.querySelector(':scope > .node-mirror, :scope > .node-article-frame');
   if (existing && existing.dataset.src === url && container.children.length === 1) return;
   container.classList.remove('is-article');
@@ -506,12 +510,17 @@ export function renderSheet(container, url) {
     if (!holder.isConnected) return;
     renderFrame(container, url);
   };
-  renderMirror(url, container).then(art => {
-    if (!holder.isConnected) return;
-    if (!art) { fallback(); return; }
-    holder.textContent = '';
-    holder.appendChild(art);
-    scrollToAnchor(container, anchorOf(url));
+  mirrorDoc(url).then(doc => {
+    if (!holder.isConnected) return null;
+    const card = doc && char ? renderSheetCard(doc, url, char, parent, container) : null;
+    if (card) { holder.textContent = ''; holder.appendChild(card); return null; }
+    return renderMirror(url, container).then(art => {
+      if (!holder.isConnected) return;
+      if (!art) { fallback(); return; }
+      holder.textContent = '';
+      holder.appendChild(art);
+      scrollToAnchor(container, anchorOf(url));
+    });
   }).catch(fallback);
 }
 

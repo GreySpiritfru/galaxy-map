@@ -1,24 +1,24 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=214';
-import { closeModal } from './modal.js?v=214';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=214';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=214';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=214';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=214';
-import { openCharacter, closeCharacter } from './characters.js?v=214';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=214';
-import { markerEl } from './node-window.js?v=214';
-import { layoutSections, renderSections } from './sections.js?v=214';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=214';
-import { hideSplash } from './splash.js?v=214';
-import { fetchT, showLoadError } from './net.js?v=214';
-import { noteRecord, setRestorer } from './navigation.js?v=214';
-import { buildRecords, resolveAddress } from './records.js?v=214';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=214';
-import { decodeAddress } from './address.js?v=214';
-import { REF_ARTICLES } from './articles.js?v=214';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=215';
+import { closeModal } from './modal.js?v=215';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=215';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=215';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=215';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=215';
+import { openCharacter, closeCharacter } from './characters.js?v=215';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=215';
+import { markerEl } from './node-window.js?v=215';
+import { layoutSections, renderSections } from './sections.js?v=215';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=215';
+import { hideSplash } from './splash.js?v=215';
+import { fetchT, showLoadError } from './net.js?v=215';
+import { noteRecord, setRestorer } from './navigation.js?v=215';
+import { buildRecords, resolveAddress } from './records.js?v=215';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=215';
+import { decodeAddress } from './address.js?v=215';
+import { REF_ARTICLES } from './articles.js?v=215';
 
 const SVG_PATH = 'map.svg';
 
@@ -180,7 +180,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=214').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=215').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -1111,7 +1111,9 @@ function finishMapPick(p) {
   function parentButtonMeta(node) {
     if (!node.parent) return null;
     const p = node.parent;
-    const base = (p.kind === 'world' && p.data.beacon)
+    // Сюжет — признак story (реестр, с 02.11.2026); реестр ещё не готов — по маяку, как было.
+    const rec = getRegistry() && getRegistry().byId.get(p.id);
+    const base = (p.kind === 'world' && (rec && rec.flags ? rec.flags.story : p.data.beacon))
       ? PARENT_KIND_META.story
       : (PARENT_KIND_META[p.kind] || PARENT_KIND_META.world);
     /* На кнопке — название родителя («Бездна»), а тип («Сюжет») уходит в
