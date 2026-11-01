@@ -219,8 +219,9 @@ export function applyPendingEdits(lists) {
           /* В форме это поле плоское, а в данных — article.url (v=201, аудит):
              раньше писалось item.articleUrl, которое карта не читает, и вкладка
              «Статья» до коммита бота не появлялась. */
+          /* ref (статья справочника) и label при смене ссылки остаются — как в боте (02.11.2026). */
           if (empty) { if (item.article) { delete item.article.url; if (!item.article.ref) delete item.article; } }
-          else item.article = {...(item.article && !item.article.ref ? item.article : {}), url: f.to};
+          else item.article = {...(item.article || {}), url: f.to};
         } else if (empty) delete item[key];
         else item[key] = Array.isArray(f.to) ? [...f.to] : f.to;
         fields[key] = f;
@@ -747,10 +748,9 @@ export function showNodeEditor(node) {
   if (!hooks || !canEditNodes() || !node || node.kind !== 'world') return;
   const draft = draftFor(node.kind, node.data);
   const graph = hooks.graph;
+  // Описание правится у всех точек, и у Фенома со схемой (02.11.2026: довод
+  // «окно занято тайлами» устарел, схема — во вкладке «Карта»).
   const submap = node.data.submap;
-  // У точки со своей картой (Феном) описание — статья справочника, а не текст
-  // в окне: окно занято тайлами.
-  const hasText = !submap;
 
   // Привязать к себе или к своему же потомку нельзя — получится цикл.
   const descendants = new Set();
@@ -817,15 +817,15 @@ export function showNodeEditor(node) {
       </fieldset>
 
       <fieldset class="editor-section">
-        <legend>${hasText ? 'Описание и картинка' : 'Картинка'}</legend>
+        <legend>Описание и картинка</legend>
         <div class="editor-avatar-row">
           <div class="editor-avatar">
             ${image ? `<img src="${escapeHtml(image)}" alt="" onerror="this.remove()">` : ''}
             <span>${escapeHtml((node.data.title || '?').trim().charAt(0).toUpperCase())}</span>
           </div>
           <div>
-            <div class="editor-hint">Окно закроется, бот попросит прислать ${hasText ? 'текст или фото' : 'фото'} в личку. Правки формы сохранятся заодно.${hasText ? ' Текущее описание бот пришлёт — его можно скопировать и поправить.' : ' Описание этой точки — статья справочника.'}</div>
-            ${hasText ? '<button type="button" class="editor-btn" data-act="text">📝 Изменить описание</button>' : ''}
+            <div class="editor-hint">Окно закроется, бот попросит прислать текст или фото в личку. Правки формы сохранятся заодно. Текущее описание бот пришлёт — его можно скопировать и поправить.</div>
+            <button type="button" class="editor-btn" data-act="text">📝 Изменить описание</button>
             <button type="button" class="editor-btn" data-act="image">🖼 Сменить картинку</button>
           </div>
         </div>
