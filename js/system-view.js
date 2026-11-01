@@ -1,10 +1,10 @@
 /* ============================================================
    П.3: полноэкранный просмотр системы + переключатель
    ============================================================ */
-import { createPanZoom } from './panzoom.js?v=212';
-import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=212';
-import { renderNodeLinks } from './node-window.js?v=212';
-import { fetchT } from './net.js?v=212';
+import { createPanZoom } from './panzoom.js?v=213';
+import { openIframeModal, closeModal, isArticleOpen, isDockedWith, escapeHtml } from './modal.js?v=213';
+import { renderNodeLinks } from './node-window.js?v=213';
+import { fetchT } from './net.js?v=213';
 
 const systemOverlay = document.getElementById('systemOverlay');
 const systemContainer = document.getElementById('systemContainer');
@@ -84,6 +84,8 @@ export function closeSystem() {
   closeModal(); // на случай, если открыт лор поверх системы — не оставлять его висеть над картой
   systemOverlay.classList.remove('open');
   systemContainer.innerHTML = '';
+  // История записей (js/navigation.js) снимает записи этого слоя сразу, а не через кадр.
+  document.dispatchEvent(new CustomEvent('layer-closed', {detail: 'system'}));
   systemLoreBtn.classList.remove('visible');
   systemLoreBtn.onclick = null;
   current = null;

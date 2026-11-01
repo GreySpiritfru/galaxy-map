@@ -13,7 +13,7 @@
    — js/phenom.js (он же умеет тайловую карту), верхний — этот. Оба вместе
    дают вложенность локация -> точка -> персонаж, см. CLAUDE.md.
    ============================================================ */
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=212';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks } from './node-window.js?v=213';
 
 const storyOverlay = document.getElementById('storyOverlay');
 const storyContent = document.getElementById('storyContent');
@@ -66,6 +66,8 @@ export function isStoryOpen() {
 export function closeStory() {
   storyOverlay.classList.remove('open');
   currentNode = null;
+  // История записей (js/navigation.js) снимает записи этого слоя сразу, а не через кадр.
+  document.dispatchEvent(new CustomEvent('layer-closed', {detail: 'story'}));
 }
 
 // ✕ (#storyClose) тут не вешается — js/navigation.js сам вешает на него

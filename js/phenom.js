@@ -15,8 +15,8 @@
    submapX/submapY рисуются САМОЙ схемой (window.__ship.setChars, фрейм того же
    сайта — доступ напрямую), координаты — единицы схемы (пиксели бокового
    вида × 10). */
-import { closeModal } from './modal.js?v=212';
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks, syncDock } from './node-window.js?v=212';
+import { closeModal } from './modal.js?v=213';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks, syncDock } from './node-window.js?v=213';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomInfoContent = document.getElementById('phenomInfoContent');
@@ -138,7 +138,7 @@ export function openSubmapView() {
   // мог промолчать (плашка в этот момент «в движении»), меряем сами.
   if (card) syncDock(card);
   const frame = document.createElement('iframe');
-  frame.src = 'ship/?v=212';
+  frame.src = 'ship/?v=213';
   frame.title = 'Схема корабля Феном';
   phenomShipEl.appendChild(frame);
   shipFrame = frame;
@@ -155,6 +155,15 @@ export function closeSubmapView() {
   refs.desc.classList.toggle('active', tab === 'desc');
   refs.article.classList.toggle('active', tab === 'article');
   refs.game.classList.toggle('active', tab === 'game');
+}
+
+/* Схема на районе или здании (02.11.2026, openRecord района/здания): вкладка
+   «Карта» открытого окна, камера схемы — на ключ из ship/records.json
+   (sourceKey = название в schema.json / bld/buildings.json). */
+export function focusSubmap(key) {
+  if (!currentSubmap || !isPhenomOpen()) return;
+  if (!isSubmapViewOpen()) openSubmapView();
+  withShip(api => { if (api.focusRecord) api.focusRecord(key); });
 }
 
 export function isSubmapViewOpen() {
@@ -176,6 +185,8 @@ export function closePhenom() {
   closeModal(); // если поверх открыто "Описание Феном" — не оставлять его висеть над картой
   phenomOverlay.classList.remove('open');
   showBase();
+  // История записей (js/navigation.js) снимает записи этого слоя сразу, а не через кадр.
+  document.dispatchEvent(new CustomEvent('layer-closed', {detail: 'phenom'}));
   // Закрыли, не выбрав место для редактора, — отменяем выбор, иначе полоска
   // «тапни, где стоит…» висела бы над картой, а следующий тап по Феному
   // молча записал бы координату.

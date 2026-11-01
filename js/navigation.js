@@ -27,23 +27,24 @@
    несвязанный с графом slot (не участвует в этом стекинге, см. isSystemOpen
    ниже и её собственное исключение из общего ✕↔↩-морфинга).
 
-   Раз глубина — не фиксированный масштаб 0..2, а РЕАЛЬНЫЙ подсчёт открытых
-   слоёв, "шаг назад" естественно обобщается на произвольную вложенность:
-   закрыть самый верхний слой (та же функция, что и у его собственного
-   крестика/тапа по фону) — этого достаточно, чтобы закрыть анкету
-   персонажа и вернуться в сюжет позади неё, закрыть сюжет и вернуться в
-   локацию (Феном) позади него, или закрыть локацию/сюжет и вернуться на
-   карту. Полноценного стека КОНКРЕТНЫХ экранов ("вернуться туда же, откуда
-   пришёл") всё ещё сознательно нет — см. обсуждение в истории сессии:
-   вложенность считается по ТИПАМ слоёв (модал/сюжет/локация/система), а не
-   по конкретным id узлов, этого достаточно для всех текущих сценариев.
+   ⚠️ С 02.11.2026 (перенос планшета, шаг 3) — ИСТОРИЯ ЗАПИСЕЙ, а не только
+   счёт слоёв. Раньше союзник заменял персонажа в том же слое без шага назад
+   («персонаж → союзник → назад» уводило на карту). Теперь каждое открытие
+   записи (map.js → noteRecord) ложится в стопку screens: {id, layer, opts}.
+   «Назад»: если под верхней записью лежит запись ТОГО ЖЕ слоя — она
+   открывается снова (restorer из map.js, без перелёта камеры); иначе
+   закрывается верхний слой, и виден тот, что лежал под ним. Закрытие слоя
+   (событие layer-closed из closeCharacter/closeStory/closePhenom/closeSystem)
+   сразу снимает его записи. Глубина = временные слои (игра, обучение, статья)
+   + записи стопки; по ней, как и раньше, — History API, фокус и ✕/↩.
+   Временные слои (Flappy, обучение, статья в модале) — по-прежнему по DOM.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=212';
-import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap } from './system-view.js?v=212';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=212';
-import { closeStory, isStoryOpen } from './stories.js?v=212';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=212';
-import { closeTour, isTourOpen } from './tour.js?v=212';
+import { closeModal, isArticleOpen } from './modal.js?v=213';
+import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap, getOpenSystem } from './system-view.js?v=213';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=213';
+import { closeStory, isStoryOpen } from './stories.js?v=213';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=213';
+import { closeTour, isTourOpen } from './tour.js?v=213';
 
 /* Мини-игра (js/flappy.js, v=195) — модуль грузится только по нажатию, поэтому
    отсюда его не импортируем: смотрим на класс слоя, закрываем событием. */
@@ -51,7 +52,60 @@ const flappyEl = document.getElementById('flappyOverlay');
 const isFlappyOpen = () => flappyEl.classList.contains('open');
 const closeFlappy = () => flappyEl.dispatchEvent(new Event('flappy-close'));
 
-function depth() {
+/* Слои записей снизу вверх (z-index: система 200 < точка 250 < верхний слой
+   точки 251 < персонаж 252). Своя карта точки (Феном) — ВКЛАДКА окна, а не
+   уровень (игрок, 24.09.2026: «панель одна и та же, возврат тут не нужен»). */
+const LAYERS = [
+  {key: 'system', isOpen: isSystemOpen, close: closeSystem},
+  {key: 'phenom', isOpen: isPhenomOpen, close: closePhenom},
+  {key: 'story', isOpen: isStoryOpen, close: closeStory},
+  {key: 'char', isOpen: isCharacterOpen, close: closeCharacter},
+];
+const rankOf = key => LAYERS.findIndex(l => l.key === key);
+const layerOf = key => LAYERS[rankOf(key)];
+
+let screens = [];
+let restorer = null;
+/* map.js: как открыть запись снова (без перелёта камеры). Вернуть false — не вышло. */
+export function setRestorer(fn) { restorer = fn; }
+
+/* Запись открыта в слое layer. Та же запись в том же слое сверху — не новый шаг
+   (повторное открытие, восстановление при «назад»), только вкладка. */
+export function noteRecord(id, layer, opts) {
+  const rank = rankOf(layer);
+  if (rank < 0 || !id) return;
+  let at = screens.length;
+  while (at > 0 && rankOf(screens[at - 1].layer) > rank) at--;
+  const prev = screens[at - 1];
+  if (prev && prev.layer === layer && (prev.id === id || !prev.id)) {
+    prev.id = id; prev.opts = opts || {};
+  } else {
+    screens.splice(at, 0, {id, layer, opts: opts || {}});
+  }
+  scheduleSync();
+}
+
+// Слой закрыт — его записей больше нет (синхронно: «закрыть и тут же открыть
+// другое» в одном клике не должно оставить старые записи под новыми).
+document.addEventListener('layer-closed', (e) => {
+  screens = screens.filter(s => s.layer !== e.detail);
+  scheduleSync();
+});
+
+/* Стопка ↔ DOM: записи закрытых слоёв долой; открытый слой без записи (система
+   с подписи на карте, окно, открытое в обход map.js) — запись-заглушка. */
+function syncScreens() {
+  screens = screens.filter(s => layerOf(s.layer).isOpen());
+  LAYERS.forEach((layer, rank) => {
+    if (!layer.isOpen() || screens.some(s => s.layer === layer.key)) return;
+    const sys = layer.key === 'system' ? getOpenSystem() : null;
+    let at = screens.length;
+    while (at > 0 && rankOf(screens[at - 1].layer) > rank) at--;
+    screens.splice(at, 0, {id: sys ? 'system:' + sys.slug : null, layer: layer.key, opts: {}});
+  });
+}
+
+function transientDepth() {
   let d = 0;
   if (isFlappyOpen()) d++;
   // Читалка комикса внутри игры — свой уровень: «назад» закрывает сначала её
@@ -60,17 +114,13 @@ function depth() {
   // Обучение (js/tour.js, v=155) — самый верхний слой: «назад» и Esc
   // закрывают сначала его, а не окно, которое тур открыл под собой.
   if (isTourOpen()) d++;
-  if (isPhenomOpen()) d++;
-  /* Своя карта точки (Феном) — ВКЛАДКА того же окна, а не уровень: ✕ на ней
-     закрывает окно, как на «Статье» (игрок, 24.09.2026: «панель одна и та
-     же, возврат тут не нужен»). Так же устроены вкладки окна системы. В v=134
-     карта считалась отдельным уровнем и ✕ превращался в ↩. */
-  if (isStoryOpen()) d++;
-  // Персонаж с 24.09.2026 — третий слой окна точки (#charOverlay), а не модал.
-  if (isCharacterOpen()) d++;
-  if (isSystemOpen()) d++;
   if (isArticleOpen()) d++;
   return d;
+}
+
+function depth() {
+  syncScreens();
+  return transientDepth() + screens.length;
 }
 
 /* Закрывает ровно один верхний слой. Порядок — по фактическому z-index
@@ -92,10 +142,17 @@ function closeTop() {
   if (isFlappyOpen()) { closeFlappy(); return; }
   if (isTourOpen()) { closeTour(); return; }
   if (isArticleOpen()) { if (isSystemLoreOpen()) showSystemMap(); else closeModal(); return; }
-  if (isCharacterOpen()) { closeCharacter(); return; }
-  if (isStoryOpen()) { closeStory(); return; }
-  if (isPhenomOpen()) { closePhenom(); return; }
-  if (isSystemOpen()) { closeSystem(); return; }
+  syncScreens();
+  const top = screens[screens.length - 1];
+  if (!top) return;
+  const prev = screens[screens.length - 2];
+  // Под верхней записью — другая запись того же слоя: открыть её снова.
+  if (prev && prev.layer === top.layer && prev.id && restorer) {
+    screens.pop();
+    if (restorer(prev) !== false) { scheduleSync(); return; }
+    screens.push(top);
+  }
+  layerOf(top.layer).close();
 }
 
 // --- ESC на компьютере (в т.ч. Telegram Desktop — это обычная веб-страница) ---

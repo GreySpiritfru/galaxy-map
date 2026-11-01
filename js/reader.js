@@ -16,7 +16,7 @@
    (articles/img/<хеш>.webp).
    ============================================================ */
 
-import { fetchT } from './net.js?v=212';
+import { fetchT } from './net.js?v=213';
 
 const INDEX_URL = 'articles/index.json';
 const ANCHOR_RE = /^[A-Za-z0-9_-]{1,40}$/;

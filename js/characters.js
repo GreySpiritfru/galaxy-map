@@ -12,11 +12,11 @@
    Данные — characters.json, что показать (view) собирает map.js: там граф,
    камера и переходы.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=212';
-import { canEdit, showEditor } from './editor.js?v=212';
-import { renderSheet, renderNodeLinks } from './node-window.js?v=212';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average } from './rolls.js?v=212';
-import { loadNotes, notesOf, notesHtml, wireNotes } from './notes.js?v=212';
+import { escapeHtml } from './modal.js?v=213';
+import { canEdit, showEditor } from './editor.js?v=213';
+import { renderSheet, renderNodeLinks } from './node-window.js?v=213';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average } from './rolls.js?v=213';
+import { loadNotes, notesOf, notesHtml, wireNotes } from './notes.js?v=213';
 
 const overlay = document.getElementById('charOverlay');
 const content = document.getElementById('charContent');
@@ -115,6 +115,8 @@ export function isCharacterOpen() {
 export function closeCharacter() {
   overlay.classList.remove('open');
   current = null;
+  // История записей (js/navigation.js) снимает записи этого слоя сразу, а не через кадр.
+  document.dispatchEvent(new CustomEvent('layer-closed', {detail: 'char'}));
 }
 
 sheetBtn.addEventListener('click', showSheet);

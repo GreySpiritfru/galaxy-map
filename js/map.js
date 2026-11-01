@@ -1,19 +1,24 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=212';
-import { closeModal } from './modal.js?v=212';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=212';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView } from './phenom.js?v=212';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=212';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=212';
-import { openCharacter, closeCharacter } from './characters.js?v=212';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=212';
-import { markerEl } from './node-window.js?v=212';
-import { layoutSections, renderSections } from './sections.js?v=212';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=212';
-import { hideSplash } from './splash.js?v=212';
-import { fetchT, showLoadError } from './net.js?v=212';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=213';
+import { closeModal } from './modal.js?v=213';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=213';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap } from './phenom.js?v=213';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=213';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=213';
+import { openCharacter, closeCharacter } from './characters.js?v=213';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=213';
+import { markerEl } from './node-window.js?v=213';
+import { layoutSections, renderSections } from './sections.js?v=213';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=213';
+import { hideSplash } from './splash.js?v=213';
+import { fetchT, showLoadError } from './net.js?v=213';
+import { noteRecord, setRestorer } from './navigation.js?v=213';
+import { buildRecords } from './records.js?v=213';
+import { setRegistry, setRecordOpener, openRecord } from './open-record.js?v=213';
+import { decodeAddress } from './address.js?v=213';
+import { REF_ARTICLES } from './articles.js?v=213';
 
 const SVG_PATH = 'map.svg';
 
@@ -175,7 +180,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=212').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=213').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -1121,17 +1126,23 @@ function finishMapPick(p) {
      тап по карте, кнопка "Сюжет"/"Локация" в окне персонажа и сюжета,
      переход из окна сюжета к персонажу, кнопки сюжетов внутри Фенома.
      Отсюда же и одинаковый перелёт камеры везде (goToNode ниже). */
+  /* С 02.11.2026 каждое открытие ложится в историю записей (js/navigation.js,
+     noteRecord): «назад» вернёт к предыдущей записи того же слоя (персонаж →
+     союзник → назад = первый персонаж). Вкладка персонажа (броски, заметки) —
+     тоже в историю; правка — нет. */
   function openNode(node, opts) {
     if (node.kind === 'character') {
       openCharacterNode(node, opts);
+      noteRecord(node.id, 'char', {rolls: !!(opts && opts.rolls), notes: !!(opts && opts.notes)});
       return;
     }
     // Система (родитель точки «system:<слаг>»): её окно, камера — на точку focusId внутри.
     if (node.kind === 'system') {
       openSystem(node.data.title, {focusId: opts && opts.focusId});
+      noteRecord(node.id, 'system');
       return;
     }
-    openWorldNode(node);
+    noteRecord(node.id, openWorldNode(node, opts));
   }
 
   /* Всё, что окно должно показать про точку. Собирается ЗАНОВО при каждом
@@ -1237,8 +1248,10 @@ function finishMapPick(p) {
   /* Мировая точка открывается в одном из двух слоёв (см. js/node-window.js):
      обычно в нижнем, но если нижний уже занят ДРУГОЙ точкой — в верхнем,
      поверх неё. Так «сюжет из окна Фенома» ложится на Феном, а не вместо
-     него, и закрытие возвращает ровно туда, откуда пришли. */
-  function openWorldNode(node) {
+     него, и закрытие возвращает ровно туда, откуда пришли.
+     opts.layer ('phenom' / 'story') — слой задан явно: «назад» восстанавливает
+     запись в том слое, где она была. Возвращает слой, куда легло окно. */
+  function openWorldNode(node, opts) {
     /* Переход к родителю (первый в ряду переходов). Закрываем только СВОЙ
        слой: если точка открыта из окна родителя, тот всё это время лежал
        позади и просто снова виден; если сама по себе (тап по маркеру),
@@ -1254,16 +1267,19 @@ function finishMapPick(p) {
     };
     const view = worldView(node);
     const lower = openWorldNodeCurrent;
-    if (isPhenomOpen() && lower && lower.id !== node.id) {
+    const upper = opts && opts.layer ? opts.layer === 'story' && isPhenomOpen()
+      : isPhenomOpen() && lower && lower.id !== node.id;
+    if (upper) {
       openStoryNodeCurrent = node;
       openStory(view, {...handlers, onParent: toParent(closeStory)});
-    } else {
-      handlers.onParent = toParent(closePhenom);
-      openWorldNodeCurrent = node;
-      if (isStoryOpen()) closeStory();
-      if (view.submap) prepareSubmap(node);
-      openWorldWindow(view, handlers);
+      return 'story';
     }
+    handlers.onParent = toParent(closePhenom);
+    openWorldNodeCurrent = node;
+    if (isStoryOpen()) closeStory();
+    if (view.submap) prepareSubmap(node);
+    openWorldWindow(view, handlers);
+    return 'phenom';
   }
 
   /* Открывает submap-окно ЛЮБОГО маркера с полем "submap" в markers.json
@@ -2496,6 +2512,7 @@ function finishMapPick(p) {
       {kind: 'system', items: systems},
     ]);
     graphById = graph;
+    loadRegistry(world, characters, anchors, readySlugs);
 
     /* Обе раскладки считаются тут же, одна за другой, и обе замораживаются.
        Порядок важен только тем, что вторая перезаписывает x/y — поэтому
@@ -2587,8 +2604,68 @@ function finishMapPick(p) {
     if (saved && saved !== 'map') setViewMode(saved, true);
     else updateViewModeUi();
 
-    openFromLink(graph);
+    openFromLink();
     return graph;
+  });
+
+  /* Реестр записей (js/records.js, 02.11.2026) — рядом с графом: все записи
+     карты под одним id (точки, персонажи, системы, статьи, районы и здания
+     схемы). Файлы, которых нет у графа, грузятся тут; сбой любого — реестр без
+     него, карта работает как раньше. */
+  async function loadRegistry(world, characters, anchors, readySlugs) {
+    const get = path => fetchT(path, {cache: 'no-cache'}).then(r => r.ok ? r.json() : null).catch(() => null);
+    const [articlesIndex, systemLore, shipRecords, modules, relations] = await Promise.all([
+      get('articles/index.json'), get('systems/lore.json'), get('ship/records.json'),
+      get('modules.json'), get('relations.json'),
+    ]);
+    const titles = {};
+    anchors.forEach(a => { titles[a.slug] = a.title; });
+    const reg = buildRecords({
+      world, characters, articlesIndex, shipRecords, modules, relations, refArticles: REF_ARTICLES,
+      systems: {manifest: [...readySlugs], titles, lore: systemLore || {}},
+    });
+    if (reg.diagnostics.length) console.warn('Реестр записей:', reg.diagnostics);
+    setRegistry(reg);
+  }
+
+  /* Как открыть запись каждого вида (openRecord, js/open-record.js). Точки,
+     персонажи и системы — прежними окнами (перелёт камеры — как от тапа по
+     маркеру, options.instant — сразу); статья — в модале (тот же путь, что у
+     ссылки из статьи: справочник — во вкладке справочника); район и здание —
+     Феном на вкладке схемы, камера схемы — на них. */
+  const tabOpts = tab => tab === 'rolls' ? {rolls: true} : tab === 'notes' ? {notes: true} : undefined;
+  const openGraphRecord = (rec, anchor, options) => {
+    const node = graphById.get(rec.id);
+    if (node) { goToNode(node, !!options.instant, tabOpts(options.tab)); return true; }
+    if (rec.kind === 'system') { openSystem(rec.title); return true; }   // система без точек — не узел графа
+    return false;
+  };
+  setRecordOpener('world', openGraphRecord);
+  setRecordOpener('character', openGraphRecord);
+  setRecordOpener('system', openGraphRecord);
+  setRecordOpener('article', (rec, anchor) => {
+    window.dispatchEvent(new CustomEvent('mirror-open', {detail: {url: rec.url + (anchor ? '#' + anchor : '')}}));
+  });
+  const openShipRecord = (rec) => {
+    const target = rec.mapTargets[0];
+    const host = target && graphById.get(target.recordId);
+    if (!host) return false;
+    openNode(host);
+    focusSubmap(target.key);
+    return true;
+  };
+  setRecordOpener('zone', openShipRecord);
+  setRecordOpener('building', openShipRecord);
+
+  /* «Назад» к предыдущей записи того же слоя (js/navigation.js): открыть её
+     снова в том же слое и на той же вкладке, без перелёта камеры. */
+  setRestorer((entry) => {
+    const node = graphById.get(entry.id);
+    if (node) { openNode(node, {...entry.opts, layer: entry.layer}); return true; }
+    const sys = typeof entry.id === 'string' && entry.id.startsWith('system:')
+      && systemChoices.find(s => s.id === entry.id);
+    if (sys) { openSystem(sys.title); return true; }
+    return false;
   });
 
   /* Ссылка сразу на точку (17.09.2026) — для постов в канале и VK:
@@ -2599,11 +2676,16 @@ function finishMapPick(p) {
      других знаков startapp не допускает). Камера летит к точке, окно открывается
      как от тапа по маркеру; точка внутри системы открывается сразу поверх карты.
      Ссылки выдаёт бот: «ссылки», «ссылка <название>». */
-  function openFromLink(graph) {
+  function openFromLink() {
     const tg = window.Telegram && window.Telegram.WebApp;
     const params = new URLSearchParams(location.search);
-    let id = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param)
-      || params.get('tgWebAppStartParam') || params.get('open') || '';
+    /* С 02.11.2026 адрес разбирает js/address.js: старые <id>, <id>--rolls,
+       <id>--notes, tour, welcome, sections — как раньше; новые r1_… — любая
+       запись (район, статья с якорем), открывает openRecord. */
+    const addr = decodeAddress((tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param)
+      || params.get('tgWebAppStartParam') || params.get('open') || '');
+    if (!addr) return;
+    let id = addr.special || '';
     /* startapp=sections (?open=sections) — сразу ноды по разделам: для кнопки
        «Сюжеты и набор» в канале. Точки с таким id нет и быть не должно. */
     // startapp=tour (?open=tour) — сразу обучение: для кнопки в канале.
@@ -2621,17 +2703,11 @@ function finishMapPick(p) {
       else { nodesArrangement = 'sections'; setViewMode('nodes', true); }
       return;
     }
+    if (addr.special) return;
     /* <id>--rolls — персонаж сразу на вкладке «Броски» (08.10.2026): кнопка
-       «🎲 … на карте» под броском в группе (dice_rolls.py). */
-    const rollsTab = /--rolls$/.test(id);
-    if (rollsTab) id = id.slice(0, -7);
-    // <id>--notes — сразу «Заметки» (16.10.2026): кнопка под заметками в чате (character_notes.py).
-    const notesTab = /--notes$/.test(id);
-    if (notesTab) id = id.slice(0, -7);
-    const node = /^[A-Za-z0-9_-]{1,64}$/.test(id) ? graph.get(id) : null;
-    if (!node || node.kind === 'system') return;
-    const tab = node.kind !== 'character' ? undefined : rollsTab ? {rolls: true} : notesTab ? {notes: true} : undefined;
-    goToNode(node, false, tab);
+       «🎲 … на карте» под броском в группе (dice_rolls.py); <id>--notes — сразу
+       «Заметки» (16.10.2026, character_notes.py). Вкладки — только у персонажа. */
+    openRecord(addr.id, addr.anchor, {tab: addr.tab});
   }
 
   /* Редактор персонажей (js/editor.js): выбор места тапом. Окна над картой

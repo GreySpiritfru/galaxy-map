@@ -3433,7 +3433,27 @@ ${guide.join('\n')}
   };
   const frameAt = (t, dt) => { app.ticker.stop(); tFixed = t; stepDt = dt; app.ticker.update(performance.now()); };
   const view = (x, y, z) => { flight = null; cam.x = x; cam.y = y; cam.z = z; clampCam(); };
-  window.__ship = {app, maglev: mgList, setChars, pick, fx: fxC, cam, setFocus, flyTo, showCard, hitTest, toWorld, toScreen, zones, towers: wTowers, setEditing, setT: v => { tFixed = v; }, present, frameAt, view, rings: v => { ringsOn = v; },
+  /* Камера и карточка на районе или здании по ключу (02.11.2026, openRecord карты: район/здание —
+     Феном на этой вкладке). key — sourceKey из records.json: название в schema.json / bld/buildings.json. */
+  function focusRecord(key) {
+    const n = normName(key);
+    let i = blds.findIndex(b => normName(b.name) === n);
+    if (i >= 0) {
+      const b = blds[i], r = b.art || {x0: b.w[0], y0: b.w[1], x1: b.w[0], y1: b.w[1]};
+      const pad = Math.max(400, (r.x1 - r.x0) * 1.5, (r.y1 - r.y0) * 1.5);
+      const cx = (r.x0 + r.x1) / 2, cy = (r.y0 + r.y1) / 2;
+      flyTo({x0: cx - pad, y0: cy - pad, x1: cx + pad, y1: cy + pad});
+      showCard({kind: 'bld', i});
+      return true;
+    }
+    i = zones.findIndex(z => z.name === key);
+    if (i < 0) return false;
+    const [x0, y0, x1, y1] = bbox(zones[i].poly);
+    flyTo({x0, y0, x1, y1});
+    showCard({kind: 'zone', i});
+    return true;
+  }
+  window.__ship = {app, maglev: mgList, setChars, pick, fx: fxC, cam, setFocus, flyTo, showCard, hitTest, toWorld, toScreen, zones, towers: wTowers, setEditing, setT: v => { tFixed = v; }, present, frameAt, view, rings: v => { ringsOn = v; }, focusRecord,
     benchRings: (n = 60) => { const t0 = performance.now(); for (let i = 0; i < n; i++) drawRings(20 + i * 0.016); return +((performance.now() - t0) / n).toFixed(2); }};
   const q = new URLSearchParams(location.search);
   if (q.get('f')) setFocus(q.get('f'));
