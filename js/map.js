@@ -1,25 +1,26 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=240';
-import { closeModal } from './modal.js?v=240';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=240';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=240';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=240';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=240';
-import { openCharacter, closeCharacter } from './characters.js?v=240';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=240';
-import { markerEl } from './node-window.js?v=240';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=240';
-import { hideSplash } from './splash.js?v=240';
-import { fetchT, showLoadError } from './net.js?v=240';
-import { noteRecord, setRestorer } from './navigation.js?v=240';
-import { buildRecords, resolveAddress } from './records.js?v=240';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=240';
-import { decodeAddress } from './address.js?v=240';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=240';
-import { REF_ARTICLES } from './articles.js?v=240';
-import { LOCAL_ARTICLES } from './reader.js?v=240';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=243';
+import { closeModal } from './modal.js?v=243';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=243';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=243';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=243';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=243';
+import { openCharacter, closeCharacter } from './characters.js?v=243';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=243';
+import { markerEl } from './node-window.js?v=243';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=243';
+import { hideSplash } from './splash.js?v=243';
+import { fetchT, showLoadError } from './net.js?v=243';
+import { noteRecord, setRestorer } from './navigation.js?v=243';
+import { buildRecords, resolveAddress } from './records.js?v=243';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=243';
+import { decodeAddress } from './address.js?v=243';
+import { findInRecord } from './find-in-text.js?v=243';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=243';
+import { REF_ARTICLES } from './articles.js?v=243';
+import { LOCAL_ARTICLES } from './reader.js?v=243';
 
 const SVG_PATH = 'map.svg';
 
@@ -181,7 +182,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=240').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=243').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -2652,6 +2653,10 @@ function finishMapPick(p) {
   window.__mapOpenRecord = (id, anchor) => openRecord(id, anchor || '', {instant: true});
   window.__mapStartTour = () => startTour();
   // «Показать на карте» в планшете: из «Нод» — на карту (ту, с которой ушли), перелёт к маркеру.
+  // Есть ли у записи маркер на карте — значок «на карте» в результатах поиска (v=241).
+  window.__mapCanShow = id => !!graphById.get(id)?.onMap;
+  // Найденное «в тексте» — в открытом окне (js/find-in-text.js).
+  window.__mapFindInRecord = (q, nav) => findInRecord(q, nav);
   window.__mapShowOnMap = async (id) => {
     const node = graphById.get(id);
     if (!node) return false;

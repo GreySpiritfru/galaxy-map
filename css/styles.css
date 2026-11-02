@@ -3712,9 +3712,9 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 .pc-gallery::-webkit-scrollbar { display: none; }
 .pc-gallery button { flex: none; padding: 0; border: 0; background: none; scroll-snap-align: start; cursor: zoom-in; }
 .pc-gallery img { display: block; height: 190px; max-width: 80vw; object-fit: cover; border-radius: 12px; }
-.sheet-rest, .sheet-full { margin-top: 22px; }
-.sheet-rest > summary, .sheet-full > summary { color: #AFEEEE; cursor: pointer; padding: 12px 0; font-weight: 600; }
-.sheet-full .pc-text, .sheet-rest .pc-text { margin-top: 6px; }
+.sheet-rest { margin-top: 22px; }
+.sheet-rest > summary { color: #AFEEEE; cursor: pointer; padding: 12px 0; font-weight: 600; }
+.sheet-rest .pc-text { margin-top: 6px; }
 .pc-source { margin: 22px 0 0; font-size: 13px; color: rgba(232,232,238,0.6); }
 .pc-source a { color: #AFEEEE; }
 @media (max-width: 380px) { .pc-top { grid-template-columns: 1fr 48%; } }
@@ -3780,3 +3780,45 @@ body.planshet-on .phenom-card { background: rgba(14,14,20,0.97); }
 /* Под планшетом карту не рисуем (он закрывает экран целиком): узлы там стоят картой, камера не
    двигается (js/map.js, «Режим Ноды»). visibility, а не display — размеры SVG для камеры остаются. */
 body.planshet-on .svg-widget > svg { visibility: hidden; }
+
+/* ===== Найдено в тексте (v=241, js/find-in-text.js) =====
+   Совпадения в открытом окне — <mark> без фона; текущее вспыхивает и гаснет (~2 с, владелец: «гасить через пару секунд»).
+   Сверху — строка как в Telegram: ▲ ▼ «2 из 7», за краем — «дальше: …», ✕. */
+mark.find-hit { background: none; color: inherit; border-radius: 3px; }
+mark.find-hit.find-cur { animation: findFlash 2.2s ease-out; }
+@keyframes findFlash {
+  0%, 40% { background: rgba(175,238,238,0.42); box-shadow: 0 0 0 2px rgba(175,238,238,0.42); }
+  100% { background: transparent; box-shadow: 0 0 0 2px transparent; }
+}
+@media (prefers-reduced-motion: reduce) { mark.find-hit.find-cur { animation: none; text-decoration: underline 2px #AFEEEE; } }
+.find-bar {
+  position: fixed;
+  z-index: 400;
+  top: calc(var(--safe-top, 0px) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 20px);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  border-radius: 16px;
+  background: rgba(16,16,24,0.92);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.08);
+  color: #ececf2;
+  font: 600 14px/1 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+.find-bar button {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 16px;
+  cursor: pointer;
+}
+.find-bar button:disabled { color: rgba(236,236,242,0.3); cursor: default; }
+.find-count { flex: none; padding: 0 6px; font-variant-numeric: tabular-nums; }
+.find-more { min-width: 0; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #AFEEEE; font-weight: 500; }
+.find-more[hidden] { display: none; }

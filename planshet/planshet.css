@@ -702,3 +702,8 @@ body.planshet-on #planshet .p-menu-body { background: rgba(12,12,18,0.97); }
 #planshet .p-menu .p-menu-section, #planshet .p-menu .p-mini, #planshet .p-menu .p-menu-ship, #planshet .p-menu .p-menu-count { color: #ececf2; }   /* непрозрачный, v=240 */
 #planshet .p-menu .p-menu-section[aria-pressed="true"], #planshet .p-menu .p-menu-section[aria-pressed="true"] .p-menu-count,
 #planshet .p-menu .p-mini[aria-pressed="true"] { color: var(--act); }
+/* Строка результата со значком «на карте» (v=241). */
+#planshet .res-row { display: flex; align-items: center; gap: 2px; }
+#planshet .res-row > .row { flex: 1; min-width: 0; }
+#planshet .res-map { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; color: var(--act); }
+#planshet .res-map svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }

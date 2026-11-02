@@ -5,14 +5,16 @@
    Сверху — имя, прозвища, Раса / Возраст / Роль / Сюжет и арт; дальше пункты
    шаблона 1.4–4.2 (названия из шаблона, длинные — «Читать полностью»);
    «Остальное из анкеты» — преамбула, неизвестные пункты, повторы; «Арты» —
-   все картинки анкеты; «Анкета целиком» — исходник как есть. Ничего не
-   теряется: разбор (js/sheet-parser.js) — индекс поверх исходника. Не узнан
-   ни один пункт — null, окно показывает анкету целиком, как раньше.
+   все картинки анкеты; внизу — ссылка на оригинал. Ничего не теряется:
+   разбор (js/sheet-parser.js) — индекс поверх исходника, нераспознанное — в
+   «Остальном из анкеты». Блока «Анкета целиком» (исходник ещё раз) с v=243 нет —
+   владелец: всё уже написано выше. Не узнан ни один пункт — null, окно
+   показывает анкету целиком, как раньше.
    Текст — тем же белым списком, что статьи (js/reader.js build).
    ============================================================ */
-import { parseSheet, sheetImages, sheetText, SHEET_TEMPLATE, ZW } from './sheet-parser.js?v=240';
-import { build, wireLinks } from './reader.js?v=240';
-import { viewImages } from './viewer.js?v=240';
+import { parseSheet, sheetImages, sheetText, SHEET_TEMPLATE, ZW } from './sheet-parser.js?v=243';
+import { build, wireLinks } from './reader.js?v=243';
+import { viewImages } from './viewer.js?v=243';
 
 const LONG = 700;   // знаков в пункте — дальше свёрнуто
 const hasFigure = b => b && typeof b === 'object' && ['figure', 'img'].includes(b.t);
@@ -110,12 +112,11 @@ export function renderSheetCard(doc, url, char, parent, scroller) {
     el('div', {class: 'pc-gallery'}, srcs.slice(1).map((src, i) => el('button', {type: 'button',
       'aria-label': `Арт ${i + 2} из ${srcs.length}, открыть`, onclick: () => viewImages(galleryImages, i + 1)},
       el('img', {src, alt: '', loading: 'lazy'}))))) : null;
-  const full = el('details', {class: 'sheet-full'}, el('summary', {}, 'Анкета целиком'), blocks(doc.c));
   const src = el('p', {class: 'pc-source'}, 'Анкета: ');
   const orig = el('a', {href: /^https:\/\//i.test(doc.source || '') ? doc.source : url, 'data-mirror-link': '1', 'data-external': '1'}, 'оригинал ↗');
   src.append(orig);
 
-  const card = el('article', {class: 'pc-card'}, top, body, restNode, gallery, full, src);
+  const card = el('article', {class: 'pc-card'}, top, body, restNode, gallery, src);
   wireLinks(card, url, scroller);
   return card;
 }

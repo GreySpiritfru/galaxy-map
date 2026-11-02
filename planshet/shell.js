@@ -1,9 +1,10 @@
-import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=23';
-import {inChip} from './filters.js?v=23';
-import {createHistory} from './history.js?v=23';
-import {sectionMenu,toggleSection,currentSection} from './home.js?v=23';
+import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=24';
+import {inChip} from './filters.js?v=24';
+import {createHistory} from './history.js?v=24';
+import {sectionMenu,toggleSection,currentSection} from './home.js?v=24';
 const FILTER_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.4V19l-3.6-1.8v-4.8z"/></svg>';
 const HELP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.5"/><circle class="dot" cx="12" cy="16.8" r=".6"/></svg>';
+const MAP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></svg>';
 const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 /* Планшет в карте (с 02.11.2026, v=219 — без фрейма, прямо в #planshet). Шапки нет (владелец: верх
@@ -75,6 +76,28 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
     remember(id);
     Promise.resolve(window.__mapOpenRecord?.(id,anchor||'')).then(ok=>{if(!ok)return Promise.resolve(onLeave()).then(()=>ownOpen(id));});
   };
+  /* Строка результата поиска (v=241, владелец): справа значок карты — у записей с маркером на карте; поиск закрывается,
+     карта летит к маркеру (window.__mapShowOnMap). */
+  function resultRow(r, sub, onOpen) {
+    const line = row(r, sub, onOpen);
+    if (!window.__mapCanShow?.(r.id)) return line;
+    const pin = el('button', {class: 'res-map', 'aria-label': `«${r.title}» на карте`, title: 'На карте',
+      onclick() { closeSearch(); remember(r.id); window.__mapShowOnMap?.(r.id); }});
+    pin.innerHTML = MAP_SVG;
+    return el('div', {class: 'res-row'}, line, pin);
+  }
+  /* Найдено «в тексте» — открыть запись на найденном месте (js/find-in-text.js через window.__mapFindInRecord): прокрутка
+     и вспышка, строка ▲ ▼ «2 из 7»; за последним совпадением — следующая запись этой группы, перед первым — предыдущая. */
+  function openFound(list, i, q, last) {
+    const id = list[i].id;
+    closeMenu();
+    remember(id);
+    Promise.resolve(window.__mapOpenRecord?.(id, '')).then(ok => {
+      if (!ok) return Promise.resolve(onLeave()).then(() => ownOpen(id));
+      const near = j => list[j] && {title: list[j].r.title, go: () => openFound(list, j, q, j < i)};
+      window.__mapFindInRecord?.(q, {next: near(i + 1), prev: near(i - 1), last});
+    });
+  }
   /* ---------- шторка «Феном ▴» (v=231, владелец): своей плашкой «На главную» и разделы (3 × 2), под ней четыре
      кнопки в ряд — схема корабля, вид («Граф связей» / «Меньше подписей»), сюжет ▾, «Как пользоваться картой». ---------- */
   function renderMenu() {
@@ -230,9 +253,9 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
   const group = (title, kids) => el('section', {class: 'group'}, el('h3', {}, title), kids);
   // Первые n строк, остальное — по кнопке «Показать ещё N» (v=225: раньше лишнее просто не показывалось).
   function listMore(list, n, make) {
-    const box = el('div', {class: 'rows'}, list.slice(0, n).map(make));
+    const box = el('div', {class: 'rows'}, list.slice(0, n).map((h, i) => make(h, i)));
     if (list.length > n) {
-      const more = el('button', {class: 'p-more', onclick() { more.replaceWith(...list.slice(n).map(make)); }}, `Показать ещё ${list.length - n}`);
+      const more = el('button', {class: 'p-more', onclick() { more.replaceWith(...list.slice(n).map((h, i) => make(h, n + i))); }}, `Показать ещё ${list.length - n}`);
       box.append(more);
     }
     return box;
@@ -262,10 +285,10 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
       const ordered = [...hits].sort((a, b) => rank(a) - rank(b) || b.score - a.score);
       const named = ordered.filter(h => h.where !== 'text'), inText = ordered.filter(h => h.where === 'text');
       if (!hits.length) out.push(el('p', {class: 'empty'}, 'Ничего не нашлось. Попробуйте имя персонажа, название места или слово из события.'));
-      if (named.length) out.push(group('В названии и именах', listMore(named, 20, h => row(h.r, KIND[viewKind(h)], open))));
-      if (inText.length) out.push(group('В тексте', listMore(inText, 10, h => {
+      if (named.length) out.push(group('В названии и именах', listMore(named, 20, h => resultRow(h.r, KIND[viewKind(h)], open))));
+      if (inText.length) out.push(group('В тексте', listMore(inText, 10, (h, i) => {
         const snip = snippet(h.r, q);
-        return row(h.r, [KIND[viewKind(h)], snip ? [': ', snip] : null], open);
+        return resultRow(h.r, [KIND[viewKind(h)], snip ? [': ', snip] : null], () => openFound(inText, i, q));
       })));
       // «Где упоминается» лучшее совпадение по названию — свёрнуто, после основного.
       const top = named[0], ment = top ? mentionsOf(top.id) : [];
