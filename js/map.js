@@ -1,25 +1,25 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=227';
-import { closeModal } from './modal.js?v=227';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=227';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=227';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=227';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=227';
-import { openCharacter, closeCharacter } from './characters.js?v=227';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=227';
-import { markerEl } from './node-window.js?v=227';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=227';
-import { hideSplash } from './splash.js?v=227';
-import { fetchT, showLoadError } from './net.js?v=227';
-import { noteRecord, setRestorer } from './navigation.js?v=227';
-import { buildRecords, resolveAddress } from './records.js?v=227';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=227';
-import { decodeAddress } from './address.js?v=227';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData } from './planshet.js?v=227';
-import { REF_ARTICLES } from './articles.js?v=227';
-import { LOCAL_ARTICLES } from './reader.js?v=227';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=232';
+import { closeModal } from './modal.js?v=232';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=232';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=232';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=232';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=232';
+import { openCharacter, closeCharacter } from './characters.js?v=232';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=232';
+import { markerEl } from './node-window.js?v=232';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=232';
+import { hideSplash } from './splash.js?v=232';
+import { fetchT, showLoadError } from './net.js?v=232';
+import { noteRecord, setRestorer } from './navigation.js?v=232';
+import { buildRecords, resolveAddress } from './records.js?v=232';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=232';
+import { decodeAddress } from './address.js?v=232';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData } from './planshet.js?v=232';
+import { REF_ARTICLES } from './articles.js?v=232';
+import { LOCAL_ARTICLES } from './reader.js?v=232';
 
 const SVG_PATH = 'map.svg';
 
@@ -181,7 +181,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=227').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=232').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -2208,17 +2208,10 @@ function finishMapPick(p) {
        так же, как и в "Карте". */
     const onMapView = viewMode !== 'nodes';
     if (calibToggle) calibToggle.disabled = !onMapView;
-    /* Одна панель во всех режимах (v=227): третья кнопка — инструмент режима, 🏷️ на карте и в «Графике»,
-       ▦ в «Нодах». В «Нодах» капсула режимов сжимается до одной кнопки — той карты, с которой пришли
-       (.return). Анимация — переходами css. */
-    labelsToggle.hidden = !onMapView;
-    if (sortToggle) sortToggle.hidden = onMapView;
+    /* Одна панель во всех режимах (v=228): все три режима видны и в «Нодах» (владелец 02.11; в v=219–227
+       капсула сжималась там до одной кнопки «на карту»). 🏷️ и ▦ — переключатели в шторке «Феном ▴»
+       (#menuLabels/#menuGraph, js/planshet.js), скрытые кнопки здесь только держат логику. */
     controlsEl.classList.toggle('nodes', !onMapView);
-    viewSwitchBtns.forEach(b => {
-      b.classList.toggle('return', !onMapView && b.dataset.view === mapModeBeforeNodes);
-      // Свёрнутые кнопки капсулы (не видны) — и не в фокусе Tab, не для чтеца экрана (Codex, разбор 02.11).
-      b.inert = !onMapView && b.dataset.view !== mapModeBeforeNodes;
-    });
     if (sortToggle) {
       // ▦ показывает, куда ведёт: из планшета — граф, из графа — планшет.
       sortToggle.classList.toggle('graph-on', nodesArrangement === 'graph');
@@ -2395,18 +2388,19 @@ function finishMapPick(p) {
     if (performance.now() < viewBusyUntil || viewMode !== 'nodes') return;
     setViewMode('nodes', false, null, nodesArrangement === 'planshet' ? 'graph' : 'planshet');
   });
-  /* «Феном ▴» — шторка (схема корабля, разделы, сюжет, помощь), 🔍 — поиск сверху. С v=227 — и на карте:
-     шторка и поиск планшета встают поверх карты (over в js/planshet.js), режим не меняется.
-     Из графа — сначала обратно в планшет (шторка там про ленту). */
-  const toPlanshet = async () => {
-    if (viewMode !== 'nodes' || nodesArrangement === 'planshet') return true;
-    if (performance.now() < viewBusyUntil) return false;
-    await setViewMode('nodes', false, null, 'planshet');
-    return true;
+  /* «Феном ▴» — шторка (схема корабля, сюжет, вид карты, помощь), «Поиск» — сверху. С v=227 — и на карте, с v=228 —
+     и над графом: шторка и поиск планшета встают поверх (over в js/planshet.js), режим не меняется. */
+  document.getElementById('planshetBrand')?.addEventListener('click', () => togglePlanshetMenu());
+  document.getElementById('planshetSearch')?.addEventListener('click', () => openPlanshetSearch());
+  // Кнопка вида в шторке (v=229): на карте — «Меньше подписей», в «Нодах» — «Граф связей». Состояние и действие.
+  window.__mapViewTools = () => ({nodes: viewMode === 'nodes', labels: svg.classList.contains('labels-minimal'), graph: viewMode === 'nodes' && nodesArrangement === 'graph'});
+  window.__mapToggleLabels = () => labelsToggle.click();
+  window.__mapToggleGraph = () => {
+    if (performance.now() < viewBusyUntil) return;
+    if (viewMode !== 'nodes') return setViewMode('nodes', false, null, 'graph');
+    return setViewMode('nodes', false, null, nodesArrangement === 'planshet' ? 'graph' : 'planshet');
   };
-  document.getElementById('planshetBrand')?.addEventListener('click', async () => { if (await toPlanshet()) togglePlanshetMenu(); });
-  document.getElementById('planshetSearch')?.addEventListener('click', async () => { if (await toPlanshet()) openPlanshetSearch(); });
-  // Раздел, выбранный в шторке над картой, читается в «Нодах» (js/planshet.js зовёт отсюда).
+  // Раздел из шторки и новость из поиска над картой читаются в «Нодах» (js/planshet.js зовёт отсюда).
   window.__mapToPlanshet = () => {
     if (viewMode === 'nodes' && nodesArrangement === 'planshet') return Promise.resolve();
     return setViewMode('nodes', false, null, 'planshet');

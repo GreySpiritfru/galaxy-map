@@ -1,4 +1,4 @@
-import {C, pickedStories, viewKind} from './common.js?v=10';
+import {C, pickedStories, viewKind} from './common.js?v=15';
 
 export const SECTIONS = [['news','События'],['article','Статьи и лор'],['story','Сюжеты'],['place','Маркеры'],['building','Районы и здания'],['character','Персонажи']];
 export const MODES = [['all','Всё'], ...SECTIONS];

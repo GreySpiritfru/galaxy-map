@@ -804,8 +804,9 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
    Стекло — как у плашек окон: тёмный полупрозрачный фон с размытием. */
 .map-dock {
   position: absolute;
-  left: calc(10px + var(--safe-left));
-  right: calc(10px + var(--safe-right));
+  /* 5 px по краям (v=232, владелец: «таблетку чуть пошире»; было 10). */
+  left: calc(5px + var(--safe-left));
+  right: calc(5px + var(--safe-right));
   bottom: calc(10px + var(--safe-bottom));
   z-index: 20;
   display: flex;
@@ -847,7 +848,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
    display у кнопок иначе перебил бы его. */
 .map-dock [hidden] { display: none !important; }
 
-/* Общий фон — одна капсула на всю панель (v=227: на 360 px две капсулы с целями 48 px не влезали). */
+/* Общий фон — одна капсула на всю панель (v=230, владелец: «единая панель»; в v=229 были две плашки с пустым местом
+   между ними). Ноды · Карта · Графика внутри — своей подложкой, как тройной переключатель (.dock-modes ниже). */
 .dock-bar {
   /* Полупрозрачно, но БЕЗ размытия (v=185, замер на телефоне игрока): панель
      стоит поверх движущейся карты, и backdrop-filter заново размывал её на
@@ -862,8 +864,9 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 .dock-bar {
   display: flex;
   align-items: center;
-  gap: 2px;
-  height: 56px;
+  gap: 4px;
+  /* 68 / кнопки 60 (v=228, владелец с телефона: при 56 «тяжело тыкать пальцем»). */
+  height: 68px;
   padding: 4px;
   box-sizing: border-box;
   border-radius: 20px;
@@ -883,9 +886,9 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   transition: color 0.2s ease;
 }
 .dock-label {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  line-height: 12px;
+  line-height: 14px;
   letter-spacing: 0.1px;
   white-space: nowrap;
   overflow: hidden;
@@ -909,8 +912,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 .map-dock .dock-svg {
   display: block;
   overflow: visible;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.7;
@@ -920,93 +923,71 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 .dock-svg-dot { fill: currentColor; stroke: none; }
 
 /* Переключатель режима — капсула с «линзой» под активным разделом. */
+/* Тройной переключатель режимов — своя подложка внутри панели (v=230, владелец: выделить, «как будто тройной
+   переключатель»). */
 .dock-modes {
   position: relative;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
-  height: 48px;
+  height: 60px;
+  padding: 3px;
+  box-sizing: border-box;
+  border-radius: 17px;
+  background: rgba(255,255,255,0.06);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.09);
 }
-/* Переключатель «поменьше» (владелец, v=227): три раздела по 48 px, а не на всю ширину. */
+/* Три режима делят всё, что справа от «Феном ▴» и «Поиска» (v=228: в v=227 были по 48 px — мелко). */
 .dock-modes .dock-item {
   position: relative;
   z-index: 1;
-  flex: 0 0 auto;
-  width: 48px;
+  flex: 1 1 0;
   padding: 0 2px;
   border-radius: 16px;
   background: none;
 }
 .dock-modes .dock-item.active { color: #AFEEEE; }
 
-/* ===== Слева — «Феном ▴», 🔍 и инструмент режима (v=227 — во всех режимах; до этого только в «Нодах»). =====
-   В «Нодах» (.map-dock.nodes ставит updateViewModeUi) капсула режимов сжимается до одной кнопки карты (.return),
-   появление — только opacity/transform. */
+/* ===== Слева — «Феном ▴» и 🔍 (v=229: снова надпись и лупа без подписи, как в v=227; значок-маркер и подпись
+   «Поиск» v=228 владелец не просил). Все три режима видны в любом режиме, «Ноды» тоже. ===== */
 .dock-planshet {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 0;
-  height: 48px;
+  height: 60px;
 }
-/* Черта между «своим» и переключателем режимов. */
-.dock-planshet::after {
-  content: '';
-  flex: none;
-  width: 1px;
-  height: 28px;
-  margin: 0 2px;
-  background: rgba(255,255,255,0.12);
-}
-.dock-modes { transition: opacity 0.18s ease, transform 0.18s ease; }
-.dock-modes .dock-item {
-  max-width: 120px;
-  transition: color 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
-}
-.map-dock.nodes .dock-modes { animation: dockModesRight 0.18s ease; }
-@keyframes dockModesRight { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
-.map-dock.nodes .dock-modes .dock-item:not(.return) { width: 0; max-width: 0; padding: 0; opacity: 0; visibility: hidden; pointer-events: none; }
-.map-dock.nodes .dock-modes .dock-item.return { width: auto; min-width: 56px; padding: 0 10px; color: rgba(255,255,255,0.8); }
-.map-dock.nodes .view-lens { opacity: 0; }
-/* «Феном ▴» — знак приложения (Tektur, как заголовки планшета) и вход в шторку разделов. */
+.dock-modes .dock-item { transition: color 0.18s ease; }
+/* «Феном ▴» — знак приложения (Tektur, как заголовки планшета) и вход в шторку. */
 .dock-brand {
-  flex: 1 1 auto;
-  min-width: 0;
-  height: 48px;
+  position: relative;
+  flex: 0 0 auto;
+  height: 60px;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 10px 0 12px;
+  gap: 4px;
+  padding: 0 12px;
   border-radius: 16px;
   background: none;
   color: #e6e6ee;
-  position: relative;
-}
-.dock-brand {
-  overflow: hidden;   /* узкий экран: надпись не налезает на 🔍 (автопроверка, 360 px) */
+  overflow: hidden;
 }
 .dock-brand-name {
   font-family: 'Tektur', system-ui, sans-serif;
-  font-size: 21px;
+  /* 28 (v=232: стрелки «▴» нет, место — надписи; v=230 — 24, до этого 21). */
+  font-size: 28px;
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
 }
-.map-dock .dock-brand .dock-chev { width: 16px; height: 16px; color: rgba(255,255,255,0.6); transition: transform 0.2s ease; }
 .dock-brand[aria-expanded="true"] { background: rgba(175,238,238,0.12); }
 @media (max-width: 380px) {
-  .dock-brand { padding: 0 4px 0 8px; gap: 2px; }
-  .dock-brand-name { font-size: 18px; }
-  .map-dock .dock-brand .dock-chev { width: 14px; height: 14px; }
+  .dock-brand { padding: 0 10px; }
+  .dock-brand-name { font-size: 25px; }
 }
-/* 360 px: «Феном ▴» + 🔍 + 🏷️ + три режима по 48 впритык (v=227) — поля панели и надписи на 2 px меньше. */
-@media (max-width: 370px) {
-  .map-dock { left: calc(8px + var(--safe-left)); right: calc(8px + var(--safe-right)); }
-  .dock-brand { padding: 0 2px 0 6px; }
-  .dock-planshet::after { margin: 0 1px; }
-}
-/* Новичку, пока не открыл справку, — мягкое кольцо у «Феном ▴» (onboarding.js; до v=227 — у круглой «?»).
-   Внутри кнопки (у неё overflow: hidden), только opacity. */
+/* Шторка открыта — панель и шторка одно целое (v=232): верхние углы панели прямые, фон тот же, что у шторки. */
+.map-dock.menu-open .dock-bar { border-radius: 0 0 20px 20px; background: #12121b; }
+/* Новичку, пока не открыл справку, — мягкое кольцо у «Феном ▴» (onboarding.js; до v=227 — у круглой «?»). Только opacity. */
 .dock-brand.pulse::before {
   content: '';
   position: absolute;
@@ -1017,12 +998,11 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   animation: brandPulse 2.4s ease-in-out infinite;
 }
 @keyframes brandPulse { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
-.dock-brand[aria-expanded="true"] .dock-chev { transform: rotate(180deg); }
 /* Фильтр по сюжету включён — точка у надписи. */
 .dock-brand.filtered::after {
   content: '';
   position: absolute;
-  top: 9px;
+  top: 10px;
   left: 4px;
   width: 6px;
   height: 6px;
@@ -1031,8 +1011,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 }
 .dock-tool {
   flex: 0 0 auto;
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 60px;
   padding: 0;
   display: flex;
   align-items: center;
@@ -1042,14 +1022,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   color: rgba(255,255,255,0.72);
 }
 .dock-tool.active { color: #AFEEEE; background: rgba(175,238,238,0.12); }
-/* ▦ показывает, КУДА ведёт: из планшета — значок графа, из графа — значок планшета. */
-#sortToggle .to-planshet,
-#sortToggle.graph-on .to-graph { display: none; }
-#sortToggle.graph-on .to-planshet { display: block; }
 @media (prefers-reduced-motion: reduce) {
-  .dock-modes, .dock-modes .dock-item,
-  .map-dock .dock-brand .dock-chev { transition: none; }
-  .map-dock.nodes .dock-modes { animation: none; }
+  .dock-modes .dock-item { transition: none; }
   .dock-brand.pulse::before { animation: none; opacity: 1; }
 }
 /* Шире телефона — разделы своей ширины, а не растянутые. */
@@ -1062,11 +1036,11 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
    расстановка) — без анимации, иначе при загрузке линза выезжала бы слева. */
 .view-lens {
   position: absolute;
-  top: 0;
-  bottom: 0;
+  top: 3px;
+  bottom: 3px;
   left: 0;
   width: 0;
-  border-radius: 16px;
+  border-radius: 14px;
   background: rgba(175,238,238,0.15);
   box-shadow: inset 0 0 0 1px rgba(175,238,238,0.3);
   pointer-events: none;
@@ -1119,7 +1093,10 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
     gap: 10px;
     bottom: calc(16px + var(--safe-bottom));
   }
-  .dock-bar { height: 60px; gap: 4px; }
+  .dock-bar { height: 64px; gap: 6px; border-radius: 18px; }
+  .dock-planshet, .dock-modes { height: 56px; }
+  .dock-brand, .dock-tool { height: 52px; }
+  .dock-modes { flex: 0 0 auto; }
   .dock-item {
     flex-direction: row;
     gap: 9px;
@@ -1130,7 +1107,6 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
     line-height: 18px;
     letter-spacing: 0;
   }
-  .dock-modes { height: 52px; }
   .dock-modes .dock-item {
     width: auto;
     padding: 0 16px;
@@ -1401,10 +1377,12 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   border-radius: 0;
   /* 48 × во всю высоту ряда (v=222, владелец: «крестик очень маленький»). Было 30 px — из-за панели
      справочника (5 кнопок, «Галактика» не влезала); её убрали в v=218. */
-  width: 48px;
+  /* v=228 (владелец с телефона: «крестик очень мало места занимает»): 64 × 56, знак крупнее. */
+  width: 64px;
   height: auto;
-  min-height: 48px;
+  min-height: 56px;
   align-self: stretch;
+  font-size: 22px;
 }
 /* Черта справа от ✕/↩ (игрок, 15.09.2026): без видимой границы палец
    промахивался мимо крестика и попадал в соседнюю вкладку. Псевдоэлемент, а
@@ -1426,7 +1404,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   gap: 2px;
   flex: 1 1 0;
   min-width: 0;
-  min-height: 48px;
+  min-height: 56px;
   background: none;
   border: none;
   border-radius: 0;
@@ -2035,7 +2013,7 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   background: none;
 }
 .node-dock.single > .tabbar .tabbar-btn { display: none !important; }
-.node-dock.single > .tabbar .toolbar-close-btn { min-height: 48px; }
+.node-dock.single > .tabbar .toolbar-close-btn { min-height: 56px; }
 .node-dock.single > .node-links {
   flex: 1 1 auto;
   min-width: 0;

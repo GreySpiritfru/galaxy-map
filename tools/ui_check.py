@@ -15,7 +15,7 @@
 пересечения ненаследующих друг друга целей. Текст статей не обходится.
 Полностью скрытые стилями/предками и полностью обрезанные scroll-контейнером
 цели пропускаются; перекрытые другими элементами цели проверяются.
-Также запускаются axe-core (WCAG 2.0/2.1/2.2 A/AA) и семь последовательных
+Также запускаются axe-core (WCAG 2.0/2.1/2.2 A/AA) и восемь последовательных
 сценариев на каждой ширине. --only=axe|targets|scenarios выбирает один раздел;
 --axe-all включает все правила axe. Incomplete — отдельный список для ручной
 проверки, не нарушения. Подробности — tools/ui_check_README.md.
@@ -239,9 +239,10 @@ class Browser:
                 self.click('#planshetSearch')
                 self.wait('!!document.querySelector("#planshet .p-search:not([hidden])")')
             elif state == 'graph':
-                self.click('#sortToggle')
-                self.wait('!document.body.classList.contains("planshet-on") && '
-                          '!!document.querySelector("svg.nodes-mode")')
+                self.click('#planshetBrand')
+                self.wait_state(menu=True)
+                self.click('#menuGraph')
+                self.wait_state(graph=True, tabletHidden=True, menu=False)
         elif state != 'map':
             self.probe('record', state)
             # Сюжет, открытый сам по себе, ложится в нижний слой (#phenomOverlay), поверх Фенома — в верхний.

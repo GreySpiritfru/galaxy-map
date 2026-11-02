@@ -631,36 +631,59 @@
 
 /* Шторка «Феном ▴» — над панелью карты: разделы, сюжет, помощь. --dock-top — расстояние от низа экрана
    до верха панели карты (js/planshet.js). */
-#planshet .p-menu { position: fixed; z-index: 6; left: 10px; right: 10px; bottom: calc(var(--dock-top, 80px) + 8px);
-  max-width: 560px; margin: 0 auto; max-height: calc(100% - var(--dock-top, 80px) - var(--safe-top, 0px) - 24px); overflow-y: auto;
-  padding: 10px; border-radius: 16px; background: #12121b; border: 1px solid rgba(175,238,238,.22); box-shadow: 0 8px 32px #0009; }
+/* v=232: шторка стоит на панели вплотную (низ уходит под неё на 2 px) и той же ширины — продолжение панели вверх. */
+#planshet .p-menu { position: fixed; z-index: 6; left: var(--dock-l, 5px); width: var(--dock-w, calc(100% - 10px)); box-sizing: border-box;
+  bottom: calc(var(--dock-top, 80px) - 2px); max-height: calc(100% - var(--dock-top, 80px) - var(--safe-top, 0px) - 16px); overflow-y: auto;
+  padding: 6px 6px 8px; border-radius: 20px 20px 0 0; background: #12121b; border: 1px solid rgba(175,238,238,.16); border-bottom: 0;
+  box-shadow: 0 -10px 28px #0008; }
 #planshet .p-menu[hidden] { display: none; }
-/* Первый пункт шторки — схема корабля (v=227; до этого своя кнопка «Феном» на панели карты). */
-#planshet .p-menu-ship { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 10px; margin-bottom: 8px;
-  border-radius: 12px; background: rgba(175,238,238,0.08); box-shadow: inset 0 0 0 1px rgba(175,238,238,0.22); text-align: left; }
-#planshet .p-ship-icon { flex: none; display: grid; place-items: center; width: 36px; height: 36px; font-size: 22px; }
-#planshet .p-ship-icon .corner-node-icon { width: 32px; height: 32px; font-size: 13px; }
-#planshet .p-ship-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-#planshet .p-ship-text b { color: var(--text); font-size: 16px; }
-#planshet .p-ship-text small { color: var(--muted); font-size: 13px; }
 #planshet .p-menu-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 #planshet .p-menu-head h2 { font-size: 20px; }
 /* Цели нажатия в шторке — 48 px по высоте (автопроверка tools/ui_check.py, v=222). */
-#planshet .p-menu-home { min-height: 48px; padding: 0 12px; border-radius: 12px; color: var(--soft); font-size: 14px; }
+#planshet .p-menu-home { min-height: 56px; padding: 0 12px; border-radius: 12px; background: var(--raise); color: var(--soft); font-size: 14px; font-weight: 600; text-align: center; }
 #planshet .p-menu-home[aria-pressed="true"] { color: var(--act); background: rgba(175,238,238,0.09); }
-#planshet .p-menu-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 8px; margin-top: 6px; }
+#planshet .p-menu-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
 #planshet .p-menu-section { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 6px;
-  min-width: 0; min-height: 48px; padding: 6px 8px; border-radius: 10px; background: none; font-size: 14px; line-height: 1.25; }
+  min-width: 0; min-height: 48px; padding: 6px 10px; border-radius: 12px; background: var(--raise); font-size: 14px; line-height: 1.25; }
 #planshet .p-menu-title { min-width: 0; font: inherit; font-weight: 600; }
 #planshet .p-menu-count { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
 #planshet .p-menu-section[aria-pressed="true"] { color: var(--act); background: rgba(175,238,238,0.12); box-shadow: inset 3px 0 var(--act); }
 #planshet .p-menu-section[aria-pressed="true"] .p-menu-count { color: var(--act); }
-#planshet .p-menu .f-group { margin-top: 8px; }
+#planshet .p-menu .f-group { margin-top: 4px; }
 #planshet .p-menu .f-group h3 { margin: 0 2px 4px; }
-#planshet .p-menu .f-opts { display: flex; flex-wrap: wrap; gap: 4px; }
+#planshet .p-menu .f-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
 #planshet .p-menu .f-opts button { min-height: 48px; height: auto; min-width: 48px; padding: 6px 12px; border-radius: 12px;
   background: var(--raise); text-align: center; white-space: normal; }
 #planshet .p-menu .f-opts button[aria-pressed="true"]::before { content: none; }
 #planshet .p-menu-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
   margin-top: 8px; padding-top: 4px; border-top: 1px solid var(--line); }
 #planshet .p-menu-links button { color: var(--act); font-size: 14px; line-height: 1.3; min-height: 48px; padding: 4px 2px; }
+
+/* ===== Шторка «Феном», v=231–232 (владелец) =====
+   Сверху своей плашкой — «На главную» и разделы сеткой 3 × 2; под ней четыре кнопки в ряд: значок сверху, подпись снизу.
+   Все подписи — в одну строку, не влезло — «…» (v=232). */
+#planshet .p-menu-sections { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 4px;
+  border-radius: 14px; background: rgba(255,255,255,0.04); box-shadow: inset 0 0 0 1px var(--line); }
+#planshet .p-menu-section { position: relative; flex-direction: row; align-items: flex-end; justify-content: space-between; gap: 4px;
+  min-height: 52px; padding: 6px 8px; border-radius: 10px; background: var(--raise) center / cover no-repeat; font-size: 13px; overflow: hidden; }
+#planshet .p-menu-section.has-art { background-image: linear-gradient(rgba(12,12,18,0.2), rgba(12,12,18,0.82)), var(--art); }
+#planshet .p-menu-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 1px 3px #000c; }
+#planshet .p-menu-section .p-menu-count { font-size: 12px; text-shadow: 0 1px 3px #000c; }
+#planshet .p-menu-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 6px; }
+#planshet .p-mini { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-width: 0; min-height: 56px; padding: 6px 4px; border-radius: 12px; background: var(--raise); color: var(--soft);
+  font-size: 12px; line-height: 1.2; text-align: center; cursor: pointer; }
+#planshet .p-mini > span:last-of-type { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#planshet .p-mini-icon { flex: none; display: grid; place-items: center; width: 24px; height: 24px; }
+#planshet .p-mini-icon svg { display: block; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round; }
+#planshet .p-mini-icon svg .dot { fill: currentColor; }
+#planshet .p-ship-icon { font-size: 18px; }
+#planshet .p-ship-icon .corner-node-icon { width: 24px; height: 24px; font-size: 11px; }
+#planshet .p-menu-ship { background: rgba(175,238,238,0.08); box-shadow: inset 0 0 0 1px rgba(175,238,238,0.22); color: var(--text); }
+#planshet .p-mini[aria-pressed="true"] { color: var(--act); box-shadow: inset 0 0 0 1px rgba(175,238,238,0.45); }
+/* Сюжет: видна подпись выбранного, <select> прозрачный поверх всей кнопки — касание открывает список телефона. */
+#planshet .p-select select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; font-size: 16px; }
+#planshet .p-select:focus-within { outline: 2px solid var(--act); outline-offset: 2px; }
+/* Главная планшета: «Статьи и лор» — на всю ширину (плитки «События» с v=231 нет). */
+#planshet .tiles:not(.p-menu-sections) > .tile.wide { grid-column: 1 / -1; }

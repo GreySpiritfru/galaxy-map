@@ -1,7 +1,9 @@
-import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=10';
-import {inChip} from './filters.js?v=10';
-import {createHistory} from './history.js?v=10';
-import {sectionMenu,toggleSection,currentSection} from './home.js?v=10';
+import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=15';
+import {inChip} from './filters.js?v=15';
+import {createHistory} from './history.js?v=15';
+import {sectionMenu,toggleSection,currentSection} from './home.js?v=15';
+const FILTER_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.4V19l-3.6-1.8v-4.8z"/></svg>';
+const HELP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.5"/><circle class="dot" cx="12" cy="16.8" r=".6"/></svg>';
 const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 /* Планшет в карте (с 02.11.2026, v=219 — без фрейма, прямо в #planshet). Шапки нет (владелец: верх
@@ -11,8 +13,9 @@ const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
    onChange — сообщить карте, что поменялось (подсветка кнопок панели, глубина «назад»).
    С v=222 своей карточки записи нет (владелец): всё — окнами карты, новость — в ленте.
    С v=227 шторка и поиск открываются и над картой (js/planshet.js, .over-map): onShip/shipIcon — первый пункт
-   шторки «Схема корабля Феном»; onLeave — перейти в «Ноды», когда показать надо ленту (раздел, новость). */
-export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour, onShip, shipIcon, onLeave = () => {}}) {
+   шторки «Схема корабля Феном»; onLeave — перейти в «Ноды», когда показать надо ленту (раздел, новость из поиска).
+   tools — кнопка вида в ряду сюжетов (v=229: на карте «Меньше подписей», в «Нодах» «Граф связей»; js/planshet.js). */
+export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour, onShip, shipIcon, onLeave = () => {}, tools, onMenuOpen}) {
   const state = {chip: 'all', stack: [], kind: 'all', q: ''};
   // Обычное текстовое поле: у type="search" Android рисует свой ✕ рядом с нашим (было два крестика).
   const input = el('input', {type: 'text', inputmode: 'search', enterkeyhint: 'search', placeholder: 'Поиск по Феному', 'aria-label': 'Поиск', autocomplete: 'off'});
@@ -69,30 +72,37 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
     remember(id);
     Promise.resolve(window.__mapOpenRecord?.(id,anchor||'')).then(ok=>{if(!ok)return Promise.resolve(onLeave()).then(()=>ownOpen(id));});
   };
-  /* ---------- шторка «Феном ▴»: разделы, сюжет, помощь ---------- */
+  /* ---------- шторка «Феном ▴» (v=231, владелец): своей плашкой «На главную» и разделы (3 × 2), под ней четыре
+     кнопки в ряд — схема корабля, вид («Граф связей» / «Меньше подписей»), сюжет ▾, «Как пользоваться картой». ---------- */
   function renderMenu() {
     const pick = k => {
       closeMenu();
       if (currentSection() !== k) { toggleSection(k); root.scrollTo(0, 0); }
       onLeave();
     };
-    const chip = (id, label) => el('button', {'aria-pressed': String(state.chip === id), onclick() { setFilter(id, state.kind); renderMenu(); }}, label);
-    menu.replaceChildren(
-      onShip ? shipButton() : null,
-      el('div', {class: 'p-menu-head'}, el('h2', {}, 'Разделы'),
-        el('button', {class: 'p-menu-home', 'aria-pressed': String(currentSection() === 'all'), onclick: () => pick('all')}, 'На главную')),
+    // ⚠️ replaceChildren (DOM), не el(): null он вывел бы текстом «null» — поэтому filter(Boolean).
+    menu.replaceChildren(...[
       sectionMenu(state, pick),
-      el('div', {class: 'f-group'}, el('h3', {}, 'Сюжет'), el('div', {class: 'f-opts'}, chipList().map(([id, label]) => chip(id, label)))),
-      el('div', {class: 'p-menu-links'},
-        onHelp ? el('button', {onclick() { closeMenu(); onHelp(); }}, '? Как пользоваться картой') : null,
-        onTour ? el('button', {onclick() { closeMenu(); onTour(); }}, 'Короткая экскурсия') : null));
+      el('div', {class: 'p-menu-row'}, onShip ? shipButton() : null, tools ? tools() : null, storySelect(),
+        onHelp ? el('button', {class: 'p-mini', 'aria-label': 'Как пользоваться картой', onclick() { closeMenu(); onHelp(); }}, icon(HELP_SVG), el('span', {}, 'Обучение')) : null),
+    ].filter(Boolean));
   }
-  // Схема корабля — первым (до v=227 — своя кнопка на панели, теперь путь к ней через шторку).
+  const icon = svg => { const n = el('span', {class: 'p-mini-icon', 'aria-hidden': 'true'}); n.innerHTML = svg; return n; };
+  // Фильтр по сюжету — выпадающий список (v=230). Видна подпись выбранного, сам <select> — прозрачный поверх кнопки.
+  function storySelect() {
+    const list = chipList();
+    const sel = el('select', {'aria-label': 'Сюжет', onchange() { setFilter(sel.value, state.kind); renderMenu(); }},
+      list.map(([id, label]) => el('option', {value: id}, id === 'all' ? 'Все сюжеты' : label)));
+    sel.value = state.chip;
+    // Подпись — одно слово (v=232, владелец): «Фильтры», а выбран сюжет — его название (не влезло — «…»).
+    const label = state.chip === 'all' ? 'Фильтры' : list.find(c => c[0] === state.chip)?.[1] || 'Фильтры';
+    return el('label', {class: 'p-mini p-select'}, icon(FILTER_SVG), el('span', {}, label), sel);
+  }
+  // Схема корабля (до v=227 — своя кнопка на панели, теперь путь к ней через шторку).
   function shipButton() {
-    const icon = el('span', {class: 'p-ship-icon', 'aria-hidden': 'true'}, '🚀');
-    shipIcon?.().then(m => { if (m && icon.isConnected) { m.setAttribute('aria-hidden', 'true'); icon.replaceChildren(m); } });
-    return el('button', {class: 'p-menu-ship', onclick() { closeMenu(); onShip(); }}, icon,
-      el('span', {class: 'p-ship-text'}, el('b', {}, 'Схема корабля Феном'), el('small', {}, 'Районы, здания и кто где')));
+    const pic = el('span', {class: 'p-mini-icon p-ship-icon', 'aria-hidden': 'true'}, '🚀');
+    shipIcon?.().then(m => { if (m && pic.isConnected) { m.setAttribute('aria-hidden', 'true'); pic.replaceChildren(m); } });
+    return el('button', {class: 'p-mini p-menu-ship', 'aria-label': 'Схема корабля Феном', onclick() { closeMenu(); onShip(); }}, pic, el('span', {}, 'Схема'));
   }
   const isMenuOpen = () => !menu.hidden;
   /* Фокус (v=225, разбор Codex): открылась шторка — фокус на неё (клавиатура, TalkBack/VoiceOver), закрылась —
@@ -105,7 +115,8 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
     menuOpener = document.activeElement;
     menu.hidden = false;
     menu.focus({preventScroll: true});
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
+    if (onMenuOpen) onMenuOpen(menu);
+    else if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
       menu.animate([{opacity: 0, transform: 'translateY(16px)'}, {opacity: 1, transform: 'none'}], {duration: 200, easing: 'cubic-bezier(.2,.7,.2,1)'});
     onChange();
   }

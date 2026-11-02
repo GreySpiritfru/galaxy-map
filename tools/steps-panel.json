@@ -1,10 +1,10 @@
 [
  {
-  "js": "const b=document.querySelector('.view-switch-btn.return')||document.querySelector('[data-view=map]'); b.click();",
+  "js": "document.querySelector('[data-view=map]').click();",
   "wait": 2.5
  },
  {
-  "js": "const b=document.querySelector('#planshetBrand'),c=b.querySelector('.dock-chev').getBoundingClientRect(),r=b.getBoundingClientRect(); return {mode:document.querySelector('.view-switch-btn.active')?.dataset.view, brand:[r.left,r.right], chev:[c.left,c.right]};",
+  "js": "const q=s=>document.querySelector(s),r=e=>{const b=e.getBoundingClientRect();return [Math.round(b.left),Math.round(b.width),Math.round(b.height)]}; return {mode:q('.view-switch-btn.active')?.dataset.view, bar:r(q('.dock-bar')), brand:r(q('#planshetBrand')), search:r(q('#planshetSearch')), modes:[...document.querySelectorAll('.view-switch-btn')].map(r)};",
   "wait": 0.5,
   "shot": "01-map"
  },
@@ -41,21 +41,26 @@
   "wait": 0.5
  },
  {
-  "js": "document.querySelector('#planshetBrand').click(); await new Promise(r=>setTimeout(r,800)); [...document.querySelectorAll('#planshet .p-menu-section')].find(b=>b.textContent.includes('Персонажи')).click();",
+  "js": "document.querySelector('#planshetBrand').click(); await new Promise(r=>setTimeout(r,800)); [...document.querySelectorAll('#planshet .p-menu-section')].find(b=>b.textContent.includes('Персонажи')).click(); await new Promise(r=>setTimeout(r,2500)); document.querySelector('#planshetBrand').click(); await new Promise(r=>setTimeout(r,800)); document.querySelector('#menuGraph').click();",
   "wait": 2.5,
-  "shot": "06-section-to-nodes"
+  "shot": "06-graph-from-menu"
  },
  {
-  "js": "return {mode:document.querySelector('.view-switch-btn.active')?.dataset.view, hidden:document.querySelector('#planshet').hidden, over:document.querySelector('#planshet').classList.contains('over-map'), h:document.querySelector('#planshet .sec-bar h2')?.textContent};",
-  "wait": 0.2
+  "js": "document.querySelector('#planshetBrand').click(); await new Promise(r=>setTimeout(r,800)); return {mode:document.querySelector('.view-switch-btn.active')?.dataset.view, planshetHidden:document.querySelector('#planshet').hidden, over:document.querySelector('#planshet').classList.contains('over-map'), graphPressed:document.querySelector('#menuGraph')?.getAttribute('aria-pressed'), labelsPressed:document.querySelector('#menuLabels')?.getAttribute('aria-pressed'), modesVisible:[...document.querySelectorAll('.view-switch-btn')].map(b=>b.getBoundingClientRect().width)};",
+  "wait": 0.2,
+  "shot": "06b-menu-over-graph"
  },
  {
-  "js": "document.querySelector('.view-switch-btn.return').click(); await new Promise(r=>setTimeout(r,2000)); document.querySelector('#planshetBrand').click(); await new Promise(r=>setTimeout(r,800)); document.querySelector('#planshet .p-menu-ship').click();",
+  "js": "document.querySelector('[data-view=map]').click(); await new Promise(r=>setTimeout(r,2000)); document.querySelector('#planshetBrand').click(); await new Promise(r=>setTimeout(r,800)); document.querySelector('#menuLabels').click(); await new Promise(r=>setTimeout(r,300)); window.__lp=document.querySelector('#menuLabels').getAttribute('aria-pressed'); document.querySelector('#planshet .p-menu-ship').click();",
   "wait": 3,
   "shot": "07-ship"
  },
  {
   "js": "await new Promise(r=>setTimeout(r,1500)); return {ship: [...document.querySelectorAll('.phenom-overlay')].map(o=>o.id+':'+o.className), hidden:document.querySelector('#planshet').hidden};",
+  "wait": 0.2
+ },
+ {
+  "js": "return {labelsAfterToggle: window.__lp, mode:document.querySelector('.view-switch-btn.active')?.dataset.view};",
   "wait": 0.2
  }
 ]

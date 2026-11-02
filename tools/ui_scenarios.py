@@ -1,6 +1,6 @@
 """Последовательные проверки. Каждый запуск начинается с Browser.prepare()."""
 
-SCENARIOS = ('layers-esc', 'layers-history', 'search-return', 'menu-section',
+SCENARIOS = ('layers-esc', 'layers-history', 'search-return', 'menu-section', 'menu-over-map',
              'view-roundtrip', 'keyboard-panel', 'text-200')
 ARTICLE = 'tt/greyspirit/4tRzyNaVfEQ'
 
@@ -46,43 +46,77 @@ def run_scenario(b, name, step):
     elif name == 'menu-section':
         step('Открыть шторку', lambda: tap('#planshetBrand'))
         step('Шторка открыта', lambda: b.wait_state(menu=True))
-        target = step('Выбрать раздел', lambda: b.probe('sectionTarget'))
-        step('Коснуться раздела', lambda: tap(target))
-        step('Раздел открыт, шторка закрыта', lambda: expect(menu=False, section=True, tablet=True))
+        step('Включить граф связей', lambda: tap('#menuGraph'))
+        step('Граф виден, планшет скрыт', lambda: b.wait_state(graph=True, tabletHidden=True, menu=False))
+        step('Повторно открыть шторку', lambda: tap('#planshetBrand'))
+        step('Шторка над графом', lambda: b.wait_state(menu=True, overMap=True, graph=True))
+        step('Выключить граф связей', lambda: tap('#menuGraph'))
+        step('Снова планшет', lambda: b.wait_state(graph=False, tablet=True, menu=False))
+        target = step('Выбрать плитку на главной', lambda: b.probe('sectionTarget'))
+        step('Открыть раздел', lambda: tap(target))
         step('Показан выбранный раздел', lambda: b.probe('sectionCheck'))
         step('Вернуться через «‹ Всё»', lambda: tap('#planshet .sec-back'))
         step('Главная открыта', lambda: b.probe('home'))
-        step('Повторно открыть шторку', lambda: tap('#planshetBrand'))
+        step('Открыть шторку перед Esc', lambda: tap('#planshetBrand'))
         step('Шторка открыта перед Esc', lambda: expect(menu=True))
         step('Esc из шторки', b.escape)
         step('Шторка закрыта', lambda: expect(menu=False, tablet=True))
+    elif name == 'menu-over-map':
+        step('Открыть карту', lambda: tap('[data-view="map"]'))
+        step('Карта видна', lambda: b.wait_state(map=True, mapVisible=True, tabletHidden=True))
+        step('Открыть шторку над картой', lambda: tap('#planshetBrand'))
+        step('Карта под шторкой видна', lambda: b.wait_state(menu=True, overMap=True, map=True, mapVisible=True))
+        step('Коснуться подложки мимо шторки', lambda: tap('#planshet'))
+        step('Шторка и подложка закрыты', lambda: b.wait_state(menu=False, tabletHidden=True, mapVisible=True))
+        step('Открыть поиск с карты', lambda: tap('#planshetSearch'))
+        step('Дождаться поля', lambda: b.wait_state(search=True, ready=True))
+        step('Ввести «феном»', lambda: b.type_text('феном'))
+        step('Дождаться результатов', lambda: b.wait_state(results=True))
+        target = step('Выбрать первую запись', lambda: b.probe('firstResult'))
+        step('Открыть запись', lambda: tap(target))
+        step('Окно записи открыто', lambda: b.wait_state(window=True))
+        step('Esc из записи', b.escape)
+        step('Вернулись результаты', lambda: b.wait_state(window=False, search=True, results=True, query='феном'))
+        step('Закрыть поиск кнопкой панели', lambda: tap('#planshetSearch'))
+        step('Снова карта', lambda: b.wait_state(search=False, tabletHidden=True, map=True, mapVisible=True))
+        step('Открыть шторку для схемы', lambda: tap('#planshetBrand'))
+        step('Шторка открыта', lambda: b.wait_state(menu=True, overMap=True))
+        step('Открыть схему корабля', lambda: tap('#planshetMenu .p-menu-ship'))
+        step('Феном открыт на схеме', lambda: b.wait_state(ship=True, menu=False))
     elif name == 'view-roundtrip':
-        step('Из планшета на карту', lambda: tap('.view-switch-btn.return'))
+        step('Из планшета на карту', lambda: tap('[data-view="map"]'))
+        step('Карта открыта', lambda: b.wait_state(map=True, tabletHidden=True))
         step('Открыть «Графику»', lambda: tap('[data-view="graphics"]'))
         step('Графика открыта', lambda: b.wait_state(graphics=True))
         step('Из графики в Ноды', lambda: tap('[data-view="nodes"]'))
         step('Планшет открыт', lambda: b.wait_state(tablet=True))
-        step('Показать граф', lambda: tap('#sortToggle'))
-        step('Граф открыт', lambda: b.wait_state(graph=True, tablet=False))
-        step('Вернуться к планшету', lambda: tap('#sortToggle'))
+        step('Открыть шторку', lambda: tap('#planshetBrand'))
+        step('Шторка открыта', lambda: b.wait_state(menu=True))
+        step('Показать граф', lambda: tap('#menuGraph'))
+        step('Граф открыт', lambda: b.wait_state(graph=True, tabletHidden=True, menu=False))
+        step('Открыть шторку над графом', lambda: tap('#planshetBrand'))
+        step('Шторка над графом открыта', lambda: b.wait_state(menu=True, overMap=True))
+        step('Вернуться к планшету', lambda: tap('#menuGraph'))
         step('Планшет снова открыт', lambda: b.wait_state(tablet=True))
-        step('Нажать «на карту»', lambda: tap('.view-switch-btn.return'))
-        step('Вернулась именно Графика', lambda: b.wait_state(graphics=True, tablet=False, graph=False))
+        step('Выбрать «Графику» из Нод', lambda: tap('[data-view="graphics"]'))
+        step('Открылась именно Графика', lambda: b.wait_state(graphics=True, tabletHidden=True, graph=False))
+        step('Выбрать «Карту»', lambda: tap('[data-view="map"]'))
+        step('Открылась именно Карта', lambda: b.wait_state(map=True, graphics=False, graph=False))
     elif name == 'keyboard-panel':
         step('Включить клавиатурный режим', lambda: b.key('Tab', 9))
         step('Начать фокус с панели', lambda: b.probe('focusStart'))
         first = step('Проверить фокус первой кнопки', lambda: b.probe('focus'))
-        seen = {first['id']}
+        seen = {first['view'] or first['id']}
         for i in range(16):
             step(f'Tab {i + 1}', lambda: b.key('Tab', 9))
             focus = step(f'Проверить фокус {i + 1}', lambda: b.probe('focus'))
             if not focus['panel']:
                 break
-            seen.add(focus['id'])
+            seen.add(focus['view'] or focus['id'])
             if focus['id'] == 'planshetBrand':
                 break
         def coverage():
-            missing = {'planshetBrand', 'planshetSearch', 'sortToggle'} - seen
+            missing = {'planshetBrand', 'planshetSearch', 'nodes', 'map', 'graphics'} - seen
             if missing:
                 raise RuntimeError('Tab не обошёл панель: ' + ', '.join(sorted(missing)))
         step('Обойдены видимые кнопки панели', coverage)

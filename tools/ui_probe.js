@@ -14,9 +14,14 @@
   const root = () => q('#planshet');
   const state = () => ({
     tablet: document.body.classList.contains('planshet-on') && shown(root()),
-    menu: shown(q('.p-menu')), search: shown(q('.p-search')),
+    tabletHidden: root()?.hidden === true,
+    overMap: shown(root()) && root().classList.contains('over-map'),
+    map: !!q('.view-switch-btn.active[data-view="map"]'),
+    mapVisible: !document.body.classList.contains('planshet-on') && shown(q('.svg-widget > svg')),
+    menu: shown(q('#planshetMenu')), search: shown(q('.p-search')),
     window: !!q(panels), viewer: !!q('.pswp'),
-    graph: !document.body.classList.contains('planshet-on') && !!q('svg.nodes-mode'),
+    ship: shown(q('#phenomOverlay.open.map-view')),
+    graph: !document.body.classList.contains('planshet-on') && !!q('svg.nodes-mode') && shown(q('#graphLayer')),
     graphics: !document.body.classList.contains('planshet-on') && !!q('svg.graphics-mode'),
     query: q('.p-search input')?.value, scroll: root()?.scrollTop,
     section: shown(q('#planshet .sec-back')),
@@ -30,6 +35,14 @@
     point(selector) {
       const e = q(selector);
       need(shown(e) && !e.closest('[inert]') && !e.disabled, 'Недоступна цель: ' + selector);
+      // Tap the actual backdrop, away from the menu and dock.
+      if (selector === '#planshet') {
+        const r = e.getBoundingClientRect();
+        for (let y = Math.max(0, r.top) + 8; y < Math.min(innerHeight, r.bottom); y += 24)
+          for (let x = Math.max(0, r.left) + 8; x < Math.min(innerWidth, r.right); x += 24)
+            if (document.elementFromPoint(x, y) === e) return {x, y};
+        throw Error('Нет доступной подложки мимо шторки');
+      }
       const r = e.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
       need(x >= 0 && y >= 0 && x < innerWidth && y < innerHeight, 'Центр вне экрана: ' + selector);
       const hit = document.elementFromPoint(x, y);
@@ -89,8 +102,8 @@
         'В «Недавно открытые» нет открытой записи: ' + saved.title);
     },
     sectionTarget() {
-      const e = q('.p-menu .tiles button.tile');
-      need(e, 'Не найдена плитка раздела в шторке');
+      const e = q('#planshet .tiles button.tile');
+      need(shown(e), 'Не найдена видимая плитка раздела на главной планшета');
       saved.sectionTitle = e.querySelector('.t-title')?.textContent.trim();
       e.scrollIntoView({block: 'center'});
       e.setAttribute('data-ui-check-section', '');
@@ -122,7 +135,8 @@
         s.outlineColor !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(s.outlineColor);
       const shadow = s.boxShadow !== 'none';
       need(e.matches(':focus-visible') && (ring || shadow), 'Нет кольца :focus-visible: ' + (e.id || e.className));
-      return {id: e.id, panel: !!e.closest('#controls'), element: e.tagName,
+      return {id: e.id, view: e.matches('.view-switch-btn') ? e.dataset.view : null,
+        panel: !!e.closest('#controls'), element: e.tagName,
         outline: s.outline, shadow: s.boxShadow};
     },
     enlarge() { document.documentElement.style.fontSize = '200%'; },

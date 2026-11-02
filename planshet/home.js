@@ -1,6 +1,6 @@
-import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=10';
-import {inChip} from './filters.js?v=10';
-import {newsNow,elTile,zones,artOf,bg} from './start.js?v=10';
+import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=15';
+import {inChip} from './filters.js?v=15';
+import {newsNow,elTile,zones,artOf,bg} from './start.js?v=15';
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.7,.2,1)';
 // Выдвинуть/задвинуть: высота коробки плавно идёт от старого содержимого к новому.
@@ -255,17 +255,28 @@ export function sectionTiles(state, onPick) {
     building: n => plur(n, 'здание', 'здания', 'зданий'), character: n => plur(n, 'персонаж', 'персонажа', 'персонажей')};
   const tile = ([k, label]) => {
     const art = ['news', 'article', 'building'].includes(k) && info[k].art;
-    return el('button', {class: `tile${art ? ' bg' : ''}`, style: art ? bg(art) : null, 'aria-pressed': String(picked.has(k)), onclick: () => onPick(k)},
+    // «Статьи и лор» — на всю ширину (v=231: плитки «События» нет, ряд из одной плитки).
+    return el('button', {class: `tile${art ? ' bg' : ''}${k === 'article' ? ' wide' : ''}`, style: art ? bg(art) : null, 'aria-pressed': String(picked.has(k)), onclick: () => onPick(k)},
       art ? null : pics(info[k].items || []), el('span', {class: 't-title'}, label), el('span', {class: 't-sub'}, sub[k](info[k].count)));
   };
-  return el('nav', {class: 'tiles', 'aria-label': 'Разделы'}, SECTIONS.map(tile));
+  return el('nav', {class: 'tiles', 'aria-label': 'Разделы'}, NAV.map(tile));
 }
-// В шторке достаточно названия и числа; состав и счётчики совпадают с плитками главной.
+/* В шторке — «На главную» и разделы сеткой 3 × 2 (v=231, владелец); название и число, счётчики — как у плиток главной.
+   Фон плитки — арт раздела (v=232): MENU_ART — заготовка под свои арты разделов (путь от корня сайта; владелец: для
+   сюжетов, маркеров, персонажей и «На главную» их ещё нет, районам нужен другой); пусто — арт, как у плитки главной
+   (статьи, районы), иначе без арта. */
+const MENU_ART = {all: '', article: '', story: '', place: '', building: '', character: ''};
+const menuArt = (k, info) => MENU_ART[k] || (['article', 'building'].includes(k) ? info[k]?.art : '') || '';
 export function sectionMenu(state, onPick) {
   const info = modeInfo(state);
-  return el('nav', {class: 'tiles p-menu-sections', 'aria-label': 'Разделы'}, SECTIONS.map(([k, label]) =>
-    el('button', {class: 'tile p-menu-section', 'aria-pressed': String(currentSection() === k), onclick: () => onPick(k)},
-      el('span', {class: 't-title p-menu-title'}, label), el('span', {class: 'p-menu-count'}, String(info[k].count)))));
+  const tile = (k, label, count) => {
+    const art = menuArt(k, info);
+    return el('button', {class: `tile p-menu-section${art ? ' has-art' : ''}`, 'aria-pressed': String(currentSection() === k),
+      style: art ? `--art:url("${new URL(art, BASE).href}")` : null, onclick: () => onPick(k)},
+      el('span', {class: 't-title p-menu-title'}, label), count == null ? null : el('span', {class: 'p-menu-count'}, String(count)));
+  };
+  return el('nav', {class: 'tiles p-menu-sections', 'aria-label': 'Разделы'},
+    tile('all', 'На главную'), NAV.map(([k, label]) => tile(k, label, info[k].count)));
 }
 // «Всё» — вся информация на одной странице.
 function home(state, open, toggle) {
@@ -298,7 +309,10 @@ function homeLibrary(state, open) {
 
 // Разделы N5. «Всё» — это когда ни один не включён. С 02.11.2026 (v=219) строки мини-плиток над лентой нет:
 // разделы — плитками на «Всё» и в шторке «Феном ▴» панели «Нод»; в разделе сверху — «‹ Всё» и его название.
+/* v=231 (владелец): отдельного перехода к событиям нет — они только на главной («Что сейчас происходит», эпохи).
+   Раздел 'news' остаётся в SECTIONS: в нём раскрывается новость из поиска (planshet/shell.js renderInline). */
 export const SECTIONS = [['news', 'События'], ['article', 'Статьи и лор'], ['story', 'Сюжеты'], ['place', 'Маркеры'], ['building', 'Районы и здания'], ['character', 'Персонажи']];
+const NAV = SECTIONS.filter(([k]) => k !== 'news');   // плитки главной и шторки
 let built = null, picked = new Set(), lastKind = 'all', ctx = null;
 // Плитка — единый переключатель: открывает только свой раздел; повторное нажатие открытой — назад на «Всё».
 // Накопление нескольких разделов пробовали — «очень много тыкать» (владелец 01.11).

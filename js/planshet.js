@@ -11,12 +11,12 @@
    .over-map), шторка — над прозрачной подложкой (тап мимо — закрыть), поиск — своим экраном, как в «Нодах».
    Закрыли и то и другое — поверхность снова прячется. Раздел из шторки и новость из поиска — в «Ноды».
    ============================================================ */
-import { loadMirrorDoc } from './reader.js?v=227';
+import { loadMirrorDoc } from './reader.js?v=232';
 
 const root = document.getElementById('planshet');
 const dock = document.getElementById('controls');
 // Версия модулей planshet/ — та же, что ?v= в их импортах и у planshet.css.
-const PV = 10;
+const PV = 15;
 let shell = null, loading = null;
 // nodesOn — планшет показан режимом «Ноды» (showPlanshet); over — открыт над картой шторкой или поиском.
 let nodesOn = false, over = false;
@@ -38,6 +38,20 @@ function fit() {
   const top = r.height ? Math.max(0, window.innerHeight - r.top) : 80;
   root.style.setProperty('--dock-top', top + 'px');
   root.style.setProperty('--dock-pad', top + 16 + 'px');
+  // Шторка стоит на панели вплотную и той же ширины (v=232): --dock-l / --dock-w — по видимой капсуле.
+  const bar = dock.querySelector('.dock-bar')?.getBoundingClientRect();
+  if (bar?.width) { root.style.setProperty('--dock-l', bar.left + 'px'); root.style.setProperty('--dock-w', bar.width + 'px'); }
+}
+/* Шторка «вырастает» из «Феном» вверх (v=232, владелец: «Феном раскрывается вверх и превращается в эту панельку»):
+   clip-path от полоски над кнопкой до всей шторки. Только clip-path — без пересчёта раскладки. */
+function growMenu(menu) {
+  dock?.classList.add('menu-open');
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const b = document.getElementById('planshetBrand')?.getBoundingClientRect(), m = menu.getBoundingClientRect();
+  if (!b || !m.width) return;
+  const l = Math.max(0, b.left - m.left), r = Math.max(0, m.right - b.right);
+  menu.animate([{clipPath: `inset(${m.height - 1}px ${r}px 0 ${l}px round 16px 16px 0 0)`}, {clipPath: 'inset(0 0 0 0 round 20px 20px 0 0)'}],
+    {duration: 240, easing: 'cubic-bezier(.2,.7,.2,1)'});
 }
 window.addEventListener('resize', fit);
 if (dock && window.ResizeObserver) new ResizeObserver(fit).observe(dock);
@@ -62,9 +76,48 @@ function changed() {
     // aria-controls — только пока шторка на странице видна (axe: ссылка на скрытый элемент не проверяема).
     if (shell.isMenuOpen()) brand.setAttribute('aria-controls', 'planshetMenu'); else brand.removeAttribute('aria-controls');
     brand.classList.toggle('filtered', shell.filtered());
+    dock?.classList.toggle('menu-open', shell.isMenuOpen() && !root.hidden);
   }
   document.getElementById('planshetSearch')?.classList.toggle('active', !!shell && shell.isSearchOpen());
   document.dispatchEvent(new Event('planshet-change'));
+}
+
+/* Кнопка вида в шторке (v=229, владелец: одна кнопка, в ряду сюжетов; до v=228 — 🏷️ и ▦ на панели): на карте и в
+   «Графике» — «Меньше подписей» (шторка остаётся открытой — видно, что переключилось), в «Нодах» — «Граф связей»
+   (меняет вид, шторка закрывается). */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const ICONS = {
+  labels: '<path d="M3.8 12.4V5.1c0-.7.6-1.3 1.3-1.3h7.3l8 8-8.6 8.6z"/><circle cx="8.3" cy="8.3" r="1.5"/>',
+  graph: '<path d="M8 7.6l8-1.2M6.8 10.1l3.9 6.3M17.3 8.2l-4.1 8.1"/><circle cx="5.5" cy="8" r="2.5"/><circle cx="18.5" cy="6" r="2.5"/><circle cx="12" cy="18.5" r="2.5"/>',
+};
+function toolButton(id, icon, label, on, act, full) {
+  const b = document.createElement('button');
+  b.id = id;
+  b.className = 'p-mini p-tool';
+  b.setAttribute('aria-pressed', String(!!on));
+  if (full) b.setAttribute('aria-label', full);
+  const pic = document.createElement('span');
+  pic.className = 'p-mini-icon';
+  pic.setAttribute('aria-hidden', 'true');
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.innerHTML = ICONS[icon];
+  pic.append(svg);
+  const text = document.createElement('span');
+  text.textContent = label;
+  b.append(pic, text);
+  b.onclick = act;
+  return b;
+}
+function viewTools() {
+  const st = window.__mapViewTools?.() || {};
+  // Подписи — одним словом (v=232, владелец), полное название — для чтеца экрана.
+  if (st.nodes) return toolButton('menuGraph', 'graph', 'Граф', st.graph, () => { shell.closeMenu(); window.__mapToggleGraph?.(); }, 'Граф связей');
+  const labels = toolButton('menuLabels', 'labels', 'Надписи', st.labels, () => {
+    window.__mapToggleLabels?.();
+    labels.setAttribute('aria-pressed', String(!!window.__mapViewTools?.().labels));
+  }, 'Меньше подписей');
+  return labels;
 }
 
 function loadCss() {
@@ -87,6 +140,8 @@ function ensure() {
         onShip: () => window.__mapOpenShip?.(),
         shipIcon: () => window.__mapShipIcon?.() || Promise.resolve(null),
         onLeave: () => nodesOn ? null : window.__mapToPlanshet?.(),
+        tools: viewTools,
+        onMenuOpen: growMenu,
       });
       changed();
       return shell;
