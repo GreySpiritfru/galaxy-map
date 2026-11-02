@@ -1,26 +1,26 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=243';
-import { closeModal } from './modal.js?v=243';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=243';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=243';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=243';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=243';
-import { openCharacter, closeCharacter } from './characters.js?v=243';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=243';
-import { markerEl } from './node-window.js?v=243';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=243';
-import { hideSplash } from './splash.js?v=243';
-import { fetchT, showLoadError } from './net.js?v=243';
-import { noteRecord, setRestorer } from './navigation.js?v=243';
-import { buildRecords, resolveAddress } from './records.js?v=243';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=243';
-import { decodeAddress } from './address.js?v=243';
-import { findInRecord } from './find-in-text.js?v=243';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=243';
-import { REF_ARTICLES } from './articles.js?v=243';
-import { LOCAL_ARTICLES } from './reader.js?v=243';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=245';
+import { closeModal } from './modal.js?v=245';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=245';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=245';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=245';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=245';
+import { openCharacter, closeCharacter } from './characters.js?v=245';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=245';
+import { markerEl } from './node-window.js?v=245';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=245';
+import { hideSplash } from './splash.js?v=245';
+import { fetchT, showLoadError } from './net.js?v=245';
+import { noteRecord, setRestorer } from './navigation.js?v=245';
+import { buildRecords, resolveAddress } from './records.js?v=245';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=245';
+import { decodeAddress } from './address.js?v=245';
+import { findInRecord } from './find-in-text.js?v=245';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=245';
+import { REF_ARTICLES } from './articles.js?v=245';
+import { LOCAL_ARTICLES } from './reader.js?v=245';
 
 const SVG_PATH = 'map.svg';
 
@@ -182,7 +182,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=243').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=245').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.

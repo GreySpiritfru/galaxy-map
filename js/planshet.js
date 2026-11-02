@@ -11,7 +11,7 @@
    .over-map), шторка — над прозрачной подложкой (тап мимо — закрыть), поиск — своим экраном, как в «Нодах».
    Закрыли и то и другое — поверхность снова прячется. Раздел из шторки и новость из поиска — в «Ноды».
    ============================================================ */
-import { loadMirrorDoc } from './reader.js?v=243';
+import { loadMirrorDoc } from './reader.js?v=245';
 
 const root = document.getElementById('planshet');
 const dock = document.getElementById('controls');

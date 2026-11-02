@@ -1355,7 +1355,7 @@ body.planshet-on .map-dock .dock-bar { background: rgba(12,12,18,0.97); }
   right: 0;
   top: auto;
   bottom: calc(10px + var(--safe-bottom));
-  width: calc(100% - 20px);
+  width: calc(100% - 10px);   /* 5 px от края — как панель карты (v=244, владелец) */
   max-width: 560px;
   margin: 0 auto;
   padding: 3px 6px 4px;
@@ -1968,7 +1968,7 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   right: 0;
   bottom: calc(10px + var(--safe-bottom));
   z-index: 3;
-  width: calc(100% - 20px);
+  width: calc(100% - 10px);   /* 5 px от края — как панель карты (v=244, владелец) */
   max-width: 560px;
   margin: 0 auto;
   display: flex;
@@ -2090,8 +2090,9 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
    на телефоне колонка шире экрана, остаются обычные поля 20 px. Проценты в
    padding считаются от ширины родителя — то есть окна. */
 .story-content:not(.is-article) {
-  padding-left: max(20px, calc(50% - var(--window-column, 760px) / 2 + 20px));
-  padding-right: max(20px, calc(50% - var(--window-column, 760px) / 2 + 20px));
+  /* 16 px на телефоне, как текст планшета (v=244, владелец; было 20). */
+  padding-left: max(16px, calc(50% - var(--window-column, 760px) / 2 + 16px));
+  padding-right: max(16px, calc(50% - var(--window-column, 760px) / 2 + 16px));
 }
 /* Своя карта точки (Феном) — на непрозрачном фоне: по бокам от картинки
    иначе просвечивала бы карта галактики. */
@@ -2274,11 +2275,11 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  padding: 72px 20px calc(40px + var(--safe-bottom)); /* без панели: сверху — место под ✕ модала */
+  padding: 72px 16px calc(40px + var(--safe-bottom)); /* без панели: сверху — место под ✕ модала; бока 16, v=244 */
 }
 /* С пристыкованной панелью (v=179) она внизу — отступ снизу под неё. */
 .modal-card--iframe.is-reader.has-dock #modalContent {
-  padding: 20px 20px calc(84px + var(--safe-bottom));
+  padding: 20px 16px calc(84px + var(--safe-bottom));
 }
 /* Чужая страница во фрейме кончается над панелью: в неё отступ не вставить. */
 .modal-card--iframe.has-dock iframe { height: calc(100% - 70px - var(--safe-bottom)); }
@@ -3795,9 +3796,13 @@ mark.find-hit.find-cur { animation: findFlash 2.2s ease-out; }
   position: fixed;
   z-index: 400;
   top: calc(var(--safe-top, 0px) + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  max-width: calc(100% - 20px);
+  /* По центру через поля, а не left: 50% + translate: при left: 50% ширине «по содержимому» доставалась только половина
+     экрана, и ✕ вылезал за фон строки на 360 px (Codex, проверка v=244). */
+  left: 10px;
+  right: 10px;
+  width: fit-content;
+  margin: 0 auto;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 2px;

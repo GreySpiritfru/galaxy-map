@@ -11,8 +11,8 @@
    img — арт в images/notes/, o — id персонажа-владельца чужого предмета, on —
    имя владельца-НПС (17.10.2026). Автора записи нет: файл публичный.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=243';
-import { fetchT } from './net.js?v=243';
+import { escapeHtml } from './modal.js?v=245';
+import { fetchT } from './net.js?v=245';
 
 const NOTES_URL = 'notes.json';
 let notesCache = null; // {at, data}
