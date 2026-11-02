@@ -1,6 +1,6 @@
-import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=15';
-import {inChip} from './filters.js?v=15';
-import {newsNow,elTile,zones,artOf,bg} from './start.js?v=15';
+import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=23';
+import {inChip} from './filters.js?v=23';
+import {newsNow,elTile,zones,artOf,bg} from './start.js?v=23';
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.7,.2,1)';
 // Выдвинуть/задвинуть: высота коробки плавно идёт от старого содержимого к новому.
@@ -37,7 +37,8 @@ const people = chip => C.records.filter(r => viewKind(r) === 'character' && inCh
 const storiesOf = chip => chip === 'all' ? stories() : pickedStories(chip);
 // «Эпохи Фенома» — история, а не справка: живут в «Событиях» (владелец, 01.11).
 // «Архив анкет» не нужен: у каждого персонажа своя карточка (владелец 01.11) — в N5 его нет нигде.
-const lore = () => articles().filter(r => r && r.id !== EPOCHS && r.id !== ARCHIVE);
+// «Эпохи Фенома» — тоже статья лора (v=236, владелец; раньше исключались — у них своя строка на главной).
+const lore = () => articles().filter(r => r && r.id !== ARCHIVE);
 // Главы «Эпох» (1…6): номер, название, первая фраза; новая эпоха — первой.
 function epochs() {
   return articleModules(C.docs[EPOCHS]).filter(m => /^\d+\./.test(m.title)).map(m => {

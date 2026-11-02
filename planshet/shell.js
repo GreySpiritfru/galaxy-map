@@ -1,7 +1,7 @@
-import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=15';
-import {inChip} from './filters.js?v=15';
-import {createHistory} from './history.js?v=15';
-import {sectionMenu,toggleSection,currentSection} from './home.js?v=15';
+import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=23';
+import {inChip} from './filters.js?v=23';
+import {createHistory} from './history.js?v=23';
+import {sectionMenu,toggleSection,currentSection} from './home.js?v=23';
 const FILTER_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.4V19l-3.6-1.8v-4.8z"/></svg>';
 const HELP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.5"/><circle class="dot" cx="12" cy="16.8" r=".6"/></svg>';
 const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
@@ -15,7 +15,7 @@ const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
    С v=227 шторка и поиск открываются и над картой (js/planshet.js, .over-map): onShip/shipIcon — первый пункт
    шторки «Схема корабля Феном»; onLeave — перейти в «Ноды», когда показать надо ленту (раздел, новость из поиска).
    tools — кнопка вида в ряду сюжетов (v=229: на карте «Меньше подписей», в «Нодах» «Граф связей»; js/planshet.js). */
-export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour, onShip, shipIcon, onLeave = () => {}, tools, onMenuOpen}) {
+export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour, onShip, shipIcon, onLeave = () => {}, tools, onMenuOpen, onMenuClose}) {
   const state = {chip: 'all', stack: [], kind: 'all', q: ''};
   // Обычное текстовое поле: у type="search" Android рисует свой ✕ рядом с нашим (было два крестика).
   const input = el('input', {type: 'text', inputmode: 'search', enterkeyhint: 'search', placeholder: 'Поиск по Феному', 'aria-label': 'Поиск', autocomplete: 'off'});
@@ -31,6 +31,9 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
   const main = el('main', {class: 'wrap main'});
   const results = el('main', {class: 'wrap results', hidden: true});
   const menu = el('div', {class: 'p-menu', id: 'planshetMenu', role: 'dialog', 'aria-label': 'Разделы планшета', tabindex: '-1', hidden: true});
+  // Содержимое шторки — во внутреннем слое: он выезжает снизу, а сама .p-menu — рамка по краю панели (v=238).
+  const menuBody = el('div', {class: 'p-menu-body'});
+  menu.append(menuBody);
   root.append(searchBar, main, results, menu);
   fontLink();
 
@@ -81,7 +84,7 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
       onLeave();
     };
     // ⚠️ replaceChildren (DOM), не el(): null он вывел бы текстом «null» — поэтому filter(Boolean).
-    menu.replaceChildren(...[
+    menuBody.replaceChildren(...[
       sectionMenu(state, pick),
       el('div', {class: 'p-menu-row'}, onShip ? shipButton() : null, tools ? tools() : null, storySelect(),
         onHelp ? el('button', {class: 'p-mini', 'aria-label': 'Как пользоваться картой', onclick() { closeMenu(); onHelp(); }}, icon(HELP_SVG), el('span', {}, 'Обучение')) : null),
@@ -104,28 +107,42 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
     shipIcon?.().then(m => { if (m && pic.isConnected) { m.setAttribute('aria-hidden', 'true'); pic.replaceChildren(m); } });
     return el('button', {class: 'p-mini p-menu-ship', 'aria-label': 'Схема корабля Феном', onclick() { closeMenu(); onShip(); }}, pic, el('span', {}, 'Схема'));
   }
-  const isMenuOpen = () => !menu.hidden;
+  const isMenuOpen = () => !menu.hidden && !closing;
+  const isMenuShown = () => !menu.hidden;
   /* Фокус (v=225, разбор Codex): открылась шторка — фокус на неё (клавиатура, TalkBack/VoiceOver), закрылась —
      обратно на кнопку, которой открывали («Феном ▴»), если фокус был внутри шторки. На касаниях не видно. */
   let menuOpener = null;
   function openMenu() {
     if (!C.records) return;
-    hideSearch();
+    hideSearch(true);
     renderMenu();
     menuOpener = document.activeElement;
+    if (closing) { const a = closing; closing = null; a.cancel(); }
     menu.hidden = false;
     menu.focus({preventScroll: true});
+    /* Сначала onChange: над картой поверхность планшета до этого скрыта (js/planshet.js sync), и анимации было бы
+       нечего мерить — на карте и в «Графике» шторка появлялась без неё (v=233, замечание владельца). */
+    onChange();
     if (onMenuOpen) onMenuOpen(menu);
     else if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
       menu.animate([{opacity: 0, transform: 'translateY(16px)'}, {opacity: 1, transform: 'none'}], {duration: 200, easing: 'cubic-bezier(.2,.7,.2,1)'});
-    onChange();
   }
-  function closeMenu() {
-    if (menu.hidden) return;
+  /* Закрытие (v=234): onMenuClose отдаёт анимацию сворачивания — шторка прячется по её концу. Пока она идёт, шторка
+     для «назад» и кнопок уже закрыта (isMenuOpen), но ещё на экране (isMenuShown). */
+  let closing = null;
+  function closeMenu(quiet) {
+    if (menu.hidden || closing) return;
     const inside = menu.contains(document.activeElement);
-    menu.hidden = true;
-    if (inside && menuOpener?.isConnected) menuOpener.focus({preventScroll: true});
-    onChange();
+    const finish = later => {
+      menu.hidden = true;
+      if (inside && menuOpener?.isConnected) menuOpener.focus({preventScroll: true});
+      if (later || !quiet) onChange();
+    };
+    const anim = onMenuClose?.(menu);
+    if (!anim) { finish(false); return; }
+    closing = anim;
+    anim.finished.then(() => { if (closing === anim) { closing = null; finish(true); anim.cancel(); } }, () => {});
+    if (!quiet) onChange();
   }
   const toggleMenu = () => isMenuOpen() ? closeMenu() : openMenu();
   // Тап мимо шторки (по ленте) — закрыть; по самой панели карты — её кнопки решают сами.
@@ -143,19 +160,21 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
     onChange();
   }
   function openSearch() {
-    closeMenu();
+    closeMenu(true);
     showSearchBar();
     onInput();
     input.focus();
   }
   // Спрятать поле, набранное не трогая (новость из результатов раскрылась в ленте).
-  function hideSearch() {
+  /* quiet — без onChange: шторка открывается вместо поиска (и наоборот). Иначе карта на миг видела «ничего не открыто»
+     и прятала поверхность над картой — шторка оставалась открытой, но невидимой (Codex, проверка v=236). */
+  function hideSearch(quiet) {
     if (!isSearchOpen()) return;
     searchBar.hidden = true;
     root.classList.remove('searching');
     input.blur();
     main.hidden = false; results.hidden = true;
-    onChange();
+    if (!quiet) onChange();
   }
   function closeSearch() {
     if (input.value) { input.value = ''; state.q = ''; }
@@ -284,6 +303,8 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
     return false;
   }
   return {state,ready,get C(){return C;},
-    openSearch, closeSearch, toggleSearch, isSearchOpen, openMenu, closeMenu, toggleMenu, isMenuOpen,
+    openSearch, closeSearch, toggleSearch, isSearchOpen, openMenu, closeMenu, toggleMenu, isMenuOpen, isMenuShown,
+    // Режим сменился при открытой шторке — кнопка вида и «Сюжет» должны быть от нового режима (Codex, v=236).
+    refreshMenu: () => { if (isMenuOpen()) renderMenu(); },
     filtered: () => state.chip !== 'all', depth, backStep};
 }

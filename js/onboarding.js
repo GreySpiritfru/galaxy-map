@@ -5,10 +5,10 @@
    игрока, к сайту/репозиторию отношения не имеет) надпись «Феном ▴» мягко пульсирует,
    чтобы её было видно, но не мигает резко и не лезет с окном сама.
    ============================================================ */
-import { showLoadError } from './net.js?v=232';
-import { openModal, closeModal } from './modal.js?v=232';
-import { startTour, tourSeen } from './tour.js?v=232';
-import { quoteHtml, initQuotes } from './quotes.js?v=232';
+import { showLoadError } from './net.js?v=240';
+import { openModal, closeModal } from './modal.js?v=240';
+import { startTour, tourSeen } from './tour.js?v=240';
+import { quoteHtml, initQuotes } from './quotes.js?v=240';
 
 const ONBOARDING_SEEN_KEY = 'galaxyMapOnboardingSeen';
 const helpBtn = document.getElementById('helpBtn');
@@ -98,7 +98,7 @@ helpBtn.addEventListener('click', () => {
   });
   document.getElementById('helpGameBtn')?.addEventListener('click', () => {
     closeModal();
-    import('./flappy.js?v=232').then(m => m.openFlappy(),
+    import('./flappy.js?v=240').then(m => m.openFlappy(),
       () => showLoadError('Игра не загрузилась — проверь соединение.'));
   });
   planshetBrand?.classList.remove('pulse');

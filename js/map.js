@@ -1,25 +1,25 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=232';
-import { closeModal } from './modal.js?v=232';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=232';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=232';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=232';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=232';
-import { openCharacter, closeCharacter } from './characters.js?v=232';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=232';
-import { markerEl } from './node-window.js?v=232';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=232';
-import { hideSplash } from './splash.js?v=232';
-import { fetchT, showLoadError } from './net.js?v=232';
-import { noteRecord, setRestorer } from './navigation.js?v=232';
-import { buildRecords, resolveAddress } from './records.js?v=232';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=232';
-import { decodeAddress } from './address.js?v=232';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData } from './planshet.js?v=232';
-import { REF_ARTICLES } from './articles.js?v=232';
-import { LOCAL_ARTICLES } from './reader.js?v=232';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=240';
+import { closeModal } from './modal.js?v=240';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=240';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=240';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=240';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=240';
+import { openCharacter, closeCharacter } from './characters.js?v=240';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=240';
+import { markerEl } from './node-window.js?v=240';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=240';
+import { hideSplash } from './splash.js?v=240';
+import { fetchT, showLoadError } from './net.js?v=240';
+import { noteRecord, setRestorer } from './navigation.js?v=240';
+import { buildRecords, resolveAddress } from './records.js?v=240';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=240';
+import { decodeAddress } from './address.js?v=240';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=240';
+import { REF_ARTICLES } from './articles.js?v=240';
+import { LOCAL_ARTICLES } from './reader.js?v=240';
 
 const SVG_PATH = 'map.svg';
 
@@ -181,7 +181,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=232').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=240').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -2392,6 +2392,17 @@ function finishMapPick(p) {
      и над графом: шторка и поиск планшета встают поверх (over в js/planshet.js), режим не меняется. */
   document.getElementById('planshetBrand')?.addEventListener('click', () => togglePlanshetMenu());
   document.getElementById('planshetSearch')?.addEventListener('click', () => openPlanshetSearch());
+  // Отклик нажатия (v=235, владелец): надпись/лупа темнеют, пока палец на кнопке, и не меньше 140 мс (css .pressed).
+  ['planshetBrand', 'planshetSearch'].forEach(id => {
+    const b = document.getElementById(id);
+    if (!b) return;
+    let at = 0;
+    const up = () => setTimeout(() => b.classList.remove('pressed'), Math.max(0, 140 - (performance.now() - at)));
+    b.addEventListener('pointerdown', () => { at = performance.now(); b.classList.add('pressed'); });
+    b.addEventListener('pointerup', up);
+    b.addEventListener('pointercancel', up);
+    b.addEventListener('pointerleave', up);
+  });
   // Кнопка вида в шторке (v=229): на карте — «Меньше подписей», в «Нодах» — «Граф связей». Состояние и действие.
   window.__mapViewTools = () => ({nodes: viewMode === 'nodes', labels: svg.classList.contains('labels-minimal'), graph: viewMode === 'nodes' && nodesArrangement === 'graph'});
   window.__mapToggleLabels = () => labelsToggle.click();
@@ -2595,6 +2606,7 @@ function finishMapPick(p) {
     else updateViewModeUi();
 
     openFromLink();
+    warmPlanshet();
     return graph;
   });
 

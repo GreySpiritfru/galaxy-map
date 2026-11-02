@@ -631,11 +631,17 @@
 
 /* Шторка «Феном ▴» — над панелью карты: разделы, сюжет, помощь. --dock-top — расстояние от низа экрана
    до верха панели карты (js/planshet.js). */
-/* v=232: шторка стоит на панели вплотную (низ уходит под неё на 2 px) и той же ширины — продолжение панели вверх. */
+/* v=234: шторка — продолжение тёмной таблетки «Феном» и 🔍 (css/styles.css .dock-planshet): тот же цвет, во всю ширину
+   панели и стоит на её верхнем крае; таблетка прижата к левому краю панели — контур шторки, таблетки и панели один. */
+/* v=238: шторка полупрозрачная — того же цвета, что таблетка «Феном» (css/styles.css .dock-planshet). Выезжает снизу:
+   .p-menu — неподвижная рамка с overflow: hidden по верхнему краю панели, внутри едет .p-menu-body (transform —
+   на видеокарте), поэтому шторка появляется из-за панели. */
 #planshet .p-menu { position: fixed; z-index: 6; left: var(--dock-l, 5px); width: var(--dock-w, calc(100% - 10px)); box-sizing: border-box;
-  bottom: calc(var(--dock-top, 80px) - 2px); max-height: calc(100% - var(--dock-top, 80px) - var(--safe-top, 0px) - 16px); overflow-y: auto;
-  padding: 6px 6px 8px; border-radius: 20px 20px 0 0; background: #12121b; border: 1px solid rgba(175,238,238,.16); border-bottom: 0;
-  box-shadow: 0 -10px 28px #0008; }
+  bottom: var(--dock-top, 80px); overflow: hidden; padding: 0; border-radius: 20px 20px 0 0; background: none; border: 0; }
+#planshet .p-menu-body { box-sizing: border-box; max-height: calc(100dvh - var(--dock-top, 80px) - var(--safe-top, 0px) - 16px); overflow-y: auto;
+  padding: 6px 6px 8px; border-radius: 20px 20px 0 0; background: rgba(16,16,24,0.86); color: #ececf2; }
+body.planshet-on #planshet .p-menu-body { background: rgba(12,12,18,0.97); }
+/* Тени нет (v=235, владелец): clip-path анимации её обрезал, и она выскакивала в конце. */
 #planshet .p-menu[hidden] { display: none; }
 #planshet .p-menu-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 #planshet .p-menu-head h2 { font-size: 20px; }
@@ -687,3 +693,12 @@
 #planshet .p-select:focus-within { outline: 2px solid var(--act); outline-offset: 2px; }
 /* Главная планшета: «Статьи и лор» — на всю ширину (плитки «События» с v=231 нет). */
 #planshet .tiles:not(.p-menu-sections) > .tile.wide { grid-column: 1 / -1; }
+
+/* v=236: шторка светлее (владелец: «слишком тёмная») — плитки и кнопки чуть светлее её фона. */
+/* v=238: плитки и кнопки тоже полупрозрачные, светлее фона шторки. */
+#planshet .p-menu .p-menu-section, #planshet .p-menu .p-mini { background-color: rgba(255,255,255,0.07); }
+#planshet .p-menu .p-menu-ship { background-color: rgba(175,238,238,0.10); }
+/* v=239: текст шторки — цветом подписей режимов панели (владелец); выбранное — бирюзовым, как активный режим. */
+#planshet .p-menu .p-menu-section, #planshet .p-menu .p-mini, #planshet .p-menu .p-menu-ship, #planshet .p-menu .p-menu-count { color: #ececf2; }   /* непрозрачный, v=240 */
+#planshet .p-menu .p-menu-section[aria-pressed="true"], #planshet .p-menu .p-menu-section[aria-pressed="true"] .p-menu-count,
+#planshet .p-menu .p-mini[aria-pressed="true"] { color: var(--act); }

@@ -6,14 +6,14 @@
   <title>Карта галактики — Феном</title>
   <!-- Скрипт Telegram — своя копия (v=199): telegram.org из РФ без VPN не
        отвечает, и этот блокирующий <script> вешал страницу на ~35 с. -->
-  <script src="js/vendor/telegram-web-app.js?v=232"></script>
+  <script src="js/vendor/telegram-web-app.js?v=240"></script>
   <!-- Самый тяжёлый файл на странице (~2.7 МБ после пережатия подложки в WebP,
        см. tools/optimize-map-svg.py) — без preload браузер начинает качать его
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
   <link rel="preload" href="images/splash-logo.webp" as="image" />
-  <link rel="stylesheet" href="css/styles.css?v=232" />
+  <link rel="stylesheet" href="css/styles.css?v=240" />
 </head>
 <body>
 
@@ -94,15 +94,15 @@
            активного — «линза» .view-lens, её двигает updateViewModeUi. -->
       <div class="dock-modes" id="viewSwitch" role="group" aria-label="Режим просмотра карты">
         <span class="view-lens" aria-hidden="true"></span>
-        <button class="view-switch-btn dock-item" data-view="nodes" title="Граф связей: все точки и их связи, без самой карты">
+        <button class="view-switch-btn dock-item" data-view="nodes" aria-label="Ноды" title="Граф связей: все точки и их связи, без самой карты">
           <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7.6l8-1.2M6.8 10.1l3.9 6.3M17.3 8.2l-4.1 8.1"/><circle cx="5.5" cy="8" r="2.5"/><circle cx="18.5" cy="6" r="2.5"/><circle cx="12" cy="18.5" r="2.5"/></svg>
           <span class="dock-label">Ноды</span>
         </button>
-        <button class="view-switch-btn dock-item active" data-view="map" title="Карта галактики">
+        <button class="view-switch-btn dock-item active" data-view="map" aria-label="Карта" title="Карта галактики">
           <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></svg>
           <span class="dock-label">Карта</span>
         </button>
-        <button class="view-switch-btn dock-item" data-view="graphics" title="Карта без политической раскраски — только фон, гиперлейны и названия систем">
+        <button class="view-switch-btn dock-item" data-view="graphics" aria-label="Графика" title="Карта без политической раскраски — только фон, гиперлейны и названия систем">
           <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a1.5 1.5 0 0 1 3 0 3 3 0 0 1-6 0 4.5 4.5 0 0 1 9 0 6 6 0 0 1-12 0"/><circle class="dock-svg-dot" cx="19.6" cy="5.4" r="1"/><circle class="dock-svg-dot" cx="4.6" cy="18.8" r="0.8"/></svg>
           <span class="dock-label">Графика</span>
         </button>
@@ -282,6 +282,6 @@
      не в модуле, — за ним следит navigation.js (Esc / «назад» закрывают игру). -->
 <div class="flappy-overlay" id="flappyOverlay" role="dialog" aria-modal="true" aria-label="Мини-игра Flappy Phenome"></div>
 
-<script type="module" src="js/main.js?v=232" onerror="window.__bootFail && window.__bootFail()"></script>
+<script type="module" src="js/main.js?v=240" onerror="window.__bootFail && window.__bootFail()"></script>
 </body>
 </html>

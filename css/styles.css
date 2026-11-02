@@ -848,8 +848,9 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
    display у кнопок иначе перебил бы его. */
 .map-dock [hidden] { display: none !important; }
 
-/* Общий фон — одна капсула на всю панель (v=230, владелец: «единая панель»; в v=229 были две плашки с пустым местом
-   между ними). Ноды · Карта · Графика внутри — своей подложкой, как тройной переключатель (.dock-modes ниже). */
+/* Одна капсула на всю панель (v=230, владелец: «единая панель»), один фон на всю (v=239: в v=238 два полупрозрачных куска
+   встык давали видимый шов — края сглаживаются у каждого отдельно; владелец: «Феном», 🔍 и шторка — того же цвета,
+   что режимы). Шторка — того же цвета (planshet/planshet.css .p-menu-body). */
 .dock-bar {
   /* Полупрозрачно, но БЕЗ размытия (v=185, замер на телефоне игрока): панель
      стоит поверх движущейся карты, и backdrop-filter заново размывал её на
@@ -858,21 +859,26 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
      почти бесплатна. Фон плотнее прежнего стекла (0.78): без размытия линии
      карты просвечивают резче. С v=190 размытия нет нигде в проекте. */
   background: rgba(16,16,24,0.86);
-  box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.08);
+  box-shadow: 0 8px 26px rgba(0,0,0,0.45);
 }
 
 .dock-bar {
   display: flex;
   align-items: center;
   gap: 4px;
-  /* 68 / кнопки 60 (v=228, владелец с телефона: при 56 «тяжело тыкать пальцем»). */
+  /* 68 / кнопки 60 (v=228, владелец с телефона: при 56 «тяжело тыкать пальцем»). Слева без поля — таблетка «Феном»
+     прижата к краю (v=234). */
   height: 68px;
-  padding: 4px;
+  padding: 0;
+  gap: 0;
   box-sizing: border-box;
   border-radius: 20px;
 }
+/* Шторка открыта — у панели прямые верхние углы: шторка стоит на ней во всю ширину (v=234). */
+.map-dock.menu-open .dock-bar { border-radius: 0 0 20px 20px; }
 /* Над лентой планшета фон плотнее (v=222, Codex по снимку владельца: текст ленты просвечивал сквозь панель). */
-.map-dock.nodes .dock-bar { background: rgba(12,12,18,0.97); }
+/* По ленте, а не по режиму: над графом панель и шторка полупрозрачные, как над картой (v=238). */
+body.planshet-on .map-dock .dock-bar { background: rgba(12,12,18,0.97); }
 /* Кнопка панели: иконка сверху, подпись снизу — как .tabbar-btn в окнах. */
 .dock-item {
   display: flex;
@@ -882,7 +888,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   gap: 3px;
   min-width: 0;
   padding: 0 6px;
-  color: rgba(255,255,255,0.66);
+  color: #ececf2;   /* непрозрачный (v=240, владелец: «текст не прозрачным, более белым») */
   transition: color 0.2s ease;
 }
 .dock-label {
@@ -923,19 +929,16 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 .dock-svg-dot { fill: currentColor; stroke: none; }
 
 /* Переключатель режима — капсула с «линзой» под активным разделом. */
-/* Тройной переключатель режимов — своя подложка внутри панели (v=230, владелец: выделить, «как будто тройной
-   переключатель»). */
+/* Режимы — прямо на панели (v=233, владелец: светлую подложку-таблетку v=230 убрать; тёмная таблетка теперь у «Феном»
+   и 🔍, см. .dock-planshet). */
 .dock-modes {
   position: relative;
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
-  height: 60px;
-  padding: 3px;
+  height: 68px;
+  padding: 4px;
   box-sizing: border-box;
-  border-radius: 17px;
-  background: rgba(255,255,255,0.06);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.09);
 }
 /* Три режима делят всё, что справа от «Феном ▴» и «Поиска» (v=228: в v=227 были по 48 px — мелко). */
 .dock-modes .dock-item {
@@ -950,14 +953,19 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 
 /* ===== Слева — «Феном ▴» и 🔍 (v=229: снова надпись и лупа без подписи, как в v=227; значок-маркер и подпись
    «Поиск» v=228 владелец не просил). Все три режима видны в любом режиме, «Ноды» тоже. ===== */
+/* «Феном» и 🔍 — тёмной таблеткой (v=233, владелец). Шторка «Феном» — того же цвета и вырастает из неё вверх
+   (planshet/planshet.css .p-menu, growMenu в js/planshet.js); пока шторка открыта, таблетка тянется к ней «шейкой». */
 .dock-planshet {
+  position: relative;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: 0;
-  height: 60px;
+  /* Во всю высоту панели и вплотную к её левому краю (v=234: при отступе 4 px из-под шторки торчал край панели). */
+  height: 68px;
 }
 .dock-modes .dock-item { transition: color 0.18s ease; }
+
 /* «Феном ▴» — знак приложения (Tektur, как заголовки планшета) и вход в шторку. */
 .dock-brand {
   position: relative;
@@ -966,10 +974,12 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 0 12px;
+  /* Справа меньше — 🔍 вплотную к надписи (v=233). */
+  padding: 0 4px 0 16px;
   border-radius: 16px;
   background: none;
-  color: #e6e6ee;
+  /* Цвет — как у подписей режимов (v=239, владелец). */
+  color: #ececf2;   /* непрозрачный (v=240, владелец: «текст не прозрачным, более белым») */
   overflow: hidden;
 }
 .dock-brand-name {
@@ -980,13 +990,11 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   line-height: 1;
   white-space: nowrap;
 }
-.dock-brand[aria-expanded="true"] { background: rgba(175,238,238,0.12); }
+/* Открытая шторка «Феном» не подсвечивает (v=233, владелец): видно, что таблетка выросла в шторку. */
 @media (max-width: 380px) {
-  .dock-brand { padding: 0 10px; }
+  .dock-brand { padding: 0 2px 0 10px; }
   .dock-brand-name { font-size: 25px; }
 }
-/* Шторка открыта — панель и шторка одно целое (v=232): верхние углы панели прямые, фон тот же, что у шторки. */
-.map-dock.menu-open .dock-bar { border-radius: 0 0 20px 20px; background: #12121b; }
 /* Новичку, пока не открыл справку, — мягкое кольцо у «Феном ▴» (onboarding.js; до v=227 — у круглой «?»). Только opacity. */
 .dock-brand.pulse::before {
   content: '';
@@ -1011,7 +1019,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 }
 .dock-tool {
   flex: 0 0 auto;
-  width: 52px;
+  /* 48 — минимум цели (v=233, владелец: «лупу уже»; было 52). */
+  width: 48px;
   height: 60px;
   padding: 0;
   display: flex;
@@ -1019,9 +1028,14 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   justify-content: center;
   border-radius: 16px;
   background: none;
-  color: rgba(255,255,255,0.72);
+  color: #ececf2;   /* непрозрачный (v=240, владелец: «текст не прозрачным, более белым») */
 }
-.dock-tool.active { color: #AFEEEE; background: rgba(175,238,238,0.12); }
+/* Без подсветки при открытом поиске (v=234, владелец: «и так понятно»). Значок чуть меньше, цель — те же 48. */
+.map-dock .dock-tool .dock-svg { width: 21px; height: 21px; }
+/* Отклик нажатия «Феном» и 🔍 (v=235, владелец): белое на миг темнеет и плавно возвращается. .pressed ставит map.js
+   (pointerdown — сразу, отпустили — не раньше чем через 140 мс, иначе быстрый тап не видно). */
+.dock-brand, .dock-tool { transition: color 0.25s ease; }
+.dock-brand.pressed, .dock-tool.pressed { color: #8a8a92; transition: none; }
 @media (prefers-reduced-motion: reduce) {
   .dock-modes .dock-item { transition: none; }
   .dock-brand.pulse::before { animation: none; opacity: 1; }
@@ -1036,11 +1050,11 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
    расстановка) — без анимации, иначе при загрузке линза выезжала бы слева. */
 .view-lens {
   position: absolute;
-  top: 3px;
-  bottom: 3px;
+  top: 4px;
+  bottom: 4px;
   left: 0;
   width: 0;
-  border-radius: 14px;
+  border-radius: 16px;
   background: rgba(175,238,238,0.15);
   box-shadow: inset 0 0 0 1px rgba(175,238,238,0.3);
   pointer-events: none;
@@ -1076,8 +1090,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 }
 
 @media (hover: hover) {
-  .dock-item:hover,
-  .dock-tool:hover { color: #fff; }
+  /* 🔍 и «Феном» — без подсветки наведением (v=236: на компьютере она перебивала отклик нажатия). */
+  .dock-item:hover { color: #fff; }
   .dock-modes .dock-item.active:hover { color: #AFEEEE; }
 }
 
@@ -1094,7 +1108,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
     bottom: calc(16px + var(--safe-bottom));
   }
   .dock-bar { height: 64px; gap: 6px; border-radius: 18px; }
-  .dock-planshet, .dock-modes { height: 56px; }
+  .dock-planshet { height: 64px; }
+  .dock-modes { height: 64px; }
   .dock-brand, .dock-tool { height: 52px; }
   .dock-modes { flex: 0 0 auto; }
   .dock-item {
@@ -3750,10 +3765,12 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   -webkit-overflow-scrolling: touch;
 }
 .planshet-surface[hidden] { display: none; }
-/* Шторка над картой (v=227, js/planshet.js .over-map): ленты нет, под шторкой — лёгкое затемнение карты, тап по
-   нему закрывает шторку. Экран поиска над картой — как в «Нодах» (сплошной). */
+/* Шторка над картой (v=227, js/planshet.js .over-map): ленты нет. С v=236 (владелец) без затемнения, и карта под
+   шторкой живая — двигается, нажимается; шторка закрывается «Феном», «назад» или выбором пункта, а не тапом мимо.
+   Экран поиска над картой — как в «Нодах» (сплошной). */
 /* #planshet — у planshet/planshet.css фон задан по id, класс его не перебил бы. */
-#planshet.over-map:not(.searching) { background: rgba(4,4,8,0.35); overflow: hidden; }
+#planshet.over-map:not(.searching) { background: transparent; overflow: hidden; pointer-events: none; }
+#planshet.over-map:not(.searching) .p-menu { pointer-events: auto; }
 #planshet.over-map:not(.searching) > .main { visibility: hidden; }
 /* Окна поверх планшета — почти сплошные (v=222): полупрозрачность 0.8 (v=187) — под карту, а над лентой
    планшета сквозь окно читался чужой текст (снимок окна статьи над лентой). */

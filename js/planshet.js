@@ -11,12 +11,12 @@
    .over-map), шторка — над прозрачной подложкой (тап мимо — закрыть), поиск — своим экраном, как в «Нодах».
    Закрыли и то и другое — поверхность снова прячется. Раздел из шторки и новость из поиска — в «Ноды».
    ============================================================ */
-import { loadMirrorDoc } from './reader.js?v=232';
+import { loadMirrorDoc } from './reader.js?v=240';
 
 const root = document.getElementById('planshet');
 const dock = document.getElementById('controls');
 // Версия модулей planshet/ — та же, что ?v= в их импортах и у planshet.css.
-const PV = 15;
+const PV = 23;
 let shell = null, loading = null;
 // nodesOn — планшет показан режимом «Ноды» (showPlanshet); over — открыт над картой шторкой или поиском.
 let nodesOn = false, over = false;
@@ -29,6 +29,13 @@ const mapData = new Promise(resolve => { giveData = resolve; });
 export function setPlanshetData(data) { giveData(data); }
 const dataOrTimeout = () => Promise.race([mapData, new Promise(resolve => setTimeout(() => resolve({}), 8000))]);
 
+/* Прогрев (v=236): модули и данные планшета — заранее, когда карта уже показана и браузер свободен, чтобы первое
+   открытие шторки не ждало загрузки (на карте шторка — главное меню). */
+export function warmPlanshet() {
+  const go = () => ensure();
+  if (window.requestIdleCallback) requestIdleCallback(go, {timeout: 4000}); else setTimeout(go, 1500);
+}
+
 /* Отступы под панель карты: --dock-top — от низа экрана до верха панели (шторка встаёт над ней),
    --dock-pad — конец ленты докручивается из-под панели. Высота панели меняется (две строки на узком
    экране, режимы), поэтому — наблюдателем. */
@@ -38,27 +45,36 @@ function fit() {
   const top = r.height ? Math.max(0, window.innerHeight - r.top) : 80;
   root.style.setProperty('--dock-top', top + 'px');
   root.style.setProperty('--dock-pad', top + 16 + 'px');
-  // Шторка стоит на панели вплотную и той же ширины (v=232): --dock-l / --dock-w — по видимой капсуле.
+  // Шторка — во всю ширину панели, стоит на ней (v=234; таблетка «Феном» прижата к левому краю панели): --dock-l / --dock-w.
   const bar = dock.querySelector('.dock-bar')?.getBoundingClientRect();
   if (bar?.width) { root.style.setProperty('--dock-l', bar.left + 'px'); root.style.setProperty('--dock-w', bar.width + 'px'); }
 }
-/* Шторка «вырастает» из «Феном» вверх (v=232, владелец: «Феном раскрывается вверх и превращается в эту панельку»):
-   clip-path от полоски над кнопкой до всей шторки. Только clip-path — без пересчёта раскладки. */
+/* Шторка просто выезжает снизу из-за панели (v=238, владелец: «простая анимация выезда»; в v=236–237 — из центра,
+   и боковые края не успевали сложиться). Едет внутренний слой .p-menu-body (transform — на видеокарте), рамка .p-menu
+   его обрезает по верхнему краю панели. Отдельного появления кнопок нет. */
+const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const body = menu => menu.querySelector('.p-menu-body') || menu;
+let opening = null;
 function growMenu(menu) {
   dock?.classList.add('menu-open');
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const b = document.getElementById('planshetBrand')?.getBoundingClientRect(), m = menu.getBoundingClientRect();
-  if (!b || !m.width) return;
-  const l = Math.max(0, b.left - m.left), r = Math.max(0, m.right - b.right);
-  menu.animate([{clipPath: `inset(${m.height - 1}px ${r}px 0 ${l}px round 16px 16px 0 0)`}, {clipPath: 'inset(0 0 0 0 round 20px 20px 0 0)'}],
-    {duration: 240, easing: 'cubic-bezier(.2,.7,.2,1)'});
+  if (reduced()) return;
+  opening = body(menu).animate([{transform: 'translateY(100%)'}, {transform: 'none'}], {duration: 240, easing: 'cubic-bezier(.2,.8,.25,1)'});
 }
-window.addEventListener('resize', fit);
-if (dock && window.ResizeObserver) new ResizeObserver(fit).observe(dock);
+/* Закрытие — обратно вниз; закрыли, пока ещё выезжает, — от текущего места (Codex, v=236). fill: forwards — без кадра
+   целой шторки перед скрытием (её отменяет shell.js после). */
+function shrinkMenu(menu) {
+  if (reduced()) return null;
+  const b = body(menu);
+  let from = 'none';
+  if (opening?.playState === 'running') { from = getComputedStyle(b).transform; opening.cancel(); }
+  opening = null;
+  return b.animate([{transform: from}, {transform: 'translateY(100%)'}], {duration: 170, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards'});
+}
 
 // Видна ли поверхность и чем: в «Нодах» — целиком; над картой — пока открыта шторка или поиск.
 function sync() {
-  const menuOpen = !!shell && shell.isMenuOpen(), searching = !!shell && shell.isSearchOpen();
+  // isMenuShown: шторка ещё на экране, пока сворачивается (v=234).
+  const menuOpen = !!shell && shell.isMenuShown(), searching = !!shell && shell.isSearchOpen();
   if (over && !nodesOn && !menuOpen && !searching) over = false;
   if (nodesOn) over = false;
   root.hidden = !(nodesOn || over);
@@ -76,7 +92,7 @@ function changed() {
     // aria-controls — только пока шторка на странице видна (axe: ссылка на скрытый элемент не проверяема).
     if (shell.isMenuOpen()) brand.setAttribute('aria-controls', 'planshetMenu'); else brand.removeAttribute('aria-controls');
     brand.classList.toggle('filtered', shell.filtered());
-    dock?.classList.toggle('menu-open', shell.isMenuOpen() && !root.hidden);
+    dock?.classList.toggle('menu-open', shell.isMenuShown() && !root.hidden);
   }
   document.getElementById('planshetSearch')?.classList.toggle('active', !!shell && shell.isSearchOpen());
   document.dispatchEvent(new Event('planshet-change'));
@@ -142,6 +158,7 @@ function ensure() {
         onLeave: () => nodesOn ? null : window.__mapToPlanshet?.(),
         tools: viewTools,
         onMenuOpen: growMenu,
+        onMenuClose: shrinkMenu,
       });
       changed();
       return shell;
@@ -154,7 +171,7 @@ export function showPlanshet(on) {
   if (!root) return;
   nodesOn = !!on;
   over = false;
-  if (on) ensure();
+  if (on) { ensure(); shell?.refreshMenu(); }
   else if (shell) shell.closeMenu();
   if (shell) changed(); else { sync(); document.dispatchEvent(new Event('planshet-change')); }
   fit();
