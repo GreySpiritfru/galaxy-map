@@ -6,14 +6,14 @@
   <title>Карта галактики — Феном</title>
   <!-- Скрипт Telegram — своя копия (v=199): telegram.org из РФ без VPN не
        отвечает, и этот блокирующий <script> вешал страницу на ~35 с. -->
-  <script src="js/vendor/telegram-web-app.js?v=217"></script>
+  <script src="js/vendor/telegram-web-app.js?v=219"></script>
   <!-- Самый тяжёлый файл на странице (~2.7 МБ после пережатия подложки в WebP,
        см. tools/optimize-map-svg.py) — без preload браузер начинает качать его
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
   <link rel="preload" href="images/splash-logo.webp" as="image" />
-  <link rel="stylesheet" href="css/styles.css?v=217" />
+  <link rel="stylesheet" href="css/styles.css?v=219" />
 </head>
 <body>
 
@@ -69,21 +69,29 @@
        круглые инструменты. Жест с любой кнопки двигает карту (#controls в
        js/map.js), поэтому id и роль контейнера прежние. -->
   <div class="top-scrim" aria-hidden="true"></div>
-  <!-- Планшет (02.11.2026, js/planshet-frame.js): Ноды → ▦, страница planshet/ во фрейме над картой. -->
-  <div class="planshet-surface" id="planshetSurface" hidden></div>
+  <!-- Планшет (режим «Ноды», js/planshet.js): с 02.11.2026 (v=219) — прямо здесь, не во фрейме;
+       модули planshet/ грузятся при первом показе. -->
+  <div class="planshet-surface" id="planshet" hidden></div>
   <div class="map-dock" id="controls">
     <div class="dock-tools">
       <button id="helpBtn" class="dock-round" title="Как пользоваться картой" aria-label="Как пользоваться картой">?</button>
-      <!-- 🏷️ (карта/графика) и ▦ (ноды) сменяют друг друга — инструмент
-           текущего режима, см. updateViewModeUi в js/map.js. -->
+      <!-- 🏷️ — инструмент карты/графики; в «Нодах» круглых кнопок нет: «?» — в шторке «Феном ▴»,
+           ▦ — в самой панели (#dockPlanshet). -->
       <button id="labelsToggle" class="dock-round" title="Меньше подписей: только готовые системы (быстрее на слабых устройствах)" aria-label="Меньше подписей">
         <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.8 12.4V5.1c0-.7.6-1.3 1.3-1.3h7.3l8 8-8.6 8.6z"/><circle cx="8.3" cy="8.3" r="1.5"/></svg>
       </button>
-      <button id="sortToggle" class="dock-round" title="Планшет" aria-label="Планшет" hidden>
-        <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.8" height="6.8" rx="1.6"/><rect x="13.2" y="4" width="6.8" height="6.8" rx="1.6"/><rect x="4" y="13.2" width="6.8" height="6.8" rx="1.6"/><rect x="13.2" y="13.2" width="6.8" height="6.8" rx="1.6"/></svg>
-      </button>
     </div>
     <div class="dock-bar">
+      <!-- Панель «Нод» (02.11.2026, v=219; владелец): в «Нодах» капсула режимов сжимается вправо до
+           одной кнопки «на карту», «Феном» — кружок без подписи, а слева выезжает планшет: надпись
+           «Феном» (шторка разделов вверх), 🔍 (поиск сверху), ▦ / граф. Вне «Нод» свёрнута. -->
+      <div class="dock-planshet" id="dockPlanshet" inert>
+        <button id="planshetBrand" class="dock-brand" aria-haspopup="dialog" aria-expanded="false" title="Разделы планшета">
+          <span class="dock-brand-name">Феном</span><svg class="dock-svg dock-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 14.5l6-6 6 6"/></svg>
+        </button>
+        <button id="planshetSearch" class="dock-tool" title="Поиск" aria-label="Поиск"><svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg></button>
+        <button id="sortToggle" class="dock-tool" title="Граф связей" aria-label="Граф связей"><svg class="dock-svg to-graph" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7.6l8-1.2M6.8 10.1l3.9 6.3M17.3 8.2l-4.1 8.1"/><circle cx="5.5" cy="8" r="2.5"/><circle cx="18.5" cy="6" r="2.5"/><circle cx="12" cy="18.5" r="2.5"/></svg><svg class="dock-svg to-planshet" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.8" height="6.8" rx="1.6"/><rect x="13.2" y="4" width="6.8" height="6.8" rx="1.6"/><rect x="4" y="13.2" width="6.8" height="6.8" rx="1.6"/><rect x="13.2" y="13.2" width="6.8" height="6.8" rx="1.6"/></svg></button>
+      </div>
       <!-- Значок — маркер Фенома (ставит map.js, когда готов граф; до этого 🚀). -->
       <button id="gotoPhenom" class="dock-side dock-item" title="Корабль-город Феном">
         <span class="dock-icon" aria-hidden="true">🚀</span><span class="dock-label">Феном</span>
@@ -119,34 +127,6 @@
   <button type="button" class="editor-fab" id="editorFab" hidden></button>
 </div>
 
-<!-- Единая панель перекрёстной навигации между статьями-справочниками (Феном/
-     Расы/Магический лор/Технологии/Описание галактики). Сама по себе нигде не
-     показывается (см. .ref-toolbar { display:none } ) — существует только чтобы
-     её пристыковать в #modalCard через openIframeModal, как и .system-toolbar/
-     .phenom-toolbar. Наполнение и клики — см. REF_ARTICLES в js/articles.js. -->
-<div class="ref-toolbar lore-toolbar tabbar" id="refToolbar">
-  <button class="toolbar-close-btn" id="refToolbarClose" aria-label="Закрыть">✕</button>
-  <!-- Справочник — только статьи, ссылок на точки карты здесь нет (24.09.2026):
-       связь статья↔точка идёт в одну сторону — кнопкой «Статья» в окне точки.
-       Быстрый вход в точку Феном — кнопка в углу карты. Была двойная ячейка
-       «Феном | Карта», её правая половина вела в саму точку. -->
-  <button class="tabbar-btn" data-ref="phenom">
-    <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Феном</span>
-  </button>
-  <button class="tabbar-btn" data-ref="races">
-    <span class="tabbar-btn-icon" aria-hidden="true">🧬</span><span class="tabbar-btn-label">Расы</span>
-  </button>
-  <button class="tabbar-btn" data-ref="magic">
-    <span class="tabbar-btn-icon" aria-hidden="true">🔮</span><span class="tabbar-btn-label">Магия</span>
-  </button>
-  <button class="tabbar-btn" data-ref="tech">
-    <span class="tabbar-btn-icon" aria-hidden="true">🔧</span><span class="tabbar-btn-label">Техника</span>
-  </button>
-  <button class="tabbar-btn" data-ref="galaxy">
-    <span class="tabbar-btn-icon" aria-hidden="true">🌌</span><span class="tabbar-btn-label">Галактика</span>
-  </button>
-</div>
-
 <!-- Полоска «тапни, где стоит персонаж» — выбор места в редакторе (js/editor.js,
      pickOnMap/pickOnSubmap в js/map.js). Поверх и карты галактики, и окна локации. -->
 <div class="pick-banner" id="pickBanner" hidden>
@@ -163,7 +143,7 @@
 </div>
 
 <!-- Полноэкранный вид отдельной системы. Меню — тот же таб-бар, что и у
-     #refToolbar (см. ниже): "Карта системы" — всегда активна, пока статья не
+     справочника (до 02.11.2026): "Карта системы" — всегда активна, пока статья не
      открыта, переключение никогда не пересоздаёт саму карту (#systemContainer
      не трогается) — просто закрывает/открывает статью поверх.
 
@@ -310,6 +290,6 @@
      не в модуле, — за ним следит navigation.js (Esc / «назад» закрывают игру). -->
 <div class="flappy-overlay" id="flappyOverlay" role="dialog" aria-modal="true" aria-label="Мини-игра Flappy Phenome"></div>
 
-<script type="module" src="js/main.js?v=217" onerror="window.__bootFail && window.__bootFail()"></script>
+<script type="module" src="js/main.js?v=219" onerror="window.__bootFail && window.__bootFail()"></script>
 </body>
 </html>

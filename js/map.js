@@ -1,25 +1,24 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=217';
-import { closeModal } from './modal.js?v=217';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=217';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=217';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=217';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=217';
-import { openCharacter, closeCharacter } from './characters.js?v=217';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=217';
-import { markerEl } from './node-window.js?v=217';
-import { layoutSections, renderSections } from './sections.js?v=217';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=217';
-import { hideSplash } from './splash.js?v=217';
-import { fetchT, showLoadError } from './net.js?v=217';
-import { noteRecord, setRestorer } from './navigation.js?v=217';
-import { buildRecords, resolveAddress } from './records.js?v=217';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=217';
-import { decodeAddress } from './address.js?v=217';
-import { showPlanshet, isPlanshetShown, planshetSurface } from './planshet-frame.js?v=217';
-import { REF_ARTICLES } from './articles.js?v=217';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=219';
+import { closeModal } from './modal.js?v=219';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=219';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=219';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=219';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=219';
+import { openCharacter, closeCharacter } from './characters.js?v=219';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=219';
+import { markerEl } from './node-window.js?v=219';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=219';
+import { hideSplash } from './splash.js?v=219';
+import { fetchT, showLoadError } from './net.js?v=219';
+import { noteRecord, setRestorer } from './navigation.js?v=219';
+import { buildRecords, resolveAddress } from './records.js?v=219';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=219';
+import { decodeAddress } from './address.js?v=219';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch } from './planshet.js?v=219';
+import { REF_ARTICLES } from './articles.js?v=219';
 
 const SVG_PATH = 'map.svg';
 
@@ -181,7 +180,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=217').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=219').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -791,7 +790,7 @@ function finishMapPick(p) {
     ring.setAttribute('class', 'map-tap-ring');
     ring.setAttribute('cx', node.x);
     ring.setAttribute('cy', node.y);
-    ring.setAttribute('r', (viewMode === 'nodes' ? nodesPlace(node).size : node.size) * 0.6);
+    ring.setAttribute('r', (graphShown() ? nodesPlace(node).size : node.size) * 0.6);
     graphLayer.appendChild(ring);
     // По таймеру, а не по animationend: при prefers-reduced-motion анимации нет.
     setTimeout(() => ring.remove(), 500);
@@ -1319,6 +1318,8 @@ function finishMapPick(p) {
     if (isStoryOpen()) closeStory();
     if (view.submap) prepareSubmap(node);
     openWorldWindow(view, handlers);
+    // Кнопка «Феном» в панели — сразу на схему (своя карта точки).
+    if (opts && opts.submap && view.submap) openSubmapView();
     return 'phenom';
   }
 
@@ -1969,7 +1970,8 @@ function finishMapPick(p) {
      У каждого узла ДВЕ посчитанные позиции — карточная (mapX/mapY, корни на
      своих координатах из JSON) и графовая (graphX/graphY, всё собрано
      компактным кластером в центре, см. layoutGraphView в js/graph.js).
-     Обе считаются один раз при загрузке и заморожены; x/y узла — это "где он
+     Карточная считается при загрузке, графовая — при первом показе графа
+     (ensureGraphLayout, с 02.11.2026); обе заморожены; x/y узла — это "где он
      сейчас", то есть текущий режим либо промежуточный кадр перелёта между
      ними. Благодаря этому весь остальной код (goToNode, focusAndOpen, клики
      по маркерам) продолжает читать x/y и про режимы вообще не знает.
@@ -2018,67 +2020,49 @@ function finishMapPick(p) {
   }
 
   let viewMode = 'map';
+  let mapModeBeforeNodes = 'map';   // на какую карту вернуться из «Нод» (кнопка .return в панели)
   let graphNodes = [], graphThreads = [];
   let graphViewBox = {width: 0, height: 0}, graphViewCenter = {x: 0, y: 0};
 
-  /* Ноды по разделам (25.09.2026, js/sections.js) — вторая раскладка ВНУТРИ
-     режима нод: 'graph' (кластеры, как было) или 'sections' (ячейки с
-     подписями). Переключает кнопка ▦ (на месте 🏷️, которая в нодах не нужна).
-     Выбор запоминается. Координаты — sectionX/sectionY, заморожены так же,
-     как graphX/graphY. */
-  /* ⚠️ С 02.11.2026 'sections' = ПЛАНШЕТ (js/planshet-frame.js, решение владельца: ▦ — планшет ↔ граф,
-     планшет на месте раскладки по разделам). Сама раскладка выключена (SECTIONS_LAYOUT): под планшетом
-     узлы стоят графом, и ▦ переключает мгновенно. Сохранённое 'sections' открывает планшет. */
-  const SECTIONS_LAYOUT = false;
-  const NODES_ARRANGEMENT_KEY = 'galaxyMapNodesArrangement';
-  let nodesArrangement = 'graph';
-  try { if (localStorage.getItem(NODES_ARRANGEMENT_KEY) === 'sections') nodesArrangement = 'sections'; } catch (e) {}
-  let sectionsLayout = null;
+  /* Режим «Ноды» (с 02.11.2026, решение владельца) — сначала ПЛАНШЕТ (js/planshet.js), ▦ —
+     граф связей и обратно. Планшет закрывает экран целиком, поэтому под ним карта остаётся как была:
+     узлы не едут, камера стоит, сам SVG спрятан (body.planshet-on в css). Граф — прежняя механика
+     перелёта узлов, включается только по ▦ (и длинным нажатием на маркер, обучением). Вход в «Ноды»
+     всегда открывает планшет: выбор ▦ не запоминается. До 02.11 здесь была раскладка «по разделам»
+     (js/sections.js, 25.09.2026) — удалена, её место занял планшет. */
+  let nodesArrangement = 'planshet';   // 'planshet' | 'graph' — что показано в «Нодах»
   const sortToggle = document.getElementById('sortToggle');
+  const dockPlanshet = document.getElementById('dockPlanshet');
+  // Показан ли граф: от него, а не от viewMode, зависят перелёт узлов, .nodes-mode и камера.
+  const graphShown = () => viewMode === 'nodes' && nodesArrangement === 'graph';
 
-  // Где узел стоит в режиме нод при текущей раскладке и какого он там размера.
+  /* Раскладка графа — при первом показе, а не при загрузке: пока игрок смотрит карту и планшет,
+     она не нужна. Пишет graphX/graphY, x/y узлов не трогает. Форма экрана — на момент показа. */
+  let graphLaidOut = false;
+  function ensureGraphLayout() {
+    if (graphLaidOut || !graphById.size) return;
+    graphLaidOut = true;
+    const nodes = [...graphById.values()];
+    const was = nodes.map(n => [n.x, n.y]);
+    // Форма экрана передаётся в раскладку: кластер вытягивается под неё,
+    // чтобы не упираться одной стороной в кадр, пока другая пустует
+    // (см. packRoots в graph.js).
+    graphViewBox = layoutGraphView(graphById, graphViewCenter.x, graphViewCenter.y,
+      (svg.clientWidth || 1) / (svg.clientHeight || 1));
+    nodes.forEach((n, i) => { n.graphX = n.x; n.graphY = n.y; [n.x, n.y] = was[i]; });
+  }
+
+  // Где узел стоит в графе и какого он там размера.
   function nodesPlace(n) {
-    if (SECTIONS_LAYOUT && nodesArrangement === 'sections' && typeof n.sectionX === 'number') {
-      return {x: n.sectionX, y: n.sectionY, size: n.sectionSize};
-    }
+    ensureGraphLayout();
     return {x: n.graphX, y: n.graphY, size: n.graphSize};
   }
 
-  /* Кадр для разделов. Всё целиком помещается — как у графа. Не помещается
-     (на телефоне разделы выходят длинной колонкой) — по ширине, прижав к
-     верху: сверху «Набор открыт», его и должно быть видно первым, остальное
-     листается пальцем. Иначе маркеры стали бы мельче пальца. */
-  const SECTIONS_MARGIN_PX = 10;
-  const SECTIONS_MAX_CHAR_PX = 40;
-  function sectionsCamera() {
-    const L = sectionsLayout;
-    // Нулевой размер бывает у скрытой вкладки/панели — тогда размер окна.
-    const sw = svg.clientWidth || window.innerWidth || 1, sh = svg.clientHeight || window.innerHeight || 1;
-    /* Свободная полоса — между кнопками Telegram сверху (полноэкранный
-       режим) и панелью карты снизу (screenReserve). До v=168 сверху справа
-       стояли кнопки угла, и раскладка начиналась ниже их нижнего края. */
-    const res = screenReserve();
-    const reserve = res.top + SECTIONS_MARGIN_PX;
-    const m = SECTIONS_MARGIN_PX;
-    const free = Math.max(1, sh - reserve - res.bottom - m);
-    // px на единицу: по ширине и «чтобы влезло всё в свободную полосу».
-    // Раскладка узкая (персонажи колонками), и на широком экране «по ширине»
-    // раздуло бы маркеры — персонаж не крупнее SECTIONS_MAX_CHAR_PX.
-    const kWidth = Math.min((sw - 2 * m) / L.width, SECTIONS_MAX_CHAR_PX / (L.charSize || 4.5));
-    const kAll = Math.min(kWidth, free / L.height);
-    // Целиком не влезает без заметного уменьшения — по ширине, остальное листается.
-    const k = kAll >= kWidth / 1.25 ? kAll : kWidth;
-    const spare = Math.max(0, free - L.height * k);
-    const topPx = reserve + spare / 2;
-    // viewBox квадратный и вписан по короткой стороне: ширина кадра = она / k.
-    // Центр кадра — центр экрана; верх раскладки должен попасть на topPx.
-    return {x: graphViewCenter.x, y: L.top + (sh / 2 - topPx) / k, w: Math.min(sw, sh) / k};
-  }
+  /* Граф — в середину свободной полосы, а не экрана: снизу панель карты,
+     сверху в полноэкранном режиме кнопки Telegram. Центр кадра — центр
+     экрана, поэтому камера сдвигается на половину разницы отступов. */
   function nodesCamera() {
-    if (SECTIONS_LAYOUT && nodesArrangement === 'sections' && sectionsLayout && sectionsLayout.width) return sectionsCamera();
-    /* Граф — в середину свободной полосы, а не экрана: снизу панель карты,
-       сверху в полноэкранном режиме кнопки Telegram. Центр кадра — центр
-       экрана, поэтому камера сдвигается на половину разницы отступов. */
+    ensureGraphLayout();
     const w = graphViewWidth();
     const sw = svg.clientWidth || window.innerWidth || 1, sh = svg.clientHeight || window.innerHeight || 1;
     const res = screenReserve();
@@ -2210,7 +2194,7 @@ function finishMapPick(p) {
        nodes-mode ставится ПОСЛЕ затухания карты (узлы уже слетаются), а
        far-links снимается СРАЗУ при уходе из нод — длинная нить не мелькает
        поверх карты ни в одну сторону. */
-    svg.classList.toggle('far-links', viewMode === 'nodes');
+    svg.classList.toggle('far-links', graphShown());
     // Качаем тайлы фона только когда в режим реально зашли (см.
     // requestGraphicsTiles выше) — до этого момента ноль байт.
     if (viewMode === 'graphics') requestGraphicsTiles();
@@ -2224,16 +2208,20 @@ function finishMapPick(p) {
        так же, как и в "Карте". */
     const onMapView = viewMode !== 'nodes';
     if (calibToggle) calibToggle.disabled = !onMapView;
-    // 🏷️ в нодах не нужна — на её месте ▦ (раскладка по разделам), панель
-    // карты не меняет размер при переключении режима.
+    // 🏷️ — инструмент карты; в «Нодах» круглых кнопок нет (css .map-dock.nodes).
     labelsToggle.hidden = !onMapView;
+    /* Панель в «Нодах» (02.11.2026, v=219): капсула режимов сжимается до одной кнопки — той карты,
+       с которой пришли (.return), слева выезжает планшет (#dockPlanshet). Анимация — переходами css. */
+    controlsEl.classList.toggle('nodes', !onMapView);
+    viewSwitchBtns.forEach(b => b.classList.toggle('return', !onMapView && b.dataset.view === mapModeBeforeNodes));
+    if (dockPlanshet) dockPlanshet.inert = onMapView;
     if (sortToggle) {
-      sortToggle.hidden = onMapView;
-      sortToggle.classList.toggle('active', nodesArrangement === 'sections');
-      sortToggle.title = nodesArrangement === 'sections' ? 'Граф связей' : 'Планшет';
+      // ▦ показывает, куда ведёт: из планшета — граф, из графа — планшет.
+      sortToggle.classList.toggle('graph-on', nodesArrangement === 'graph');
+      sortToggle.title = nodesArrangement === 'planshet' ? 'Граф связей' : 'Планшет';
       sortToggle.setAttribute('aria-label', sortToggle.title);
     }
-    showPlanshet(!onMapView && nodesArrangement === 'sections');
+    showPlanshet(!onMapView && nodesArrangement === 'planshet');
     if (!onMapView && calibMode) {
       calibMode = false;
       calibToggle?.classList.remove('active');
@@ -2257,9 +2245,9 @@ function finishMapPick(p) {
     try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred('medium'); } catch (e) {}
     const toNodes = viewMode !== 'nodes';
     if (toNodes) {
+      // Маркер ищут на графе — планшет тут ни при чём.
       const p = nodesPlace(node);
-      const w = nodesArrangement === 'sections' ? nodesCamera().w : graphViewWidth() * LOCATE_NODES_ZOOM;
-      await setViewMode('nodes', false, {x: p.x, y: p.y, w});
+      await setViewMode('nodes', false, {x: p.x, y: p.y, w: graphViewWidth() * LOCATE_NODES_ZOOM}, 'graph');
     } else {
       /* ⚠️ Кадр «видно окрестности» шире порога детализации, а персонаж на
          таком кадре скрыт (см. detailWidth выше) — кольцо пульсировало бы
@@ -2268,7 +2256,7 @@ function finishMapPick(p) {
       const w = node.kind === 'character' ? Math.min(LOCATE_WIDTH, detailWidth * 0.85) : LOCATE_WIDTH;
       await setViewMode(savedMapMode(), false, {x: node.mapX, y: node.mapY, w});
     }
-    if ((viewMode === 'nodes') !== toNodes || !node.__el) return;
+    if (graphShown() !== toNodes || !node.__el) return;
     const ring = document.createElementNS(ns, 'circle');
     ring.setAttribute('class', 'map-locate-ring');
     ring.setAttribute('cx', node.x);
@@ -2280,12 +2268,13 @@ function finishMapPick(p) {
     // вовсе, и кольцо осталось бы навсегда. 900 — длительность в css.
     setTimeout(() => ring.remove(), LOCATE_PULSES * 900 + 100);
   }
-  // На какую карту возвращаться из нод: ту, что была до них («Графика» тоже карта).
-  let mapModeBeforeNodes = 'map';
+  // На какую карту возвращаться из нод: ту, что была до них («Графика» тоже карта; объявлено у viewMode).
   function savedMapMode() { return mapModeBeforeNodes; }
 
-  async function setViewMode(mode, instant, focus) {
-    if (mode === viewMode || !viewSwitchBtns.some(b => b.dataset.view === mode)) return;
+  /* arrangement — что открыть в «Нодах»: планшет (по умолчанию) или граф. */
+  async function setViewMode(mode, instant, focus, arrangement = 'planshet') {
+    if (!viewSwitchBtns.some(b => b.dataset.view === mode)) return;
+    if (mode === viewMode && (mode !== 'nodes' || arrangement === nodesArrangement)) return;
     cancelPendingOpen();
     if (prefersReducedMotion()) instant = true;  // без разлёта узлов (v=202)
     /* ⚠️ Ждём граф ТОЛЬКО если он ещё не приехал. Просто `await graphReady`
@@ -2296,29 +2285,24 @@ function finishMapPick(p) {
     if (!graphNodes.length) await graphReady;
     if (!graphNodes.length) return;
 
-    const wasNodes = (viewMode === 'nodes');
-    const toNodes = (mode === 'nodes');
-
-    /* "Карта" <-> "Графика" напрямую (минуя "Ноды") — это ВООБЩЕ не смена
-       камеры/позиций, только CSS-класс: оба режима показывают тот же вид на
-       тех же координатах, разница только в том, гашена ли политическая
-       раскраска (см. updateViewModeUi). Без этого раннего выхода код ниже
-       попытался бы вернуть камеру к `savedMapView` — а он заполняется ТОЛЬКО
-       при уходе В "Ноды" и остался бы `null`, если игрок ни разу там не был. */
-    if (!wasNodes && !toNodes) {
-      viewMode = mode;
-      updateViewModeUi();
-      try { localStorage.setItem(VIEW_MODE_KEY, mode); } catch (e) {}
-      return;
-    }
-
-    if (toNodes) {
-      savedMapView = pz.getViewBox(); // вернёмся ровно туда, откуда ушли
-      mapModeBeforeNodes = viewMode;
-    }
+    if (viewMode !== 'nodes' && mode === 'nodes') mapModeBeforeNodes = viewMode;
+    const wasNodes = graphShown();
     viewMode = mode;
+    if (mode === 'nodes') nodesArrangement = arrangement;
+    const toNodes = graphShown();   // дальше «ноды» — это граф; планшет для SVG — та же карта
     updateViewModeUi();
     try { localStorage.setItem(VIEW_MODE_KEY, mode); } catch (e) {}
+
+    /* "Карта" <-> "Графика" и карта <-> планшет — это ВООБЩЕ не смена
+       камеры/позиций: тот же вид на тех же координатах, разница только в
+       CSS (политическая раскраска, планшет поверх — см. updateViewModeUi).
+       Без этого раннего выхода код ниже попытался бы вернуть камеру к
+       `savedMapView` — а он заполняется ТОЛЬКО при уходе в граф. */
+    if (wasNodes === toNodes) return;
+
+    if (toNodes) savedMapView = pz.getViewBox(); // вернёмся ровно туда, откуда ушли
+    // Граф -> планшет: возврат карты идёт под планшетом, смотреть не на что — сразу.
+    else if (mode === 'nodes') instant = true;
 
     graphNodes.forEach(n => {
       const p = toNodes ? nodesPlace(n) : null;
@@ -2333,15 +2317,10 @@ function finishMapPick(p) {
       ? nodesCamera()
       : {x: savedMapView.x + savedMapView.w / 2, y: savedMapView.y + savedMapView.h / 2, w: savedMapView.w});
 
-    // Разделы: нити прячутся сразу, рамки и подписи — после перелёта (css).
-    const toSections = SECTIONS_LAYOUT && toNodes && nodesArrangement === 'sections';
-    svg.classList.toggle('sections-mode', toSections);
-    svg.classList.remove('sections-shown');
-
     if (instant) {
+      ++viewTransition;   // недоигранный перелёт больше ничего не трогает
       graphNodes.forEach(n => { n.x = n.targetX; n.y = n.targetY; n.viewScale = n.targetScale; });
       applyGraphPositions();
-      svg.classList.toggle('sections-shown', toSections);
       svg.classList.toggle('nodes-mode', toNodes);
       graphBackdrop.style.display = toNodes ? 'block' : 'none';
       graphBackdrop.style.opacity = toNodes ? '1' : '0';
@@ -2387,8 +2366,6 @@ function finishMapPick(p) {
       // Такт 2: карта уходит из отрисовки, камера догоняет узлы по пустому SVG.
       svg.classList.add('nodes-mode');
       pz.focusOn(target.x, target.y, target.w, CAMERA_DURATION);
-      await nodesDone;
-      if (alive() && toSections) svg.classList.add('sections-shown');
     } else {
       // Обратный порядок: сначала камера по пустому SVG...
       pz.focusOn(target.x, target.y, target.w, CAMERA_DURATION);
@@ -2406,41 +2383,23 @@ function finishMapPick(p) {
     btn.addEventListener('click', () => setViewMode(btn.dataset.view, false));
   });
 
-  /* ▦ — смена раскладки ВНУТРИ режима нод: граф <-> разделы. Карта уже скрыта,
-     поэтому узлы и камера едут одновременно, без тактов затухания.
-     ⚠️ Пока идёт переход карта <-> ноды, кнопка не срабатывает: новый перелёт
-     узлов оборвал бы старый, и его промис не разрешился бы никогда — переход
-     в ноды так и застрял бы без .nodes-mode. */
-  let arrangeToken = 0;
-  async function setNodesArrangement(arr, instant) {
-    nodesArrangement = arr;
-    try { localStorage.setItem(NODES_ARRANGEMENT_KEY, arr); } catch (e) {}
-    updateViewModeUi();
-    if (viewMode !== 'nodes' || !graphNodes.length) return;
-    const token = ++arrangeToken;
-    const toSections = SECTIONS_LAYOUT && arr === 'sections';
-    svg.classList.toggle('sections-mode', toSections);
-    svg.classList.remove('sections-shown');
-    graphNodes.forEach(n => {
-      const p = nodesPlace(n);
-      n.targetX = p.x; n.targetY = p.y; n.targetScale = p.size / n.size;
-    });
-    const cam = nodesCamera();
-    if (instant) {
-      graphNodes.forEach(n => { n.x = n.targetX; n.y = n.targetY; n.viewScale = n.targetScale; });
-      applyGraphPositions();
-      pz.focusOn(cam.x, cam.y, cam.w, 0);
-      svg.classList.toggle('sections-shown', toSections);
-      return;
-    }
-    pz.focusOn(cam.x, cam.y, cam.w, VIEW_TWEEN_DURATION);
-    await new Promise(res => tweenToTargets(VIEW_TWEEN_DURATION, res));
-    if (token === arrangeToken && toSections && viewMode === 'nodes') svg.classList.add('sections-shown');
-  }
+  /* ▦ — внутри «Нод»: планшет <-> граф. В граф — прежний перелёт узлов с карты (она под планшетом
+     стоит как была), из графа — сразу (см. setViewMode).
+     ⚠️ Пока идёт переход, кнопка не срабатывает: новый перелёт узлов оборвал бы старый, и его промис
+     не разрешился бы никогда — переход так и застрял бы без .nodes-mode. */
   sortToggle?.addEventListener('click', () => {
-    if (performance.now() < viewBusyUntil) return;
-    setNodesArrangement(nodesArrangement === 'sections' ? 'graph' : 'sections', false);
+    if (performance.now() < viewBusyUntil || viewMode !== 'nodes') return;
+    setViewMode('nodes', false, null, nodesArrangement === 'planshet' ? 'graph' : 'planshet');
   });
+  /* «Феном ▴» — шторка разделов планшета, 🔍 — поиск сверху. Из графа — сначала обратно в планшет. */
+  const toPlanshet = async () => {
+    if (viewMode === 'nodes' && nodesArrangement === 'planshet') return true;
+    if (performance.now() < viewBusyUntil) return false;
+    await setViewMode('nodes', false, null, 'planshet');
+    return true;
+  };
+  document.getElementById('planshetBrand')?.addEventListener('click', async () => { if (await toPlanshet()) togglePlanshetMenu(); });
+  document.getElementById('planshetSearch')?.addEventListener('click', async () => { if (await toPlanshet()) openPlanshetSearch(); });
 
   const MANIFEST_PATH = 'systems/manifest.json';
   /* systems/names.json — переименование подписей систем без нового экспорта
@@ -2569,23 +2528,11 @@ function finishMapPick(p) {
 
     const core = pz.getInitialViewBox();
     graphViewCenter = {x: core.x + core.w / 2, y: core.y + core.h / 2};
-    // Форма экрана передаётся в раскладку: кластер вытягивается под неё,
-    // чтобы не упираться одной стороной в кадр, пока другая пустует
-    // (см. packRoots в graph.js).
-    graphViewBox = layoutGraphView(graph, graphViewCenter.x, graphViewCenter.y,
-      (svg.clientWidth || 1) / (svg.clientHeight || 1));
-    graph.forEach(n => { n.graphX = n.x; n.graphY = n.y; });
-    // Третья раскладка — по разделам (js/sections.js). В x/y она не пишет,
-    // только в sectionX/sectionY, и заодно помечает, какие нити в ней видны.
-    sectionsLayout = layoutSections(graph, threads, graphViewCenter.x, graphViewCenter.y, svg.clientWidth || window.innerWidth || 0);
-
-    graph.forEach(n => { n.x = n.mapX; n.y = n.mapY; n.viewScale = 1; });
+    // Графовая раскладка — лениво, при первом показе графа (ensureGraphLayout).
+    graph.forEach(n => { n.viewScale = 1; });
 
     graphThreads = threads;
-    // Рамки и подписи разделов — под нитями и маркерами, сразу над звёздным фоном.
-    graphLayer.insertBefore(renderSections(sectionsLayout), graphBackdrop.nextSibling);
     renderThreads(threads);
-    threads.forEach(t => { if (t.sectionKeep && t.__el) t.__el.classList.add('section-keep'); });
     renderNodes([...graph.values()]);
     graphNodes = [...graph.values()].filter(n => n.onMap && n.__el);
     renderDetailBadges(graphNodes);
@@ -2612,26 +2559,15 @@ function finishMapPick(p) {
         && typeof n.data.recruit === 'string' && n.data.recruit.trim())
       || graphNodes.find(n => n.kind === 'world' && n.data.beacon && !isCompleted(n)) || null;
     registerTourHooks({
-      // Планшет (Ноды → ▦, с 02.11.2026 на месте раскладки по разделам); промис — когда всё встало.
-      showSections: async () => {
-        if (viewMode === 'nodes') {
-          if (nodesArrangement !== 'sections') await setNodesArrangement('sections', false);
-        } else {
-          nodesArrangement = 'sections';
-          try { localStorage.setItem(NODES_ARRANGEMENT_KEY, 'sections'); } catch (e) {}
-          await setViewMode('nodes', false);
-        }
-      },
+      // Планшет (вход в «Ноды»); промис — когда всё встало.
+      showPlanshet: () => setViewMode('nodes', false, null, 'planshet'),
       // Обратно на карту (ту, с которой ушли в ноды) — для шага про 🏷️.
       showMap: async () => {
         if (viewMode === 'nodes') await setViewMode(savedMapMode(), false);
       },
       // Граф связей (Ноды → ▦ ещё раз) — для шага про маркер сюжета и его персонажей.
-      showGraph: async () => {
-        if (viewMode !== 'nodes') { nodesArrangement = 'graph'; await setViewMode('nodes', false); }
-        else if (nodesArrangement !== 'graph') await setNodesArrangement('graph', false);
-      },
-      sectionsLayer: () => planshetSurface(),
+      showGraph: () => setViewMode('nodes', false, null, 'graph'),
+      planshetLayer: () => planshetSurface(),
       // Маркер сюжета на графе (без колец маяка — их рамка шире самого маркера).
       plotEl: () => {
         const n = tourPlot();
@@ -2689,7 +2625,7 @@ function finishMapPick(p) {
     if (rec.kind === 'system') { openSystem(rec.title); return true; }   // система без точек — не узел графа
     return false;
   };
-  /* Планшет (planshet/ во фрейме, js/planshet-frame.js) открывает записи окнами карты: без перелёта
+  /* Планшет (js/planshet.js) открывает записи окнами карты: без перелёта
      камеры (карта под планшетом не видна). false — карта такую запись не знает (новость), планшет
      покажет её у себя. Экскурсия — обучение карты. */
   window.__mapOpenRecord = (id, anchor) => openRecord(id, anchor || '', {instant: true});
@@ -2824,8 +2760,8 @@ function finishMapPick(p) {
       || params.get('tgWebAppStartParam') || params.get('open') || '');
     if (!addr) return;
     let id = addr.special || '';
-    /* startapp=sections (?open=sections) — сразу ноды по разделам: для кнопки
-       «Сюжеты и набор» в канале. Точки с таким id нет и быть не должно. */
+    /* startapp=sections (?open=sections) — сразу «Ноды» (с 02.11.2026 — планшет; было «по разделам»):
+       для кнопки «Сюжеты и набор» в канале. Точки с таким id нет и быть не должно. */
     // startapp=tour (?open=tour) — сразу обучение: для кнопки в канале.
     if (id === 'tour') { startTour(); return; }
     /* startapp=welcome — ссылка для рекламы (v=157): обучение только при
@@ -2836,11 +2772,7 @@ function finishMapPick(p) {
       if (!tourSeen()) { startTour(); return; }
       id = 'sections';
     }
-    if (id === 'sections') {
-      if (viewMode === 'nodes') setNodesArrangement('sections', true);
-      else { nodesArrangement = 'sections'; setViewMode('nodes', true); }
-      return;
-    }
+    if (id === 'sections') { setViewMode('nodes', true, null, 'planshet'); return; }
     if (addr.special) return;
     /* <id>--rolls — персонаж сразу на вкладке «Броски» (08.10.2026): кнопка
        «🎲 … на карте» под броском в группе (dice_rolls.py); <id>--notes — сразу
@@ -2962,16 +2894,18 @@ function finishMapPick(p) {
     });
   }
 
-  /* Кнопка «Феном» в углу карты ведёт в точку Феном — тем же перелётом
+  /* Кнопка «Феном» в панели ведёт в точку Феном — тем же перелётом
      камеры, что и тап по её маркеру (instant: false — карта тут видна).
-     С 24.09.2026 это обычное окно точки (описание и переходы), своя карта
-     Фенома — кнопкой «🗺️ Карта» уже внутри него. Координаты — из графа, а не
-     вписаны числами, чтобы не разъехаться при переносе маркера; нет узла
-     "phenome" — молча ничего (ловится глазами, как рассинхрон манифеста). */
+     С 02.11.2026 (v=219, владелец: «некоторые игроки вообще не знали про
+     схему») окно открывается сразу на схеме корабля — вкладке «Карта»;
+     тап по маркеру Фенома по-прежнему открывает описание. Координаты — из
+     графа, а не вписаны числами, чтобы не разъехаться при переносе маркера;
+     нет узла "phenome" — молча ничего (ловится глазами, как рассинхрон
+     манифеста). */
   document.getElementById('gotoPhenom').addEventListener('click', async () => {
     const graph = await graphReady;
     const phenom = graph.get('phenome');
-    if (phenom) goToNode(phenom, false);
+    if (phenom) goToNode(phenom, false, {submap: true});
   });
 
   graphReady.then(graph => {

@@ -1,5 +1,5 @@
-import { articleText, linkText, search } from '../js/linker.js?v=217';
-import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=1';
+import { articleText, linkText, search } from '../js/linker.js?v=219';
+import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=2';
 export { C, load, viewKind, pointModules, alsoIn };
 export const BASE = new URL('../', import.meta.url).href;
 export const truth = v => v === true || /^(true|1)$/i.test(String(v ?? ''));
@@ -9,13 +9,6 @@ const SHORT = {'kreyser-gorizont': 'Горизонт'};
 const ORDER = ['story-1', 'kreyser-gorizont', 'story-2'];
 export const ARCHIVE = 'arch-characters';
 export const EPOCHS = 'lore/epochs';
-// Шрифты заголовков (все — с кириллицей). Tektur — выбор владельца 01.11.
-export const FONTS = [['Tektur', "'Tektur'"], ['Days One', "'Days One'"], ['Exo 2', "'Exo 2'"], ['Play', "'Play'"],
-  ['Oswald', "'Oswald'"], ['Sofia Sans Cond.', "'Sofia Sans Condensed'"], ['Geologica', "'Geologica'"], ['Системный', 'system-ui']];
-export const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Tektur:wght@500;700&family=Days+One&family=Exo+2:wght@600;700&family=Play:wght@700&family=Oswald:wght@500;600&family=Sofia+Sans+Condensed:wght@600;700&family=Geologica:wght@600;700&display=swap&subset=cyrillic';
-
-
-
 export function el(tag, attrs = {}, ...kids) {
   const n = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
@@ -265,23 +258,9 @@ export const WHERE = {title: 'в названии', alias: 'по имени', te
 export const mentionsOf = id => (C.refs[id] || []).map(x => C.byId.get(x)).filter(Boolean)
   .sort((a, b) => (C.pop[b.id] || 0) - (C.pop[a.id] || 0));
 
-/* ---------- шрифты ---------- */
-export function setFont(i) {
-  document.documentElement.style.setProperty('--display', `${FONTS[i][1]}, system-ui, sans-serif`);
-  try { localStorage.setItem('planshetMockFont3', String(i)); } catch {}
-  document.querySelectorAll('.mock-tools button').forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
-}
-/* Планшет карты: шрифт заголовков — Tektur своим файлом (fonts/, OFL), без Google Fonts
-   (владелец 02.11.2026); переключателя шрифтов макета нет. */
-export function fontBar() { document.documentElement.style.setProperty('--display', "'Tektur', system-ui, sans-serif"); }
-function fontBarMock() {
-  const bar = el('footer', {class: 'mock-tools'}, el('div', {class: 'mt-in'}, el('span', {}, 'Шрифт:'),
-    FONTS.map(([name], i) => el('button', {onclick: () => setFont(i)}, name)), el('a', {href: '../index.html'}, '← все макеты')));
-  document.body.append(bar);
-  let saved = 0;
-  try { saved = Number(localStorage.getItem('planshetMockFont3')) || 0; } catch {}
-  setFont(Math.min(saved, FONTS.length - 1));
-}
+/* ---------- шрифт ---------- */
+// Tektur своим файлом (fonts/, OFL), без Google Fonts (владелец 02.11.2026): заголовки планшета и надпись
+// «Феном» в панели «Нод». Ставится один раз, при первом показе планшета.
 export function fontLink() {
   if (document.getElementById('tekturFace')) return;
   const style = el('style', {id: 'tekturFace'});
@@ -291,10 +270,9 @@ export function fontLink() {
 }
 
 
-// Внутри карты (02.11.2026) — сама карта переходит из «Нод» на карту и летит к маркеру, а не открывает
-// вторую карту во фрейме.
+// Сама карта переходит из «Нод» на карту и летит к маркеру (window.__mapShowOnMap, js/map.js).
 export const mapLink = r => r.mapTargets?.length ? el('a',{class:'onmap',href:BASE+'index.html?open='+encodeURIComponent(r.id),
-  onclick(e){const map=window.parent!==window&&window.parent.__mapShowOnMap;if(map){e.preventDefault();map(r.id);}}},'Показать на карте') : null;
+  onclick(e){if(window.__mapShowOnMap){e.preventDefault();window.__mapShowOnMap(r.id);}}},'Показать на карте') : null;
 export function cardSections(r,open) {
  const p=C.raw[r.id]||{}, b=C.news.briefs?.[r.id], ctx={self:r.id,seen:new Set(),open}, out=[];
  if(b) {out.push({title:'Коротко',body:para(b.summary,ctx)});

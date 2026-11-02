@@ -39,13 +39,14 @@
    + записи стопки; по ней, как и раньше, — History API, фокус и ✕/↩.
    Временные слои (Flappy, обучение, статья в модале) — по-прежнему по DOM.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=217';
-import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap, getOpenSystem } from './system-view.js?v=217';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=217';
-import { closeStory, isStoryOpen } from './stories.js?v=217';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=217';
-import { closeTour, isTourOpen } from './tour.js?v=217';
-import { isViewerOpen, closeViewer } from './viewer.js?v=217';
+import { closeModal, isArticleOpen } from './modal.js?v=219';
+import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap, getOpenSystem } from './system-view.js?v=219';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=219';
+import { closeStory, isStoryOpen } from './stories.js?v=219';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=219';
+import { closeTour, isTourOpen } from './tour.js?v=219';
+import { isViewerOpen, closeViewer } from './viewer.js?v=219';
+import { planshetDepth, planshetBack } from './planshet.js?v=219';
 
 /* Мини-игра (js/flappy.js, v=195) — модуль грузится только по нажатию, поэтому
    отсюда его не импортируем: смотрим на класс слоя, закрываем событием. */
@@ -89,6 +90,9 @@ export function noteRecord(id, layer, opts) {
 // Слой закрыт — его записей больше нет (синхронно: «закрыть и тут же открыть
 // другое» в одном клике не должно оставить старые записи под новыми).
 document.addEventListener('viewer-change', () => scheduleSync());
+/* Планшет («Ноды», js/planshet.js, с 02.11.2026 — прямо в карте): шторка разделов, поиск, своя
+   карточка/новость — свои шаги «назад». Он ниже окон карты: закрывается, когда их уже нет. */
+document.addEventListener('planshet-change', () => scheduleSync());
 document.addEventListener('layer-closed', (e) => {
   screens = screens.filter(s => s.layer !== e.detail);
   scheduleSync();
@@ -124,7 +128,7 @@ function transientDepth() {
 
 function depth() {
   syncScreens();
-  return transientDepth() + screens.length;
+  return transientDepth() + screens.length + planshetDepth();
 }
 
 /* Закрывает ровно один верхний слой. Порядок — по фактическому z-index
@@ -149,7 +153,7 @@ function closeTop() {
   if (isArticleOpen()) { if (isSystemLoreOpen()) showSystemMap(); else closeModal(); return; }
   syncScreens();
   const top = screens[screens.length - 1];
-  if (!top) return;
+  if (!top) { planshetBack(); return; }
   const prev = screens[screens.length - 2];
   // Под верхней записью — другая запись того же слоя: открыть её снова.
   if (prev && prev.layer === top.layer && prev.id && restorer) {
@@ -229,12 +233,12 @@ window.addEventListener('popstate', () => {
   history.pushState({guard: true}, '');
 });
 
-/* Кнопки-крестики четырёх тулбаров (не системы, см. её собственное
+/* Кнопки-крестики трёх тулбаров (не системы, см. её собственное
    исключение выше и в css/styles.css) вешаются СЮДА, а не в своих модулях —
    closeTop() уже знает приоритет между всеми слоями разом, дублировать эту
    логику в articles.js/characters.js/phenom.js/stories.js незачем (было —
    каждый вручную проверял isArticleOpen() перед тем, как закрыть себя). */
-['refToolbarClose', 'charToolbarClose', 'phenomClose', 'storyClose'].forEach(id => {
+['charToolbarClose', 'phenomClose', 'storyClose'].forEach(id => {
   document.getElementById(id).addEventListener('click', closeTop);
 });
 
@@ -246,7 +250,7 @@ window.addEventListener('popstate', () => {
    игрок: раз показывать ↩ только там, где закрытие не опустошает всё до
    карты, то это ровно то же условие, при котором ✕ и так уже вела бы туда
    же — тождественно морфить одну кнопку вместо второй хуже видимой). */
-const morphButtons = ['refToolbarClose', 'charToolbarClose', 'phenomClose', 'storyClose']
+const morphButtons = ['charToolbarClose', 'phenomClose', 'storyClose']
   .map(id => document.getElementById(id));
 
 /* Фокус (v=202, аудит 04.10.2026): открылся слой — фокус на его ✕, закрылся —
@@ -257,8 +261,7 @@ const visibleBtn = el => el && el.offsetParent !== null ? el : null;
 function topCloseButton() {
   if (isFlappyOpen()) return flappyEl.querySelector('.flappy-close');
   if (isTourOpen()) return visibleBtn(document.querySelector('#tourOverlay button'));
-  if (isArticleOpen()) return visibleBtn(document.getElementById('refToolbarClose'))
-    || visibleBtn(document.getElementById('systemBack')) || visibleBtn(document.getElementById('modalClose'));
+  if (isArticleOpen()) return visibleBtn(document.getElementById('systemBack')) || visibleBtn(document.getElementById('modalClose'));
   if (isCharacterOpen()) return document.getElementById('charToolbarClose');
   if (isStoryOpen()) return document.getElementById('storyClose');
   if (isPhenomOpen()) return document.getElementById('phenomClose');

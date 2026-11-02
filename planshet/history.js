@@ -1,16 +1,17 @@
-import {C, el} from './common.js?v=1';
-import {closeViewer, isViewerOpen} from './viewer.js?v=1';
+import {C, el} from './common.js?v=2';
+import {closeViewer} from '../js/viewer.js?v=219';
 
-export function createHistory({state, panel, card, sheet, render, renderDock, setInert, renderInline, onStart, onRoot}) {
-  const session = 'n6-' + Date.now(), entries = new Map();
-  let serial = 0, browserIndex = 0, pending = null, temporary = null;
+/* История записей планшета. С 02.11.2026 (v=219) планшет живёт прямо в карте, а браузерную историю,
+   Esc и кнопку «назад» Telegram ведёт карта (js/navigation.js) — здесь стопка только в памяти, «назад»
+   карта зовёт через back() (js/planshet.js). Своей карточкой планшет показывает только то, чего карта
+   не знает: новость (в ленте) и «Эпохи Фенома». */
+export function createHistory({state, panel, card, sheet, scroller, render, renderDock, setInert, renderInline, onStart, onRoot, onChange}) {
+  let serial = 0, temporary = null;
   const current = () => state.stack.at(-1);
-  const nativeState = () => ({n6:session, index:browserIndex, keys:state.stack.map(s => s.key)});
-  history.replaceState(nativeState(), '');
   function capture() {
     const entry = current();
     if (!entry) return;
-    if (C.byId.get(entry.recordId)?.kind === 'news') {entry.readingPosition=scrollY;return;}
+    if (C.byId.get(entry.recordId)?.kind === 'news') {entry.readingPosition=scroller.scrollTop;return;}
     if (sheet.hidden) return;
     entry.readingPosition = panel.scrollTop;
     entry.expandedState = {};
@@ -37,18 +38,19 @@ export function createHistory({state, panel, card, sheet, render, renderDock, se
     target.scrollIntoView({block:'start'});
   }
   function show(entry, restore = true) {
+    queueMicrotask(() => onChange?.());   // после показа: карта смотрит, открыта ли карточка
     if (!entry) {
-      sheet.hidden = true; setInert(false); document.body.style.overflow = '';
+      sheet.hidden = true; setInert(false);
       onRoot?.();
       state.rootFocus?.isConnected && state.rootFocus.focus({preventScroll:true});
       return;
     }
     const record = C.byId.get(entry.recordId);
     if (record.kind === 'news') {
-      sheet.hidden=true;setInert(false);document.body.style.overflow='';
+      sheet.hidden=true;setInert(false);
       renderInline(record,entry,restore);return;
     }
-    sheet.hidden = false; setInert(true); document.body.style.overflow = 'hidden';
+    sheet.hidden = false; setInert(true);
     card.replaceChildren(...[render(record, queuedOpen, entry.anchor)].flat(Infinity).filter(Boolean));
     renderDock(record, entry);
     panel.scrollTop = 0;
@@ -68,71 +70,49 @@ export function createHistory({state, panel, card, sheet, render, renderDock, se
     panel.focus({preventScroll:true});
     if (restore && entry.returnFocus?.isConnected && panel.contains(entry.returnFocus)) entry.returnFocus.focus({preventScroll:true});
   }
-  function goTo(index) {
-    if (index === browserIndex) return Promise.resolve();
-    return new Promise(resolve => {pending = resolve; history.go(index - browserIndex);});
+  // Стопка обрезается до length записей и показывается верхняя.
+  function goTo(length) {
+    state.stack.length = Math.max(0, length);
+    show(current());
   }
-  async function openRecord(id, anchor = null, options = {}) {
+  function openRecord(id, anchor = null, options = {}) {
     if (!C?.byId.has(id)) return false;
-    if (pending) throw new Error('N6: переход ещё выполняется');
     closeViewer(); capture();
     if (!state.stack.length) {state.rootFocus = document.activeElement;onStart?.();}
     const prev = current();
     if (prev?.recordId === id) {
       prev.anchor = anchor;
       if (options.tab) prev.tab = options.tab;
-      show(prev, true); if(anchor)revealAnchor(anchor); history.replaceState(nativeState(),'');
+      show(prev, true); if(anchor)revealAnchor(anchor);
       return true;
     }
-    const ancestor = options.history !== 'replace' ? state.stack.findLast(s => s.recordId === id) : null;
-    if (ancestor) {
-      await goTo(ancestor.browserIndex);
+    const at = options.history !== 'replace' ? state.stack.findLastIndex(s => s.recordId === id) : -1;
+    if (at >= 0) {
+      goTo(at + 1);
       if (anchor) {current().anchor = anchor; show(current(),false);}
       if (options.tab) current().tab = options.tab;
       return true;
     }
-    const replace = options.history === 'replace' && state.stack.length > 0;
     const entry = {key:++serial, recordId:id, id, anchor, tab:options.tab || 'description',
-      readingPosition:0, expandedState:{}, mapState:options.mapState || null,
-      browserIndex:replace ? browserIndex : browserIndex + 1};
-    entries.set(entry.key,entry);
-    if (replace) state.stack.splice(-1,1,entry); else {state.stack.push(entry); browserIndex++;}
-    history[replace ? 'replaceState' : 'pushState'](nativeState(),'');
+      readingPosition:0, expandedState:{}, mapState:options.mapState || null};
+    if (options.history === 'replace' && state.stack.length) state.stack.splice(-1,1,entry); else state.stack.push(entry);
     show(entry,false); return true;
   }
-  async function back() {
+  function back() {
     if (closeViewer()) return true;
     if (temporary) {temporary.close(); temporary=null; return true;}
     if (!state.stack.length) return false;
-    capture(); await goTo(Math.max(0,browserIndex-1)); return true;
+    capture(); goTo(state.stack.length - 1); return true;
   }
-  async function close() {
+  function close() {
     closeViewer();
     if (temporary) {temporary.close();temporary=null;}
     if (!state.stack.length) return;
-    capture(); await goTo(0);
+    capture(); goTo(0);
   }
-  addEventListener('popstate', event => {
-    const target = event.state;
-    if (isViewerOpen() || temporary) {
-      closeViewer(); temporary?.close();temporary=null;
-      history.pushState(nativeState(),'');
-    } else if (target?.n6 === session) {
-      capture(); browserIndex=target.index;
-      state.stack=target.keys.map(k=>entries.get(k)).filter(Boolean);show(current());
-    } else {
-      state.stack=[];browserIndex=0;show(null);history.replaceState(nativeState(),'');
-    }
-    const resolve=pending;pending=null;resolve?.();
-  });
   const setViewState = patch => {if (current()) Object.assign(current(),patch);};
   const getViewState = () => current() ? {tab:current().tab, mapState:current().mapState} : null;
-  let transition=Promise.resolve();
-  const serialize=fn=>(...args)=>{
-    const task=transition.then(()=>fn(...args));
-    transition=task.catch(()=>{});return task;
-  };
-  const queuedOpen=serialize(openRecord);
-  return {openRecord:queuedOpen, back:serialize(back), close:serialize(close), capture, revealAnchor, setViewState, getViewState,
+  const queuedOpen = (...args) => Promise.resolve(openRecord(...args));
+  return {openRecord:queuedOpen, back, close, capture, revealAnchor, setViewState, getViewState,
     setTemporary: value => {temporary=value;}, getTemporary: () => temporary};
 }

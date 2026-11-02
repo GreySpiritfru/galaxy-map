@@ -1,15 +1,12 @@
 /* ============================================================
-   Статьи-справочники (Teletype) — единый список для всех входов: кнопок в
-   углу карты галактики, кнопки "Описание Феном" внутри окна Феном, и панели
-   перекрёстной навигации #refToolbar, которая пристыковывается внутрь статьи
-   (тем же механизмом openIframeModal/.lore-toolbar, что и лор систем), давая
-   перейти к любой из этих статей прямо во время чтения другой. Ссылка на
-   "Магический лор" пока заглушка — заменить на настоящую статью, когда
-   будет готова.
+   Статьи-справочники (Teletype): ключи справочника → адрес статьи. Нужны
+   «Статье» точки с полем ref (node-window.js) и библиотеке планшета.
+   До 02.11.2026 здесь же была панель справочника #refToolbar в модале и
+   кнопки «Справочник» на карте — убраны: статьи в библиотеке планшета и в
+   «Материалах» окон (перенос планшета, шаг 5).
    ============================================================ */
-import { openIframeModal, isDockedWith, setModalArticle, isArticleOpen } from './modal.js?v=217';
-import { normalizeUrl } from './reader.js?v=217';
-import { openRecord } from './open-record.js?v=217';
+import { setModalArticle, isArticleOpen, openIframeModal } from './modal.js?v=219';
+import { openRecord } from './open-record.js?v=219';
 
 export const REF_ARTICLES = {
   phenom: 'https://teletype.in/@greyspirit/4tRzyNaVfEQ#fvQz',
@@ -22,71 +19,14 @@ export const REF_ARTICLES = {
   avalon: 'https://teletype.in/@greyspirit/SEOWfJxAewY#e5M4',
 };
 
-/* ⚠️ Справочник — только статьи (24.09.2026, решение игрока). Ссылок из
-   статьи в точку карты тут нет и не надо: связь идёт в одну сторону —
-   кнопкой «Статья» в окне точки. Пробовали ряд маркеров под шторкой (точки,
-   у которых article.ref = эта статья) — он дублировал оглавление самой
-   статьи (раздел «Кольцо Авалона» внутри «Магии») и выглядел лишним. */
-const refToolbarEl = document.getElementById('refToolbar');
-
-/* at — необязательный адрес с другим якорем внутри той же статьи (ссылка из
-   другой статьи справочника, см. «mirror-open» ниже). */
-export function openRefArticle(id, at) {
-  const url = at || (Object.prototype.hasOwnProperty.call(REF_ARTICLES, id) ? REF_ARTICLES[id] : '');
-  if (!url) return;
-  const docked = isDockedWith(refToolbarEl);
-  // Клик по статье, которая и так уже открыта (повторный клик по активной
-  // кнопке) — ничего не делаем: не нужно ни переоткрывать модал (это раньше
-  // портило точку возврата панели — см. тот же фикс в system-view.js), ни
-  // просто так перезагружать ту же статью заново.
-  const activeBtn = refToolbarEl.querySelector(`[data-ref="${id}"].active`);
-  if (docked && activeBtn && !at) return;
-  // Если статья уже открыта с этой же панелью (перешли с одной статьи на
-  // другую через #refToolbar) — просто подменяем содержимое, не переоткрывая
-  // модал заново (без лишнего повторного "выезда" шторки/анимации).
-  if (docked) {
-    setModalArticle(url);
-  } else {
-    openIframeModal(url, refToolbarEl);
-  }
-  refToolbarEl.querySelectorAll('[data-ref]').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.ref === id);
-  });
-}
-
-// Один обработчик на всё: и кнопки в углу карты (.ref-buttons), и кнопку
-// "Описание Феном" в окне Феном, и саму панель #refToolbar — везде кнопки
-// помечены одинаково через data-ref, ведущий на ключ в REF_ARTICLES.
-document.querySelectorAll('[data-ref]').forEach(btn => {
-  btn.addEventListener('click', () => openRefArticle(btn.dataset.ref));
-});
-
 /* Ссылка внутри своей копии статьи на другую статью, у которой тоже есть
-   копия (js/reader.js шлёт «mirror-open»). Статья справочника — во вкладку
-   справочника (с якорем ссылки); любая другая — в том же модале, если он уже
-   открыт, иначе в новом. */
-/* С 02.11.2026 (перенос планшета, шаг 4.4): справочник открыт в модале — всё
-   там же, как было; иначе (материал в окне точки, «Из статьи», ссылка из
-   статьи в окне) — статья окном записи (openRecord, js/map.js), со своим
-   «назад». Статьи нет в реестре — модал, как раньше. */
+   копия (js/reader.js шлёт «mirror-open»). С 02.11.2026 (перенос планшета,
+   шаг 4.4) — статья окном записи (openRecord, js/map.js), со своим «назад».
+   Модал уже открыт (статья не из реестра) — в нём же; статьи нет в реестре —
+   новый модал, как раньше. */
 window.addEventListener('mirror-open', (e) => {
   const url = e.detail && e.detail.url;
   if (!url) return;
-  const key = normalizeUrl(url);
-  const ref = Object.keys(REF_ARTICLES).find(k => k !== 'avalon' && normalizeUrl(REF_ARTICLES[k]) === key);
-  if (isArticleOpen()) {
-    if (ref) { openRefArticle(ref, url); return; }
-    refToolbarEl.querySelectorAll('[data-ref].active').forEach(b => b.classList.remove('active'));
-    setModalArticle(url);
-    return;
-  }
-  openRecord(url).then(ok => {
-    if (ok) return;
-    if (ref) openRefArticle(ref, url);
-    else openIframeModal(url);
-  });
+  if (isArticleOpen()) { setModalArticle(url); return; }
+  openRecord(url).then(ok => { if (!ok) openIframeModal(url); });
 });
-
-// ✕ (#refToolbarClose) больше не вешается тут — js/navigation.js сам вешает
-// на него closeTop() (единая точка входа для всех "закрывающих" кнопок
-// сразу, см. комментарий там).

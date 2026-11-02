@@ -5,10 +5,10 @@
    игрока, к сайту/репозиторию отношения не имеет) кнопка мягко пульсирует,
    чтобы её было видно, но не мигает резко и не лезет с окном сама.
    ============================================================ */
-import { showLoadError } from './net.js?v=217';
-import { openModal, closeModal } from './modal.js?v=217';
-import { startTour, tourSeen } from './tour.js?v=217';
-import { quoteHtml, initQuotes } from './quotes.js?v=217';
+import { showLoadError } from './net.js?v=219';
+import { openModal, closeModal } from './modal.js?v=219';
+import { startTour, tourSeen } from './tour.js?v=219';
+import { quoteHtml, initQuotes } from './quotes.js?v=219';
 
 const ONBOARDING_SEEN_KEY = 'galaxyMapOnboardingSeen';
 const helpBtn = document.getElementById('helpBtn');
@@ -49,9 +49,9 @@ function showOnboarding() {
       <div class="help-section">
         <div class="help-heading">🎛️ Панель внизу</div>
         ${quoteHtml(`<ul>
-          <li><b>Феном</b> — окно корабля-города; его собственная карта — кнопкой 🗺️ «Карта» внутри.</li>
-          <li><b>Ноды</b> — планшет или граф связей (▦), <b>Карта</b> — с границами фракций, <b>Графика</b> — без границ.</li>
-          <li>▦ (в нодах) — планшет ↔ граф связей. Планшет: события, сюжеты, маркеры, Феном, персонажи и библиотека статей (расы, магия, техника, галактика), поиск — вверху.</li>
+          <li><b>Феном</b> — схема корабля-города (описание — вкладкой внутри окна).</li>
+          <li><b>Ноды</b> — планшет: события, сюжеты, маркеры, Феном, персонажи и библиотека статей. <b>Карта</b> — с границами фракций, <b>Графика</b> — без границ.</li>
+          <li>В нодах панель другая: надпись <b>Феном</b> открывает разделы и выбор сюжета, 🔍 — поиск, ▦ — граф связей; справа — кнопка обратно на карту.</li>
           <li>🏷️ — меньше подписей (включена сразу, так карта быстрее). Выключи, чтобы при приближении видеть названия всех систем.</li>
         </ul>`)}
       </div>
@@ -97,7 +97,7 @@ helpBtn.addEventListener('click', () => {
   });
   document.getElementById('helpGameBtn')?.addEventListener('click', () => {
     closeModal();
-    import('./flappy.js?v=217').then(m => m.openFlappy(),
+    import('./flappy.js?v=219').then(m => m.openFlappy(),
       () => showLoadError('Игра не загрузилась — проверь соединение.'));
   });
   helpBtn.classList.remove('pulse');

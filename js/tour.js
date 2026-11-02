@@ -18,13 +18,13 @@
    ⚠️ Тексты — черновик из инфоканала (введение, «Что такое Феном», анкета),
    игрок обещал поправить. Править прямо здесь, в INTRO_TABS и STEPS.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=217';
-import { closeStory, isStoryOpen } from './stories.js?v=217';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=217';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=217';
-import { closeSystem, isSystemOpen } from './system-view.js?v=217';
-import { quoteHtml, initQuotes } from './quotes.js?v=217';
-import { JOIN_LINKS } from './node-window.js?v=217';
+import { closeModal, isArticleOpen } from './modal.js?v=219';
+import { closeStory, isStoryOpen } from './stories.js?v=219';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=219';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=219';
+import { closeSystem, isSystemOpen } from './system-view.js?v=219';
+import { quoteHtml, initQuotes } from './quotes.js?v=219';
+import { JOIN_LINKS } from './node-window.js?v=219';
 
 const TOUR_SEEN_KEY = 'galaxyMapTourSeen';
 const LINKS = JOIN_LINKS;
@@ -84,11 +84,11 @@ const INTRO_TABS = [
 const STEPS = [
   {kind: 'intro'},
   {
-    prepare: async h => { closeWindows(); await h.showSections(); },
+    prepare: async h => { closeWindows(); await h.showPlanshet(); },
     // Планшет целиком (02.11.2026: на месте каталога «по разделам»).
-    target: h => h.sectionsLayer(),
+    target: h => h.planshetLayer(),
     title: 'Планшет',
-    text: 'Это режим «Ноды» — планшет: что сейчас происходит, сюжеты (<b>где набирают игроков</b> — с золотым ярлыком), маркеры, Феном, персонажи и библиотека статей. Плитки сверху открывают раздел, вверху — поиск. Кнопка ▦ справа над панелью переключает планшет и граф связей.',
+    text: 'Это режим «Ноды» — планшет: что сейчас происходит, сюжеты (<b>где набирают игроков</b> — с золотым ярлыком), маркеры, Феном, персонажи и библиотека статей. Плитки открывают раздел. Внизу: надпись <b>Феном</b> — разделы и выбор сюжета, 🔍 — поиск, ▦ — граф связей, справа — обратно на карту.',
   },
   {
     prepare: async h => { closeWindows(); await h.showGraph(); },
@@ -98,14 +98,14 @@ const STEPS = [
     text: 'Круг с золотыми кольцами — сюжет. Рядом стоят персонажи, которые в нём играют. Пунктир между персонажами — соигроки: персонажи, которых связывает общая история. Линия слева связывает маркеры, которые зависят друг от друга или находятся поблизости: например, сюжет, идущий на Феноме, и сам Феном.',
   },
   {
-    prepare: async h => { await h.showSections(); await h.openPlot(); },
+    prepare: async h => { await h.showPlanshet(); await h.openPlot(); },
     target: () => topCard('.node-recruit') || topCard('.story-title'),
     optional: true,
     title: 'Окно сюжета',
     text: 'Тап по маркеру открывает его описание. Плашка <b>«Набор открыт»</b> — кого сейчас ищут.',
   },
   {
-    prepare: async h => { await h.showSections(); await h.openPlot(); },
+    prepare: async h => { await h.showPlanshet(); await h.openPlot(); },
     target: () => topCard('.node-dock'),
     optional: true,
     title: 'Панель окна',
@@ -116,7 +116,7 @@ const STEPS = [
     prepare: async h => { closeWindows(); await h.showMap(); },
     target: () => document.getElementById('controls'),
     title: 'Переходы',
-    text: '<b>Феном</b> — окно корабля-города. Рядом — переключатель: <b>Ноды</b> (планшет и граф связей), <b>Карта</b>, <b>Графика</b>. Статьи о мире — в библиотеке планшета.<br>🏷️ — меньше подписей (включена сразу, так карта быстрее): видны только бирюзовые системы, на которые можно нажать и перейти в саму систему. Выключи — и при приближении появятся названия всех систем.',
+    text: '<b>Феном</b> — схема корабля-города. Рядом — переключатель: <b>Ноды</b> (планшет и граф связей), <b>Карта</b>, <b>Графика</b>. Статьи о мире — в библиотеке планшета.<br>🏷️ — меньше подписей (включена сразу, так карта быстрее): видны только бирюзовые системы, на которые можно нажать и перейти в саму систему. Выключи — и при приближении появятся названия всех систем.',
   },
   {kind: 'finish'},
 ];

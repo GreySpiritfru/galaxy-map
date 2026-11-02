@@ -5,8 +5,8 @@
    поверх статьи. Используется отовсюду: map.js (маркеры), system-view.js
    (лор системы), articles.js (статьи-справочники), onboarding.js.
    ============================================================ */
-import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=217';
-import { frameHtml } from './net.js?v=217';
+import { renderMirror, scrollToAnchor, anchorOf } from './reader.js?v=219';
+import { frameHtml } from './net.js?v=219';
 
 /* ⚠️ Кавычки экранируются тоже: результат подставляется не только в текст, но и
    в атрибуты (src="…" анкеты, title="…" с именем, value="…" в редакторе), а
@@ -137,9 +137,8 @@ export function isArticleOpen() {
   return modalBackdrop.classList.contains('open');
 }
 
-// Пристыкована ли к модалу именно эта конкретная панель — нужно articles.js,
-// чтобы при переходе между статьями-справочниками через #refToolbar просто
-// подменять iframe, а не переоткрывать модал (без лишней анимации заново).
+// Пристыкована ли к модалу именно эта конкретная панель — нужно system-view.js
+// (статья системы поверх её карты; до 02.11.2026 — и панели справочника).
 export function isDockedWith(toolbarEl) {
   return isArticleOpen() && dockedToolbar && dockedToolbar.el === toolbarEl;
 }

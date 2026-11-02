@@ -84,7 +84,7 @@ html, body {
    (Firefox на телефоне рисует SVG на процессоре) — есть 🏷️. Раньше
    `.panning text:not(.map-label-major)` стоял здесь же, замер тогда был
    28 мс на кадр с подписями против 14.4 без. */
-.svg-widget svg.labels-minimal text:not(.map-label-major):not(.section-label):not(.section-title) {
+.svg-widget svg.labels-minimal text:not(.map-label-major) {
   display: none;
 }
 
@@ -850,6 +850,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 /* Общий фон: капсулы панели и круглые инструменты. */
 .dock-side,
 .dock-modes,
+.dock-planshet,
 .dock-round {
   /* Полупрозрачно, но БЕЗ размытия (v=185, замер на телефоне игрока): панель
      стоит поверх движущейся карты, и backdrop-filter заново размывал её на
@@ -946,6 +947,98 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   background: none;
 }
 .dock-modes .dock-item.active { color: #AFEEEE; }
+
+/* ===== Панель в «Нодах» (02.11.2026, v=219; .map-dock.nodes ставит updateViewModeUi) =====
+   Капсула режимов сжимается вправо до одной кнопки — той карты, с которой пришли (.return); «Феном» —
+   кружок без подписи; слева выезжает планшет (#dockPlanshet). Всё переходами CSS на одних и тех же
+   кнопках: flex-grow и max-width анимируются, раскладка пересчитывается сама. */
+.dock-planshet {
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 54px;
+  max-width: 0;
+  margin-right: -8px;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 20px;
+  overflow: hidden;
+  opacity: 0;
+  transition: flex-grow 0.34s cubic-bezier(0.2, 0.9, 0.25, 1), max-width 0.34s cubic-bezier(0.2, 0.9, 0.25, 1),
+    margin 0.34s ease, padding 0.34s ease, opacity 0.22s ease;
+}
+.map-dock.nodes .dock-planshet { flex-grow: 1; max-width: 640px; margin-right: 0; padding: 4px; opacity: 1; }
+.map-dock.nodes .dock-tools { display: none; }
+#gotoPhenom .dock-label { max-width: 60px; transition: max-width 0.3s ease, opacity 0.2s ease; }
+.map-dock.nodes #gotoPhenom { padding: 0 14px; }
+.map-dock.nodes #gotoPhenom .dock-label { max-width: 0; opacity: 0; }
+.map-dock.nodes #gotoPhenom .dock-icon,
+.map-dock.nodes #gotoPhenom .corner-node-icon { width: 30px; height: 30px; }
+.dock-modes { transition: flex-grow 0.34s cubic-bezier(0.2, 0.9, 0.25, 1); }
+.dock-modes .dock-item {
+  max-width: 120px;
+  transition: color 0.2s ease, max-width 0.34s ease, padding 0.34s ease, opacity 0.2s ease, flex-grow 0.34s ease;
+}
+.map-dock.nodes .dock-modes { flex-grow: 0; }
+.map-dock.nodes .dock-modes .dock-item:not(.return) { flex-grow: 0; max-width: 0; padding: 0; opacity: 0; pointer-events: none; }
+.map-dock.nodes .dock-modes .dock-item.return { flex: 0 0 auto; padding: 0 10px; color: rgba(255,255,255,0.8); }
+.map-dock.nodes .view-lens { opacity: 0; }
+/* «Феном ▴» — знак приложения (Tektur, как заголовки планшета) и вход в шторку разделов. */
+.dock-brand {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 12px;
+  border-radius: 16px;
+  background: none;
+  color: #e6e6ee;
+  position: relative;
+}
+.dock-brand-name {
+  font-family: 'Tektur', system-ui, sans-serif;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+.map-dock .dock-brand .dock-chev { width: 16px; height: 16px; color: rgba(255,255,255,0.6); transition: transform 0.2s ease; }
+.dock-brand[aria-expanded="true"] { background: rgba(175,238,238,0.12); }
+.dock-brand[aria-expanded="true"] .dock-chev { transform: rotate(180deg); }
+/* Фильтр по сюжету включён — точка у надписи. */
+.dock-brand.filtered::after {
+  content: '';
+  position: absolute;
+  top: 9px;
+  left: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #AFEEEE;
+}
+.dock-tool {
+  flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: none;
+  color: rgba(255,255,255,0.72);
+}
+.dock-tool.active { color: #AFEEEE; background: rgba(175,238,238,0.12); }
+/* ▦ показывает, КУДА ведёт: из планшета — значок графа, из графа — значок планшета. */
+#sortToggle .to-planshet,
+#sortToggle.graph-on .to-graph { display: none; }
+#sortToggle.graph-on .to-planshet { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .dock-planshet, .dock-modes, .dock-modes .dock-item, #gotoPhenom .dock-label { transition: none; }
+}
 /* Шире телефона — разделы своей ширины, а не растянутые. */
 @media (min-width: 601px) {
   .dock-modes { flex: 0 0 auto; }
@@ -1324,13 +1417,9 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 }
 .lore-toolbar.compact::-webkit-scrollbar { display: none; }
 
-/* #refToolbar — панель перекрёстной навигации между статьями-справочниками.
-   Сама по себе никогда не отображается: существует только чтобы её
-   пристыковать в #modalCard (см. openRefArticle в JS), как и .system-toolbar/
-   .phenom-toolbar — тем же общим механизмом (.lore-toolbar.compact).
-
-   .tabbar — общий стиль таб-бара Telegram (скрин-референс от пользователя),
-   используется и здесь, и в .system-toolbar (вид системы): кнопки НЕ
+/* .tabbar — общий стиль таб-бара Telegram (скрин-референс от пользователя),
+   используется в .system-toolbar (вид системы; до 02.11.2026 — и в панели
+   справочника #refToolbar, убрана вместе с кнопками «Справочник»): кнопки НЕ
    обособлены каждая своим фоном/рамкой/скруглением, а стоят вплотную друг к
    другу, как единое целое — просто иконка + мелкая подпись под ней,
    выделяется только цветом активная (.tabbar-btn.active). Кнопки
@@ -1339,13 +1428,12 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
    горизонтального скролла, поэтому overflow-x у .lore-toolbar.compact тут
    просто не срабатывает (safety net на случай, если кнопок станет ощутимо
    больше). */
-.ref-toolbar { display: none; }
 .tabbar .toolbar-close-btn {
   position: relative;
   background: none;
   border-radius: 0;
-  /* ⚠️ Ширину НЕ увеличивать: в #refToolbar на 375px подпись «Галактика»
-     упирается в свою ячейку, и уже 36px обрезали её до «Галакти…». */
+  /* ⚠️ Ширину НЕ увеличивать: в панели справочника (5 кнопок, до 02.11.2026) на
+     375px подпись «Галактика» упиралась в ячейку, 36px обрезали её до «Галакти…». */
   width: 30px;
 }
 /* Черта справа от ✕/↩ (игрок, 15.09.2026): без видимой границы палец
@@ -2603,57 +2691,6 @@ svg.nodes-mode.far-links .map-thread.far { display: inline; }
 svg.nodes-mode.far-links .map-thread.nodes-only,
 svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 
-/* Ноды по разделам (25.09.2026, js/sections.js). Рамки и подписи видны только
-   ПОСЛЕ перелёта (.sections-shown) — стоят на конечных местах, во время
-   перелёта маркеры ещё не там. Нити в разделах — только союзы внутри группы
-   (.section-keep); прячем их с начала перелёта (.sections-mode), иначе
-   нити к родителю тянулись бы поперёк всех разделов. */
-.sections-layer { display: none; pointer-events: none; }
-.svg-widget svg.nodes-mode.sections-shown .sections-layer { display: inline; }
-.svg-widget svg.nodes-mode.sections-mode .map-thread:not(.section-keep) { display: none; }
-/* Рамка раздела: заливка — отдельный rect, обводка — путь с разрывом под
-   заголовком (заголовок стоит в верхней линии, v=153). */
-.section-frame-fill { fill: rgba(255,255,255,0.03); }
-.section-frame-fill.is-gold { fill: rgba(255,215,106,0.05); }
-.section-frame-fill.is-dim { fill: rgba(255,255,255,0.02); }
-.section-frame {
-  fill: none;
-  stroke: rgba(175,238,238,0.28);
-  stroke-width: 0.22;
-}
-.section-frame.is-gold { stroke: rgba(255,215,106,0.55); }
-.section-frame.is-dim { stroke: rgba(255,255,255,0.16); }
-.section-title {
-  fill: #AFEEEE;
-  font-weight: 700;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-}
-.section-title.is-gold { fill: #ffd76a; }
-.section-title.is-dim { fill: rgba(255,255,255,0.5); }
-.section-group {
-  fill: rgba(255,255,255,0.035);
-  stroke: rgba(255,255,255,0.08);
-  stroke-width: 0.15;
-}
-.section-label {
-  fill: rgba(255,255,255,0.82);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-}
-.section-label.is-dim { fill: rgba(255,255,255,0.45); }
-/* Скобки связей между точками слева от разделов (v=151): семья «родитель +
-   дети-точки» — сплошная, союз двух точек — золотой пунктир, ● — родитель. */
-.section-bracket {
-  stroke: rgba(175,238,238,0.6);
-  stroke-width: 0.28;
-  stroke-linecap: round;
-  fill: none;
-}
-.section-bracket.is-link {
-  stroke: rgba(255,215,106,0.6);
-  stroke-dasharray: 0.7 0.7;
-}
-.section-bracket-dot { fill: #AFEEEE; }
-
 /* Уровень детализации карты (24.09.2026, DETAIL_WIDTH в js/map.js): персонажи
    и нити к ним появляются только на кадре, где их уже видно — на общем виде
    это 3-пиксельные точки, которые нельзя ни разглядеть, ни нажать. Вместо них
@@ -3708,6 +3745,8 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
    Ноды → ▦: страница planshet/ во фрейме над картой, от верха (под кнопками Telegram) до
    низа экрана; панель карты (z 20) плавает поверх, отступ под неё — внутри страницы
    (--dock-pad). Своя прокрутка внутри фрейма. Окна записей (z 200+) — поверх него. */
+/* С v=219 планшет не во фрейме: #planshet сам прокручивается (у карты html/body без прокрутки),
+   его стили — planshet/planshet.css (все внутри #planshet). */
 .planshet-surface {
   position: absolute;
   left: 0;
@@ -3716,6 +3755,15 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   bottom: 0;
   z-index: 15;
   background: #0b0b12;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 .planshet-surface[hidden] { display: none; }
-.planshet-surface iframe { display: block; width: 100%; height: 100%; border: 0; background: #0b0b12; }
+/* Своя карточка планшета («Эпохи Фенома») — на весь экран, со своей плашкой внизу; набор в поиске —
+   клавиатура: панель карты в это время не нужна. */
+body.planshet-sheet .map-dock,
+body.planshet-typing .map-dock { visibility: hidden; }
+/* Под планшетом карту не рисуем (он закрывает экран целиком): узлы там стоят картой, камера не
+   двигается (js/map.js, «Режим Ноды»). visibility, а не display — размеры SVG для камеры остаются. */
+body.planshet-on .svg-widget > svg { visibility: hidden; }

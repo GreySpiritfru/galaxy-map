@@ -1,6 +1,6 @@
-import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=1';
-import {inChip} from './filters.js?v=1';
-import {newsNow,elTile,zones,artOf,bg} from './start.js?v=1';
+import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=2';
+import {inChip} from './filters.js?v=2';
+import {newsNow,elTile,zones,artOf,bg} from './start.js?v=2';
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.7,.2,1)';
 // Выдвинуть/задвинуть: высота коробки плавно идёт от старого содержимого к новому.
@@ -245,21 +245,26 @@ function issue(kind, state, open, opts = {}) {
   }
   return out;
 }
-// «Всё» — вся информация на одной странице.
+// Плитки разделов: на «Всё» — первым блоком ленты, и те же — в шторке «Феном ▴» панели «Нод»
+// (js/planshet.js). Арт — у событий, статей и Фенома; у остальных — лица записей (как в V3).
 const plur = (n, a, b, c) => `${n} ${plural(n, a, b, c)}`;
-function home(state, open, info, toggle) {
+export function sectionTiles(state, onPick) {
+  const info = modeInfo(state);
   const pics = rs => el('span', {class: 't-pics'}, rs.slice(0, 4).map(r => img(r.image, r.title)));
   const sub = {news: n => plur(n, 'событие', 'события', 'событий'), article: n => plur(n, 'статья', 'статьи', 'статей'),
     story: n => plur(n, 'сюжет', 'сюжета', 'сюжетов'), place: n => plur(n, 'маркер', 'маркера', 'маркеров'),
     building: n => plur(n, 'здание', 'здания', 'зданий'), character: n => plur(n, 'персонаж', 'персонажа', 'персонажей')};
-  // Арт — у событий, статей и Фенома; у остальных — лица записей (как в V3).
   const tile = ([k, label]) => {
     const art = ['news', 'article', 'building'].includes(k) && info[k].art;
-    return el('button', {class: `tile${art ? ' bg' : ''}`, style: art ? bg(art) : null, onclick: () => toggle(k)},
+    return el('button', {class: `tile${art ? ' bg' : ''}`, style: art ? bg(art) : null, 'aria-pressed': String(picked.has(k)), onclick: () => onPick(k)},
       art ? null : pics(info[k].items || []), el('span', {class: 't-title'}, label), el('span', {class: 't-sub'}, sub[k](info[k].count)));
   };
+  return el('nav', {class: 'tiles', 'aria-label': 'Разделы'}, SECTIONS.map(tile));
+}
+// «Всё» — вся информация на одной странице.
+function home(state, open, toggle) {
   return [
-    el('nav', {class: 'tiles', 'aria-label': 'Разделы'}, SECTIONS.map(tile)),
+    sectionTiles(state, toggle),
     newsNow(state, open), epochLine(open),
     issue('story', state, open, {home: true}),
     homeLibrary(state, open),
@@ -285,46 +290,40 @@ function homeLibrary(state, open) {
     }, open)));
 }
 
-// Разделы N5. «Всё» — это когда ни один не включён (в строке кнопки «Всё» нет; в фильтре у поиска — есть).
-const SECTIONS = [['news', 'События'], ['article', 'Статьи и лор'], ['story', 'Сюжеты'], ['place', 'Маркеры'], ['building', 'Феном'], ['character', 'Персонажи']];
+// Разделы N5. «Всё» — это когда ни один не включён. С 02.11.2026 (v=219) строки мини-плиток над лентой нет:
+// разделы — плитками на «Всё» и в шторке «Феном ▴» панели «Нод»; в разделе сверху — «‹ Всё» и его название.
+export const SECTIONS = [['news', 'События'], ['article', 'Статьи и лор'], ['story', 'Сюжеты'], ['place', 'Маркеры'], ['building', 'Феном'], ['character', 'Персонажи']];
 let built = null, picked = new Set(), lastKind = 'all', ctx = null;
 // Плитка — единый переключатель: открывает только свой раздел; повторное нажатие открытой — назад на «Всё».
 // Накопление нескольких разделов пробовали — «очень много тыкать» (владелец 01.11).
-function toggle(k) {
-  picked = new Set(picked.has(k) ? [] : [k]);
+export function toggleSection(k) {
+  picked = new Set(picked.has(k) || k === 'all' ? [] : [k]);
   lastKind = picked.size === 1 ? [...picked][0] : 'all';
   if (ctx.state.kind !== lastKind) ctx.state.setFilter(ctx.state.chip, lastKind);
   else renderMain(ctx.main, ctx.state, ctx.open);
 }
+export const currentSection = () => picked.size === 1 ? [...picked][0] : 'all';
+const scroller = () => ctx.main.closest('#planshet') || document.scrollingElement;
 export function renderMain(main, state, open) {
   ctx = {main, state, open};
-  // Раздел выбран в фильтре у поиска — включён ровно он.
+  // Раздел выбран в фильтре — включён ровно он.
   if (state.kind !== lastKind) { picked = new Set(state.kind === 'all' ? [] : [state.kind]); lastKind = state.kind; }
-  const info = modeInfo(state), isHome = !picked.size;
-  const tiles = SECTIONS.map(([k, label]) => [k, el('button', {class: 'mode', style: bg(info[k].art), 'aria-pressed': String(picked.has(k)), onclick: () => toggle(k)},
-    el('small', {}, String(info[k].count)), el('span', {}, label))]);
-  const bar = el('div', {class: `modes-bar${isHome ? ' floating' : ''}`}, el('nav', {class: 'modes', 'aria-label': 'Разделы'}, tiles.map(([, t]) => t)));
+  const isHome = !picked.size;
   const on = SECTIONS.filter(([k]) => picked.has(k));
-  const body = el('div', {class: 'issue'}, isHome ? home(state, open, info, toggle)
-    : on.map(([k, label]) => [on.length > 1 ? el('h2', {class: 'sec-title'}, label) : null, issue(k, state, open)]));
+  const label = on.map(([, l]) => l).join(', ');
+  // Первый заголовок выпуска, повторяющий название раздела («Сюжеты», «Статьи и лор»), — в строку «‹ Всё».
+  const parts = isHome ? [] : on.flatMap(([k]) => [issue(k, state, open)].flat(Infinity).filter(Boolean));
+  if (parts[0]?.classList?.contains('issue-head') && parts[0].querySelector('h2')?.textContent === label) parts.shift();
+  const body = el('div', {class: 'issue'}, isHome ? home(state, open, toggleSection)
+    : [el('div', {class: 'sec-bar'}, el('button', {class: 'sec-back', onclick: () => toggleSection('all')}, '‹ Всё'), el('h2', {}, label)), parts]);
   const key = [...picked].sort().join();
   const changed = built && built.key !== key;
-  built = {chip: state.chip, key, tiles, body, bar};
-  main.replaceChildren(bar, body,
+  built = {chip: state.chip, key, body};
+  main.replaceChildren(body,
     el('p', {class: 'row-sub', style: 'margin:18px 0 8px'}, 'Впервые здесь? ', el('a', {href: BASE + 'index.html?open=tour',
-      onclick(e) { const map = window.parent !== window && window.parent.__mapStartTour; if (map) { e.preventDefault(); map(); } }}, 'Короткая экскурсия по карте')));
-  built.big = body.querySelector('.tiles');
-  onScroll();
+      onclick(e) { if (window.__mapStartTour) { e.preventDefault(); window.__mapStartTour(); } }}, 'Короткая экскурсия по карте')));
   if (changed) {
-    scrollTo(0, 0);
+    scroller().scrollTo(0, 0);
     if (!still) body.animate([{opacity: 0, transform: 'translateY(8px)'}, {opacity: 1, transform: 'none'}], {duration: 220, easing: EASE});
   }
 }
-
-function onScroll() {
- const top = document.querySelector('.top');
- if (!built || !top) return;
- if (built.big) built.bar.classList.toggle('show', built.big.getBoundingClientRect().bottom < top.offsetHeight);
- else built.bar.classList.toggle('stuck', scrollY > 0 && built.bar.getBoundingClientRect().top <= top.offsetHeight + .5);
-}
-addEventListener('scroll', onScroll, {passive:true});
