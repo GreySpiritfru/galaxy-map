@@ -1,0 +1,61 @@
+[
+ {
+  "js": "const b=document.querySelector('.view-switch-btn.return')||document.querySelector('[data-view=map]'); b.click();",
+  "wait": 2.5
+ },
+ {
+  "js": "const b=document.querySelector('#planshetBrand'),c=b.querySelector('.dock-chev').getBoundingClientRect(),r=b.getBoundingClientRect(); return {mode:document.querySelector('.view-switch-btn.active')?.dataset.view, brand:[r.left,r.right], chev:[c.left,c.right]};",
+  "wait": 0.5,
+  "shot": "01-map"
+ },
+ {
+  "js": "document.querySelector('#planshetBrand').click();",
+  "wait": 1.5,
+  "shot": "02-menu-over-map"
+ },
+ {
+  "js": "const p=document.querySelector('#planshet'); return {hidden:p.hidden, over:p.classList.contains('over-map'), menu:!document.querySelector('#planshetMenu').hidden, mode:document.querySelector('.view-switch-btn.active')?.dataset.view, svgVis:getComputedStyle(document.querySelector('.svg-widget > svg')).visibility};",
+  "wait": 0.2
+ },
+ {
+  "js": "document.querySelector('#planshet').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true})); await new Promise(r=>setTimeout(r,300)); return {hidden:document.querySelector('#planshet').hidden};",
+  "wait": 0.5
+ },
+ {
+  "js": "document.querySelector('#planshetSearch').click(); await new Promise(r=>setTimeout(r,800)); const i=document.querySelector('#planshet .p-search-field input'); i.value='феном'; i.dispatchEvent(new Event('input')); i.blur();",
+  "wait": 1.2,
+  "shot": "03-search-over-map"
+ },
+ {
+  "js": "const row=document.querySelector('#planshet .results .rows button, #planshet .results .rows a, #planshet .results .row'); row.click();",
+  "wait": 2,
+  "shot": "04-record-from-search"
+ },
+ {
+  "js": "document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})); await new Promise(r=>setTimeout(r,800)); return {hidden:document.querySelector('#planshet').hidden, search:!document.querySelector('#planshet .p-search').hidden, mode:document.querySelector('.view-switch-btn.active')?.dataset.view};",
+  "wait": 0.5,
+  "shot": "05-back-to-results"
+ },
+ {
+  "js": "document.querySelector('#planshetSearch').click(); await new Promise(r=>setTimeout(r,500)); return {hidden:document.querySelector('#planshet').hidden, svgVis:getComputedStyle(document.querySelector('.svg-widget > svg')).visibility};",
+  "wait": 0.5
+ },
+ {
+  "js": "document.querySelector('#planshetBrand').click(); await new Promise(r=>setTimeout(r,800)); [...document.querySelectorAll('#planshet .p-menu-section')].find(b=>b.textContent.includes('Персонажи')).click();",
+  "wait": 2.5,
+  "shot": "06-section-to-nodes"
+ },
+ {
+  "js": "return {mode:document.querySelector('.view-switch-btn.active')?.dataset.view, hidden:document.querySelector('#planshet').hidden, over:document.querySelector('#planshet').classList.contains('over-map'), h:document.querySelector('#planshet .sec-bar h2')?.textContent};",
+  "wait": 0.2
+ },
+ {
+  "js": "document.querySelector('.view-switch-btn.return').click(); await new Promise(r=>setTimeout(r,2000)); document.querySelector('#planshetBrand').click(); await new Promise(r=>setTimeout(r,800)); document.querySelector('#planshet .p-menu-ship').click();",
+  "wait": 3,
+  "shot": "07-ship"
+ },
+ {
+  "js": "await new Promise(r=>setTimeout(r,1500)); return {ship: [...document.querySelectorAll('.phenom-overlay')].map(o=>o.id+':'+o.className), hidden:document.querySelector('#planshet').hidden};",
+  "wait": 0.2
+ }
+]

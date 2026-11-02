@@ -1,7 +1,7 @@
-import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=9';
-import {inChip} from './filters.js?v=9';
-import {createHistory} from './history.js?v=9';
-import {sectionMenu,toggleSection,currentSection} from './home.js?v=9';
+import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=10';
+import {inChip} from './filters.js?v=10';
+import {createHistory} from './history.js?v=10';
+import {sectionMenu,toggleSection,currentSection} from './home.js?v=10';
 const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 /* Планшет в карте (с 02.11.2026, v=219 — без фрейма, прямо в #planshet). Шапки нет (владелец: верх
@@ -9,8 +9,10 @@ const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
    (js/planshet.js). Поиск всплывает сверху по кнопке 🔍; разделы и фильтр по сюжету — шторка «Феном ▴»
    над панелью. «Назад» (Esc, Telegram, браузер) ведёт карта: js/navigation.js зовёт depth()/back().
    onChange — сообщить карте, что поменялось (подсветка кнопок панели, глубина «назад»).
-   С v=222 своей карточки записи нет (владелец): всё — окнами карты, новость — в ленте. */
-export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour}) {
+   С v=222 своей карточки записи нет (владелец): всё — окнами карты, новость — в ленте.
+   С v=227 шторка и поиск открываются и над картой (js/planshet.js, .over-map): onShip/shipIcon — первый пункт
+   шторки «Схема корабля Феном»; onLeave — перейти в «Ноды», когда показать надо ленту (раздел, новость). */
+export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour, onShip, shipIcon, onLeave = () => {}}) {
   const state = {chip: 'all', stack: [], kind: 'all', q: ''};
   // Обычное текстовое поле: у type="search" Android рисует свой ✕ рядом с нашим (было два крестика).
   const input = el('input', {type: 'text', inputmode: 'search', enterkeyhint: 'search', placeholder: 'Поиск по Феному', 'aria-label': 'Поиск', autocomplete: 'off'});
@@ -65,18 +67,18 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
   const open=(id,anchor)=>{
     closeMenu();
     remember(id);
-    Promise.resolve(window.__mapOpenRecord?.(id,anchor||'')).then(ok=>{if(!ok)ownOpen(id);});
+    Promise.resolve(window.__mapOpenRecord?.(id,anchor||'')).then(ok=>{if(!ok)return Promise.resolve(onLeave()).then(()=>ownOpen(id));});
   };
   /* ---------- шторка «Феном ▴»: разделы, сюжет, помощь ---------- */
   function renderMenu() {
     const pick = k => {
       closeMenu();
-      if (currentSection() === k) return;
-      toggleSection(k);
-      root.scrollTo(0, 0);
+      if (currentSection() !== k) { toggleSection(k); root.scrollTo(0, 0); }
+      onLeave();
     };
     const chip = (id, label) => el('button', {'aria-pressed': String(state.chip === id), onclick() { setFilter(id, state.kind); renderMenu(); }}, label);
     menu.replaceChildren(
+      onShip ? shipButton() : null,
       el('div', {class: 'p-menu-head'}, el('h2', {}, 'Разделы'),
         el('button', {class: 'p-menu-home', 'aria-pressed': String(currentSection() === 'all'), onclick: () => pick('all')}, 'На главную')),
       sectionMenu(state, pick),
@@ -84,6 +86,13 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
       el('div', {class: 'p-menu-links'},
         onHelp ? el('button', {onclick() { closeMenu(); onHelp(); }}, '? Как пользоваться картой') : null,
         onTour ? el('button', {onclick() { closeMenu(); onTour(); }}, 'Короткая экскурсия') : null));
+  }
+  // Схема корабля — первым (до v=227 — своя кнопка на панели, теперь путь к ней через шторку).
+  function shipButton() {
+    const icon = el('span', {class: 'p-ship-icon', 'aria-hidden': 'true'}, '🚀');
+    shipIcon?.().then(m => { if (m && icon.isConnected) { m.setAttribute('aria-hidden', 'true'); icon.replaceChildren(m); } });
+    return el('button', {class: 'p-menu-ship', onclick() { closeMenu(); onShip(); }}, icon,
+      el('span', {class: 'p-ship-text'}, el('b', {}, 'Схема корабля Феном'), el('small', {}, 'Районы, здания и кто где')));
   }
   const isMenuOpen = () => !menu.hidden;
   /* Фокус (v=225, разбор Codex): открылась шторка — фокус на неё (клавиатура, TalkBack/VoiceOver), закрылась —

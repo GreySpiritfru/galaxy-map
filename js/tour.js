@@ -18,13 +18,13 @@
    ⚠️ Тексты — черновик из инфоканала (введение, «Что такое Феном», анкета),
    игрок обещал поправить. Править прямо здесь, в INTRO_TABS и STEPS.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=226';
-import { closeStory, isStoryOpen } from './stories.js?v=226';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=226';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=226';
-import { closeSystem, isSystemOpen } from './system-view.js?v=226';
-import { quoteHtml, initQuotes } from './quotes.js?v=226';
-import { JOIN_LINKS } from './node-window.js?v=226';
+import { closeModal, isArticleOpen } from './modal.js?v=227';
+import { closeStory, isStoryOpen } from './stories.js?v=227';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=227';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=227';
+import { closeSystem, isSystemOpen } from './system-view.js?v=227';
+import { quoteHtml, initQuotes } from './quotes.js?v=227';
+import { JOIN_LINKS } from './node-window.js?v=227';
 
 const TOUR_SEEN_KEY = 'galaxyMapTourSeen';
 const LINKS = JOIN_LINKS;
@@ -88,7 +88,7 @@ const STEPS = [
     // Планшет целиком (02.11.2026: на месте каталога «по разделам»).
     target: h => h.planshetLayer(),
     title: 'Планшет',
-    text: 'Это режим «Ноды» — планшет: что сейчас происходит, сюжеты (<b>где набирают игроков</b> — с золотым ярлыком), маркеры, Феном, персонажи и библиотека статей. Плитки открывают раздел. Внизу: надпись <b>Феном</b> — разделы и выбор сюжета, 🔍 — поиск, ▦ — граф связей, справа — обратно на карту.',
+    text: 'В «Нодах» читай события, сюжеты, маркеры, районы и здания, персонажей и библиотеку статей. Золотым ярлыком отмечены сюжеты, <b>куда набирают игроков</b>. Открывай разделы плитками или через <b>Феном ▴</b> внизу. Там же выбери сюжет. Через 🔍 ищи по Феному, кнопкой ▦ переключай планшет и граф связей. Справа вернёшься на карту.',
   },
   {
     prepare: async h => { closeWindows(); await h.showGraph(); },
@@ -116,7 +116,7 @@ const STEPS = [
     prepare: async h => { closeWindows(); await h.showMap(); },
     target: () => document.getElementById('controls'),
     title: 'Переходы',
-    text: '<b>Феном</b> — схема корабля-города. Рядом — переключатель: <b>Ноды</b> (планшет и граф связей), <b>Карта</b>, <b>Графика</b>. Статьи о мире — в библиотеке планшета.<br>🏷️ — меньше подписей (включена сразу, так карта быстрее): видны только бирюзовые системы, на которые можно нажать и перейти в саму систему. Выключи — и при приближении появятся названия всех систем.',
+    text: 'Нажми <b>Феном ▴</b>: первым пунктом открой <b>«Схему корабля Феном»</b> или выбери ниже раздел, чтобы перейти в ноды. Через 🔍 ищи прямо на карте: открой запись и закрой её, чтобы вернуться к результатам. Справа переключай <b>Ноды</b>, <b>Карту</b> и <b>Графику</b>.<br>Кнопкой 🏷️ оставь меньше подписей (включено сразу, так карта быстрее). Бирюзовые системы можно открыть. Выключи кнопку, чтобы при приближении увидеть названия всех систем. В нодах на этом месте кнопкой ▦ переключай планшет и граф.',
   },
   {kind: 'finish'},
 ];
@@ -248,7 +248,7 @@ function renderCard(step, rect) {
     head = '<div class="tour-title">Хочешь играть?</div>';
     text = `
       <p>Выбери сюжет с плашкой <b>«Набор открыт»</b> или приходи со своей идеей персонажа — с анкетой поможем.</p>
-      <p>Обучение можно пройти ещё раз из «?» над панелью карты.</p>
+      <p>Чтобы пройти обучение ещё раз, открой «Феном ▴» внизу и выбери «Короткая экскурсия».</p>
       <div class="tour-links">
         <button type="button" class="tour-link" data-link="contacts">✉️ Связаться с нами</button>
         <button type="button" class="tour-link" data-link="form">📝 Шаблон анкеты</button>

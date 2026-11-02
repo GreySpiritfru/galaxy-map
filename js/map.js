@@ -1,25 +1,25 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=226';
-import { closeModal } from './modal.js?v=226';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=226';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=226';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=226';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=226';
-import { openCharacter, closeCharacter } from './characters.js?v=226';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=226';
-import { markerEl } from './node-window.js?v=226';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=226';
-import { hideSplash } from './splash.js?v=226';
-import { fetchT, showLoadError } from './net.js?v=226';
-import { noteRecord, setRestorer } from './navigation.js?v=226';
-import { buildRecords, resolveAddress } from './records.js?v=226';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=226';
-import { decodeAddress } from './address.js?v=226';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData } from './planshet.js?v=226';
-import { REF_ARTICLES } from './articles.js?v=226';
-import { LOCAL_ARTICLES } from './reader.js?v=226';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=227';
+import { closeModal } from './modal.js?v=227';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=227';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=227';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=227';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=227';
+import { openCharacter, closeCharacter } from './characters.js?v=227';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=227';
+import { markerEl } from './node-window.js?v=227';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=227';
+import { hideSplash } from './splash.js?v=227';
+import { fetchT, showLoadError } from './net.js?v=227';
+import { noteRecord, setRestorer } from './navigation.js?v=227';
+import { buildRecords, resolveAddress } from './records.js?v=227';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=227';
+import { decodeAddress } from './address.js?v=227';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData } from './planshet.js?v=227';
+import { REF_ARTICLES } from './articles.js?v=227';
+import { LOCAL_ARTICLES } from './reader.js?v=227';
 
 const SVG_PATH = 'map.svg';
 
@@ -181,7 +181,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=226').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=227').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -644,8 +644,8 @@ function finishMapPick(p) {
     svg.classList.toggle('labels-minimal', on);
     labelsToggle.classList.toggle('active', on);
   }
-  /* Жест, начатый на кнопках панели карты (Феном, Справочник, Ноды/Карта/
-     Графика, 🏷️/▦, ?), двигает карту (v=158, замечание игрока: «случайно зацепил —
+  /* Жест, начатый на кнопках панели карты («Феном ▴», 🔍, 🏷️/▦, Ноды/Карта/
+     Графика), двигает карту (v=158, замечание игрока: «случайно зацепил —
      и карта не двигается»). Пока палец не уехал на DRAG_SLOP_PX — это тап по
      кнопке; уехал — перетаскивание карты, а клик кнопки после отпускания
      гасится. В css у панели touch-action: none (иначе браузер забрал бы жест
@@ -2033,7 +2033,6 @@ function finishMapPick(p) {
      (js/sections.js, 25.09.2026) — удалена, её место занял планшет. */
   let nodesArrangement = 'planshet';   // 'planshet' | 'graph' — что показано в «Нодах»
   const sortToggle = document.getElementById('sortToggle');
-  const dockPlanshet = document.getElementById('dockPlanshet');
   // Показан ли граф: от него, а не от viewMode, зависят перелёт узлов, .nodes-mode и камера.
   const graphShown = () => viewMode === 'nodes' && nodesArrangement === 'graph';
 
@@ -2209,17 +2208,17 @@ function finishMapPick(p) {
        так же, как и в "Карте". */
     const onMapView = viewMode !== 'nodes';
     if (calibToggle) calibToggle.disabled = !onMapView;
-    // 🏷️ — инструмент карты; в «Нодах» круглых кнопок нет (css .map-dock.nodes).
+    /* Одна панель во всех режимах (v=227): третья кнопка — инструмент режима, 🏷️ на карте и в «Графике»,
+       ▦ в «Нодах». В «Нодах» капсула режимов сжимается до одной кнопки — той карты, с которой пришли
+       (.return). Анимация — переходами css. */
     labelsToggle.hidden = !onMapView;
-    /* Панель в «Нодах» (02.11.2026, v=219): капсула режимов сжимается до одной кнопки — той карты,
-       с которой пришли (.return), слева выезжает планшет (#dockPlanshet). Анимация — переходами css. */
+    if (sortToggle) sortToggle.hidden = onMapView;
     controlsEl.classList.toggle('nodes', !onMapView);
     viewSwitchBtns.forEach(b => {
       b.classList.toggle('return', !onMapView && b.dataset.view === mapModeBeforeNodes);
       // Свёрнутые кнопки капсулы (не видны) — и не в фокусе Tab, не для чтеца экрана (Codex, разбор 02.11).
       b.inert = !onMapView && b.dataset.view !== mapModeBeforeNodes;
     });
-    if (dockPlanshet) dockPlanshet.inert = onMapView;
     if (sortToggle) {
       // ▦ показывает, куда ведёт: из планшета — граф, из графа — планшет.
       sortToggle.classList.toggle('graph-on', nodesArrangement === 'graph');
@@ -2396,15 +2395,22 @@ function finishMapPick(p) {
     if (performance.now() < viewBusyUntil || viewMode !== 'nodes') return;
     setViewMode('nodes', false, null, nodesArrangement === 'planshet' ? 'graph' : 'planshet');
   });
-  /* «Феном ▴» — шторка разделов планшета, 🔍 — поиск сверху. Из графа — сначала обратно в планшет. */
+  /* «Феном ▴» — шторка (схема корабля, разделы, сюжет, помощь), 🔍 — поиск сверху. С v=227 — и на карте:
+     шторка и поиск планшета встают поверх карты (over в js/planshet.js), режим не меняется.
+     Из графа — сначала обратно в планшет (шторка там про ленту). */
   const toPlanshet = async () => {
-    if (viewMode === 'nodes' && nodesArrangement === 'planshet') return true;
+    if (viewMode !== 'nodes' || nodesArrangement === 'planshet') return true;
     if (performance.now() < viewBusyUntil) return false;
     await setViewMode('nodes', false, null, 'planshet');
     return true;
   };
   document.getElementById('planshetBrand')?.addEventListener('click', async () => { if (await toPlanshet()) togglePlanshetMenu(); });
   document.getElementById('planshetSearch')?.addEventListener('click', async () => { if (await toPlanshet()) openPlanshetSearch(); });
+  // Раздел, выбранный в шторке над картой, читается в «Нодах» (js/planshet.js зовёт отсюда).
+  window.__mapToPlanshet = () => {
+    if (viewMode === 'nodes' && nodesArrangement === 'planshet') return Promise.resolve();
+    return setViewMode('nodes', false, null, 'planshet');
+  };
 
   const MANIFEST_PATH = 'systems/manifest.json';
   /* systems/names.json — переименование подписей систем без нового экспорта
@@ -2903,7 +2909,8 @@ function finishMapPick(p) {
     });
   }
 
-  /* Кнопка «Феном» в панели ведёт в точку Феном — тем же перелётом
+  /* «Схема корабля Феном» (первый пункт шторки «Феном ▴»; до v=227 — кнопка «Феном» на панели) ведёт в
+     точку Феном — тем же перелётом
      камеры, что и тап по её маркеру (instant: false — карта тут видна).
      С 02.11.2026 (v=219, владелец: «некоторые игроки вообще не знали про
      схему») окно открывается сразу на схеме корабля — вкладке «Карта»;
@@ -2911,24 +2918,24 @@ function finishMapPick(p) {
      графа, а не вписаны числами, чтобы не разъехаться при переносе маркера;
      нет узла "phenome" — молча ничего (ловится глазами, как рассинхрон
      манифеста). */
-  document.getElementById('gotoPhenom').addEventListener('click', async () => {
+  window.__mapOpenShip = async () => {
     const graph = await graphReady;
     const phenom = graph.get('phenome');
-    if (phenom) goToNode(phenom, false, {submap: true});
-  });
-
-  graphReady.then(graph => {
-    /* Значок кнопки в углу — маркер Фенома, а не 🚀: это переход к точке, а
-       переходы рисуются формой маркера (правило 24.09.2026). Ставится отсюда:
-       картинка и форма есть только в графе. Не доехал граф — остаётся 🚀. */
-    const phenom = graph.get('phenome');
-    const cornerIcon = document.querySelector('#gotoPhenom > [aria-hidden]');
-    if (phenom && cornerIcon) {
-      const m = markerEl(tabIconOf(phenom, {}), 'corner-node-icon');
-      m.setAttribute('aria-hidden', 'true');
-      cornerIcon.replaceWith(m);
-    }
-  });
+    if (!phenom) return;
+    /* ⚠️ Шторка только что закрылась — navigation.js отматывает её запись в истории (history.go), и этот popstate
+       гасит отложенное открытие окна после перелёта (cancelPendingOpen выше): камера долетала, окна не было.
+       Ждём этот шаг (или 400 мс, если записи не было). */
+    await new Promise(done => {
+      const t = setTimeout(done, 400);
+      window.addEventListener('popstate', () => { clearTimeout(t); setTimeout(done, 0); }, {once: true});
+    });
+    goToNode(phenom, false, {submap: true});
+  };
+  // Значок пункта — маркер Фенома (переходы рисуются формой маркера, правило 24.09.2026).
+  window.__mapShipIcon = async () => {
+    const phenom = (await graphReady).get('phenome');
+    return phenom ? markerEl(tabIconOf(phenom, {}), 'corner-node-icon') : null;
+  };
 
   /* --- П.3: клик по названию системы (реальные <text> из экспорта StellarMaps) ---
      Ждём document.fonts.ready: в карте зашит кастомный шрифт (Orbitron), и если

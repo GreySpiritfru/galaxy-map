@@ -635,6 +635,14 @@
   max-width: 560px; margin: 0 auto; max-height: calc(100% - var(--dock-top, 80px) - var(--safe-top, 0px) - 24px); overflow-y: auto;
   padding: 10px; border-radius: 16px; background: #12121b; border: 1px solid rgba(175,238,238,.22); box-shadow: 0 8px 32px #0009; }
 #planshet .p-menu[hidden] { display: none; }
+/* Первый пункт шторки — схема корабля (v=227; до этого своя кнопка «Феном» на панели карты). */
+#planshet .p-menu-ship { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 10px; margin-bottom: 8px;
+  border-radius: 12px; background: rgba(175,238,238,0.08); box-shadow: inset 0 0 0 1px rgba(175,238,238,0.22); text-align: left; }
+#planshet .p-ship-icon { flex: none; display: grid; place-items: center; width: 36px; height: 36px; font-size: 22px; }
+#planshet .p-ship-icon .corner-node-icon { width: 32px; height: 32px; font-size: 13px; }
+#planshet .p-ship-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+#planshet .p-ship-text b { color: var(--text); font-size: 16px; }
+#planshet .p-ship-text small { color: var(--muted); font-size: 13px; }
 #planshet .p-menu-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 #planshet .p-menu-head h2 { font-size: 20px; }
 /* Цели нажатия в шторке — 48 px по высоте (автопроверка tools/ui_check.py, v=222). */

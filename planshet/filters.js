@@ -1,6 +1,6 @@
-import {C, pickedStories, viewKind} from './common.js?v=9';
+import {C, pickedStories, viewKind} from './common.js?v=10';
 
-export const SECTIONS = [['news','События'],['article','Статьи и лор'],['story','Сюжеты'],['place','Маркеры'],['building','Феном'],['character','Персонажи']];
+export const SECTIONS = [['news','События'],['article','Статьи и лор'],['story','Сюжеты'],['place','Маркеры'],['building','Районы и здания'],['character','Персонажи']];
 export const MODES = [['all','Всё'], ...SECTIONS];
 export function inChip(r, chip) {
   if (chip === 'all') return true;

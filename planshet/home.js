@@ -1,6 +1,6 @@
-import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=9';
-import {inChip} from './filters.js?v=9';
-import {newsNow,elTile,zones,artOf,bg} from './start.js?v=9';
+import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=10';
+import {inChip} from './filters.js?v=10';
+import {newsNow,elTile,zones,artOf,bg} from './start.js?v=10';
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.7,.2,1)';
 // Выдвинуть/задвинуть: высота коробки плавно идёт от старого содержимого к новому.
@@ -298,7 +298,7 @@ function homeLibrary(state, open) {
 
 // Разделы N5. «Всё» — это когда ни один не включён. С 02.11.2026 (v=219) строки мини-плиток над лентой нет:
 // разделы — плитками на «Всё» и в шторке «Феном ▴» панели «Нод»; в разделе сверху — «‹ Всё» и его название.
-export const SECTIONS = [['news', 'События'], ['article', 'Статьи и лор'], ['story', 'Сюжеты'], ['place', 'Маркеры'], ['building', 'Феном'], ['character', 'Персонажи']];
+export const SECTIONS = [['news', 'События'], ['article', 'Статьи и лор'], ['story', 'Сюжеты'], ['place', 'Маркеры'], ['building', 'Районы и здания'], ['character', 'Персонажи']];
 let built = null, picked = new Set(), lastKind = 'all', ctx = null;
 // Плитка — единый переключатель: открывает только свой раздел; повторное нажатие открытой — назад на «Всё».
 // Накопление нескольких разделов пробовали — «очень много тыкать» (владелец 01.11).

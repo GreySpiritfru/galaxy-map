@@ -7,14 +7,19 @@
 
    Управление — в панели карты (index.html, #dockPlanshet): «Феном ▴» — шторка разделов, 🔍 — поиск
    сверху, ▦ — граф (map.js). Записи планшет открывает окнами карты: window.__mapOpenRecord (map.js).
+   С v=227 шторка и поиск — и на карте («над картой», over): #planshet показывается без ленты (класс
+   .over-map), шторка — над прозрачной подложкой (тап мимо — закрыть), поиск — своим экраном, как в «Нодах».
+   Закрыли и то и другое — поверхность снова прячется. Раздел из шторки и новость из поиска — в «Ноды».
    ============================================================ */
-import { loadMirrorDoc } from './reader.js?v=226';
+import { loadMirrorDoc } from './reader.js?v=227';
 
 const root = document.getElementById('planshet');
 const dock = document.getElementById('controls');
 // Версия модулей planshet/ — та же, что ?v= в их импортах и у planshet.css.
-const PV = 9;
+const PV = 10;
 let shell = null, loading = null;
+// nodesOn — планшет показан режимом «Ноды» (showPlanshet); over — открыт над картой шторкой или поиском.
+let nodesOn = false, over = false;
 
 /* Общие данные (v=226): карта отдаёт уже скачанные файлы (setPlanshetData из js/map.js, после реестра записей), копии
    статей — через общий кэш js/reader.js (loadMirrorDoc): статья, открытая в окне карты, и планшет качают её один
@@ -37,8 +42,20 @@ function fit() {
 window.addEventListener('resize', fit);
 if (dock && window.ResizeObserver) new ResizeObserver(fit).observe(dock);
 
+// Видна ли поверхность и чем: в «Нодах» — целиком; над картой — пока открыта шторка или поиск.
+function sync() {
+  const menuOpen = !!shell && shell.isMenuOpen(), searching = !!shell && shell.isSearchOpen();
+  if (over && !nodesOn && !menuOpen && !searching) over = false;
+  if (nodesOn) over = false;
+  root.hidden = !(nodesOn || over);
+  root.classList.toggle('over-map', over);
+  // Экран поиска закрывает карту целиком — её можно не рисовать (как под планшетом); шторка — нет.
+  document.body.classList.toggle('planshet-on', nodesOn || (over && searching));
+}
+
 // Что поменялось в планшете — кнопкам панели и «назад» карты.
 function changed() {
+  sync();
   const brand = document.getElementById('planshetBrand');
   if (brand && shell) {
     brand.setAttribute('aria-expanded', String(shell.isMenuOpen()));
@@ -67,6 +84,9 @@ function ensure() {
         onChange: changed,
         onHelp: () => document.getElementById('helpBtn')?.click(),
         onTour: () => window.__mapStartTour?.(),
+        onShip: () => window.__mapOpenShip?.(),
+        shipIcon: () => window.__mapShipIcon?.() || Promise.resolve(null),
+        onLeave: () => nodesOn ? null : window.__mapToPlanshet?.(),
       });
       changed();
       return shell;
@@ -77,21 +97,32 @@ function ensure() {
 
 export function showPlanshet(on) {
   if (!root) return;
+  nodesOn = !!on;
+  over = false;
   if (on) ensure();
   else if (shell) shell.closeMenu();
-  root.hidden = !on;
-  document.body.classList.toggle('planshet-on', !!on);
-  if (shell) changed(); else document.dispatchEvent(new Event('planshet-change'));
+  if (shell) changed(); else { sync(); document.dispatchEvent(new Event('planshet-change')); }
   fit();
 }
 
 export const isPlanshetShown = () => !!root && !root.hidden;
 export const planshetSurface = () => root;
 
-// Шторка «Феном ▴» и поиск — после загрузки данных (до неё разделам нечего показать).
-export async function togglePlanshetMenu() { (await ensure()); await shell.ready; shell.toggleMenu(); }
-// 🔍 в панели — открыть поиск и тем же нажатием закрыть (владелец 02.11).
-export async function openPlanshetSearch() { (await ensure()).toggleSearch(); }
+// Шторка «Феном ▴» и поиск — после загрузки данных (до неё разделам нечего показать). Не в «Нодах» — над картой.
+export async function togglePlanshetMenu() {
+  await ensure(); await shell.ready;
+  if (!nodesOn) over = true;
+  shell.toggleMenu();
+  changed();
+}
+/* 🔍 в панели — открыть поиск и тем же нажатием закрыть (владелец 02.11). Поиск, оставленный открытым в «Нодах»,
+   на карте не закрывается первым нажатием, а показывается (он и так «открыт», просто не был виден). */
+export async function openPlanshetSearch() {
+  const s = await ensure();
+  if (!nodesOn && !over) { over = true; if (s.isSearchOpen()) { changed(); return; } }
+  s.toggleSearch();
+  changed();
+}
 
 /* «Назад» карты (Esc, BackButton Telegram, браузер): шторка, своя карточка/новость, поиск. Окна карты
    лежат выше планшета — navigation.js спрашивает его последним. */
