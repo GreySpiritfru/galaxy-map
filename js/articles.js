@@ -5,8 +5,8 @@
    кнопки «Справочник» на карте — убраны: статьи в библиотеке планшета и в
    «Материалах» окон (перенос планшета, шаг 5).
    ============================================================ */
-import { setModalArticle, isArticleOpen, openIframeModal } from './modal.js?v=222';
-import { openRecord } from './open-record.js?v=222';
+import { setModalArticle, isArticleOpen, openIframeModal } from './modal.js?v=224';
+import { openRecord } from './open-record.js?v=224';
 
 export const REF_ARTICLES = {
   phenom: 'https://teletype.in/@greyspirit/4tRzyNaVfEQ#fvQz',

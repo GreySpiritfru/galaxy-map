@@ -11,7 +11,7 @@
 const root = document.getElementById('planshet');
 const dock = document.getElementById('controls');
 // Версия модулей planshet/ — та же, что ?v= в их импортах и у planshet.css.
-const PV = 5;
+const PV = 7;
 let shell = null, loading = null;
 
 /* Отступы под панель карты: --dock-top — от низа экрана до верха панели (шторка встаёт над ней),
@@ -77,7 +77,8 @@ export const planshetSurface = () => root;
 
 // Шторка «Феном ▴» и поиск — после загрузки данных (до неё разделам нечего показать).
 export async function togglePlanshetMenu() { (await ensure()); await shell.ready; shell.toggleMenu(); }
-export async function openPlanshetSearch() { (await ensure()).openSearch(); }
+// 🔍 в панели — открыть поиск и тем же нажатием закрыть (владелец 02.11).
+export async function openPlanshetSearch() { (await ensure()).toggleSearch(); }
 
 /* «Назад» карты (Esc, BackButton Telegram, браузер): шторка, своя карточка/новость, поиск. Окна карты
    лежат выше планшета — navigation.js спрашивает его последним. */

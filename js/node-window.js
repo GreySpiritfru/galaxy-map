@@ -15,12 +15,13 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=222';
-import { REF_ARTICLES } from './articles.js?v=222';
-import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=222';
-import { renderSheetCard } from './sheet-card.js?v=222';
-import { frameHtml, safeHttps } from './net.js?v=222';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=222';
+import { escapeHtml } from './modal.js?v=224';
+import { REF_ARTICLES } from './articles.js?v=224';
+import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=224';
+import { renderSheetCard } from './sheet-card.js?v=224';
+import { wireImageGallery } from './viewer.js?v=224';
+import { frameHtml, safeHttps } from './net.js?v=224';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=224';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -142,6 +143,7 @@ export function renderNodeContent(container, view) {
   delete container.dataset.tab;
   container.__gameScroll = 0;
   container.insertAdjacentHTML('afterbegin', `<div class="node-desc">${descriptionHtml(view)}</div>`);
+  wireImageGallery(container.firstElementChild);
   appendModules(container.firstElementChild, view, container);
   appendDocument(container.firstElementChild, view, container);
   // Набор поверх статьи — плашка со своим ✕ (встроить её в чужую страницу

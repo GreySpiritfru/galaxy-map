@@ -10,9 +10,9 @@
    ни один пункт — null, окно показывает анкету целиком, как раньше.
    Текст — тем же белым списком, что статьи (js/reader.js build).
    ============================================================ */
-import { parseSheet, sheetImages, sheetText, SHEET_TEMPLATE, ZW } from './sheet-parser.js?v=222';
-import { build, wireLinks } from './reader.js?v=222';
-import { viewImages } from './viewer.js?v=222';
+import { parseSheet, sheetImages, sheetText, SHEET_TEMPLATE, ZW } from './sheet-parser.js?v=224';
+import { build, wireLinks } from './reader.js?v=224';
+import { viewImages } from './viewer.js?v=224';
 
 const LONG = 700;   // знаков в пункте — дальше свёрнуто
 const hasFigure = b => b && typeof b === 'object' && ['figure', 'img'].includes(b.t);
@@ -55,6 +55,17 @@ export function renderSheetCard(doc, url, char, parent, scroller) {
   const title = char.name || '';
   const imgs = sheetImages(doc);
   const srcs = [...new Set([...imgs, ...(imgs.length ? [] : [char.image])].filter(Boolean))];
+  const imageSizes = new Map();
+  function collectSizes(nodes) {
+    for (const n of nodes || []) {
+      if (!n || typeof n !== 'object') continue;
+      if (n.src && n.w > 0 && n.h > 0) imageSizes.set(n.src, {w: n.w, h: n.h});
+      if (Array.isArray(n.c)) collectSizes(n.c);
+      if (Array.isArray(n.cap)) collectSizes(n.cap);
+    }
+  }
+  collectSizes(doc.c);
+  const galleryImages = srcs.map(src => ({src, ...imageSizes.get(src)}));
 
   // Прозвища — без самого имени: в анкете апостроф и точка в конце бывают другие («Гил’ви.»).
   const same = n => n.toLowerCase().replace(/[’‘ʼ`]/g, "'").replace(/[.\s]+$/, '');
@@ -67,7 +78,7 @@ export function renderSheetCard(doc, url, char, parent, scroller) {
       el('dl', {class: 'pc-facts'}, fact('Раса', fieldText(fields.race) || char.race), fact('Возраст', fieldText(fields.age)),
         fact('Роль', char.role), parent ? fact(parent.story ? 'Сюжет' : 'Где', parent.title) : null)),
     srcs[0] ? el('button', {type: 'button', class: 'pc-art', style: `background-image:url("${encodeURI(srcs[0])}")`,
-      'aria-label': `Арт: ${title}, открыть`, onclick: () => viewImages(srcs)})
+      'aria-label': `Арт: ${title}, открыть`, onclick: () => viewImages(galleryImages)})
       : el('div', {class: 'pc-art ph', 'aria-hidden': 'true'}, title.charAt(0)));
 
   const field = f => {
@@ -97,7 +108,7 @@ export function renderSheetCard(doc, url, char, parent, scroller) {
 
   const gallery = srcs.length > 1 ? el('section', {class: 'pc-arts'}, el('h2', {}, 'Арты'),
     el('div', {class: 'pc-gallery'}, srcs.slice(1).map((src, i) => el('button', {type: 'button',
-      'aria-label': `Арт ${i + 2} из ${srcs.length}, открыть`, onclick: () => viewImages(srcs, i + 1)},
+      'aria-label': `Арт ${i + 2} из ${srcs.length}, открыть`, onclick: () => viewImages(galleryImages, i + 1)},
       el('img', {src, alt: '', loading: 'lazy'}))))) : null;
   const full = el('details', {class: 'sheet-full'}, el('summary', {}, 'Анкета целиком'), blocks(doc.c));
   const src = el('p', {class: 'pc-source'}, 'Анкета: ');

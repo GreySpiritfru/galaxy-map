@@ -1,25 +1,25 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=222';
-import { closeModal } from './modal.js?v=222';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=222';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=222';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=222';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=222';
-import { openCharacter, closeCharacter } from './characters.js?v=222';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=222';
-import { markerEl } from './node-window.js?v=222';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=222';
-import { hideSplash } from './splash.js?v=222';
-import { fetchT, showLoadError } from './net.js?v=222';
-import { noteRecord, setRestorer } from './navigation.js?v=222';
-import { buildRecords, resolveAddress } from './records.js?v=222';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=222';
-import { decodeAddress } from './address.js?v=222';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch } from './planshet.js?v=222';
-import { REF_ARTICLES } from './articles.js?v=222';
-import { LOCAL_ARTICLES } from './reader.js?v=222';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=224';
+import { closeModal } from './modal.js?v=224';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=224';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=224';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=224';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=224';
+import { openCharacter, closeCharacter } from './characters.js?v=224';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=224';
+import { markerEl } from './node-window.js?v=224';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=224';
+import { hideSplash } from './splash.js?v=224';
+import { fetchT, showLoadError } from './net.js?v=224';
+import { noteRecord, setRestorer } from './navigation.js?v=224';
+import { buildRecords, resolveAddress } from './records.js?v=224';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=224';
+import { decodeAddress } from './address.js?v=224';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch } from './planshet.js?v=224';
+import { REF_ARTICLES } from './articles.js?v=224';
+import { LOCAL_ARTICLES } from './reader.js?v=224';
 
 const SVG_PATH = 'map.svg';
 
@@ -181,7 +181,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=222').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=224').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -2214,7 +2214,11 @@ function finishMapPick(p) {
     /* Панель в «Нодах» (02.11.2026, v=219): капсула режимов сжимается до одной кнопки — той карты,
        с которой пришли (.return), слева выезжает планшет (#dockPlanshet). Анимация — переходами css. */
     controlsEl.classList.toggle('nodes', !onMapView);
-    viewSwitchBtns.forEach(b => b.classList.toggle('return', !onMapView && b.dataset.view === mapModeBeforeNodes));
+    viewSwitchBtns.forEach(b => {
+      b.classList.toggle('return', !onMapView && b.dataset.view === mapModeBeforeNodes);
+      // Свёрнутые кнопки капсулы (не видны) — и не в фокусе Tab, не для чтеца экрана (Codex, разбор 02.11).
+      b.inert = !onMapView && b.dataset.view !== mapModeBeforeNodes;
+    });
     if (dockPlanshet) dockPlanshet.inert = onMapView;
     if (sortToggle) {
       // ▦ показывает, куда ведёт: из планшета — граф, из графа — планшет.

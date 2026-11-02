@@ -1,0 +1,31 @@
+[
+  {
+    "js": "document.querySelector('[data-view=\"nodes\"]').click();",
+    "wait": 2,
+    "shot": "01-nodes"
+  },
+  {
+    "js": "await window.__mapOpenRecord('tt/greyspirit/4tRzyNaVfEQ');",
+    "wait": 2,
+    "shot": "02-article"
+  },
+  {
+    "js": "window.__photoAssert=(ok,message)=>{if(!ok){window.__errs.push('PhotoSwipe: '+message);throw Error(message)}}; const images=[...document.querySelectorAll('.mirror-article figure img')].filter(img=>img.getClientRects().length&&!img.closest('a')); __photoAssert(images.length>1,'Article needs at least two images'); const img=images[0]; img.scrollIntoView({block:'center'}); window.__photoScroll=img.closest('.story-body, .node-body, .modal-content')?.scrollTop; window.__photoHistory=history.length; img.click(); const v=await import([...document.querySelectorAll('script[type=module][src]')].map(s=>new URL(s.src)).find(u=>u.pathname.endsWith('/main.js')).href.replace(/main\\.js/, 'viewer.js')); window.__photoViewer=v; for(let i=0;i<200&&!document.querySelector('.pswp--open.pswp--ui-visible');i++) await new Promise(r=>setTimeout(r,100)); __photoAssert(v.isViewerOpen()&&!!document.querySelector('.pswp--open'),'Viewer did not open'); return {open:v.isViewerOpen(),count:document.querySelector('.pswp__counter')?.textContent};",
+    "wait": 1,
+    "shot": "03-image"
+  },
+  {
+    "js": "window.__photoHistory=history.length; const next=document.querySelector('.pswp__button--arrow--next'); __photoAssert(!!next,'Missing next button'); next.click();",
+    "wait": 1,
+    "shot": "04-next"
+  },
+  {
+    "js": "__photoAssert(history.length===window.__photoHistory,'Slide change added history'); __photoAssert(document.querySelector('.pswp__counter')?.textContent.trim().startsWith('2 /'),'Next slide did not advance'); const pswp=document.querySelector('.pswp'); const rect=pswp.getBoundingClientRect(); const y=rect.top+parseFloat(getComputedStyle(document.querySelector('.pswp__top-bar')).top)+64; const x=rect.left+4; const target=document.elementFromPoint(x,y); __photoAssert(!!target&&!target.closest('.pswp__img,button'),'Background tap coordinate hit an image/control'); target.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:77,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,buttons:1})); target.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,pointerId:77,pointerType:'touch',isPrimary:true,clientX:x,clientY:y,buttons:0}));",
+    "wait": 1,
+    "shot": "05-background-closed"
+  },
+  {
+    "js": "__photoAssert(!window.__photoViewer.isViewerOpen()&&!document.querySelector('.pswp'),'Background tap did not close viewer'); __photoAssert(!!document.querySelector('.mirror-article figure img'),'Article disappeared after close'); return {open:window.__photoViewer.isViewerOpen(),errors:window.__errs};",
+    "wait": 0.2
+  }
+]

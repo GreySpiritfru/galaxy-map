@@ -611,7 +611,19 @@
 /* ⚠️ Размер значка — явно: правило карты `.svg-widget svg` (100% × 100%) достаёт и сюда (#planshet внутри
    .svg-widget) — лупа растягивалась на всё поле. */
 #planshet .p-search-field svg { flex: none; display: block; width: 18px; height: 18px; }
-#planshet .p-search-x { flex: none; width: 48px; height: 48px; display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 18px; border-radius: 12px; }
+#planshet .p-search-clear { flex: none; width: 48px; height: 48px; margin-right: -12px; display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 16px; }
+#planshet .p-search-clear[hidden] { display: none; }
+#planshet .p-search-done { flex: none; min-width: 48px; height: 48px; padding: 0 12px; border-radius: 12px; color: var(--act); font-weight: 600; text-align: center; }
+/* Экран поиска: где ищем, подсказка, отрывок текста с выделенным совпадением. */
+#planshet .p-scope { margin: 6px 0 4px; color: var(--muted); font-size: 13px; }
+#planshet .p-scope button { color: var(--act); font-size: 13px; min-height: 32px; }
+#planshet .p-hint { margin: 2px 0 14px; color: var(--soft); }
+#planshet .results .group { margin-top: 14px; }
+#planshet .results .group h3 { font-size: 13px; color: var(--muted); font-family: var(--body); font-weight: 600; margin-bottom: 4px; }
+#planshet .p-snip { color: var(--soft); }
+#planshet .p-snip mark { background: rgba(175,238,238,0.18); color: var(--act); border-radius: 3px; padding: 0 1px; }
+#planshet .results .row-sub { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+#planshet .p-mentions { margin-top: 16px; }
 @keyframes planshetDrop { from { opacity: 0; transform: translateY(-10px); } }
 @media (prefers-reduced-motion: reduce) { #planshet .p-search { animation: none; } }
 

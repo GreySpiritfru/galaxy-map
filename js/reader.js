@@ -16,8 +16,9 @@
    (articles/img/<хеш>.webp).
    ============================================================ */
 
-import { fetchT } from './net.js?v=222';
-import { resolveModule } from './records.js?v=222';
+import { fetchT } from './net.js?v=224';
+import { resolveModule } from './records.js?v=224';
+import { wireImageGallery } from './viewer.js?v=224';
 
 const INDEX_URL = 'articles/index.json';
 const ANCHOR_RE = /^[A-Za-z0-9_-]{1,40}$/;
@@ -261,6 +262,7 @@ export async function renderMirror(url, scroller) {
    (js/articles.js решает, где её открыть); остальное — во внешнем браузере /
    браузере Telegram. */
 export function wireLinks(root, url, scroller) {
+  wireImageGallery(root);
   root.addEventListener('click', (e) => {
     const a = e.target.closest('a[data-mirror-link]');
     if (!a || !root.contains(a)) return;

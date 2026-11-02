@@ -1,101 +1,168 @@
 /* ============================================================
-   Просмотр картинок на весь экран (02.11.2026, перенос планшета, шаг 4.3; из
-   mock/n6/viewer.js): листание (стрелки, свайп), приближение (щипок, колесо,
-   двойной тап), Esc / ✕. Фон на время просмотра inert. «Назад» (Telegram,
-   браузер) закрывает сначала его — js/navigation.js (isViewerOpen/closeViewer).
+   Просмотр картинок «как в Telegram» (02.11.2026, v=223; шаг 4 notes/ui-plan.md, писал Codex по брифу
+   notes/briefs/2026-11-02-photoswipe.md): ядро PhotoSwipe 5.4.4 (MIT, своя копия js/vendor/photoswipe/),
+   грузится вместе с css при первом открытии. Листание пальцем, свайп вниз и тап по фону — закрыть, щипок и
+   двойной тап — приближение, кнопка закрытия внизу. Esc и «назад» (BackButton Telegram, браузер) ведёт
+   js/navigation.js через isViewerOpen/closeViewer и событие viewer-change; своей истории у просмотра нет.
+   До v=223 — свой просмотр из макета N6 (сменял картинку без анимации, ✕ справа вверху).
    ============================================================ */
-let activeClose = null;
-export const isViewerOpen = () => Boolean(activeClose);
-export const closeViewer = () => { if (!activeClose) return false; activeClose(); return true; };
-
-function el(tag, attrs, ...kids) {
-  const node = document.createElement(tag);
-  Object.entries(attrs || {}).forEach(([k, v]) => {
-    if (k === 'onclick') node.addEventListener('click', v);
-    else node.setAttribute(k, v);
-  });
-  kids.flat().forEach(k => { if (k != null) node.append(k); });
-  return node;
+let active = null;
+let assets = null;
+const sizes = new Map();
+const galleries = new WeakSet();
+export const isViewerOpen = () => Boolean(active);
+export function closeViewer() {
+  if (!active) return false;
+  const session = active;
+  session.afterClose = null;
+  session.closeRequested = true;
+  if (session.pswp) session.pswp.close();
+  else finish(session);
+  return true;
 }
 
-export function viewImages(srcs, i = 0) {
-  closeViewer();
-  srcs = srcs.filter(Boolean);
-  if (!srcs.length) return;
-  i = Math.max(0, Math.min(srcs.length - 1, i));
-  const im = el('img', {src: srcs[i], alt: '', draggable: 'false'});
-  const stage = el('div', {class: 'lb-stage'}, im);
-  const count = el('div', {class: 'lb-count'});
-  const many = srcs.length > 1;
-  const box = el('div', {class: 'lb', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Просмотр картинки', tabindex: '-1'}, stage,
-    el('button', {type: 'button', class: 'lb-x', 'aria-label': 'Закрыть', onclick: () => close()}, '✕'),
-    many ? [el('button', {type: 'button', class: 'lb-prev', 'aria-label': 'Предыдущая', onclick: () => go(-1)}, '‹'),
-      el('button', {type: 'button', class: 'lb-next', 'aria-label': 'Следующая', onclick: () => go(1)}, '›'), count] : null);
-  let s = 1, x = 0, y = 0, start = null, lastTap = 0;
-  const pts = new Map();
-  const apply = () => { im.style.transform = `translate(${x}px, ${y}px) scale(${s})`; };
-  const clamp = v => Math.min(5, Math.max(1, v));
-  function go(d) { i = (i + d + srcs.length) % srcs.length; im.src = srcs[i]; s = 1; x = y = 0; apply(); count.textContent = `${i + 1} / ${srcs.length}`; }
-  const zoomAt = (ns, cx, cy) => {   // приближение к точке (cx, cy) экрана
-    const r = stage.getBoundingClientRect(), ox = cx - r.left - r.width / 2, oy = cy - r.top - r.height / 2;
-    x = ox - (ox - x) * ns / s; y = oy - (oy - y) * ns / s; s = ns;
-    if (s === 1) x = y = 0;
-    apply();
-  };
-  const pair = () => { const [a, b] = [...pts.values()]; return {d: Math.hypot(a.x - b.x, a.y - b.y), cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2}; };
-  stage.addEventListener('pointerdown', e => {
-    stage.setPointerCapture(e.pointerId);
-    pts.set(e.pointerId, {x: e.clientX, y: e.clientY});
-    start = pts.size === 2 ? {...pair(), s} : {px: e.clientX, py: e.clientY, x, y};
-  });
-  stage.addEventListener('pointermove', e => {
-    if (!pts.has(e.pointerId) || !start) return;
-    pts.set(e.pointerId, {x: e.clientX, y: e.clientY});
-    if (pts.size === 2) { const q = pair(); zoomAt(clamp(start.s * q.d / start.d), q.cx, q.cy); }
-    else if (s > 1) { x = start.x + e.clientX - start.px; y = start.y + e.clientY - start.py; apply(); }
-  });
-  const up = e => {
-    if (!pts.has(e.pointerId)) return;
-    const one = pts.size === 1 && start && 'px' in start;
-    pts.delete(e.pointerId);
-    if (one) {
-      const dx = e.clientX - start.px, dy = e.clientY - start.py;
-      if (s === 1 && many && Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1);
-      else if (Math.abs(dx) < 8 && Math.abs(dy) < 8) {
-        const now = Date.now();
-        if (now - lastTap < 300) { zoomAt(s > 1 ? 1 : 2.5, e.clientX, e.clientY); lastTap = 0; } else lastTap = now;
-      }
-    }
-    const rest = [...pts.values()][0];
-    start = rest ? {px: rest.x, py: rest.y, x, y} : null;
-  };
-  stage.addEventListener('pointerup', up);
-  stage.addEventListener('pointercancel', up);
-  stage.addEventListener('wheel', e => { e.preventDefault(); zoomAt(clamp(s * (e.deltaY < 0 ? 1.15 : 1 / 1.15)), e.clientX, e.clientY); }, {passive: false});
-  // Свои клавиши раньше общих (Esc иначе закрыл бы и окно под просмотром).
-  const keys = e => {
-    if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); }
-    else if (many && e.key === 'ArrowRight') { e.preventDefault(); go(1); }
-    else if (many && e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
-    else if (e.key === 'Tab') {
-      const buttons = [...box.querySelectorAll('button')], first = buttons[0], last = buttons[buttons.length - 1];
-      if (e.shiftKey && (document.activeElement === first || document.activeElement === box)) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && (document.activeElement === last || document.activeElement === box)) { e.preventDefault(); first.focus(); }
-    }
-  };
-  const back = document.activeElement;
-  const background = [...document.body.children].filter(n => n instanceof HTMLElement).map(n => [n, n.inert]);
-  function close() {
-    activeClose = null; removeEventListener('keydown', keys, true); box.remove();
-    for (const [n, inert] of background) n.inert = inert;
-    if (back && back.isConnected && back.focus) back.focus();
-    document.dispatchEvent(new Event('viewer-change'));
-  }
-  addEventListener('keydown', keys, true);
-  count.textContent = `${i + 1} / ${srcs.length}`;
-  activeClose = close;
-  for (const [n] of background) n.inert = true;
-  document.body.append(box);
-  box.focus();
+function finish(session) {
+  if (active !== session) return;
+  active = null;
+  for (const [node, inert] of session.background) node.inert = inert;
+  if (session.focus?.isConnected) session.focus.focus({preventScroll: true});
   document.dispatchEvent(new Event('viewer-change'));
+  session.afterClose?.();
+}
+
+function loadAssets() {
+  if (!assets) {
+    const css = new Promise((resolve, reject) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = new URL('./vendor/photoswipe/photoswipe.css', import.meta.url).href;
+      link.onload = resolve;
+      link.onerror = () => { link.remove(); reject(new Error('PhotoSwipe CSS failed to load')); };
+      document.head.append(link);
+    });
+    assets = Promise.all([import('./vendor/photoswipe/photoswipe.esm.min.js'), css])
+      .then(([module]) => module.default)
+      .catch(error => { assets = null; throw error; });
+  }
+  return assets;
+}
+
+function dimensions(src) {
+  if (!sizes.has(src)) {
+    const pending = new Promise((resolve, reject) => {
+      const img = new Image();
+      const done = ok => {
+        clearTimeout(timer);
+        img.onload = img.onerror = null;
+        if (ok && img.naturalWidth && img.naturalHeight) {
+          resolve({width: img.naturalWidth, height: img.naturalHeight});
+        } else reject(new Error('Image dimensions unavailable'));
+      };
+      const timer = setTimeout(() => done(false), 15000);
+      img.onload = () => done(true);
+      img.onerror = () => done(false);
+      img.src = src;
+    });
+    sizes.set(src, pending);
+    pending.catch(() => { if (sizes.get(src) === pending) sizes.delete(src); });
+  }
+  return sizes.get(src);
+}
+
+async function slideData(item) {
+  const data = typeof item === 'string' ? {src: item} : {...item};
+  const width = Number(data.width || data.w), height = Number(data.height || data.h);
+  if (width > 0 && height > 0 && Number.isFinite(width) && Number.isFinite(height)) {
+    return {...data, width, height};
+  }
+  try { return {...data, ...await dimensions(data.src)}; }
+  catch {
+    // Keep a failed slide in order, without inventing its aspect ratio.
+    return {html: '<div class="pswp__error-msg-container"><p class="pswp__error-msg">Картинка не загрузилась</p></div>'};
+  }
+}
+
+// Strings remain supported for planshet/. New callers may pass {src, w, h, alt}.
+export function viewImages(srcs, i = 0) {
+  const items = srcs.filter(item => typeof item === 'string' ? item : item?.src);
+  if (!items.length) return;
+  if (active) {
+    const previous = active;
+    closeViewer();
+    if (active === previous) {
+      previous.afterClose = () => viewImages(srcs, i);
+      return;
+    }
+  }
+  const session = {pswp: null, focus: document.activeElement, background: []};
+  active = session;
+  document.dispatchEvent(new Event('viewer-change'));
+  Promise.all([loadAssets(), Promise.all(items.map(slideData))]).then(([PhotoSwipe, dataSource]) => {
+    if (active !== session) return; // Back or a newer request cancelled loading.
+    // Resolve calc()/max() safe-area variables as actual lengths.
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;padding-top:var(--safe-top,0px);padding-bottom:var(--safe-bottom,0px)';
+    document.body.append(probe);
+    const padding = () => {
+      const style = getComputedStyle(probe);
+      return {top: (parseFloat(style.paddingTop) || 0) + 60,
+        bottom: (parseFloat(style.paddingBottom) || 0) + 76, left: 8, right: 8};
+    };
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const pswp = new PhotoSwipe({
+      dataSource, index: Math.max(0, Math.min(items.length - 1, Math.trunc(i) || 0)),
+      // Фон сплошной, как в Telegram (при свайпе вниз светлеет сам); Esc и фокус ведёт navigation.js / finish().
+      mainClass: 'map-pswp', bgOpacity: 1, escKey: false, returnFocus: false,
+      closeOnVerticalDrag: true, pinchToClose: true, wheelToZoom: true,
+      bgClickAction: 'close', imageClickAction: 'zoom', doubleTapAction: 'zoom',
+      tapAction: (_point, event) => {
+        if (!event.target.closest('.pswp__img')) pswp.close();
+      },
+      close: false, zoom: false, paddingFn: padding,
+      showHideAnimationType: 'fade',
+      showAnimationDuration: reduced ? 0 : 200, hideAnimationDuration: reduced ? 0 : 200,
+      closeTitle: 'Закрыть', arrowPrevTitle: 'Предыдущая', arrowNextTitle: 'Следующая',
+      errorMsg: 'Картинка не загрузилась'
+    });
+    session.pswp = pswp;
+    // Core ignores close() until its opening transition has finished.
+    pswp.on('openingAnimationEnd', () => { if (session.closeRequested) pswp.close(); });
+    pswp.on('afterInit', () => {
+      pswp.element.setAttribute('aria-label', 'Просмотр картинок');
+      pswp.element.setAttribute('aria-modal', 'true');
+    });
+    pswp.on('uiRegister', () => pswp.ui.registerElement({
+      name: 'bottom-close', isButton: true, appendTo: 'root', title: 'Закрыть просмотр',
+      html: '✕', onClick: 'close'
+    }));
+    pswp.on('destroy', () => { probe.remove(); finish(session); });
+    session.background = [...document.body.children]
+      .filter(node => node instanceof HTMLElement && node !== probe)
+      .map(node => [node, node.inert]);
+    for (const [node] of session.background) node.inert = true;
+    try { pswp.init(); }
+    catch (error) { pswp.destroy(); throw error; }
+  }).catch(error => {
+    finish(session);
+    console.warn('Не удалось открыть просмотр картинок', error);
+  });
+}
+
+export function imageData(img) {
+  return {src: img.currentSrc || img.src, alt: img.alt || '',
+    width: Number(img.getAttribute('width')) || img.naturalWidth,
+    height: Number(img.getAttribute('height')) || img.naturalHeight};
+}
+
+// Delegation also covers images inserted asynchronously, once per container.
+export function wireImageGallery(root, selector = 'figure img, .story-banner-img') {
+  if (galleries.has(root)) return;
+  galleries.add(root);
+  root.addEventListener('click', event => {
+    const img = event.target.closest(selector);
+    if (event.defaultPrevented || !img || !root.contains(img) || img.closest('a, button')) return;
+    const images = [...root.querySelectorAll(selector)].filter(node => !node.closest('a, button'));
+    event.preventDefault();
+    viewImages(images.map(imageData), images.indexOf(img));
+  });
 }
