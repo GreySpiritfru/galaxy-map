@@ -1,9 +1,9 @@
-import {C,el,load,img,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,WHERE,wireAnchors,cardMeta,viewKind,mapLink} from './common.js?v=3';
-import {inChip} from './filters.js?v=3';
-import {relationGroups} from './model.js?v=3';
-import {createHistory} from './history.js?v=3';
-import {sectionTiles,toggleSection,currentSection} from './home.js?v=3';
-import {viewImages} from '../js/viewer.js?v=220';
+import {C,el,load,img,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,WHERE,wireAnchors,cardMeta,viewKind,mapLink} from './common.js?v=4';
+import {inChip} from './filters.js?v=4';
+import {relationGroups} from './model.js?v=4';
+import {createHistory} from './history.js?v=4';
+import {sectionTiles,toggleSection,currentSection} from './home.js?v=4';
+import {viewImages} from '../js/viewer.js?v=221';
 const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 /* Планшет в карте (с 02.11.2026, v=219 — без фрейма, прямо в #planshet). Шапки нет (владелец: верх

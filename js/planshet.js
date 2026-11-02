@@ -11,7 +11,7 @@
 const root = document.getElementById('planshet');
 const dock = document.getElementById('controls');
 // Версия модулей planshet/ — та же, что ?v= в их импортах и у planshet.css.
-const PV = 3;
+const PV = 4;
 let shell = null, loading = null;
 
 /* Отступы под панель карты: --dock-top — от низа экрана до верха панели (шторка встаёт над ней),

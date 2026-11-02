@@ -10,9 +10,9 @@
    ни один пункт — null, окно показывает анкету целиком, как раньше.
    Текст — тем же белым списком, что статьи (js/reader.js build).
    ============================================================ */
-import { parseSheet, sheetImages, sheetText, SHEET_TEMPLATE, ZW } from './sheet-parser.js?v=220';
-import { build, wireLinks } from './reader.js?v=220';
-import { viewImages } from './viewer.js?v=220';
+import { parseSheet, sheetImages, sheetText, SHEET_TEMPLATE, ZW } from './sheet-parser.js?v=221';
+import { build, wireLinks } from './reader.js?v=221';
+import { viewImages } from './viewer.js?v=221';
 
 const LONG = 700;   // знаков в пункте — дальше свёрнуто
 const hasFigure = b => b && typeof b === 'object' && ['figure', 'img'].includes(b.t);

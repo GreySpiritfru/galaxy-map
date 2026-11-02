@@ -585,7 +585,10 @@
 /* #planshet — сам прокручивается (у карты html/body без прокрутки), от самого верха экрана. Сверху —
    отступ под кнопки Telegram (--safe-top карты; в браузере он 0): лента начинается под ними и при
    прокрутке уходит под них, как текст окон. Снизу — под панель карты: --dock-pad ставит js/planshet.js. */
-#planshet { padding-top: calc(var(--safe-top, 0px) + 10px); padding-bottom: var(--dock-pad, 96px); }
+/* v=221 (владелец по снимку с телефона: «ещё выше»): сверху — строка состояния и только половина полосы
+   кнопок Telegram; верх первых плиток (арт) уходит под «✕ Закрыть», подписи плиток — ниже кнопок. */
+#planshet { padding-top: max(10px, calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px) / 2));
+  padding-bottom: var(--dock-pad, 96px); }
 #planshet.searching > .main, #planshet.searching > .results { padding-top: 62px; }
 /* Своя карточка («Эпохи Фенома») — от низа кнопок Telegram, как сам планшет. */
 #planshet .sheet { top: var(--safe-top, 0px); }

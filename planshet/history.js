@@ -1,5 +1,5 @@
-import {C, el} from './common.js?v=3';
-import {closeViewer} from '../js/viewer.js?v=220';
+import {C, el} from './common.js?v=4';
+import {closeViewer} from '../js/viewer.js?v=221';
 
 /* История записей планшета. С 02.11.2026 (v=219) планшет живёт прямо в карте, а браузерную историю,
    Esc и кнопку «назад» Telegram ведёт карта (js/navigation.js) — здесь стопка только в памяти, «назад»
