@@ -11,7 +11,7 @@
 const root = document.getElementById('planshet');
 const dock = document.getElementById('controls');
 // Версия модулей planshet/ — та же, что ?v= в их импортах и у planshet.css.
-const PV = 4;
+const PV = 5;
 let shell = null, loading = null;
 
 /* Отступы под панель карты: --dock-top — от низа экрана до верха панели (шторка встаёт над ней),
@@ -29,7 +29,6 @@ if (dock && window.ResizeObserver) new ResizeObserver(fit).observe(dock);
 
 // Что поменялось в планшете — кнопкам панели и «назад» карты.
 function changed() {
-  document.body.classList.toggle('planshet-sheet', !!shell && shell.isSheetOpen());
   const brand = document.getElementById('planshetBrand');
   if (brand && shell) {
     brand.setAttribute('aria-expanded', String(shell.isMenuOpen()));
@@ -69,7 +68,6 @@ export function showPlanshet(on) {
   else if (shell) shell.closeMenu();
   root.hidden = !on;
   document.body.classList.toggle('planshet-on', !!on);
-  if (!on) document.body.classList.remove('planshet-sheet', 'planshet-typing');
   if (shell) changed(); else document.dispatchEvent(new Event('planshet-change'));
   fit();
 }

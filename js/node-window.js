@@ -15,12 +15,12 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=221';
-import { REF_ARTICLES } from './articles.js?v=221';
-import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=221';
-import { renderSheetCard } from './sheet-card.js?v=221';
-import { frameHtml, safeHttps } from './net.js?v=221';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=221';
+import { escapeHtml } from './modal.js?v=222';
+import { REF_ARTICLES } from './articles.js?v=222';
+import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=222';
+import { renderSheetCard } from './sheet-card.js?v=222';
+import { frameHtml, safeHttps } from './net.js?v=222';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=222';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */

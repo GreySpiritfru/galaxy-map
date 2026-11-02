@@ -1,17 +1,16 @@
-import {C,el,load,img,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,WHERE,wireAnchors,cardMeta,viewKind,mapLink} from './common.js?v=4';
-import {inChip} from './filters.js?v=4';
-import {relationGroups} from './model.js?v=4';
-import {createHistory} from './history.js?v=4';
-import {sectionTiles,toggleSection,currentSection} from './home.js?v=4';
-import {viewImages} from '../js/viewer.js?v=221';
+import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,WHERE,viewKind} from './common.js?v=5';
+import {inChip} from './filters.js?v=5';
+import {createHistory} from './history.js?v=5';
+import {sectionTiles,toggleSection,currentSection} from './home.js?v=5';
 const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 /* Планшет в карте (с 02.11.2026, v=219 — без фрейма, прямо в #planshet). Шапки нет (владелец: верх
    занимал пол-экрана под кнопками Telegram): надпись «Феном», поиск и ▦ — в панели карты внизу
    (js/planshet.js). Поиск всплывает сверху по кнопке 🔍; разделы и фильтр по сюжету — шторка «Феном ▴»
    над панелью. «Назад» (Esc, Telegram, браузер) ведёт карта: js/navigation.js зовёт depth()/back().
-   onChange — сообщить карте, что поменялось (подсветка кнопок панели, глубина «назад»). */
-export function makeShell({root, renderMain, renderCard, onChange = () => {}, onHelp, onTour}) {
+   onChange — сообщить карте, что поменялось (подсветка кнопок панели, глубина «назад»).
+   С v=222 своей карточки записи нет (владелец): всё — окнами карты, новость — в ленте. */
+export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour}) {
   const state = {chip: 'all', stack: [], kind: 'all', q: ''};
   // Обычное текстовое поле: у type="search" Android рисует свой ✕ рядом с нашим (было два крестика).
   const input = el('input', {type: 'text', inputmode: 'search', enterkeyhint: 'search', placeholder: 'Поиск по Феному', 'aria-label': 'Поиск', autocomplete: 'off'});
@@ -23,19 +22,12 @@ export function makeShell({root, renderMain, renderCard, onChange = () => {}, on
   const main = el('main', {class: 'wrap main'});
   const results = el('main', {class: 'wrap results', hidden: true});
   const menu = el('div', {class: 'p-menu', role: 'dialog', 'aria-label': 'Разделы планшета', hidden: true});
-  const card = el('div', {class: 'card'});
-  const back = el('button', {}, '‹ Назад');
-  const dock=el('nav',{class:'record-dock','aria-label':'Связи записи'});
-  const panel = el('div', {class: 'sheet-panel', role: 'dialog', 'aria-modal': 'true', tabindex: '-1'},
-    el('div', {class: 'sheet-bar'}, back, el('button', {'aria-label': 'Закрыть', onclick: () => closeAll()}, '✕')), card,dock);
-  const sheet = el('div', {class: 'sheet', hidden: true, onclick: e => { if (e.target === sheet) closeAll(); }}, panel);
-  root.append(searchBar, main, results, menu, sheet);
+  root.append(searchBar, main, results, menu);
   fontLink();
 
-  const setInert = on => [searchBar,main,results,menu].forEach(n=>{n.inert=on;});
   let rootSnapshot=null;
   const keyedState=()=>Object.fromEntries([...main.querySelectorAll('[data-state-key]')].map(n=>[n.dataset.stateKey,n.tagName==='DETAILS'?n.open:n.getAttribute('aria-expanded')==='true']));
-  const controller=createHistory({state,panel,card,sheet,scroller:root,render:renderCard,renderDock,setInert,onChange:()=>onChange(),
+  const controller=createHistory({state,scroller:root,onChange:()=>onChange(),
     onStart(){rootSnapshot={chip:state.chip,kind:state.kind,q:state.q,scroll:root.scrollTop,opened:keyedState()};},
     onRoot(){
       if(!rootSnapshot)return;
@@ -61,39 +53,13 @@ export function makeShell({root, renderMain, renderCard, onChange = () => {}, on
       if(restore)root.scrollTo(0,entry.readingPosition||0);
     }
   });
-  const {openRecord:ownOpen,back:goBack,close:closeAll}=controller;
+  const {openRecord:ownOpen,back:goBack}=controller;
   /* Запись открывается окном карты (window.__mapOpenRecord, js/map.js; «назад» — сюда же); чего карта
-     не знает (новость, «Эпохи Фенома») — здесь, как в макете. */
-  const open=(id,anchor,opts)=>{
+     не знает (новость) — раскрывается в ленте. */
+  const open=(id,anchor)=>{
     closeMenu();
-    const map=window.__mapOpenRecord;
-    if(!map)return ownOpen(id,anchor,opts);
-    Promise.resolve(map(id,anchor||'')).then(ok=>{if(!ok)ownOpen(id,anchor,opts);});
+    Promise.resolve(window.__mapOpenRecord?.(id,anchor||'')).then(ok=>{if(!ok)ownOpen(id);});
   };
-  back.onclick=goBack;
-  wireAnchors(card,(doc,anchor)=>{
-    const id=C.byId.has(doc)?doc:C.records.find(r=>r.content.ownDocument===doc)?.id;
-    if(id)open(id,anchor,{history:state.stack.at(-1)?.recordId===id?'replace':'push'});
-  });
-  card.addEventListener('click',e=>{
-    const image=e.target.closest('figure img');
-    if(!image)return;
-    const list=[...card.querySelectorAll('figure img')];viewImages(list.map(n=>n.src),list.indexOf(image));
-  });
-  function renderDock(r) {
-    back.style.visibility=state.stack.length>1?'visible':'hidden';
-    const parent=C.byId.get(r.parentId),groups=relationGroups(r.id);
-    const holder=el('div',{class:'dock-groups',hidden:true},groups.map(g=>el('section',{class:'dock-group','data-relation':g.key},
-      el('h3',{},g.label),g.items.map(item=>{const target=C.byId.get(item.id);return target?el('button',{class:'dock-link','data-record-id':item.id,
-        onclick:()=>open(item.id,item.anchor)},img(target.image,target.title),el('span',{},target.title)):null;}))));
-    const total=groups.reduce((n,g)=>n+g.items.length,0);
-    const title=el('button',{class:'dock-current','aria-expanded':'false',onclick(){const on=holder.hidden;holder.hidden=!on;title.setAttribute('aria-expanded',String(on));}},
-      el('span',{},r.title),el('span',{class:'dock-stacks'},groups.map(g=>el('span',{'data-stack':g.key,title:g.label},({inside:'▤',allies:'♧',materials:'▱','used-in':'↗'}[g.key]||'▤')+' '+g.items.length)),total?'⌃':null));
-    const onMap=mapLink(r);
-    dock.replaceChildren(el('div',{class:'dock-head'},parent?el('button',{class:'dock-parent',onclick:()=>open(parent.id)},parent.shortTitle||parent.title,' ›'):null,title),holder,
-      ...(onMap?[el('div',{class:'dock-actions'},onMap)]:[]));
-  }
-
   /* ---------- шторка «Феном ▴»: разделы, сюжет, помощь ---------- */
   function renderMenu() {
     const pick = k => { closeMenu(); toggleSection(currentSection() === k ? 'all' : k); root.scrollTo(0, 0); };
@@ -145,8 +111,8 @@ export function makeShell({root, renderMain, renderCard, onChange = () => {}, on
     if (input.value) { input.value = ''; onInput(); }
     hideSearch();
   }
-  input.addEventListener('focus', () => document.body.classList.add('planshet-typing'));
-  input.addEventListener('blur', () => document.body.classList.remove('planshet-typing'));
+  // Панель карты при наборе НЕ прячется (v=222): на Android клавиатура закрывается «назад»/жестом без blur —
+  // с прятаньем по фокусу панель так и оставалась скрытой (замечание владельца 02.11).
   input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
 
   // Фильтр по сюжету (шторка) и раздел (плитки): влияет и на ленту, и на поиск.
@@ -200,17 +166,15 @@ export function makeShell({root, renderMain, renderCard, onChange = () => {}, on
     main.replaceChildren(el('p', {class: 'empty'}, `Планшет не загрузился: ${err.message}`));
   });
 
-  /* «Назад» карты: сначала шторка, потом своя карточка / новость, последним — поиск. */
-  const depth = () => (isMenuOpen() ? 1 : 0) + (controller.getTemporary() ? 1 : 0) + state.stack.length + (isSearchOpen() ? 1 : 0);
+  /* «Назад» карты: сначала шторка, потом новость, последним — поиск. */
+  const depth = () => (isMenuOpen() ? 1 : 0) + state.stack.length + (isSearchOpen() ? 1 : 0);
   function backStep() {
     if (isMenuOpen()) { closeMenu(); return true; }
-    if (controller.getTemporary() || state.stack.length) return goBack();
+    if (state.stack.length) return goBack();
     if (isSearchOpen()) { closeSearch(); return true; }
     return false;
   }
-  return {state,...controller,ready,get C(){return C;},
+  return {state,ready,get C(){return C;},
     openSearch, closeSearch, isSearchOpen, openMenu, closeMenu, toggleMenu, isMenuOpen,
-    isSheetOpen: () => !sheet.hidden, filtered: () => state.chip !== 'all', depth, backStep};
+    filtered: () => state.chip !== 'all', depth, backStep};
 }
-export const cardHead = r => el('div',{class:'card-head'},['news','article'].includes(viewKind(r))?null:img(r.image,r.title),
- el('div',{},el('h1',{},r.title),el('div',{class:'card-meta'},cardMeta(r))));

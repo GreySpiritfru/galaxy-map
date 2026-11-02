@@ -62,7 +62,7 @@ export function worldFlags(item, migrated = true) {
 
 /* data: {world, characters, articlesIndex, systems: {manifest, titles, lore},
    shipRecords, shipLore (ship/lore.json), shipArt (ship/bld/buildings.json),
-   modules, relations, refArticles}. Нет файла — пустое значение,
+   modules, relations, refArticles, localArticles}. Нет файла — пустое значение,
    реестр строится из того, что есть (сбой одного файла не роняет карту). */
 export function buildRecords(data) {
   const world = list(data.world), characters = list(data.characters);
@@ -129,6 +129,14 @@ export function buildRecords(data) {
     const entry = entryByUrl.get(url);
     add({id, kind: 'article', title: entry.title || id, source: {type: 'article', key: url, file: entry.file},
       url, content: {intro: '', ownDocument: id, moduleRefs: []}});
+  }
+
+  // Свои статьи карты (не копии Teletype): «Эпохи Фенома» — lore/epochs.json (02.11.2026, v=222).
+  // Адрес — сам id (js/reader.js LOCAL).
+  for (const a of list(data.localArticles)) {
+    if (!a || typeof a.id !== 'string') continue;
+    add({id: a.id, kind: 'article', title: a.title || a.id, source: {type: 'local', key: a.id}, url: a.id,
+      content: {intro: '', ownDocument: a.id, moduleRefs: []}});
   }
 
   // Системы — весь manifest, не только с якорем на карте галактики.

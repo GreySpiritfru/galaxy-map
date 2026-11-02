@@ -919,7 +919,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 /* Боковые капсулы — переходы (Феном, Справочник). */
 .dock-side {
   flex: 0 0 auto;
-  height: 54px;
+  /* 56 — капсула, внутри цели 48 px (v=222, план notes/ui-plan.md: цель нажатия ≥ 48×48). Было 54. */
+  height: 56px;
   padding: 0 12px;
   border-radius: 20px;
 }
@@ -930,7 +931,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   position: relative;
   flex: 1 1 auto;
   display: flex;
-  height: 54px;
+  height: 56px;
   padding: 4px;
   box-sizing: border-box;
   border-radius: 20px;
@@ -957,7 +958,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   display: flex;
   align-items: center;
   gap: 2px;
-  height: 54px;
+  height: 56px;
   max-width: 0;
   margin-right: -8px;
   padding: 0;
@@ -970,6 +971,10 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 }
 .map-dock.nodes .dock-planshet { flex-grow: 1; max-width: 640px; margin-right: 0; padding: 4px; opacity: 1; }
 .map-dock.nodes .dock-tools { display: none; }
+/* Над лентой планшета фон плотнее (v=222, Codex по снимку владельца: текст ленты просвечивал сквозь панель). */
+.map-dock.nodes .dock-planshet,
+.map-dock.nodes .dock-side,
+.map-dock.nodes .dock-modes { background: rgba(12,12,18,0.97); }
 #gotoPhenom .dock-label { max-width: 60px; transition: max-width 0.3s ease, opacity 0.2s ease; }
 .map-dock.nodes #gotoPhenom { padding: 0 14px; }
 .map-dock.nodes #gotoPhenom .dock-label { max-width: 0; opacity: 0; }
@@ -982,13 +987,13 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 }
 .map-dock.nodes .dock-modes { flex-grow: 0; }
 .map-dock.nodes .dock-modes .dock-item:not(.return) { flex-grow: 0; max-width: 0; padding: 0; opacity: 0; pointer-events: none; }
-.map-dock.nodes .dock-modes .dock-item.return { flex: 0 0 auto; padding: 0 10px; color: rgba(255,255,255,0.8); }
+.map-dock.nodes .dock-modes .dock-item.return { flex: 0 0 auto; min-width: 56px; padding: 0 10px; color: rgba(255,255,255,0.8); }
 .map-dock.nodes .view-lens { opacity: 0; }
 /* «Феном ▴» — знак приложения (Tektur, как заголовки планшета) и вход в шторку разделов. */
 .dock-brand {
   flex: 1 1 auto;
   min-width: 0;
-  height: 46px;
+  height: 48px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -997,6 +1002,9 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   background: none;
   color: #e6e6ee;
   position: relative;
+}
+.dock-brand {
+  overflow: hidden;   /* узкий экран: надпись не налезает на 🔍 (автопроверка, 360 px) */
 }
 .dock-brand-name {
   font-family: 'Tektur', system-ui, sans-serif;
@@ -1007,6 +1015,10 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 }
 .map-dock .dock-brand .dock-chev { width: 16px; height: 16px; color: rgba(255,255,255,0.6); transition: transform 0.2s ease; }
 .dock-brand[aria-expanded="true"] { background: rgba(175,238,238,0.12); }
+@media (max-width: 380px) {
+  .dock-brand { padding: 0 6px 0 10px; gap: 4px; }
+  .dock-brand-name { font-size: 18px; }
+}
 .dock-brand[aria-expanded="true"] .dock-chev { transform: rotate(180deg); }
 /* Фильтр по сюжету включён — точка у надписи. */
 .dock-brand.filtered::after {
@@ -1021,8 +1033,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 }
 .dock-tool {
   flex: 0 0 auto;
-  width: 46px;
-  height: 46px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   display: flex;
   align-items: center;
@@ -1073,8 +1085,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   gap: 8px;
 }
 .dock-round {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   border-radius: 50%;
   display: flex;
@@ -1432,9 +1444,12 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   position: relative;
   background: none;
   border-radius: 0;
-  /* ⚠️ Ширину НЕ увеличивать: в панели справочника (5 кнопок, до 02.11.2026) на
-     375px подпись «Галактика» упиралась в ячейку, 36px обрезали её до «Галакти…». */
-  width: 30px;
+  /* 48 × во всю высоту ряда (v=222, владелец: «крестик очень маленький»). Было 30 px — из-за панели
+     справочника (5 кнопок, «Галактика» не влезала); её убрали в v=218. */
+  width: 48px;
+  height: auto;
+  min-height: 48px;
+  align-self: stretch;
 }
 /* Черта справа от ✕/↩ (игрок, 15.09.2026): без видимой границы палец
    промахивался мимо крестика и попадал в соседнюю вкладку. Псевдоэлемент, а
@@ -1456,6 +1471,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   gap: 2px;
   flex: 1 1 0;
   min-width: 0;
+  min-height: 48px;
   background: none;
   border: none;
   border-radius: 0;
@@ -1677,7 +1693,7 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   flex: 0 0 auto;
   display: flex;
   align-items: stretch;
-  height: 44px;
+  height: 48px;   /* цель нажатия ≥ 48 (v=222); было 44 */
   padding: 0 4px;
   touch-action: none;
   -webkit-user-select: none;
@@ -3762,10 +3778,11 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
   -webkit-overflow-scrolling: touch;
 }
 .planshet-surface[hidden] { display: none; }
-/* Своя карточка планшета («Эпохи Фенома») — на весь экран, со своей плашкой внизу; набор в поиске —
-   клавиатура: панель карты в это время не нужна. */
-body.planshet-sheet .map-dock,
-body.planshet-typing .map-dock { visibility: hidden; }
+/* Окна поверх планшета — почти сплошные (v=222): полупрозрачность 0.8 (v=187) — под карту, а над лентой
+   планшета сквозь окно читался чужой текст (снимок окна статьи над лентой). */
+body.planshet-on .phenom-card { background: rgba(14,14,20,0.97); }
+/* До v=222 панель карты пряталась при своей карточке планшета и при наборе в поиске — убрано (владелец):
+   карточки больше нет, а на Android клавиатура закрывается без blur, и панель оставалась скрытой. */
 /* Под планшетом карту не рисуем (он закрывает экран целиком): узлы там стоят картой, камера не
    двигается (js/map.js, «Режим Ноды»). visibility, а не display — размеры SVG для камеры остаются. */
 body.planshet-on .svg-widget > svg { visibility: hidden; }

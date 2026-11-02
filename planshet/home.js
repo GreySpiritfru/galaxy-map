@@ -1,6 +1,6 @@
-import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=4';
-import {inChip} from './filters.js?v=4';
-import {newsNow,elTile,zones,artOf,bg} from './start.js?v=4';
+import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=5';
+import {inChip} from './filters.js?v=5';
+import {newsNow,elTile,zones,artOf,bg} from './start.js?v=5';
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.7,.2,1)';
 // Выдвинуть/задвинуть: высота коробки плавно идёт от старого содержимого к новому.

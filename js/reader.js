@@ -16,8 +16,8 @@
    (articles/img/<хеш>.webp).
    ============================================================ */
 
-import { fetchT } from './net.js?v=221';
-import { resolveModule } from './records.js?v=221';
+import { fetchT } from './net.js?v=222';
+import { resolveModule } from './records.js?v=222';
 
 const INDEX_URL = 'articles/index.json';
 const ANCHOR_RE = /^[A-Za-z0-9_-]{1,40}$/;
@@ -53,7 +53,14 @@ function loadIndex() {
   return indexPromise;
 }
 
+/* Свои статьи карты, которых нет на Teletype (02.11.2026, v=222): «Эпохи Фенома» — lore/epochs.json, правит
+   владелец. Адрес такой статьи — id её записи в реестре (js/records.js, localArticles); бот зеркала её не
+   трогает (не в articles/). */
+const LOCAL = {'lore/epochs': {file: 'lore/epochs.json', title: 'Эпохи Фенома', hash: '', local: true}};
+export const LOCAL_ARTICLES = Object.entries(LOCAL).map(([id, e]) => ({id, title: e.title}));
+
 export async function mirrorOf(url) {
+  if (Object.prototype.hasOwnProperty.call(LOCAL, url)) return LOCAL[url];
   const key = normalizeUrl(url);
   if (!key) return null;
   const index = await loadIndex();
@@ -65,8 +72,8 @@ export async function mirrorOf(url) {
 const docs = new Map();
 function loadDoc(entry) {
   // Файл копии — только из articles/ (v=202, укрепление: адрес берётся из
-  // index.json, а грузить чужой адрес незачем).
-  if (typeof entry.file !== 'string' || !/^articles\/(tt|tg)\/[\w.@\/-]+\.json$/.test(entry.file) || entry.file.includes('..')) {
+  // index.json, а грузить чужой адрес незачем); свои статьи — из lore/.
+  if (typeof entry.file !== 'string' || !/^(articles\/(tt|tg)\/[\w.@\/-]+|lore\/[\w-]+)\.json$/.test(entry.file) || entry.file.includes('..')) {
     return Promise.reject(new Error('bad file'));
   }
   const src = `${entry.file}?h=${encodeURIComponent(entry.hash || '')}`;
@@ -74,7 +81,8 @@ function loadDoc(entry) {
     docs.set(src, fetchT(src).then(r => {
       if (!r.ok) throw new Error(String(r.status));
       return r.json();
-    }).catch(e => { docs.delete(src); throw e; }));
+    }).then(d => (d && !d.c && Array.isArray(d.nodes) ? {...d, c: d.nodes} : d))   // lore/epochs.json — блоки в nodes
+      .catch(e => { docs.delete(src); throw e; }));
   }
   return docs.get(src);
 }
@@ -225,9 +233,11 @@ export async function renderMirror(url, scroller) {
   const art = document.createElement('article');
   art.className = 'mirror-article';
   const h1 = document.createElement('h1');
-  h1.textContent = doc.title || entry.title || '';
+  h1.textContent = (entry.local ? entry.title : doc.title || entry.title) || '';
   art.appendChild(h1);
   build(doc.c, art);
+  // Своя статья — не копия: без строки «Копия от … · оригинал».
+  if (entry.local) { wireLinks(art, '', scroller); return art; }
   const foot = document.createElement('p');
   foot.className = 'mirror-source';
   const when = dateRu(doc.updated || entry.updated);

@@ -589,9 +589,7 @@
    кнопок Telegram; верх первых плиток (арт) уходит под «✕ Закрыть», подписи плиток — ниже кнопок. */
 #planshet { padding-top: max(10px, calc(var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px) / 2));
   padding-bottom: var(--dock-pad, 96px); }
-#planshet.searching > .main, #planshet.searching > .results { padding-top: 62px; }
-/* Своя карточка («Эпохи Фенома») — от низа кнопок Telegram, как сам планшет. */
-#planshet .sheet { top: var(--safe-top, 0px); }
+#planshet.searching > .main, #planshet.searching > .results { padding-top: 70px; }
 #planshet .tile[aria-pressed="true"] { outline: 2px solid var(--act); outline-offset: -2px; }
 
 /* Раздел: сверху «‹ Всё» и название (строки мини-плиток больше нет). */
@@ -605,7 +603,7 @@
   border-radius: 16px; background: #12121b; border: 1px solid rgba(175,238,238,.22); box-shadow: 0 8px 32px #0009;
   animation: planshetDrop .18s ease-out; }
 #planshet .p-search[hidden] { display: none; }
-#planshet .p-search-field { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px;
+#planshet .p-search-field { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 12px;
   border-radius: 12px; background: var(--raise); color: var(--muted); }
 /* 16px — иначе iOS приближает страницу при фокусе. */
 #planshet .p-search-field input { flex: 1; min-width: 0; height: 100%; border: 0; outline: none; background: none; color: var(--text); font-size: 16px; }
@@ -613,7 +611,7 @@
 /* ⚠️ Размер значка — явно: правило карты `.svg-widget svg` (100% × 100%) достаёт и сюда (#planshet внутри
    .svg-widget) — лупа растягивалась на всё поле. */
 #planshet .p-search-field svg { flex: none; display: block; width: 18px; height: 18px; }
-#planshet .p-search-x { flex: none; width: 40px; height: 40px; display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 18px; border-radius: 12px; }
+#planshet .p-search-x { flex: none; width: 48px; height: 48px; display: grid; place-items: center; text-align: center; color: var(--muted); font-size: 18px; border-radius: 12px; }
 @keyframes planshetDrop { from { opacity: 0; transform: translateY(-10px); } }
 @media (prefers-reduced-motion: reduce) { #planshet .p-search { animation: none; } }
 
@@ -625,14 +623,15 @@
 #planshet .p-menu[hidden] { display: none; }
 #planshet .p-menu-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 #planshet .p-menu-head h2 { font-size: 20px; }
-#planshet .p-menu-home { padding: 6px 10px; border-radius: 10px; color: var(--soft); font-size: 14px; }
+/* Цели нажатия в шторке — 48 px по высоте (автопроверка tools/ui_check.py, v=222). */
+#planshet .p-menu-home { min-height: 48px; padding: 0 12px; border-radius: 12px; color: var(--soft); font-size: 14px; }
 #planshet .p-menu-home[aria-pressed="true"] { color: var(--act); background: rgba(175,238,238,0.09); }
 #planshet .p-menu .tiles { margin-top: 10px; }
 #planshet .p-menu .tile { min-height: 64px; padding: 10px; }
 #planshet .p-menu .f-group { margin-top: 12px; }
 #planshet .p-menu .f-group h3 { margin-left: 2px; }
 #planshet .p-menu .f-opts { display: flex; flex-wrap: wrap; gap: 6px; }
-#planshet .p-menu .f-opts button { height: 34px; padding: 0 12px; border-radius: 17px; background: var(--raise); }
+#planshet .p-menu .f-opts button { height: 48px; min-width: 48px; padding: 0 14px; border-radius: 24px; background: var(--raise); text-align: center; }
 #planshet .p-menu .f-opts button[aria-pressed="true"]::before { content: none; }
-#planshet .p-menu-links { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
-#planshet .p-menu-links button { color: var(--act); font-size: 14px; padding: 6px 0; }
+#planshet .p-menu-links { display: flex; flex-wrap: wrap; gap: 0 16px; margin-top: 10px; padding-top: 4px; border-top: 1px solid var(--line); }
+#planshet .p-menu-links button { color: var(--act); font-size: 14px; min-height: 48px; padding: 0 2px; }
