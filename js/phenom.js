@@ -15,8 +15,8 @@
    submapX/submapY рисуются САМОЙ схемой (window.__ship.setChars, фрейм того же
    сайта — доступ напрямую), координаты — единицы схемы (пиксели бокового
    вида × 10). */
-import { closeModal } from './modal.js?v=245';
-import { renderNodeContent, applyNodeToolbar, renderNodeLinks, syncDock } from './node-window.js?v=245';
+import { closeModal } from './modal.js?v=246';
+import { renderNodeContent, applyNodeToolbar, renderNodeLinks, syncDock } from './node-window.js?v=246';
 
 const phenomOverlay = document.getElementById('phenomOverlay');
 const phenomInfoContent = document.getElementById('phenomInfoContent');
@@ -144,7 +144,7 @@ export function openSubmapView() {
   // мог промолчать (плашка в этот момент «в движении»), меряем сами.
   if (card) syncDock(card);
   const frame = document.createElement('iframe');
-  frame.src = 'ship/?v=245';
+  frame.src = 'ship/?v=246';
   frame.title = 'Схема корабля Феном';
   phenomShipEl.appendChild(frame);
   shipFrame = frame;
@@ -170,6 +170,13 @@ export function focusSubmap(key, card = true) {
   if (!currentSubmap || !isPhenomOpen()) return;
   if (!isSubmapViewOpen()) openSubmapView();
   withShip(api => { if (api.focusRecord) api.focusRecord(key, card); });
+}
+
+/* Схема на персонаже (03.11.2026, «на карте» из поиска): вкладка «Карта», камера — на его submapX/submapY. */
+export function focusSubmapChar(id) {
+  if (!currentSubmap || !isPhenomOpen()) return;
+  if (!isSubmapViewOpen()) openSubmapView();
+  withShip(api => { if (api.focusChar) api.focusChar(id); });
 }
 
 export function isSubmapViewOpen() {

@@ -3442,6 +3442,14 @@ ${guide.join('\n')}
      Феном на этой вкладке). key — sourceKey из records.json: название в schema.json / bld/buildings.json. */
   let onRecord = null;   // окно записи снаружи (setRecordHandler); нет — карточка здесь
   function setRecordHandler(fn) { onRecord = fn || null; }
+  /* Камера на персонаже по id (03.11.2026, «на карте» из поиска карты: персонаж с местом на схеме). */
+  function focusChar(id) {
+    const ch = chars.find(c => c.id === id);
+    if (!ch) return false;
+    const pad = 260;
+    flyTo({x0: ch.w[0] - pad, y0: ch.w[1] - pad, x1: ch.w[0] + pad, y1: ch.w[1] + pad});
+    return true;
+  }
   function focusRecord(key, card = true) {
     const show = hit => { if (card) showCard(hit); else { showCard(null); selected = hit; drawHighlight(); } };
     const n = normName(key);
@@ -3461,7 +3469,7 @@ ${guide.join('\n')}
     show({kind: 'zone', i});
     return true;
   }
-  window.__ship = {app, maglev: mgList, setChars, pick, fx: fxC, cam, setFocus, flyTo, showCard, hitTest, toWorld, toScreen, zones, towers: wTowers, setEditing, setT: v => { tFixed = v; }, present, frameAt, view, rings: v => { ringsOn = v; }, focusRecord, setRecordHandler,
+  window.__ship = {app, maglev: mgList, setChars, pick, fx: fxC, cam, setFocus, flyTo, showCard, hitTest, toWorld, toScreen, zones, towers: wTowers, setEditing, setT: v => { tFixed = v; }, present, frameAt, view, rings: v => { ringsOn = v; }, focusRecord, focusChar, setRecordHandler,
     benchRings: (n = 60) => { const t0 = performance.now(); for (let i = 0; i < n; i++) drawRings(20 + i * 0.016); return +((performance.now() - t0) / n).toFixed(2); }};
   const q = new URLSearchParams(location.search);
   if (q.get('f')) setFocus(q.get('f'));

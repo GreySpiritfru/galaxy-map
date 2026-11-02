@@ -5,7 +5,7 @@
    ▲ ▼ «2 из 7» ✕; на последнем совпадении ▼ ведёт к следующей записи из результатов, на первом ▲ — к предыдущей
    (nav.next / nav.prev от планшета). Строка уходит вместе с окном.
    ============================================================ */
-import { closeTopLayer } from './navigation.js?v=245';
+import { closeTopLayer } from './navigation.js?v=246';
 
 const LAYERS = ['modalBackdrop', 'charOverlay', 'storyOverlay', 'phenomOverlay', 'systemOverlay'];
 const SKIP = 'script, style, button, .node-dock, .tabbar, .lore-toolbar, .find-bar';

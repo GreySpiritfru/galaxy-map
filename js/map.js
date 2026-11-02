@@ -1,26 +1,26 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=245';
-import { closeModal } from './modal.js?v=245';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=245';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=245';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=245';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=245';
-import { openCharacter, closeCharacter } from './characters.js?v=245';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=245';
-import { markerEl } from './node-window.js?v=245';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=245';
-import { hideSplash } from './splash.js?v=245';
-import { fetchT, showLoadError } from './net.js?v=245';
-import { noteRecord, setRestorer } from './navigation.js?v=245';
-import { buildRecords, resolveAddress } from './records.js?v=245';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=245';
-import { decodeAddress } from './address.js?v=245';
-import { findInRecord } from './find-in-text.js?v=245';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=245';
-import { REF_ARTICLES } from './articles.js?v=245';
-import { LOCAL_ARTICLES } from './reader.js?v=245';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=246';
+import { closeModal } from './modal.js?v=246';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=246';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, focusSubmapChar, setSubmapRecordHandler } from './phenom.js?v=246';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=246';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=246';
+import { openCharacter, closeCharacter } from './characters.js?v=246';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=246';
+import { markerEl } from './node-window.js?v=246';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=246';
+import { hideSplash } from './splash.js?v=246';
+import { fetchT, showLoadError } from './net.js?v=246';
+import { noteRecord, setRestorer } from './navigation.js?v=246';
+import { buildRecords, resolveAddress } from './records.js?v=246';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=246';
+import { decodeAddress } from './address.js?v=246';
+import { findInRecord } from './find-in-text.js?v=246';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=246';
+import { REF_ARTICLES } from './articles.js?v=246';
+import { LOCAL_ARTICLES } from './reader.js?v=246';
 
 const SVG_PATH = 'map.svg';
 
@@ -182,7 +182,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=245').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=246').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -2653,14 +2653,31 @@ function finishMapPick(p) {
   window.__mapOpenRecord = (id, anchor) => openRecord(id, anchor || '', {instant: true});
   window.__mapStartTour = () => startTour();
   // «Показать на карте» в планшете: из «Нод» — на карту (ту, с которой ушли), перелёт к маркеру.
-  // Есть ли у записи маркер на карте — значок «на карте» в результатах поиска (v=241).
-  window.__mapCanShow = id => !!graphById.get(id)?.onMap;
+  /* «На карте» (значок в поиске, «Показать на карте» в планшете; v=241, с v=246 — и схема): район и здание — окно Фенома
+     на схеме, камера на нём; персонаж с местом на схеме локации (submapX/Y где-то под точкой со своей картой) — та же
+     схема, камера на нём (владелец 03.11: «приближать именно в самой локации»); остальное — маркер карты галактики. */
+  const submapHost = node => { for (let n = node?.parent; n; n = n.parent) if (n.data.submap) return n; return null; };
+  const submapCharHost = node => node?.kind === 'character' && typeof node.data.submapX === 'number'
+    && typeof node.data.submapY === 'number' ? submapHost(node) : null;
+  const shipRecordOf = id => {
+    const rec = getRegistry()?.records.find(r => r.id === id && (r.kind === 'zone' || r.kind === 'building'));
+    return rec?.mapTargets?.[0]?.type === 'ship' ? rec : null;
+  };
+  const openHostSchema = host => {
+    if (isPhenomOpen() && openWorldNodeCurrent === host) openSubmapView();
+    else openNode(host, {layer: 'phenom', submap: true});
+  };
+  window.__mapCanShow = id => { const n = graphById.get(id); return !!(n?.onMap || submapCharHost(n) || shipRecordOf(id)); };
   // Найденное «в тексте» — в открытом окне (js/find-in-text.js).
   window.__mapFindInRecord = (q, nav) => findInRecord(q, nav);
   window.__mapShowOnMap = async (id) => {
-    const node = graphById.get(id);
+    const rec = shipRecordOf(id);
+    const node = graphById.get(rec ? rec.mapTargets[0].recordId : id);
     if (!node) return false;
     if (viewMode === 'nodes') await setViewMode(savedMapMode(), false);
+    if (rec) { openHostSchema(node); focusSubmap(rec.mapTargets[0].key, false); return true; }
+    const host = submapCharHost(node);
+    if (host) { openHostSchema(host); focusSubmapChar(node.id); return true; }
     goToNode(node);
     return true;
   };
