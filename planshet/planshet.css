@@ -582,11 +582,11 @@
 #planshet .inline-back {color:var(--act);padding:10px 0;}
 
 /* ---------- планшет в карте (v=219) ---------- */
-/* #planshet — сам прокручивается (у карты html/body без прокрутки). Снизу — отступ под панель карты:
-   --dock-pad ставит js/planshet.js по её высоте; сверху — под кнопки Telegram (--safe-top карты). */
-#planshet { padding-bottom: var(--dock-pad, 96px); }
-#planshet > .main { padding-top: 10px; }
-#planshet.searching > .main, #planshet.searching > .results { padding-top: 74px; }
+/* #planshet — сам прокручивается (у карты html/body без прокрутки), от самого верха экрана. Сверху —
+   отступ под кнопки Telegram (--safe-top карты; в браузере он 0): лента начинается под ними и при
+   прокрутке уходит под них, как текст окон. Снизу — под панель карты: --dock-pad ставит js/planshet.js. */
+#planshet { padding-top: calc(var(--safe-top, 0px) + 10px); padding-bottom: var(--dock-pad, 96px); }
+#planshet.searching > .main, #planshet.searching > .results { padding-top: 62px; }
 /* Своя карточка («Эпохи Фенома») — от низа кнопок Telegram, как сам планшет. */
 #planshet .sheet { top: var(--safe-top, 0px); }
 #planshet .tile[aria-pressed="true"] { outline: 2px solid var(--act); outline-offset: -2px; }

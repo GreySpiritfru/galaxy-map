@@ -1,24 +1,24 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=219';
-import { closeModal } from './modal.js?v=219';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=219';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=219';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=219';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=219';
-import { openCharacter, closeCharacter } from './characters.js?v=219';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=219';
-import { markerEl } from './node-window.js?v=219';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=219';
-import { hideSplash } from './splash.js?v=219';
-import { fetchT, showLoadError } from './net.js?v=219';
-import { noteRecord, setRestorer } from './navigation.js?v=219';
-import { buildRecords, resolveAddress } from './records.js?v=219';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=219';
-import { decodeAddress } from './address.js?v=219';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch } from './planshet.js?v=219';
-import { REF_ARTICLES } from './articles.js?v=219';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=220';
+import { closeModal } from './modal.js?v=220';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=220';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=220';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=220';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=220';
+import { openCharacter, closeCharacter } from './characters.js?v=220';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=220';
+import { markerEl } from './node-window.js?v=220';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=220';
+import { hideSplash } from './splash.js?v=220';
+import { fetchT, showLoadError } from './net.js?v=220';
+import { noteRecord, setRestorer } from './navigation.js?v=220';
+import { buildRecords, resolveAddress } from './records.js?v=220';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=220';
+import { decodeAddress } from './address.js?v=220';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch } from './planshet.js?v=220';
+import { REF_ARTICLES } from './articles.js?v=220';
 
 const SVG_PATH = 'map.svg';
 
@@ -180,7 +180,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=219').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=220').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.

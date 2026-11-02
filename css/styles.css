@@ -3746,12 +3746,14 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
    низа экрана; панель карты (z 20) плавает поверх, отступ под неё — внутри страницы
    (--dock-pad). Своя прокрутка внутри фрейма. Окна записей (z 200+) — поверх него. */
 /* С v=219 планшет не во фрейме: #planshet сам прокручивается (у карты html/body без прокрутки),
-   его стили — planshet/planshet.css (все внутри #planshet). */
+   его стили — planshet/planshet.css (все внутри #planshet). С v=220 — от самого верха экрана, как окна
+   (решение игрока v=193): лента начинается под кнопками Telegram (padding-top с --safe-top), а при
+   прокрутке уходит под них — полосы-подложки под кнопками нет. */
 .planshet-surface {
   position: absolute;
   left: 0;
   right: 0;
-  top: var(--safe-top, 0px);
+  top: 0;
   bottom: 0;
   z-index: 15;
   background: #0b0b12;

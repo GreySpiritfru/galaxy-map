@@ -1,9 +1,9 @@
 import {C, viewKind, BASE, el, linked, renderBlocks, plain, pointModules, articleModules,
-  truth, firstImage, newsFor, newsItem, newsOfBuilding, newsBody, storyState} from './common.js?v=2';
-import {elTile, zoneLore, zonePart} from './start.js?v=2';
-import {cardHead} from './shell.js?v=2';
-import {parseSheet, sheetImages, sheetText, SHEET_TEMPLATE, ZW} from './sheet-parser.js?v=2';
-import {viewImages} from '../js/viewer.js?v=219';
+  truth, firstImage, newsFor, newsItem, newsOfBuilding, newsBody, storyState} from './common.js?v=3';
+import {elTile, zoneLore, zonePart} from './start.js?v=3';
+import {cardHead} from './shell.js?v=3';
+import {parseSheet, sheetImages, sheetText, SHEET_TEMPLATE, ZW} from './sheet-parser.js?v=3';
+import {viewImages} from '../js/viewer.js?v=220';
 
 const LONG = 700;
 const imageUrl = src => /^(https?:|data:|blob:)/i.test(src) ? src : BASE + src;

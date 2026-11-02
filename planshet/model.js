@@ -1,4 +1,4 @@
-import {articleText, buildAliases, mentions, buildSearchIndex} from '../js/linker.js?v=219';
+import {articleText, buildAliases, mentions, buildSearchIndex} from '../js/linker.js?v=220';
 
 export let C = null;
 let pending;
