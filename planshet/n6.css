@@ -1,0 +1,227 @@
+
+/* N5 «Выпуски»: «Всё» — всё на одной странице (большие плитки разделов, события, эпохи,
+   библиотека); плитка открывает выпуск раздела, плитки сжимаются в закреплённую строку. */
+.modes-bar { position: sticky; top: var(--top-h, 59px); z-index: 4; margin: 0 calc(-1 * var(--gutter)); padding: 10px 0 8px; background: var(--bg); }
+.modes-bar.stuck { border-bottom: 1px solid var(--line); }
+/* На «Всё» строка не в потоке: выезжает из-под шапки, когда большие плитки ушли вверх */
+.modes-bar.floating { position: fixed; left: 0; right: 0; max-width: calc(var(--col) + 2 * var(--gutter)); margin: 0 auto;
+  border-bottom: 1px solid var(--line); transform: translateY(-110%); visibility: hidden; transition: transform .22s ease, visibility 0s .22s; }
+.modes-bar.floating.show { transform: none; visibility: visible; transition: transform .22s ease; }
+@media (prefers-reduced-motion: reduce) { .modes-bar.floating, .modes-bar.floating.show { transition: none; } }
+
+/* Плитки разделов на «Всё» — как в V3 (снимок владельца 01.11): компактные, арт или лица записей */
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.tile { position: relative; min-height: 76px; border-radius: 14px; padding: 12px; background: var(--raise) center / cover no-repeat; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-end; text-align: left; }
+.tile.bg::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(22,22,31,0.15), rgba(22,22,31,0.92)); }
+.tile > * { position: relative; }
+.t-title { font-family: var(--display); font-weight: 700; font-size: 17px; line-height: 1.15; }
+.t-sub { color: var(--muted); font-size: 13px; }
+.t-pics { display: flex; margin: 0 0 8px 8px; }
+.t-pics img, .t-pics .ph { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; margin-left: -8px; border: 2px solid var(--raise); background: var(--panel); }
+/* Сюжет с набором — первым в своей семье, золотой ярлык «Идёт набор» на самой плитке (без рамки) */
+.tile-tag { position: absolute; top: 8px; left: 8px; z-index: 1; padding: 3px 10px; border-radius: 10px; background: var(--story); color: #1a1408; font-size: 13px; font-weight: 700; }
+
+/* Библиотека — статья раскрывается списком своих разделов; раздел открывает статью на нём */
+.lib-list > details + details, .lib-list > details + button, .lib-list > button + details { border-top: 1px solid var(--line); }
+.lib-list summary { list-style: none; cursor: pointer; padding: 11px 36px 11px 14px; position: relative; }
+.lib-list summary::-webkit-details-marker { display: none; }
+.lib-list summary::after { content: '›'; position: absolute; right: 14px; top: 10px; color: var(--muted); font-size: 20px; transition: transform .15s; }
+.lib-list details[open] > summary::after { transform: rotate(90deg); }
+.lib-mods { padding: 0 0 8px; }
+.lib-mods button { display: block; width: 100%; text-align: left; padding: 7px 14px 7px 26px; color: var(--soft); font-size: 14px; }
+.lib-mods .lib-whole { color: var(--act); font-weight: 600; }
+.lib-sub { font-size: 12px; font-weight: 600; color: var(--muted); padding: 12px 14px 2px; border-top: 1px solid var(--line); }
+
+/* Библиотека на «Всё»: статьи лора открыты, остальные группы свёрнуты */
+.lib-group { margin-top: 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.lib-group > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: baseline; padding: 12px 36px 12px 14px; position: relative; font-weight: 600; }
+.lib-group > summary::-webkit-details-marker { display: none; }
+.lib-group > summary::after { content: '›'; position: absolute; right: 14px; top: 9px; color: var(--muted); font-size: 20px; transition: transform .15s; }
+.lib-group[open] > summary::after { transform: rotate(90deg); }
+.lib-group > summary span { color: var(--muted); font-weight: 400; font-size: 13px; }
+.lib-group .rows { padding: 0 6px 6px; }
+.lib-group .lib-sub:first-child { border-top: 0; }
+.sys-lore { display: block; margin: 10px 0; color: var(--act); text-align: left; }
+
+/* Карточка персонажа (владелец 01.11): слева — имя, прозвище, раса, возраст; справа — арт;
+   ниже — пункты анкеты по шаблону (внешность, голос, биография, параметры, снаряжение; язык и транспорт — строкой) */
+.pc-top { display: grid; grid-template-columns: 1fr 54%; gap: 12px; align-items: start; }
+.pc-name { font-size: 24px; line-height: 1.1; margin: 0; }
+.pc-alias { color: var(--soft); font-size: 14px; margin-top: 4px; }
+.pc-facts { margin: 12px 0 0; display: grid; gap: 8px; }
+.pc-facts dt { color: var(--muted); font-size: 12px; }
+.pc-facts dd { margin: 1px 0 0; font-size: 14px; line-height: 1.3; }
+.pc-facts dd.clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+.pc-facts dd a, .pc-facts dd button { color: var(--act); }
+/* Арт персонажа — крупно, нажимается (просмотр с приближением) */
+.pc-art { display: block; width: 100%; aspect-ratio: 3 / 4; border-radius: 14px; background: var(--raise) center top / cover no-repeat; box-shadow: 0 0 0 1px var(--line); cursor: zoom-in; }
+.pc-art.ph { display: grid; place-items: center; font-family: var(--display); font-size: 54px; color: rgba(175,238,238,0.25); cursor: default; }
+.pc-sec { margin-top: 22px; }
+.pc-sec > h2 { font-size: 17px; margin: 0 0 6px; padding-bottom: 5px; border-bottom: 1px solid var(--line); }
+.pc-sec .mirror-article p { margin: 6px 0; }
+.pc-voice { color: var(--act); }
+/* Длинный текст — свёрнут по высоте, кнопка раскрывает */
+.pc-long { position: relative; max-height: 230px; overflow: hidden; }
+.pc-long::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 70px; background: linear-gradient(180deg, rgba(14,14,20,0), var(--panel)); }
+.pc-long.open { max-height: none; }
+.pc-long.open::after { display: none; }
+.pc-more { margin-top: 4px; color: var(--act); font-size: 14px; font-weight: 600; height: 32px; }
+/* Арты анкеты (кроме главного) — полкой в конце, нажимаются */
+.pc-arts { margin-top: 26px; }
+.pc-arts h2 { font-size: 17px; margin: 0 0 8px; }
+.pc-gallery { display: flex; gap: 8px; overflow-x: auto; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); scrollbar-width: none; scroll-snap-type: x proximity; }
+.pc-gallery::-webkit-scrollbar { display: none; }
+.pc-gallery button { flex: none; scroll-snap-align: start; cursor: zoom-in; }
+.pc-gallery img { height: 190px; max-width: 80vw; object-fit: cover; border-radius: 12px; display: block; }
+
+/* Просмотр картинки: на весь экран, щипок/колесо/двойной тап — приближение, тянуть — двигать, свайп — следующая */
+.lb { position: fixed; inset: 0; z-index: 40; background: rgba(5,5,10,0.95); }
+.lb-stage { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; touch-action: none; }
+.lb-stage img { max-width: 100%; max-height: 100%; user-select: none; -webkit-user-drag: none; transform-origin: center; will-change: transform; }
+.lb button { position: absolute; width: 44px; height: 44px; border-radius: 22px; background: rgba(22,22,31,0.8); color: var(--text); font-size: 22px; }
+.lb-x { top: calc(env(safe-area-inset-top, 0px) + 10px); right: 10px; }
+.lb-prev { left: 8px; top: 50%; margin-top: -22px; }
+.lb-next { right: 8px; top: 50%; margin-top: -22px; }
+.lb-count { position: absolute; bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); left: 0; right: 0; text-align: center; color: var(--soft); font-size: 14px; }
+
+/* Карточка здания (владелец 01.11): арт над текстом; под ним район — коротко и где на корабле; ниже текст здания */
+.bc-art { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 16px; background: var(--raise) center / cover no-repeat; box-shadow: 0 0 0 1px var(--line); cursor: zoom-in; }
+.bc-name { font-size: 24px; line-height: 1.15; margin: 14px 0 2px; }
+.bc-kind { color: var(--muted); font-size: 13px; }
+.bc-zone { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--raise); }
+.bc-zone-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.bc-zone-head button { color: var(--act); font-weight: 600; text-align: left; }
+.bc-zone-head span { color: var(--muted); font-size: 13px; text-align: right; }
+.bc-zone p { margin: 6px 0 0; color: var(--soft); font-size: 14px; line-height: 1.4; }
+.bc-text { margin-top: 18px; }
+.bc-text p { margin: 0 0 10px; }
+.zc-lore { color: var(--soft); margin: 8px 0 0; }
+
+/* Карточка сюжета — как окно сюжета на карте (баннер, название, «Набор открыт» с кнопками, описание) + новости */
+.st-art { display: block; width: 100%; aspect-ratio: 16 / 10; border-radius: 16px; background: var(--raise) center / cover no-repeat; box-shadow: 0 0 0 1px var(--line); cursor: zoom-in; }
+.st-recruit { margin-top: 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255,215,106,0.45); background: rgba(255,215,106,0.07); }
+.st-recruit h2 { font-size: 16px; color: var(--story); margin: 0 0 6px; }
+.st-recruit p { margin: 0 0 8px; color: var(--soft); font-size: 14px; line-height: 1.4; }
+.st-join { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.st-join a { flex: 1 1 140px; text-align: center; padding: 9px 10px; border-radius: 10px; background: var(--raise); color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600; }
+.st-desc p { margin: 0 0 10px; }
+
+/* Оглавление статьи (владелец 01.11: вместо выпадающего «Разделы: N» — ссылки, но оформленные) */
+.toc { margin: 14px 0 6px; padding: 10px 14px 6px; border-radius: 14px; background: var(--raise); }
+.toc h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 4px; }
+.toc ol { list-style: none; margin: 0; padding: 0; }
+.toc li + li { border-top: 1px solid rgba(175,238,238,0.07); }
+.toc a { display: block; padding: 8px 0; color: var(--act); text-decoration: none; font-size: 15px; line-height: 1.25; }
+.toc .l1 a { padding-left: 16px; color: var(--soft); font-size: 14px; }
+.toc .l2 a { padding-left: 32px; color: var(--soft); font-size: 14px; }
+.toc .l1 a::before, .toc .l2 a::before { content: '— '; color: var(--muted); }
+
+/* Несколько разделов сразу — заголовок-раздел между ними */
+.sec-title { font-size: 13px; font-weight: 600; color: var(--act); margin: 30px 0 -14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.sec-title:first-child { margin-top: 2px; border-top: 0; padding-top: 0; }
+
+/* Строка плиток, выпуски, связи, схема — из N4 */
+.modes { display: flex; gap: 6px; overflow-x: auto; padding: 2px var(--gutter);
+  scroll-snap-type: x proximity; scrollbar-width: none; scroll-padding: 0 var(--gutter); }
+.modes::-webkit-scrollbar { display: none; }
+.mode { flex: none; width: 92px; height: 58px; scroll-snap-align: start; position: relative; border-radius: 12px; overflow: hidden;
+  background: var(--raise) center / cover no-repeat; display: flex; align-items: flex-end; text-align: left; }
+.mode::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,11,16,0.3), rgba(11,11,16,0.92)); }
+.mode span { position: relative; padding: 5px 7px; font-weight: 600; font-size: 13px; line-height: 1.12; }
+.mode small { position: absolute; top: 4px; right: 7px; color: var(--soft); font-size: 12px; }
+.mode[aria-pressed="true"] { outline: 2px solid var(--act); outline-offset: -2px; }
+.mode[aria-pressed="true"] span { color: var(--act); }
+
+.issue { padding: 12px 0 4px; }
+.issue h3 { font-size: 15px; color: var(--muted); font-weight: 600; margin: 14px 0 8px; }
+.issue-head { margin: 26px 0 10px; }
+.issue > .issue-head:first-child, .issue > .f-note + .issue-head { margin-top: 6px; }
+.issue .f-note { margin: 0 0 10px; }
+
+/* Анонс записи: картинка слева, название, пометка, описание */
+.entries { display: grid; gap: 2px; }
+.entry { display: flex; gap: 12px; align-items: flex-start; text-align: left; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.entry:last-child { border-bottom: 0; }
+.entry-pic { flex: none; width: 76px; height: 76px; border-radius: 12px; background: var(--raise) center / cover no-repeat;
+  display: grid; place-items: center; font-family: var(--display); font-size: 28px; color: rgba(175,238,238,0.25); }
+.entry-text { min-width: 0; }
+.entry-title { display: block; font-family: var(--display); font-weight: 700; font-size: 16px; line-height: 1.2; }
+.entry-meta { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.entry-desc { display: -webkit-box; margin-top: 4px; color: var(--soft); font-size: 14px; line-height: 1.35; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.acc > [aria-expanded="true"] + .acc-desc { display: none; } /* раскрыт — описание уже внутри («Коротко») */
+.acc-desc { display: -webkit-box; margin: 6px 2px 0; color: var(--soft); font-size: 14px; line-height: 1.35; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Районы Фенома: заголовок района и полка мини-плиток зданий — всё видно сразу */
+.zone + .zone { margin-top: 14px; }
+.zone-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; text-align: left; }
+.zone-head b { font-size: 15px; }
+.zone-head span { color: var(--muted); font-size: 13px; }
+.zone .shelf-row .el-tile { width: 30%; max-width: 130px; }
+
+/* Своя библиотека раздела — короткий указатель первоисточников */
+.library { margin-top: 8px; }
+.lib-list { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+.lib-list button { display: block; width: 100%; text-align: left; padding: 11px 14px; }
+.lib-list button + button { border-top: 1px solid var(--line); }
+.lib-list b { display: block; color: var(--act); font-weight: 600; }
+.lib-list span { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.issue-intro { color: var(--soft); margin: 4px 0 10px; }
+.issue-intro button { color: var(--act); }
+.grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+
+/* Сюжет — выпадающий: плитка с артом, под ней выезжает сама «статья» сюжета */
+.acc + .acc { margin-top: 8px; }
+.acc > .el-tile { width: 100%; }
+.acc > .el-tile::after { content: '›'; position: absolute; right: 12px; bottom: 10px; font-size: 22px; color: var(--soft); transition: transform .25s; }
+.acc > .el-tile[aria-expanded="true"]::after { transform: rotate(90deg); }
+.acc-body { margin: 6px 0 4px; padding: 4px 12px 12px; border-left: 3px solid var(--story); background: var(--panel); border-radius: 0 10px 10px 0; }
+.acc-body h4 { font-size: 14px; color: var(--act); margin: 12px 0 4px; }
+.acc-body ul, .acc-body ol { padding-left: 18px; margin: 0; }
+.acc-body li { margin: 3px 0; }
+.acc-body p { margin: 4px 0; }
+.acc-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; }
+.acc-actions button, .acc-actions a { color: var(--act); font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .acc > .el-tile::after { transition: none; } }
+
+/* Эпохи — лента времени под событиями: от текущей (события выше) вглубь */
+.epochs-sec { margin-top: 26px; }
+.epochs { list-style: none; padding: 0; margin: 0; position: relative; }
+.epochs::before { content: ''; position: absolute; left: 7px; top: 14px; bottom: 18px; width: 2px; background: rgba(175,238,238,0.22); }
+.epoch > button { display: block; width: 100%; text-align: left; padding: 8px 0 10px 28px; position: relative; }
+.epoch > button::before { content: ''; position: absolute; left: 1px; top: 12px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--act); background: var(--bg); }
+.epoch.now > button::before { background: var(--story); border-color: var(--story); }
+.ep-n { display: block; color: var(--muted); font-size: 12px; }
+.epoch.now .ep-n { color: var(--story); }
+.ep-title { display: block; font-family: var(--display); font-weight: 700; font-size: 16px; line-height: 1.2; }
+.ep-lede { display: -webkit-box; margin-top: 3px; color: var(--soft); font-size: 14px; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* Связи — проба 1: скобки как в нодах прямо в режимах. Семья — сплошная вертикаль
+   слева с отводом к каждой строке и ● у родителя; союз — золотой пунктир. */
+.issue { --bracket: rgba(175,238,238,0.45); }
+.fam { margin-top: 14px; }
+.fam:first-child { margin-top: 0; }
+.fam-head { display: flex; align-items: baseline; gap: 8px; text-align: left; position: relative; padding-left: 20px; margin-bottom: 8px; }
+.fam-head::before { content: ''; position: absolute; left: 0; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; background: var(--act); }
+.fam-head b { font-size: 15px; font-weight: 600; color: var(--soft); }
+.fam-head small { color: var(--muted); font-size: 12px; }
+.fam-kids { position: relative; padding-left: 20px; }
+.fam-kids::before { content: ''; position: absolute; left: 4px; top: -8px; bottom: 0; width: 2px; background: var(--bracket); }
+.fam-row { position: relative; --tick: 50%; }
+.fam-row + .fam-row { margin-top: 6px; }
+.fam-row::before { content: ''; position: absolute; left: -16px; top: var(--tick); width: 12px; height: 2px; background: var(--bracket); }
+/* Вертикаль кончается на отводе последней строки */
+.fam-row:last-child::after { content: ''; position: absolute; left: -17px; top: calc(var(--tick) + 2px); bottom: -1px; width: 4px; background: var(--bg); }
+.fam-row.is-acc { --tick: 70px; }
+.ally-row .el-tile.mini { min-height: 96px; }
+.fam > .el-tile { width: 100%; }
+.fam > .el-tile + .fam-kids { margin-top: 8px; }
+.fam > .el-tile + .fam-kids::before { top: -8px; }
+.ally-row { display: flex; align-items: center; position: relative; }
+.ally-row .el-tile { flex: 0 0 calc((100% - 28px) / 3); }
+.ally-gap { flex: 0 0 14px; align-self: center; height: 0; }
+.ally-gap.on { border-top: 2px dashed var(--story); }
+.ally-row.arc { padding-bottom: 12px; }
+.ally-row.arc::after { content: ''; position: absolute; left: calc((100% - 28px) / 6); right: calc((100% - 28px) / 6); bottom: 1px; height: 10px;
+  border: 2px dashed var(--story); border-top: 0; border-radius: 0 0 10px 10px; }
+

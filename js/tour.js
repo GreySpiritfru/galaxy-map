@@ -18,13 +18,13 @@
    ⚠️ Тексты — черновик из инфоканала (введение, «Что такое Феном», анкета),
    игрок обещал поправить. Править прямо здесь, в INTRO_TABS и STEPS.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=216';
-import { closeStory, isStoryOpen } from './stories.js?v=216';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=216';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=216';
-import { closeSystem, isSystemOpen } from './system-view.js?v=216';
-import { quoteHtml, initQuotes } from './quotes.js?v=216';
-import { JOIN_LINKS } from './node-window.js?v=216';
+import { closeModal, isArticleOpen } from './modal.js?v=217';
+import { closeStory, isStoryOpen } from './stories.js?v=217';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=217';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=217';
+import { closeSystem, isSystemOpen } from './system-view.js?v=217';
+import { quoteHtml, initQuotes } from './quotes.js?v=217';
+import { JOIN_LINKS } from './node-window.js?v=217';
 
 const TOUR_SEEN_KEY = 'galaxyMapTourSeen';
 const LINKS = JOIN_LINKS;
@@ -85,13 +85,13 @@ const STEPS = [
   {kind: 'intro'},
   {
     prepare: async h => { closeWindows(); await h.showSections(); },
-    // Весь каталог целиком (игрок: «выделять сразу всю таблицу»).
+    // Планшет целиком (02.11.2026: на месте каталога «по разделам»).
     target: h => h.sectionsLayer(),
-    title: 'Все маркеры — по каталогу',
-    text: 'Это режим «Ноды». Кнопка ▦ справа над панелью раскладывает маркеры по разделам. В самом верху расположены <b>сюжеты, куда сейчас набирают игроков</b>, а ниже — локации, базовые маркеры, системы и архив маркеров.',
+    title: 'Планшет',
+    text: 'Это режим «Ноды» — планшет: что сейчас происходит, сюжеты (<b>где набирают игроков</b> — с золотым ярлыком), маркеры, Феном, персонажи и библиотека статей. Плитки сверху открывают раздел, вверху — поиск. Кнопка ▦ справа над панелью переключает планшет и граф связей.',
   },
   {
-    prepare: async h => { closeWindows(); await h.showSections(); },
+    prepare: async h => { closeWindows(); await h.showGraph(); },
     target: h => h.plotEl(),
     optional: true,
     title: 'Сюжет',
@@ -116,7 +116,7 @@ const STEPS = [
     prepare: async h => { closeWindows(); await h.showMap(); },
     target: () => document.getElementById('controls'),
     title: 'Переходы',
-    text: '<b>Справочник</b> — статьи о мире: расы, магия, техника, описание галактики и Фенома. Рядом — переключатель карт и каталога нод.<br>🏷️ — меньше подписей (включена сразу, так карта быстрее): видны только бирюзовые системы, на которые можно нажать и перейти в саму систему. Выключи — и при приближении появятся названия всех систем.',
+    text: '<b>Феном</b> — окно корабля-города. Рядом — переключатель: <b>Ноды</b> (планшет и граф связей), <b>Карта</b>, <b>Графика</b>. Статьи о мире — в библиотеке планшета.<br>🏷️ — меньше подписей (включена сразу, так карта быстрее): видны только бирюзовые системы, на которые можно нажать и перейти в саму систему. Выключи — и при приближении появятся названия всех систем.',
   },
   {kind: 'finish'},
 ];

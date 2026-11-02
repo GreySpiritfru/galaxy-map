@@ -1,0 +1,12 @@
+{
+  "v": 1,
+  "note": "Временная миграция адресов article.ref из js/articles.js REF_ARTICLES. Общие документы остаются материалами записи, не её собственным документом.",
+  "refs": {
+    "phenom": "https://teletype.in/@greyspirit/4tRzyNaVfEQ#fvQz",
+    "races": "https://teletype.in/@greyspirit/y7G2E4B490h#9ZO8",
+    "magic": "https://teletype.in/@greyspirit/SEOWfJxAewY#LVpS",
+    "tech": "https://teletype.in/@greyspirit/gf7sBYkW_di#TkgH",
+    "galaxy": "https://teletype.in/@greyspirit/toTVpow7sb1#MgZX",
+    "avalon": "https://teletype.in/@greyspirit/SEOWfJxAewY#e5M4"
+  }
+}

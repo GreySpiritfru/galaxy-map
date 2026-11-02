@@ -6,14 +6,14 @@
   <title>Карта галактики — Феном</title>
   <!-- Скрипт Telegram — своя копия (v=199): telegram.org из РФ без VPN не
        отвечает, и этот блокирующий <script> вешал страницу на ~35 с. -->
-  <script src="js/vendor/telegram-web-app.js?v=216"></script>
+  <script src="js/vendor/telegram-web-app.js?v=217"></script>
   <!-- Самый тяжёлый файл на странице (~2.7 МБ после пережатия подложки в WebP,
        см. tools/optimize-map-svg.py) — без preload браузер начинает качать его
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
   <link rel="preload" href="images/splash-logo.webp" as="image" />
-  <link rel="stylesheet" href="css/styles.css?v=216" />
+  <link rel="stylesheet" href="css/styles.css?v=217" />
 </head>
 <body>
 
@@ -69,6 +69,8 @@
        круглые инструменты. Жест с любой кнопки двигает карту (#controls в
        js/map.js), поэтому id и роль контейнера прежние. -->
   <div class="top-scrim" aria-hidden="true"></div>
+  <!-- Планшет (02.11.2026, js/planshet-frame.js): Ноды → ▦, страница planshet/ во фрейме над картой. -->
+  <div class="planshet-surface" id="planshetSurface" hidden></div>
   <div class="map-dock" id="controls">
     <div class="dock-tools">
       <button id="helpBtn" class="dock-round" title="Как пользоваться картой" aria-label="Как пользоваться картой">?</button>
@@ -77,7 +79,7 @@
       <button id="labelsToggle" class="dock-round" title="Меньше подписей: только готовые системы (быстрее на слабых устройствах)" aria-label="Меньше подписей">
         <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.8 12.4V5.1c0-.7.6-1.3 1.3-1.3h7.3l8 8-8.6 8.6z"/><circle cx="8.3" cy="8.3" r="1.5"/></svg>
       </button>
-      <button id="sortToggle" class="dock-round" title="Ноды по разделам" aria-label="Ноды по разделам" hidden>
+      <button id="sortToggle" class="dock-round" title="Планшет" aria-label="Планшет" hidden>
         <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.8" height="6.8" rx="1.6"/><rect x="13.2" y="4" width="6.8" height="6.8" rx="1.6"/><rect x="4" y="13.2" width="6.8" height="6.8" rx="1.6"/><rect x="13.2" y="13.2" width="6.8" height="6.8" rx="1.6"/></svg>
       </button>
     </div>
@@ -105,11 +107,8 @@
           <span class="dock-label">Графика</span>
         </button>
       </div>
-      <!-- Один вход во все статьи: открывает «Описание галактики», дальше —
-           вкладками #refToolbar внутри статьи. -->
-      <button id="openHandbook" class="dock-side dock-item" data-ref="galaxy" title="Справочник">
-        <span class="dock-icon dock-emoji" aria-hidden="true">📖</span><span class="dock-label">Справочник</span>
-      </button>
+      <!-- «Справочник» убран 02.11.2026 (владелец): статьи — в библиотеке планшета (Ноды → ▦)
+           и в «Материалах» окон точек. -->
     </div>
   </div>
   <div class="calib-panel" id="calibPanel"></div>
@@ -311,6 +310,6 @@
      не в модуле, — за ним следит navigation.js (Esc / «назад» закрывают игру). -->
 <div class="flappy-overlay" id="flappyOverlay" role="dialog" aria-modal="true" aria-label="Мини-игра Flappy Phenome"></div>
 
-<script type="module" src="js/main.js?v=216" onerror="window.__bootFail && window.__bootFail()"></script>
+<script type="module" src="js/main.js?v=217" onerror="window.__bootFail && window.__bootFail()"></script>
 </body>
 </html>

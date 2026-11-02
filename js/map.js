@@ -1,24 +1,25 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=216';
-import { closeModal } from './modal.js?v=216';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=216';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=216';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=216';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=216';
-import { openCharacter, closeCharacter } from './characters.js?v=216';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=216';
-import { markerEl } from './node-window.js?v=216';
-import { layoutSections, renderSections } from './sections.js?v=216';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=216';
-import { hideSplash } from './splash.js?v=216';
-import { fetchT, showLoadError } from './net.js?v=216';
-import { noteRecord, setRestorer } from './navigation.js?v=216';
-import { buildRecords, resolveAddress } from './records.js?v=216';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=216';
-import { decodeAddress } from './address.js?v=216';
-import { REF_ARTICLES } from './articles.js?v=216';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=217';
+import { closeModal } from './modal.js?v=217';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=217';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=217';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=217';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=217';
+import { openCharacter, closeCharacter } from './characters.js?v=217';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=217';
+import { markerEl } from './node-window.js?v=217';
+import { layoutSections, renderSections } from './sections.js?v=217';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=217';
+import { hideSplash } from './splash.js?v=217';
+import { fetchT, showLoadError } from './net.js?v=217';
+import { noteRecord, setRestorer } from './navigation.js?v=217';
+import { buildRecords, resolveAddress } from './records.js?v=217';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=217';
+import { decodeAddress } from './address.js?v=217';
+import { showPlanshet, isPlanshetShown, planshetSurface } from './planshet-frame.js?v=217';
+import { REF_ARTICLES } from './articles.js?v=217';
 
 const SVG_PATH = 'map.svg';
 
@@ -180,7 +181,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=216').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=217').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -2025,6 +2026,10 @@ function finishMapPick(p) {
      подписями). Переключает кнопка ▦ (на месте 🏷️, которая в нодах не нужна).
      Выбор запоминается. Координаты — sectionX/sectionY, заморожены так же,
      как graphX/graphY. */
+  /* ⚠️ С 02.11.2026 'sections' = ПЛАНШЕТ (js/planshet-frame.js, решение владельца: ▦ — планшет ↔ граф,
+     планшет на месте раскладки по разделам). Сама раскладка выключена (SECTIONS_LAYOUT): под планшетом
+     узлы стоят графом, и ▦ переключает мгновенно. Сохранённое 'sections' открывает планшет. */
+  const SECTIONS_LAYOUT = false;
   const NODES_ARRANGEMENT_KEY = 'galaxyMapNodesArrangement';
   let nodesArrangement = 'graph';
   try { if (localStorage.getItem(NODES_ARRANGEMENT_KEY) === 'sections') nodesArrangement = 'sections'; } catch (e) {}
@@ -2033,7 +2038,7 @@ function finishMapPick(p) {
 
   // Где узел стоит в режиме нод при текущей раскладке и какого он там размера.
   function nodesPlace(n) {
-    if (nodesArrangement === 'sections' && typeof n.sectionX === 'number') {
+    if (SECTIONS_LAYOUT && nodesArrangement === 'sections' && typeof n.sectionX === 'number') {
       return {x: n.sectionX, y: n.sectionY, size: n.sectionSize};
     }
     return {x: n.graphX, y: n.graphY, size: n.graphSize};
@@ -2070,7 +2075,7 @@ function finishMapPick(p) {
     return {x: graphViewCenter.x, y: L.top + (sh / 2 - topPx) / k, w: Math.min(sw, sh) / k};
   }
   function nodesCamera() {
-    if (nodesArrangement === 'sections' && sectionsLayout && sectionsLayout.width) return sectionsCamera();
+    if (SECTIONS_LAYOUT && nodesArrangement === 'sections' && sectionsLayout && sectionsLayout.width) return sectionsCamera();
     /* Граф — в середину свободной полосы, а не экрана: снизу панель карты,
        сверху в полноэкранном режиме кнопки Telegram. Центр кадра — центр
        экрана, поэтому камера сдвигается на половину разницы отступов. */
@@ -2225,8 +2230,10 @@ function finishMapPick(p) {
     if (sortToggle) {
       sortToggle.hidden = onMapView;
       sortToggle.classList.toggle('active', nodesArrangement === 'sections');
-      sortToggle.title = nodesArrangement === 'sections' ? 'Ноды: граф связей' : 'Ноды по разделам';
+      sortToggle.title = nodesArrangement === 'sections' ? 'Граф связей' : 'Планшет';
+      sortToggle.setAttribute('aria-label', sortToggle.title);
     }
+    showPlanshet(!onMapView && nodesArrangement === 'sections');
     if (!onMapView && calibMode) {
       calibMode = false;
       calibToggle?.classList.remove('active');
@@ -2327,7 +2334,7 @@ function finishMapPick(p) {
       : {x: savedMapView.x + savedMapView.w / 2, y: savedMapView.y + savedMapView.h / 2, w: savedMapView.w});
 
     // Разделы: нити прячутся сразу, рамки и подписи — после перелёта (css).
-    const toSections = toNodes && nodesArrangement === 'sections';
+    const toSections = SECTIONS_LAYOUT && toNodes && nodesArrangement === 'sections';
     svg.classList.toggle('sections-mode', toSections);
     svg.classList.remove('sections-shown');
 
@@ -2411,7 +2418,7 @@ function finishMapPick(p) {
     updateViewModeUi();
     if (viewMode !== 'nodes' || !graphNodes.length) return;
     const token = ++arrangeToken;
-    const toSections = arr === 'sections';
+    const toSections = SECTIONS_LAYOUT && arr === 'sections';
     svg.classList.toggle('sections-mode', toSections);
     svg.classList.remove('sections-shown');
     graphNodes.forEach(n => {
@@ -2605,7 +2612,7 @@ function finishMapPick(p) {
         && typeof n.data.recruit === 'string' && n.data.recruit.trim())
       || graphNodes.find(n => n.kind === 'world' && n.data.beacon && !isCompleted(n)) || null;
     registerTourHooks({
-      // Ноды по разделам — с анимацией, промис разрешается, когда всё встало.
+      // Планшет (Ноды → ▦, с 02.11.2026 на месте раскладки по разделам); промис — когда всё встало.
       showSections: async () => {
         if (viewMode === 'nodes') {
           if (nodesArrangement !== 'sections') await setNodesArrangement('sections', false);
@@ -2619,14 +2626,17 @@ function finishMapPick(p) {
       showMap: async () => {
         if (viewMode === 'nodes') await setViewMode(savedMapMode(), false);
       },
-      sectionsLayer: () => graphLayer.querySelector('.sections-layer'),
-      // Сюжет вместе с его персонажами (подложка группы в разделах); нет
-      // персонажей — сам маркер без колец маяка.
+      // Граф связей (Ноды → ▦ ещё раз) — для шага про маркер сюжета и его персонажей.
+      showGraph: async () => {
+        if (viewMode !== 'nodes') { nodesArrangement = 'graph'; await setViewMode('nodes', false); }
+        else if (nodesArrangement !== 'graph') await setNodesArrangement('graph', false);
+      },
+      sectionsLayer: () => planshetSurface(),
+      // Маркер сюжета на графе (без колец маяка — их рамка шире самого маркера).
       plotEl: () => {
         const n = tourPlot();
         if (!n) return null;
-        return graphLayer.querySelector(`.section-group[data-owner="${CSS.escape(n.id)}"]`)
-          || n.__el?.querySelector('.hotspot-hit') || n.__el || null;
+        return n.__el?.querySelector('.hotspot-hit') || n.__el || null;
       },
       openPlot: async () => {
         const n = tourPlot();
@@ -2678,6 +2688,19 @@ function finishMapPick(p) {
     if (node) { goToNode(node, !!options.instant, tabOpts(options.tab)); return true; }
     if (rec.kind === 'system') { openSystem(rec.title); return true; }   // система без точек — не узел графа
     return false;
+  };
+  /* Планшет (planshet/ во фрейме, js/planshet-frame.js) открывает записи окнами карты: без перелёта
+     камеры (карта под планшетом не видна). false — карта такую запись не знает (новость), планшет
+     покажет её у себя. Экскурсия — обучение карты. */
+  window.__mapOpenRecord = (id, anchor) => openRecord(id, anchor || '', {instant: true});
+  window.__mapStartTour = () => startTour();
+  // «Показать на карте» в планшете: из «Нод» — на карту (ту, с которой ушли), перелёт к маркеру.
+  window.__mapShowOnMap = async (id) => {
+    const node = graphById.get(id);
+    if (!node) return false;
+    if (viewMode === 'nodes') await setViewMode(savedMapMode(), false);
+    goToNode(node);
+    return true;
   };
   setRecordOpener('world', openGraphRecord);
   setRecordOpener('character', openGraphRecord);
