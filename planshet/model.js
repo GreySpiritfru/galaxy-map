@@ -1,4 +1,4 @@
-import {articleText, buildAliases, mentions, buildSearchIndex} from '../js/linker.js?v=225';
+import {articleText, buildAliases, mentions, buildSearchIndex} from '../js/linker.js?v=226';
 
 export let C = null;
 let pending;
@@ -13,6 +13,14 @@ const docId = entry => entry.file.replace(/^articles\//, '').replace(/\.json$/, 
 const truth = v => v === true || /^(true|1)$/i.test(String(v ?? ''));
 const finite = (x,y) => Number.isFinite(x) && Number.isFinite(y);
 export const viewKind = r => r?.kind === 'world' ? (r.flags.story ? 'story' : 'place') : r?.kind;
+
+/* Общие данные с картой (02.11.2026, v=226): карта уже скачала и разобрала world/characters (с правками редактора,
+   ещё не доехавшими до GitHub), индекс статей, системы, схему корабля, модули — js/planshet.js передаёт их сюда
+   (setShared) вместе с общим кэшем копий статей (loadDoc из js/reader.js). Чего нет — качаем сами, как раньше. */
+let shared = {};
+export function setShared(data) { shared = data || {}; }
+const take = (key, base, path) => shared[key] != null ? Promise.resolve(shared[key]) : json(base, path);
+const fetchDoc = entry => shared.loadDoc ? shared.loadDoc(entry) : json(BASE, entry.file);
 
 async function json(base,path) {
   const response = await fetch(new URL(path,base), {cache:'no-cache'});
@@ -56,21 +64,27 @@ export function load() {
 
 async function loadAll() {
   let [world,characters,articlesIndex,news,shipLore,bld,schema,systemList,systemLore,systemNames,epochs,moduleRegistry,relations,worldFlags,shipRecords,presentation,referenceArticles] = await Promise.all([
-    json(BASE,'world.json'),json(BASE,'characters.json'),json(BASE,'articles/index.json'),json(BASE,'news.json'),
-    json(BASE,'ship/lore.json'),json(BASE,'ship/bld/buildings.json'),json(BASE,'ship/schema.json'),
-    json(BASE,'systems/manifest.json'),json(BASE,'systems/lore.json'),json(BASE,'systems/names.json'),json(BASE,'lore/epochs.json'),
-    json(BASE,'modules.json'),json(BASE,'relations.json'),null,json(BASE,'ship/records.json'),json(HERE,'presentation.json'),json(HERE,'reference-articles.json')
+    take('world',BASE,'world.json'),take('characters',BASE,'characters.json'),take('articlesIndex',BASE,'articles/index.json'),json(BASE,'news.json'),
+    take('shipLore',BASE,'ship/lore.json'),take('bld',BASE,'ship/bld/buildings.json'),json(BASE,'ship/schema.json'),
+    take('systemList',BASE,'systems/manifest.json'),take('systemLore',BASE,'systems/lore.json'),take('systemNames',BASE,'systems/names.json'),json(BASE,'lore/epochs.json'),
+    take('moduleRegistry',BASE,'modules.json'),take('relations',BASE,'relations.json'),null,take('shipRecords',BASE,'ship/records.json'),json(HERE,'presentation.json'),json(HERE,'reference-articles.json')
   ]);
+  // Карта отдаёт свои объекты — планшет работает с копиями (данные карты не трогает).
+  world=structuredClone(world); characters=structuredClone(characters);
   // Признаки world — прямо в world.json (с 02.11.2026), отдельного файла нет.
   worldFlags={items:Object.fromEntries(world.map(p=>[p.id,{story:p.story===true,location:p.location===true,alliance:p.alliance===true}]))};
   const records=[],raw={},docs={},diagnostics=[],documentEntries=Object.entries(articlesIndex.articles || articlesIndex);
-  // Временная миграция: только чтение старых источников, постоянные ID и признаки — в data/.
-  // Полные AST загружаются до индексации, чтобы поиск не терял содержимое анкет и статей.
-  await Promise.all(documentEntries.map(async ([url,entry]) => {
-    if (!entry?.file) return;
-    try { docs[docId(entry)] = await json(BASE,entry.file); }
+  /* Копии статей (v=226): сразу — только нужные для показа (статьи лора, источники модулей); анкеты и прочее нужны
+     лишь поиску по тексту — догружаются в фоне после показа (C.full, ниже). До v=226 планшет ждал все ~32 файла. */
+  const loreIds=['4tRzyNaVfEQ','y7G2E4B490h','SEOWfJxAewY','gf7sBYkW_di','toTVpow7sb1'].map(id=>'tt/greyspirit/'+id);
+  const needNow=new Set([...loreIds,...Object.values(moduleRegistry.modules||{}).map(m=>m.articleId)]);
+  const loadDocs = entries => Promise.all(entries.map(async ([url,entry]) => {
+    try { docs[docId(entry)] = await fetchDoc(entry); }
     catch (error) { diagnostics.push({type:'document',id:docId(entry),reason:error.message}); }
   }));
+  const isNow=([,entry])=>needNow.has(docId(entry));
+  const withFile=documentEntries.filter(([,entry])=>entry?.file);
+  await loadDocs(withFile.filter(isNow));
   function add(value) {
     if (records.some(r=>r.id===value.id)) throw new Error(`N6: duplicate record ${value.id}`);
     const r = {aliases:[],source:{type:value.kind,key:value.id},parentId:null,links:[],
@@ -101,15 +115,15 @@ async function loadAll() {
   }
   const ownerByUrl=new Map(characters.filter(p=>p.sheetUrl).map(p=>[bare(p.sheetUrl),p.id]));
   const entriesByUrl=new Map(documentEntries.map(([url,e])=>[bare(url),e]));
+  const charText=(p,sheet)=>[p.race,p.role,p.description,sheet&&docs[sheet]&&articleText(docs[sheet])].filter(Boolean).join('\n');
   for (const p of characters) {
     raw[p.id]=p;
     const title=p.name||p.title||'',noInitials=title.replace(/^(?:\p{L}\.\s*)+/u,''),entry=entriesByUrl.get(bare(p.sheetUrl)),sheet=entry?docId(entry):null;
     add({id:p.id,kind:'character',title,shortTitle:p.shortTitle,aliases:unique([...list(p.aliases),noInitials,noInitials.split(/\s+/)[0]]),
       source:{type:'characters',key:p.id},parentId:p.parent||null,links:list(p.links),image:p.image||'',images:list(p.images),sheet,
       content:{intro:p.description||'',ownDocument:sheet,moduleRefs:[]},context:{storyId:worldFlags.items[p.parent]?.story?p.parent:null,placeIds:[],peopleIds:[]},mapTargets:targets(p),
-      summary:p.description||'',text:[p.race,p.role,p.description,sheet&&articleText(docs[sheet])].filter(Boolean).join('\n')});
+      summary:p.description||'',text:charText(p,sheet)});
   }
-  const loreIds=['4tRzyNaVfEQ','y7G2E4B490h','SEOWfJxAewY','gf7sBYkW_di','toTVpow7sb1'].map(id=>'tt/greyspirit/'+id);
   for (const [url,entry] of documentEntries) {
     if (!entry?.file || ownerByUrl.has(bare(url))) continue;
     const id=docId(entry);
@@ -205,7 +219,15 @@ async function loadAll() {
   const searchIndex=buildSearchIndex(records);
   C={raw,records,byId,docs,news,table,refs,pop,mods,diagnostics,searchIndex,children,allies,
     world,characters,articlesIndex,shipLore,schema,systemList,systemLore,systemNames,moduleRegistry,relations,resolvedModules,
-    presentation,annotations:presentation.annotations,shipRecords,referenceArticles,documentPolicy:'eager-for-full-text-search'};
+    presentation,annotations:presentation.annotations,shipRecords,referenceArticles,documentPolicy:'lazy-full-text'};
+  // Остальные копии (анкеты) — в фоне; потом текст персонажей, упоминания и поисковый индекс пересчитываются.
+  C.full=loadDocs(withFile.filter(e=>!isNow(e))).then(()=>{
+    for (const r of records) if (r.kind==='character') r.text=charText(raw[r.id],r.sheet);
+    C.table=buildAliases(records); C.refs=mentions(records,C.table);
+    C.pop=Object.fromEntries(Object.entries(C.refs).map(([id,items])=>[id,items.length]));
+    C.searchIndex=buildSearchIndex(records);
+    C.documentPolicy='full';
+  });
   return C;
 }
 

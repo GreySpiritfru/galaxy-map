@@ -1,25 +1,25 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=225';
-import { closeModal } from './modal.js?v=225';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=225';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=225';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=225';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=225';
-import { openCharacter, closeCharacter } from './characters.js?v=225';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=225';
-import { markerEl } from './node-window.js?v=225';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=225';
-import { hideSplash } from './splash.js?v=225';
-import { fetchT, showLoadError } from './net.js?v=225';
-import { noteRecord, setRestorer } from './navigation.js?v=225';
-import { buildRecords, resolveAddress } from './records.js?v=225';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=225';
-import { decodeAddress } from './address.js?v=225';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch } from './planshet.js?v=225';
-import { REF_ARTICLES } from './articles.js?v=225';
-import { LOCAL_ARTICLES } from './reader.js?v=225';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=226';
+import { closeModal } from './modal.js?v=226';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=226';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, setSubmapRecordHandler } from './phenom.js?v=226';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=226';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=226';
+import { openCharacter, closeCharacter } from './characters.js?v=226';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=226';
+import { markerEl } from './node-window.js?v=226';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=226';
+import { hideSplash } from './splash.js?v=226';
+import { fetchT, showLoadError } from './net.js?v=226';
+import { noteRecord, setRestorer } from './navigation.js?v=226';
+import { buildRecords, resolveAddress } from './records.js?v=226';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=226';
+import { decodeAddress } from './address.js?v=226';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData } from './planshet.js?v=226';
+import { REF_ARTICLES } from './articles.js?v=226';
+import { LOCAL_ARTICLES } from './reader.js?v=226';
 
 const SVG_PATH = 'map.svg';
 
@@ -181,7 +181,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=225').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=226').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -2617,6 +2617,9 @@ function finishMapPick(p) {
     });
     if (reg.diagnostics.length) console.warn('Реестр записей:', reg.diagnostics);
     setRegistry(reg);
+    // Планшет берёт уже скачанное (v=226, js/planshet.js → planshet/model.js setShared); null — докачает сам.
+    setPlanshetData({world, characters, articlesIndex, systemLore, shipRecords, moduleRegistry: modules, relations,
+      shipLore, bld: shipArt, systemList: [...readySlugs], systemNames: await namesPromise});
   }
 
   /* Как открыть запись каждого вида (openRecord, js/open-record.js). Точки,

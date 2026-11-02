@@ -16,9 +16,9 @@
    (articles/img/<хеш>.webp).
    ============================================================ */
 
-import { fetchT } from './net.js?v=225';
-import { resolveModule } from './records.js?v=225';
-import { wireImageGallery } from './viewer.js?v=225';
+import { fetchT } from './net.js?v=226';
+import { resolveModule } from './records.js?v=226';
+import { wireImageGallery } from './viewer.js?v=226';
 
 const INDEX_URL = 'articles/index.json';
 const ANCHOR_RE = /^[A-Za-z0-9_-]{1,40}$/;
@@ -87,6 +87,10 @@ function loadDoc(entry) {
   }
   return docs.get(src);
 }
+
+/* Копия статьи по записи индекса — с тем же кэшем, что окна карты (v=226: планшет берёт копии отсюда,
+   js/planshet.js → planshet/model.js; одна статья качается и разбирается один раз). */
+export const loadMirrorDoc = entry => loadDoc(entry);
 
 /* ---------- Узлы → DOM, строго по белому списку ---------- */
 const INLINE = {strong: 'strong', em: 'em', s: 's', u: 'u', code: 'code'};

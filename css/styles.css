@@ -950,9 +950,8 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 .dock-modes .dock-item.active { color: #AFEEEE; }
 
 /* ===== Панель в «Нодах» (02.11.2026, v=219; .map-dock.nodes ставит updateViewModeUi) =====
-   Капсула режимов сжимается вправо до одной кнопки — той карты, с которой пришли (.return); «Феном» —
-   кружок без подписи; слева выезжает планшет (#dockPlanshet). Всё переходами CSS на одних и тех же
-   кнопках: flex-grow и max-width анимируются, раскладка пересчитывается сама. */
+   Геометрия сразу меняется до одной кнопки карты (.return); «Феном» — кружок без подписи.
+   Планшет (#dockPlanshet) появляется слева, капсула уезжает вправо: только opacity/transform. */
 .dock-planshet {
   flex: 0 1 auto;
   display: flex;
@@ -966,27 +965,29 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
   border-radius: 20px;
   overflow: hidden;
   opacity: 0;
-  transition: flex-grow 0.34s cubic-bezier(0.2, 0.9, 0.25, 1), max-width 0.34s cubic-bezier(0.2, 0.9, 0.25, 1),
-    margin 0.34s ease, padding 0.34s ease, opacity 0.22s ease;
+  transform: translateX(-16px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
-.map-dock.nodes .dock-planshet { flex-grow: 1; max-width: 640px; margin-right: 0; padding: 4px; opacity: 1; }
+.map-dock.nodes .dock-planshet { flex-grow: 1; max-width: 640px; margin-right: 0; padding: 4px; opacity: 1; transform: none; pointer-events: auto; }
 .map-dock.nodes .dock-tools { display: none; }
 /* Над лентой планшета фон плотнее (v=222, Codex по снимку владельца: текст ленты просвечивал сквозь панель). */
 .map-dock.nodes .dock-planshet,
 .map-dock.nodes .dock-side,
 .map-dock.nodes .dock-modes { background: rgba(12,12,18,0.97); }
-#gotoPhenom .dock-label { max-width: 60px; transition: max-width 0.3s ease, opacity 0.2s ease; }
+#gotoPhenom .dock-label { max-width: 60px; transition: opacity 0.18s ease; }
 .map-dock.nodes #gotoPhenom { padding: 0 14px; }
 .map-dock.nodes #gotoPhenom .dock-label { max-width: 0; opacity: 0; }
 .map-dock.nodes #gotoPhenom .dock-icon,
 .map-dock.nodes #gotoPhenom .corner-node-icon { width: 30px; height: 30px; }
-.dock-modes { transition: flex-grow 0.34s cubic-bezier(0.2, 0.9, 0.25, 1); }
+.dock-modes { transition: opacity 0.18s ease, transform 0.18s ease; }
 .dock-modes .dock-item {
   max-width: 120px;
-  transition: color 0.2s ease, max-width 0.34s ease, padding 0.34s ease, opacity 0.2s ease, flex-grow 0.34s ease;
+  transition: color 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
 }
-.map-dock.nodes .dock-modes { flex-grow: 0; }
-.map-dock.nodes .dock-modes .dock-item:not(.return) { flex-grow: 0; max-width: 0; padding: 0; opacity: 0; pointer-events: none; }
+.map-dock.nodes .dock-modes { flex-grow: 0; height: 56px; animation: dockModesRight 0.18s ease; }
+@keyframes dockModesRight { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+.map-dock.nodes .dock-modes .dock-item:not(.return) { flex-grow: 0; max-width: 0; padding: 0; opacity: 0; visibility: hidden; pointer-events: none; }
 .map-dock.nodes .dock-modes .dock-item.return { flex: 0 0 auto; min-width: 56px; padding: 0 10px; color: rgba(255,255,255,0.8); }
 .map-dock.nodes .view-lens { opacity: 0; }
 /* «Феном ▴» — знак приложения (Tektur, как заголовки планшета) и вход в шторку разделов. */
@@ -1049,7 +1050,9 @@ body:has(.modal-backdrop.open, .phenom-overlay.open, .system-overlay.open, .flap
 #sortToggle.graph-on .to-graph { display: none; }
 #sortToggle.graph-on .to-planshet { display: block; }
 @media (prefers-reduced-motion: reduce) {
-  .dock-planshet, .dock-modes, .dock-modes .dock-item, #gotoPhenom .dock-label { transition: none; }
+  .dock-planshet, .dock-modes, .dock-modes .dock-item, #gotoPhenom .dock-label,
+  .map-dock .dock-brand .dock-chev { transition: none; }
+  .map-dock.nodes .dock-modes { animation: none; }
 }
 /* Шире телефона — разделы своей ширины, а не растянутые. */
 @media (min-width: 601px) {

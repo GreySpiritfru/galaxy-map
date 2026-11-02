@@ -1,6 +1,6 @@
-import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=8';
-import {inChip} from './filters.js?v=8';
-import {newsNow,elTile,zones,artOf,bg} from './start.js?v=8';
+import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=9';
+import {inChip} from './filters.js?v=9';
+import {newsNow,elTile,zones,artOf,bg} from './start.js?v=9';
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.7,.2,1)';
 // Выдвинуть/задвинуть: высота коробки плавно идёт от старого содержимого к новому.
@@ -245,8 +245,7 @@ function issue(kind, state, open, opts = {}) {
   }
   return out;
 }
-// Плитки разделов: на «Всё» — первым блоком ленты, и те же — в шторке «Феном ▴» панели «Нод»
-// (js/planshet.js). Арт — у событий, статей и Фенома; у остальных — лица записей (как в V3).
+// Плитки разделов на главной. Арт — у событий, статей и Фенома; у остальных — лица записей (как в V3).
 const plur = (n, a, b, c) => `${n} ${plural(n, a, b, c)}`;
 export function sectionTiles(state, onPick) {
   const info = modeInfo(state);
@@ -260,6 +259,13 @@ export function sectionTiles(state, onPick) {
       art ? null : pics(info[k].items || []), el('span', {class: 't-title'}, label), el('span', {class: 't-sub'}, sub[k](info[k].count)));
   };
   return el('nav', {class: 'tiles', 'aria-label': 'Разделы'}, SECTIONS.map(tile));
+}
+// В шторке достаточно названия и числа; состав и счётчики совпадают с плитками главной.
+export function sectionMenu(state, onPick) {
+  const info = modeInfo(state);
+  return el('nav', {class: 'tiles p-menu-sections', 'aria-label': 'Разделы'}, SECTIONS.map(([k, label]) =>
+    el('button', {class: 'tile p-menu-section', 'aria-pressed': String(currentSection() === k), onclick: () => onPick(k)},
+      el('span', {class: 't-title p-menu-title'}, label), el('span', {class: 'p-menu-count'}, String(info[k].count)))));
 }
 // «Всё» — вся информация на одной странице.
 function home(state, open, toggle) {

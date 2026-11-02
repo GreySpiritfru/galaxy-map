@@ -8,11 +8,21 @@
    Управление — в панели карты (index.html, #dockPlanshet): «Феном ▴» — шторка разделов, 🔍 — поиск
    сверху, ▦ — граф (map.js). Записи планшет открывает окнами карты: window.__mapOpenRecord (map.js).
    ============================================================ */
+import { loadMirrorDoc } from './reader.js?v=226';
+
 const root = document.getElementById('planshet');
 const dock = document.getElementById('controls');
 // Версия модулей planshet/ — та же, что ?v= в их импортах и у planshet.css.
-const PV = 8;
+const PV = 9;
 let shell = null, loading = null;
+
+/* Общие данные (v=226): карта отдаёт уже скачанные файлы (setPlanshetData из js/map.js, после реестра записей), копии
+   статей — через общий кэш js/reader.js (loadMirrorDoc): статья, открытая в окне карты, и планшет качают её один
+   раз. Карта не успела/не смогла — через 8 с планшет качает всё сам (planshet/model.js). */
+let giveData;
+const mapData = new Promise(resolve => { giveData = resolve; });
+export function setPlanshetData(data) { giveData(data); }
+const dataOrTimeout = () => Promise.race([mapData, new Promise(resolve => setTimeout(() => resolve({}), 8000))]);
 
 /* Отступы под панель карты: --dock-top — от низа экрана до верха панели (шторка встаёт над ней),
    --dock-pad — конец ленты докручивается из-под панели. Высота панели меняется (две строки на узком
@@ -51,7 +61,8 @@ function loadCss() {
 }
 function ensure() {
   if (!loading) {
-    loading = Promise.all([import(`../planshet/app.js?v=${PV}`), loadCss()]).then(([m]) => {
+    loading = Promise.all([import(`../planshet/app.js?v=${PV}`), loadCss(), dataOrTimeout()]).then(([m, , data]) => {
+      m.setShared({...data, loadDoc: loadMirrorDoc});
       shell = m.mount(root, {
         onChange: changed,
         onHelp: () => document.getElementById('helpBtn')?.click(),

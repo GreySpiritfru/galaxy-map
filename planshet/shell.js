@@ -1,7 +1,7 @@
-import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=8';
-import {inChip} from './filters.js?v=8';
-import {createHistory} from './history.js?v=8';
-import {sectionTiles,toggleSection,currentSection} from './home.js?v=8';
+import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=9';
+import {inChip} from './filters.js?v=9';
+import {createHistory} from './history.js?v=9';
+import {sectionMenu,toggleSection,currentSection} from './home.js?v=9';
 const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 /* Планшет в карте (с 02.11.2026, v=219 — без фрейма, прямо в #planshet). Шапки нет (владелец: верх
@@ -69,12 +69,17 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
   };
   /* ---------- шторка «Феном ▴»: разделы, сюжет, помощь ---------- */
   function renderMenu() {
-    const pick = k => { closeMenu(); toggleSection(currentSection() === k ? 'all' : k); root.scrollTo(0, 0); };
+    const pick = k => {
+      closeMenu();
+      if (currentSection() === k) return;
+      toggleSection(k);
+      root.scrollTo(0, 0);
+    };
     const chip = (id, label) => el('button', {'aria-pressed': String(state.chip === id), onclick() { setFilter(id, state.kind); renderMenu(); }}, label);
     menu.replaceChildren(
       el('div', {class: 'p-menu-head'}, el('h2', {}, 'Разделы'),
         el('button', {class: 'p-menu-home', 'aria-pressed': String(currentSection() === 'all'), onclick: () => pick('all')}, 'На главную')),
-      sectionTiles(state, pick),
+      sectionMenu(state, pick),
       el('div', {class: 'f-group'}, el('h3', {}, 'Сюжет'), el('div', {class: 'f-opts'}, chipList().map(([id, label]) => chip(id, label)))),
       el('div', {class: 'p-menu-links'},
         onHelp ? el('button', {onclick() { closeMenu(); onHelp(); }}, '? Как пользоваться картой') : null,
