@@ -1,4 +1,4 @@
-"""Проверка целей нажатия карты через headless Edge/CDP (только localhost).
+"""Проверка интерфейса карты через headless Edge/CDP (только localhost).
 
 Из корня maap сначала запустить: python -m http.server 8765
 Затем: python tools/ui_check.py [w=360,384,390] [out=папка] [--json [файл]]
@@ -15,6 +15,10 @@
 пересечения ненаследующих друг друга целей. Текст статей не обходится.
 Полностью скрытые стилями/предками и полностью обрезанные scroll-контейнером
 цели пропускаются; перекрытые другими элементами цели проверяются.
+Также запускаются axe-core (WCAG 2.0/2.1/2.2 A/AA) и семь последовательных
+сценариев на каждой ширине. --only=axe|targets|scenarios выбирает один раздел;
+--axe-all включает все правила axe. Incomplete — отдельный список для ручной
+проверки, не нарушения. Подробности — tools/ui_check_README.md.
 JSON содержит все прямоугольники, hit-test, нарушения, ошибки страницы.
 Таблица содержит и прошедшие цели (OK). Нарушений N — число отдельных
 проблем, включая ошибки сценариев/страницы; пересечение пары считается раз.
@@ -33,12 +37,21 @@ import sys
 import tempfile
 import time
 
+from ui_scenarios import SCENARIOS, run_scenario
+
 
 PORT = 9462
 PROFILE = 'edgeprofuicheck'
 EDGE = Path(r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe')
 URL = 'http://localhost:8765/index.html'
 STATES = ('map', 'planshet', 'menu', 'search', 'graph', 'phenome', 'gilvi', 'story-1')
+HERE = Path(__file__).resolve().parent
+PROBE = HERE / 'ui_probe.js'
+AXE = HERE / 'vendor' / 'axe' / 'axe.min.js'
+PROBE_CALL = ('if (location.search !== NONCE) throw Error("Scenario left its starting page");'
+              'return await window.__uiCheck[NAME](...ARGS);')
+READY_EXPRESSION = ('location.search === NONCE && document.readyState === "complete" && '
+                    '!!document.querySelector("#controls") && !!window.__mapOpenRecord')
 INIT = r"""
 window.__errs = [];
 addEventListener('error', e => window.__errs.push(String(e.message || 'resource error')),
@@ -127,14 +140,15 @@ return {viewport:{width:innerWidth,height:innerHeight,dpr:devicePixelRatio},butt
 class Browser:
     def __init__(self, ws):
         self.ws = ws
+        self.page_nonce = ''
 
     def call(self, method, params=None):
         return self.ws.call(method, params)
 
-    def js(self, body):
+    def js(self, body, timeout=15000):
         result = self.call('Runtime.evaluate', {
             'expression': '(async () => {' + body + '})()',
-            'awaitPromise': True, 'returnByValue': True, 'timeout': 15000,
+            'awaitPromise': True, 'returnByValue': True, 'timeout': timeout,
         })
         if 'exceptionDetails' in result:
             detail = result['exceptionDetails']
@@ -151,8 +165,47 @@ class Browser:
         raise RuntimeError('Timeout waiting for ' + expression)
 
     def click(self, selector):
-        self.js('const e=document.querySelector(' + json.dumps(selector) + ');'
-                'if(!e) throw Error("Missing scenario control"); e.click();')
+        point = self.probe('point', selector)
+        self.call('Input.dispatchTouchEvent', {'type': 'touchStart', 'touchPoints': [
+            {**point, 'id': 1, 'radiusX': 1, 'radiusY': 1, 'force': 1}]})
+        self.call('Input.dispatchTouchEvent', {'type': 'touchEnd', 'touchPoints': []})
+
+    def probe(self, name, *args):
+        body = (PROBE_CALL.replace('NONCE', json.dumps(self.page_nonce))
+                .replace('NAME', json.dumps(name)).replace('ARGS', json.dumps(args)))
+        return self.js(body, timeout=60000 if name == 'axe' else 15000)
+
+    def expect(self, **values):
+        return self.probe('assert', values)
+
+    def wait_state(self, **values):
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline:
+            actual = self.probe('state')
+            if all(actual.get(k) == v for k, v in values.items()):
+                self.settle()
+                return self.expect(**values)
+            time.sleep(0.15)
+        self.expect(**values)
+
+    def key(self, key, code):
+        params = {'key': key, 'code': key, 'windowsVirtualKeyCode': code,
+                  'nativeVirtualKeyCode': code}
+        self.call('Input.dispatchKeyEvent', {'type': 'keyDown', **params})
+        self.call('Input.dispatchKeyEvent', {'type': 'keyUp', **params})
+
+    def escape(self):
+        self.key('Escape', 27)
+        self.settle()
+
+    def back(self):
+        self.js('history.back();')
+        self.settle()
+
+    def type_text(self, text):
+        self.click('.p-search input')
+        self.call('Input.insertText', {'text': text})
+        self.settle()
 
     def settle(self):
         self.js('if(document.fonts) await document.fonts.ready;'
@@ -164,11 +217,12 @@ class Browser:
             'width': width, 'height': 800, 'deviceScaleFactor': 2, 'mobile': True,
         })
         self.call('Emulation.setTouchEmulationEnabled', {'enabled': True, 'maxTouchPoints': 5})
-        nav = self.call('Page.navigate', {'url': URL + '?ui_check=' + str(time.time_ns())})
+        nonce = '?ui_check=' + str(time.time_ns())
+        self.page_nonce = nonce
+        nav = self.call('Page.navigate', {'url': URL + nonce})
         if nav.get('errorText'):
             raise RuntimeError(nav['errorText'])
-        self.wait('document.readyState === "complete" && '
-                  '!!document.querySelector("#controls") && !!window.__mapOpenRecord')
+        self.wait(READY_EXPRESSION.replace('NONCE', json.dumps(nonce)))
         self.wait('!document.querySelector("#splash")')
         self.click('[data-view="map"]')
         self.settle()
@@ -177,6 +231,7 @@ class Browser:
             self.wait('document.body.classList.contains("planshet-on") && '
                       '!!document.querySelector("#planshet .p-menu")')
             self.settle()
+            self.wait_state(ready=True)
             if state == 'menu':
                 self.click('#planshetBrand')
                 self.wait('!!document.querySelector("#planshet .p-menu:not([hidden])")')
@@ -188,8 +243,7 @@ class Browser:
                 self.wait('!document.body.classList.contains("planshet-on") && '
                           '!!document.querySelector("svg.nodes-mode")')
         elif state != 'map':
-            self.js('const ok=await window.__mapOpenRecord(' + json.dumps(state) + ');'
-                    'if(ok===false) throw Error("Record did not open");')
+            self.probe('record', state)
             # Сюжет, открытый сам по себе, ложится в нижний слой (#phenomOverlay), поверх Фенома — в верхний.
             overlay = {'phenome': '#phenomOverlay.open', 'gilvi': '#charOverlay.open',
                        'story-1': '#phenomOverlay.open, #storyOverlay.open'}[state]
@@ -202,7 +256,14 @@ def arguments():
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('settings', nargs='*', metavar='w=360,384,390 / out=folder')
     parser.add_argument('--json', nargs='?', const='', metavar='FILE')
+    parser.add_argument('--only', choices=('axe', 'targets', 'scenarios'),
+                        help='Запустить только один раздел проверки')
+    parser.add_argument('--axe-all', action='store_true', help='Все правила axe, включая best-practice')
+    parser.add_argument('--check-js', action='store_true', help='Проверить синтаксис JS через node и выйти')
     args = parser.parse_args()
+    if args.check_js:
+        check_js()
+        parser.exit()
     settings = {}
     for item in args.settings:
         key, sep, value = item.partition('=')
@@ -218,20 +279,11 @@ def arguments():
     out = Path(settings['out']) if 'out' in settings else Path(tempfile.mkdtemp(prefix='ui-check-'))
     out.mkdir(parents=True, exist_ok=True)
     json_path = None if args.json is None else (Path(args.json) if args.json else out / 'report.json')
-    return widths, out.resolve(), json_path
+    return widths, out.resolve(), json_path, args
 
 
-def check_state(browser, width, state, out):
-    result = {'width': width, 'state': state, 'buttons': [], 'overlaps': [],
-              'page_errors': [], 'scenario_errors': [], 'screenshot': None}
-    try:
-        browser.prepare(width, state)
-        result.update(browser.js(AUDIT))
-        if not result['buttons']:
-            result['scenario_errors'].append('No visible audit targets: state is not verified')
-    except Exception as exc:
-        result['scenario_errors'].append(str(exc))
-    # Preserve evidence even when opening the requested state failed.
+def collect_evidence(browser, result, out):
+    width, state = result['width'], result['state']
     try:
         result['page_errors'] = browser.js('return window.__errs || [];')
     except Exception as exc:
@@ -245,6 +297,56 @@ def check_state(browser, width, state, out):
         result['screenshot'] = str(shot)
     except Exception as exc:
         result['scenario_errors'].append('Screenshot: ' + str(exc))
+
+
+def axe_check(browser, result, args):
+    if args.only in (None, 'axe'):
+        try:
+            result['axe'] = browser.probe('axe', args.axe_all)
+        except Exception as exc:
+            result['scenario_errors'].append('axe: ' + str(exc))
+
+
+def empty_result(width, state):
+    return {'width': width, 'state': state, 'buttons': [], 'overlaps': [],
+            'page_errors': [], 'scenario_errors': [], 'screenshot': None,
+            'axe': {'violations': [], 'incomplete': []}, 'steps': []}
+
+
+def check_state(browser, width, state, out, args):
+    result = empty_result(width, state)
+    try:
+        browser.prepare(width, state)
+        if args.only in (None, 'targets'):
+            result.update(browser.js(AUDIT))
+            if not result['buttons']:
+                result['scenario_errors'].append('No visible audit targets: state is not verified')
+        axe_check(browser, result, args)
+    except Exception as exc:
+        result['scenario_errors'].append(str(exc))
+    collect_evidence(browser, result, out)
+    return result
+
+
+def check_scenario(browser, width, name, out, args):
+    result = empty_result(width, name)
+    def step(title, action):
+        entry = {'step': title, 'ok': False}
+        result['steps'].append(entry)
+        try:
+            value = action()
+            entry.update(ok=True, detail=value)
+            return value
+        except Exception as exc:
+            entry['error'] = str(exc)
+            raise RuntimeError(title + ': ' + str(exc)) from exc
+    try:
+        step('Новая страница → планшет', lambda: browser.prepare(width, 'planshet'))
+        run_scenario(browser, name, step)
+    except Exception as exc:
+        result['scenario_errors'].append(str(exc))
+    axe_check(browser, result, args)
+    collect_evidence(browser, result, out)
     return result
 
 
@@ -261,15 +363,52 @@ def print_state(result):
         for error in result[kind]:
             print(f"{prefix} | {kind} | - | {' '.join(str(error).split())}")
             count += 1
+    for issue in result['axe']['violations']:
+        print(f"{prefix} | axe:{issue['rule']} ({issue['impact']}) | "
+              f"{json.dumps(issue['selector'], ensure_ascii=False)} | {' '.join(issue['summary'].split())}")
+        count += 1
+    if result['axe'].get('version'):
+        print(f"{prefix} | axe {result['axe']['version']} | - | "
+              f"нарушений {len(result['axe']['violations'])}, проверить руками {len(result['axe']['incomplete'])}")
+    if result['steps']:
+        passed = sum(s['ok'] for s in result['steps'])
+        print(f"{prefix} | scenarios | - | шагов {passed}/{len(result['steps'])}")
     return count
+
+
+def check_js():
+    """Check actual injected sources plus static inline bodies without starting Edge."""
+    import ast
+    bodies = [INIT, AUDIT, PROBE_CALL.replace('NONCE', '"?ui_check=syntax"')
+              .replace('NAME', '"state"').replace('ARGS', '[]'),
+              'return !!(' + READY_EXPRESSION.replace('NONCE', '"?ui_check=syntax"') + ');',
+              'return !!document.querySelector("#phenomOverlay.open");']
+    tree = ast.parse(Path(__file__).read_text(encoding='utf-8'))
+    for call in ast.walk(tree):
+        if (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
+                and call.func.attr == 'js' and call.args
+                and isinstance(call.args[0], ast.Constant) and isinstance(call.args[0].value, str)):
+            bodies.append(call.args[0].value)
+        if (isinstance(call, ast.Call) and isinstance(call.func, ast.Attribute)
+                and call.func.attr == 'wait' and call.args
+                and isinstance(call.args[0], ast.Constant) and isinstance(call.args[0].value, str)):
+            bodies.append('return !!(' + call.args[0].value + ');')
+    source = '\n'.join('(async () => {\n' + body + '\n})();' for body in bodies)
+    with tempfile.TemporaryDirectory(prefix='ui-check-syntax-') as folder:
+        script = Path(folder) / 'inline.js'
+        script.write_text(source, encoding='utf-8')
+        for path in (script, PROBE):
+            subprocess.run(['node', '--check', str(path)], check=True)
+    print('node --check: inline JS и tools/ui_probe.js — OK')
 
 
 def main():
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-    widths, out, json_path = arguments()
+    widths, out, json_path, args = arguments()
     report = {'url': URL, 'widths': widths, 'height': 800, 'dpr': 2,
-              'mobile': True, 'touch': True, 'states': [], 'run_errors': []}
+              'mobile': True, 'touch': True, 'only': args.only, 'axe_all': args.axe_all,
+              'states': [], 'scenarios': [], 'run_errors': []}
     proc = None
     ws = None
     killer = None
@@ -302,7 +441,7 @@ def main():
             try:
                 if any(t.get('type') == 'page' for t in cdp.targets()):
                     ws = cdp.page()
-                    ws.s.settimeout(25)
+                    ws.s.settimeout(75)
                     break
             except (OSError, ValueError):
                 pass
@@ -314,11 +453,19 @@ def main():
             browser.call(domain + '.enable')
         browser.call('Network.setCacheDisabled', {'cacheDisabled': True})
         browser.call('Page.addScriptToEvaluateOnNewDocument', {'source': INIT})
+        browser.call('Page.addScriptToEvaluateOnNewDocument', {'source': PROBE.read_text(encoding='utf-8')})
+        if args.only in (None, 'axe'):
+            browser.call('Page.addScriptToEvaluateOnNewDocument', {'source': AXE.read_text(encoding='utf-8')})
         for width in widths:
-            for state in STATES:
-                result = check_state(browser, width, state, out)
+            for state in STATES if args.only != 'scenarios' else ():
+                result = check_state(browser, width, state, out, args)
                 result['violation_count'] = print_state(result)
                 report['states'].append(result)
+                sys.stdout.flush()
+            for name in SCENARIOS if args.only in (None, 'scenarios') else ():
+                result = check_scenario(browser, width, name, out, args)
+                result['violation_count'] = print_state(result)
+                report['scenarios'].append(result)
                 sys.stdout.flush()
     except Exception as exc:
         report['run_errors'].append(str(exc))
@@ -335,8 +482,20 @@ def main():
                 proc.wait(timeout=10)
             except Exception as exc:
                 report['run_errors'].append('Edge cleanup: ' + str(exc))
-    report['violation_count'] = sum(s['violation_count'] for s in report['states']) + len(report['run_errors'])
-    report['complete'] = len(report['states']) == len(widths) * len(STATES)
+    results = report['states'] + report['scenarios']
+    report['violation_count'] = sum(s['violation_count'] for s in results) + len(report['run_errors'])
+    expected_states = 0 if args.only == 'scenarios' else len(widths) * len(STATES)
+    expected_scenarios = len(widths) * len(SCENARIOS) if args.only in (None, 'scenarios') else 0
+    report['complete'] = (len(report['states']) == expected_states and
+                          len(report['scenarios']) == expected_scenarios and
+                          not report['run_errors'] and
+                          not any(r['scenario_errors'] for r in results))
+    report['manual_review'] = [dict(width=r['width'], state=r['state'], **issue)
+                               for r in results for issue in r['axe']['incomplete']]
+    print('Проверить руками (axe incomplete; не нарушения): ' + str(len(report['manual_review'])))
+    for issue in report['manual_review']:
+        print(f"{issue['width']} | {issue['state']} | {issue['rule']} ({issue['impact']}) | "
+              f"{json.dumps(issue['selector'], ensure_ascii=False)} | {' '.join(issue['summary'].split())}")
     for error in report['run_errors']:
         print('RUN ERROR | ' + error)
     if json_path is not None:

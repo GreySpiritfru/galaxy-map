@@ -12,8 +12,8 @@
    — foe / neutral / ally. Ссылок на сообщения и того, кто бросал, нет
    сознательно: группа закрытая, а rolls.json публичный.
    ============================================================ */
-import { escapeHtml } from './modal.js?v=224';
-import { fetchT } from './net.js?v=224';
+import { escapeHtml } from './modal.js?v=225';
+import { fetchT } from './net.js?v=225';
 
 const ROLLS_URL = 'rolls.json';
 let rollsCache = null; // {at, data}

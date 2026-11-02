@@ -11,7 +11,7 @@
 const root = document.getElementById('planshet');
 const dock = document.getElementById('controls');
 // Версия модулей planshet/ — та же, что ?v= в их импортах и у planshet.css.
-const PV = 7;
+const PV = 8;
 let shell = null, loading = null;
 
 /* Отступы под панель карты: --dock-top — от низа экрана до верха панели (шторка встаёт над ней),
@@ -32,6 +32,8 @@ function changed() {
   const brand = document.getElementById('planshetBrand');
   if (brand && shell) {
     brand.setAttribute('aria-expanded', String(shell.isMenuOpen()));
+    // aria-controls — только пока шторка на странице видна (axe: ссылка на скрытый элемент не проверяема).
+    if (shell.isMenuOpen()) brand.setAttribute('aria-controls', 'planshetMenu'); else brand.removeAttribute('aria-controls');
     brand.classList.toggle('filtered', shell.filtered());
   }
   document.getElementById('planshetSearch')?.classList.toggle('active', !!shell && shell.isSearchOpen());

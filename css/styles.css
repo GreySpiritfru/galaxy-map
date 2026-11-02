@@ -2064,6 +2064,30 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   border-radius: 20px;
   border-top: none;
 }
+/* Окно с одной вкладкой (v=225, .single ставит js/node-window.js syncSingle): одна строка — ✕/↩ слева, дальше
+   строка связей; единственная кнопка «Описание» не показывается. Строка при прокрутке не прячется (в ней выход). */
+.node-dock.single {
+  flex-direction: row;
+  align-items: flex-end;
+  background: rgba(16,16,24,0.95);
+}
+.node-dock.single > .tabbar {
+  order: -1;
+  flex: 0 0 auto;
+  padding: 0;
+  border-top: none;
+  border-radius: 20px 0 0 20px;
+  background: none;
+}
+.node-dock.single > .tabbar .tabbar-btn { display: none !important; }
+.node-dock.single > .tabbar .toolbar-close-btn { min-height: 48px; }
+.node-dock.single > .node-links {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: 0 20px 20px 0;
+  background: none;
+}
+.node-dock.single > .node-links[hidden] + .tabbar { border-radius: 20px; }
 /* Окно системы (v=179): та же плашка поверх карты системы. Своё у панели
    (.system-toolbar — полоса сверху до v=179) здесь снимается. */
 .node-dock.system-dock { z-index: 210; }

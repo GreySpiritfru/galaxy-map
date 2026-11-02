@@ -97,8 +97,23 @@ export function viewImages(srcs, i = 0) {
   const session = {pswp: null, focus: document.activeElement, background: []};
   active = session;
   document.dispatchEvent(new Event('viewer-change'));
-  Promise.all([loadAssets(), Promise.all(items.map(slideData))]).then(([PhotoSwipe, dataSource]) => {
+  /* v=225 (владелец: «выбранная ждёт остальных — нехорошо»): ждём только библиотеку и размер ВЫБРАННОЙ картинки.
+     У остальных, чей размер не известен из данных (w/h статьи), — временный размер экрана, а настоящий
+     подставляется по загрузке (refreshSlideContent). Раньше Promise.all ждал загрузки всей галереи. */
+  const index = Math.max(0, Math.min(items.length - 1, Math.trunc(i) || 0));
+  const known = item => {
+    const d = typeof item === 'string' ? {src: item} : {...item};
+    const w = Number(d.width || d.w), h = Number(d.height || d.h);
+    return w > 0 && h > 0 && Number.isFinite(w) && Number.isFinite(h) ? {...d, width: w, height: h} : null;
+  };
+  const dataSource = items.map(known);
+  const later = dataSource.map((d, k) => !d && k !== index);
+  Promise.all([loadAssets(), dataSource[index] || slideData(items[index])]).then(([PhotoSwipe, first]) => {
     if (active !== session) return; // Back or a newer request cancelled loading.
+    dataSource[index] = first;
+    later.forEach((wait, k) => {
+      if (wait) dataSource[k] = {src: typeof items[k] === 'string' ? items[k] : items[k].src, width: innerWidth, height: innerHeight};
+    });
     // Resolve calc()/max() safe-area variables as actual lengths.
     const probe = document.createElement('div');
     probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;padding-top:var(--safe-top,0px);padding-bottom:var(--safe-bottom,0px)';
@@ -110,7 +125,7 @@ export function viewImages(srcs, i = 0) {
     };
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const pswp = new PhotoSwipe({
-      dataSource, index: Math.max(0, Math.min(items.length - 1, Math.trunc(i) || 0)),
+      dataSource, index,
       // Фон сплошной, как в Telegram (при свайпе вниз светлеет сам); Esc и фокус ведёт navigation.js / finish().
       mainClass: 'map-pswp', bgOpacity: 1, escKey: false, returnFocus: false,
       closeOnVerticalDrag: true, pinchToClose: true, wheelToZoom: true,
@@ -142,6 +157,15 @@ export function viewImages(srcs, i = 0) {
     for (const [node] of session.background) node.inert = true;
     try { pswp.init(); }
     catch (error) { pswp.destroy(); throw error; }
+    // Размеры остальных — по мере загрузки, не задерживая открытие.
+    later.forEach((wait, k) => {
+      if (!wait) return;
+      slideData(items[k]).then(real => {
+        if (active !== session || pswp.isDestroying) return;
+        dataSource[k] = real;
+        pswp.refreshSlideContent(k);
+      });
+    });
   }).catch(error => {
     finish(session);
     console.warn('Не удалось открыть просмотр картинок', error);

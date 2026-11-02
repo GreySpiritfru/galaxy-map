@@ -15,13 +15,13 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=224';
-import { REF_ARTICLES } from './articles.js?v=224';
-import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=224';
-import { renderSheetCard } from './sheet-card.js?v=224';
-import { wireImageGallery } from './viewer.js?v=224';
-import { frameHtml, safeHttps } from './net.js?v=224';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=224';
+import { escapeHtml } from './modal.js?v=225';
+import { REF_ARTICLES } from './articles.js?v=225';
+import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=225';
+import { renderSheetCard } from './sheet-card.js?v=225';
+import { wireImageGallery } from './viewer.js?v=225';
+import { frameHtml, safeHttps } from './net.js?v=225';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=225';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -974,6 +974,8 @@ function wireDockAutoHide(card, dock) {
     const y = body.scrollTop;
     const dy = y - lastY;
     lastY = y;
+    // Одна строка (окно с одной вкладкой, v=225): в ней ✕ — не прятать.
+    if (dock.classList.contains('single')) { if (offset) set(0, false); return; }
     // Прокрутку поставил код (вернулись с «Статьи» на «Описание») — не жест.
     if (performance.now() < (body.__ignoreScrollUntil || 0)) return;
     if (dy) dir = Math.sign(dy);
@@ -998,6 +1000,19 @@ function wireDockAutoHide(card, dock) {
   dock.addEventListener('focusin', () => card.__showDock());
 }
 
+/* Окно с одной вкладкой (только «Описание»: статья, здание, район, точка без статьи и «Игры») — плашка в одну
+   строку `[✕/↩][родитель › запись · связи]` (v=225; план notes/ui-plan.md, Codex): кнопка «Описание» одна и ничего
+   не переключает, а место нужно связям. Вкладки показывает/прячет applyNodeToolbar и окна (style.display,
+   hidden) — следим за ними наблюдателем. */
+function syncSingle(dock) {
+  const bar = dock.querySelector(':scope > .tabbar');
+  const strip = dock.querySelector(':scope > .node-links');
+  if (!bar || !strip) return;
+  const tabs = [...bar.querySelectorAll('.tabbar-btn')].filter(b => !b.hidden && b.style.display !== 'none');
+  const single = tabs.length <= 1;
+  if (dock.classList.contains('single') !== single) dock.classList.toggle('single', single);
+}
+
 // ⚠️ Ниже констант DOCK_*: wireDockAutoHide меряет строку сразу, и вызов до
 // их объявления — ReferenceError (TDZ), модуль падал целиком (v=193).
 document.querySelectorAll('.phenom-card').forEach(card => {
@@ -1006,6 +1021,11 @@ document.querySelectorAll('.phenom-card').forEach(card => {
   dockObservers.add(dock);
   new ResizeObserver(() => syncDock(card)).observe(dock);
   wireDockAutoHide(card, dock);
+  const bar = dock.querySelector(':scope > .tabbar');
+  if (bar) {
+    new MutationObserver(() => syncSingle(dock)).observe(bar, {subtree: true, attributes: true, attributeFilter: ['style', 'hidden']});
+    syncSingle(dock);
+  }
 });
 
 /* opts.fold — вид окна для памяти раскрытия ('point' | 'system').

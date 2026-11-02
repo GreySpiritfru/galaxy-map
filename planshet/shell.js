@@ -1,7 +1,7 @@
-import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=7';
-import {inChip} from './filters.js?v=7';
-import {createHistory} from './history.js?v=7';
-import {sectionTiles,toggleSection,currentSection} from './home.js?v=7';
+import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=8';
+import {inChip} from './filters.js?v=8';
+import {createHistory} from './history.js?v=8';
+import {sectionTiles,toggleSection,currentSection} from './home.js?v=8';
 const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 /* Планшет в карте (с 02.11.2026, v=219 — без фрейма, прямо в #planshet). Шапки нет (владелец: верх
@@ -25,7 +25,7 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
     el('button', {class: 'p-search-done', type: 'button', onclick: () => { input.blur(); if (!input.value.trim()) closeSearch(); }}, 'Готово'));
   const main = el('main', {class: 'wrap main'});
   const results = el('main', {class: 'wrap results', hidden: true});
-  const menu = el('div', {class: 'p-menu', role: 'dialog', 'aria-label': 'Разделы планшета', hidden: true});
+  const menu = el('div', {class: 'p-menu', id: 'planshetMenu', role: 'dialog', 'aria-label': 'Разделы планшета', tabindex: '-1', hidden: true});
   root.append(searchBar, main, results, menu);
   fontLink();
 
@@ -73,7 +73,7 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
     const chip = (id, label) => el('button', {'aria-pressed': String(state.chip === id), onclick() { setFilter(id, state.kind); renderMenu(); }}, label);
     menu.replaceChildren(
       el('div', {class: 'p-menu-head'}, el('h2', {}, 'Разделы'),
-        el('button', {class: 'p-menu-home', 'aria-pressed': String(currentSection() === 'all'), onclick: () => pick('all')}, 'Всё — главная')),
+        el('button', {class: 'p-menu-home', 'aria-pressed': String(currentSection() === 'all'), onclick: () => pick('all')}, 'На главную')),
       sectionTiles(state, pick),
       el('div', {class: 'f-group'}, el('h3', {}, 'Сюжет'), el('div', {class: 'f-opts'}, chipList().map(([id, label]) => chip(id, label)))),
       el('div', {class: 'p-menu-links'},
@@ -81,16 +81,27 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
         onTour ? el('button', {onclick() { closeMenu(); onTour(); }}, 'Короткая экскурсия') : null));
   }
   const isMenuOpen = () => !menu.hidden;
+  /* Фокус (v=225, разбор Codex): открылась шторка — фокус на неё (клавиатура, TalkBack/VoiceOver), закрылась —
+     обратно на кнопку, которой открывали («Феном ▴»), если фокус был внутри шторки. На касаниях не видно. */
+  let menuOpener = null;
   function openMenu() {
     if (!C.records) return;
     hideSearch();
     renderMenu();
+    menuOpener = document.activeElement;
     menu.hidden = false;
+    menu.focus({preventScroll: true});
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches)
       menu.animate([{opacity: 0, transform: 'translateY(16px)'}, {opacity: 1, transform: 'none'}], {duration: 200, easing: 'cubic-bezier(.2,.7,.2,1)'});
     onChange();
   }
-  function closeMenu() { if (menu.hidden) return; menu.hidden = true; onChange(); }
+  function closeMenu() {
+    if (menu.hidden) return;
+    const inside = menu.contains(document.activeElement);
+    menu.hidden = true;
+    if (inside && menuOpener?.isConnected) menuOpener.focus({preventScroll: true});
+    onChange();
+  }
   const toggleMenu = () => isMenuOpen() ? closeMenu() : openMenu();
   // Тап мимо шторки (по ленте) — закрыть; по самой панели карты — её кнопки решают сами.
   root.addEventListener('pointerdown', e => { if (isMenuOpen() && !menu.contains(e.target)) closeMenu(); });
@@ -154,7 +165,7 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
   // Где ищем: везде или в сюжете из шторки (и как вернуть «везде»).
   function scopeLine(found, total) {
     const story = state.chip !== 'all' ? chipList().find(c => c[0] === state.chip)?.[1] : '';
-    const count = found == null ? '' : ` · найдено ${found}${story && total > found ? ` из ${total}` : ''}`;
+    const count = found == null ? '' : `: найдено ${found}${story && total > found ? ` из ${total}` : ''}`;
     return el('p', {class: 'p-scope'}, story ? `Ищу в сюжете «${story}»${count}. ` : `Ищу везде${count}`,
       story ? el('button', {onclick: () => setFilter('all', state.kind)}, 'Искать везде') : null);
   }
@@ -173,6 +184,15 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
     return el('span', {class: 'p-snip'}, from ? '…' : '', text.slice(from, at), el('mark', {}, text.slice(at, end)), text.slice(end, to), to < text.length ? '…' : '');
   }
   const group = (title, kids) => el('section', {class: 'group'}, el('h3', {}, title), kids);
+  // Первые n строк, остальное — по кнопке «Показать ещё N» (v=225: раньше лишнее просто не показывалось).
+  function listMore(list, n, make) {
+    const box = el('div', {class: 'rows'}, list.slice(0, n).map(make));
+    if (list.length > n) {
+      const more = el('button', {class: 'p-more', onclick() { more.replaceWith(...list.slice(n).map(make)); }}, `Показать ещё ${list.length - n}`);
+      box.append(more);
+    }
+    return box;
+  }
   function renderResults() {
     const q = state.q.trim();
     const out = [];
@@ -192,14 +212,17 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
       /* Порядок внутри групп (владелец 02.11): статьи → сюжеты → маркеры и системы → Феном (районы, здания) →
          события → персонажи последними; точное совпадение названия — всё равно первым. */
       const RANK = {article: 0, story: 1, place: 2, system: 2, zone: 3, building: 3, news: 4, character: 5};
-      const rank = h => (norm(h.r.title) === norm(q) ? -1 : RANK[viewKind(h.r)] ?? 4);
+      // Точное совпадение названия или имени (псевдонима: «Гил», «Спирит») — первым.
+      const exact = h => [h.r.title, ...(h.r.aliases || [])].some(t => norm(t) === norm(q));
+      const rank = h => (exact(h) ? -1 : RANK[viewKind(h.r)] ?? 4);
       const ordered = [...hits].sort((a, b) => rank(a) - rank(b) || b.score - a.score);
       const named = ordered.filter(h => h.where !== 'text'), inText = ordered.filter(h => h.where === 'text');
       if (!hits.length) out.push(el('p', {class: 'empty'}, 'Ничего не нашлось. Попробуйте имя персонажа, название места или слово из события.'));
-      if (named.length) out.push(group('В названии и именах', el('div', {class: 'rows'},
-        named.slice(0, 40).map(h => row(h.r, KIND[viewKind(h)], open)))));
-      if (inText.length) out.push(group('В тексте', el('div', {class: 'rows'},
-        inText.slice(0, 30).map(h => row(h.r, [KIND[viewKind(h)], snippet(h.r, q) ? [' · ', snippet(h.r, q)] : null], open)))));
+      if (named.length) out.push(group('В названии и именах', listMore(named, 20, h => row(h.r, KIND[viewKind(h)], open))));
+      if (inText.length) out.push(group('В тексте', listMore(inText, 10, h => {
+        const snip = snippet(h.r, q);
+        return row(h.r, [KIND[viewKind(h)], snip ? [': ', snip] : null], open);
+      })));
       // «Где упоминается» лучшее совпадение по названию — свёрнуто, после основного.
       const top = named[0], ment = top ? mentionsOf(top.id) : [];
       if (ment.length) out.push(el('details', {class: 'drop p-mentions'},
