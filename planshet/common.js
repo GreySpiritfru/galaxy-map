@@ -1,4 +1,4 @@
-import { articleText, linkText, search } from '../js/linker.js?v=253';
+import { articleText, linkText, search } from '../js/linker.js?v=254';
 import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=30';
 export { C, load, viewKind, pointModules, alsoIn };
 export const BASE = new URL('../', import.meta.url).href;
