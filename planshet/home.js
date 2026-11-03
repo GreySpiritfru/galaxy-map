@@ -1,6 +1,6 @@
-import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=25';
-import {inChip} from './filters.js?v=25';
-import {newsNow,elTile,zones,artOf,bg} from './start.js?v=25';
+import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=26';
+import {inChip} from './filters.js?v=26';
+import {newsNow,elTile,zones,artOf,bg} from './start.js?v=26';
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.7,.2,1)';
 // Выдвинуть/задвинуть: высота коробки плавно идёт от старого содержимого к новому.
@@ -263,11 +263,11 @@ export function sectionTiles(state, onPick) {
   return el('nav', {class: 'tiles', 'aria-label': 'Разделы'}, NAV.map(tile));
 }
 /* В шторке — «На главную» и разделы сеткой 3 × 2 (v=231, владелец); название и число, счётчики — как у плиток главной.
-   Фон плитки — арт раздела (v=232): MENU_ART — заготовка под свои арты разделов (путь от корня сайта; владелец: для
-   сюжетов, маркеров, персонажей и «На главную» их ещё нет, районам нужен другой); пусто — арт, как у плитки главной
-   (статьи, районы), иначе без арта. */
-const MENU_ART = {all: '', article: '', story: '', place: '', building: '', character: ''};
-const menuArt = (k, info) => MENU_ART[k] || (['article', 'building'].includes(k) ? info[k]?.art : '') || '';
+   Фон плитки — арт раздела (v=232): MENU_ART — свои арты разделов (путь от корня сайта; v=248 — images/menu/, кадры
+   600×260 из папки артов владельца); пусто — арт, как у плитки главной (статьи), иначе без арта. */
+const MENU_ART = {all: 'images/menu/phenome.webp', article: '', story: 'images/menu/stories.webp', place: 'images/menu/markers.webp',
+  building: 'images/menu/city.webp', character: 'images/menu/characters.webp'};
+const menuArt = (k, info) => MENU_ART[k] || (k === 'article' ? info[k]?.art : '') || '';
 export function sectionMenu(state, onPick) {
   const info = modeInfo(state);
   const tile = (k, label, count) => {

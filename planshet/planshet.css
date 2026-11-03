@@ -462,7 +462,8 @@ body.planshet-on #planshet .p-menu-body { background: rgba(12,12,18,0.97); }
   min-width: 0; min-height: 48px; padding: 6px 10px; border-radius: 12px; background: var(--raise); font-size: 14px; line-height: 1.25; }
 #planshet .p-menu-title { min-width: 0; font: inherit; font-weight: 600; }
 #planshet .p-menu-count { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
-#planshet .p-menu-section[aria-pressed="true"] { color: var(--act); background: rgba(175,238,238,0.12); box-shadow: inset 3px 0 var(--act); }
+/* Только цвет фона: сокращение background сбрасывало размер и место арта плитки — у нажатой был виден угол картинки (v=248). */
+#planshet .p-menu-section[aria-pressed="true"] { color: var(--act); background-color: rgba(175,238,238,0.12); box-shadow: inset 3px 0 var(--act); }
 #planshet .p-menu-section[aria-pressed="true"] .p-menu-count { color: var(--act); }
 
 /* ===== Шторка «Феном», v=231–232 (владелец) =====

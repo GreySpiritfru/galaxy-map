@@ -16,9 +16,9 @@
    (articles/img/<хеш>.webp).
    ============================================================ */
 
-import { fetchT } from './net.js?v=247';
-import { resolveModule } from './records.js?v=247';
-import { wireImageGallery } from './viewer.js?v=247';
+import { fetchT } from './net.js?v=248';
+import { resolveModule } from './records.js?v=248';
+import { wireImageGallery } from './viewer.js?v=248';
 
 const INDEX_URL = 'articles/index.json';
 const ANCHOR_RE = /^[A-Za-z0-9_-]{1,40}$/;
