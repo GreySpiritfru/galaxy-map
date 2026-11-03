@@ -1,5 +1,5 @@
-import { articleText, linkText, search } from '../js/linker.js?v=254';
-import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=30';
+import { articleText, linkText, search } from '../js/linker.js?v=255';
+import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=31';
 export { C, load, viewKind, pointModules, alsoIn };
 export const BASE = new URL('../', import.meta.url).href;
 export const truth = v => v === true || /^(true|1)$/i.test(String(v ?? ''));

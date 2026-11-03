@@ -1,26 +1,26 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=254';
-import { closeModal } from './modal.js?v=254';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=254';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, focusSubmapChar, setSubmapRecordHandler } from './phenom.js?v=254';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=254';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=254';
-import { openCharacter, closeCharacter } from './characters.js?v=254';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=254';
-import { markerEl } from './node-window.js?v=254';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=254';
-import { hideSplash } from './splash.js?v=254';
-import { fetchT, showLoadError } from './net.js?v=254';
-import { noteRecord, setRestorer } from './navigation.js?v=254';
-import { buildRecords, resolveAddress } from './records.js?v=254';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=254';
-import { decodeAddress } from './address.js?v=254';
-import { findInRecord } from './find-in-text.js?v=254';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=254';
-import { REF_ARTICLES } from './articles.js?v=254';
-import { LOCAL_ARTICLES } from './reader.js?v=254';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=255';
+import { closeModal } from './modal.js?v=255';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=255';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, focusSubmapChar, setSubmapRecordHandler } from './phenom.js?v=255';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=255';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=255';
+import { openCharacter, closeCharacter } from './characters.js?v=255';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=255';
+import { markerEl } from './node-window.js?v=255';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=255';
+import { hideSplash } from './splash.js?v=255';
+import { fetchT, showLoadError } from './net.js?v=255';
+import { noteRecord, setRestorer } from './navigation.js?v=255';
+import { buildRecords, resolveAddress } from './records.js?v=255';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=255';
+import { decodeAddress } from './address.js?v=255';
+import { findInRecord } from './find-in-text.js?v=255';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=255';
+import { REF_ARTICLES } from './articles.js?v=255';
+import { LOCAL_ARTICLES } from './reader.js?v=255';
 
 const SVG_PATH = 'map.svg';
 
@@ -182,7 +182,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=254').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=255').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.

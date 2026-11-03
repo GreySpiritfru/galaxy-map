@@ -1,0 +1,33 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Плашка набора — макет</title>
+<style>
+@font-face { font-family: Tektur; src: url(../../../fonts/tektur-cyrillic.woff2) format('woff2'); }
+body { margin:0; padding:16px; background:#0b0b12; color:#e8e8ee; font:16px/1.5 system-ui, sans-serif; }
+h1 { font: 700 18px Tektur, sans-serif; margin: 8px 0 8px; color:#fff; }
+.cap { font-size:12px; color:rgba(255,255,255,.5); margin: 16px 0 6px; text-transform:uppercase; letter-spacing:.04em; }
+/* как сейчас (css/styles.css .node-recruit*) */
+.old { position:relative; border:1px solid rgba(255,215,106,.55); background:rgba(255,215,106,.08); border-radius:10px; padding:10px 12px; }
+.old .head { font-weight:700; color:#ffd76a; margin-bottom:4px; }
+.old .body { font-size:14px; line-height:1.45; }
+.old .acts { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.old button { flex:1 1 140px; min-height:38px; padding:8px 12px; border:1px solid rgba(255,215,106,.6); border-radius:9px; background:rgba(255,215,106,.14); color:#ffe9a8; font:600 13px sans-serif; }
+/* предложение: карточка 12, кнопки 8 без обводки, белый текст, линейные значки 24, цель 48 */
+.new { position:relative; background:rgba(255,215,106,.08); box-shadow: inset 3px 0 #ffd76a; border-radius:12px; padding:12px 12px 12px 16px; }
+.new .head { display:flex; align-items:center; gap:8px; font-weight:700; color:#ffd76a; margin-bottom:4px; }
+.new .body { font-size:16px; line-height:1.45; }
+.new .acts { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+.new button { display:flex; align-items:center; justify-content:center; gap:8px; min-height:48px; padding:0 12px; border:0; border-radius:8px; background:rgba(255,255,255,.08); color:#fff; font:600 15px system-ui, sans-serif; }
+.ic { width:24px; height:24px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex:none; }
+</style></head><body>
+<h1>Плашка «Набор открыт»</h1>
+<div class="cap">Сейчас</div>
+<div class="old"><div class="head">📣 Набор открыт</div>
+<div class="body">Ищем пилота и медика на крейсер. Старт — в административном городке.</div>
+<div class="acts"><button>📝 Шаблон анкеты</button><button>💬 Написать нам</button></div></div>
+<div class="cap">Предложение</div>
+<div class="new"><div class="head"><svg class="ic" viewBox="0 0 24 24"><path d="M4 10v4h3l7 4V6L7 10z"/><path d="M17.5 9.5a3.5 3.5 0 0 1 0 5"/></svg>Набор открыт</div>
+<div class="body">Ищем пилота и медика на крейсер. Старт — в административном городке.</div>
+<div class="acts"><button><svg class="ic" viewBox="0 0 24 24"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M9.5 12h6M9.5 15.5h6"/></svg>Анкета</button>
+<button><svg class="ic" viewBox="0 0 24 24"><path d="M4.5 5.5h15v10h-9l-4 3.5v-3.5h-2z"/></svg>Написать</button></div></div>
+<p style="font-size:14px;color:rgba(255,255,255,.62)">Что меняется: эмодзи → линейные значки из общего набора (24 px, линия 1.7); кнопки — прямоугольник 8 px без обводки, белый текст, высота 48 (было 38, золотая рамка и золотой текст); текст набора 16 px (было 14); рамка карточки → золотая полоса слева, как у выбранного раздела шторки.</p>
+</body></html>
