@@ -1,26 +1,26 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=248';
-import { closeModal } from './modal.js?v=248';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=248';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, focusSubmapChar, setSubmapRecordHandler } from './phenom.js?v=248';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=248';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=248';
-import { openCharacter, closeCharacter } from './characters.js?v=248';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=248';
-import { markerEl } from './node-window.js?v=248';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=248';
-import { hideSplash } from './splash.js?v=248';
-import { fetchT, showLoadError } from './net.js?v=248';
-import { noteRecord, setRestorer } from './navigation.js?v=248';
-import { buildRecords, resolveAddress } from './records.js?v=248';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=248';
-import { decodeAddress } from './address.js?v=248';
-import { findInRecord } from './find-in-text.js?v=248';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=248';
-import { REF_ARTICLES } from './articles.js?v=248';
-import { LOCAL_ARTICLES } from './reader.js?v=248';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=249';
+import { closeModal } from './modal.js?v=249';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=249';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, focusSubmapChar, setSubmapRecordHandler } from './phenom.js?v=249';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=249';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=249';
+import { openCharacter, closeCharacter } from './characters.js?v=249';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=249';
+import { markerEl } from './node-window.js?v=249';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=249';
+import { hideSplash } from './splash.js?v=249';
+import { fetchT, showLoadError } from './net.js?v=249';
+import { noteRecord, setRestorer } from './navigation.js?v=249';
+import { buildRecords, resolveAddress } from './records.js?v=249';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=249';
+import { decodeAddress } from './address.js?v=249';
+import { findInRecord } from './find-in-text.js?v=249';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=249';
+import { REF_ARTICLES } from './articles.js?v=249';
+import { LOCAL_ARTICLES } from './reader.js?v=249';
 
 const SVG_PATH = 'map.svg';
 
@@ -182,7 +182,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=248').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=249').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -667,6 +667,10 @@ function finishMapPick(p) {
   }, true);
   controlsEl?.addEventListener('pointerdown', (e) => {
     if (e.button && e.button !== 0) return;
+    /* Пальцем — без мышиных событий совместимости (v=248, облачная перепроверка 03.11): кнопку жмём сами на pointerup,
+       а пришедший после него mousedown забирал фокус на кнопку — у поля поиска (🔍) и шторки фокус пропадал, экранная
+       клавиатура не открывалась. click после этого браузер всё равно шлёт — его гасит ловушка выше. */
+    if (e.pointerType !== 'mouse') e.preventDefault();
     lastDownAt = performance.now();
     pz.stopMotion();
     const id = e.pointerId, sx = e.clientX, sy = e.clientY;

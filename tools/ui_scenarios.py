@@ -66,7 +66,8 @@ def run_scenario(b, name, step):
         step('Карта видна', lambda: b.wait_state(map=True, mapVisible=True, tabletHidden=True))
         step('Открыть шторку над картой', lambda: tap('#planshetBrand'))
         step('Карта под шторкой видна', lambda: b.wait_state(menu=True, overMap=True, map=True, mapVisible=True))
-        step('Коснуться подложки мимо шторки', lambda: tap('#planshet'))
+        # С v=236 (владелец) тап мимо шторки над картой её не закрывает — карта под ней живая; закрывает «Феном».
+        step('Закрыть шторку кнопкой «Феном»', lambda: tap('#planshetBrand'))
         step('Шторка и подложка закрыты', lambda: b.wait_state(menu=False, tabletHidden=True, mapVisible=True))
         step('Открыть поиск с карты', lambda: tap('#planshetSearch'))
         step('Дождаться поля', lambda: b.wait_state(search=True, ready=True))

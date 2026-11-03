@@ -1,6 +1,6 @@
-import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=26';
-import {inChip} from './filters.js?v=26';
-import {newsNow,elTile,zones,artOf,bg} from './start.js?v=26';
+import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=27';
+import {inChip} from './filters.js?v=27';
+import {newsNow,elTile,zones,artOf,bg} from './start.js?v=27';
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.7,.2,1)';
 // Выдвинуть/задвинуть: высота коробки плавно идёт от старого содержимого к новому.
@@ -246,7 +246,13 @@ function issue(kind, state, open, opts = {}) {
   }
   return out;
 }
-// Плитки разделов на главной. Арт — у событий, статей и Фенома; у остальных — лица записей (как в V3).
+/* Арты разделов — одни для плиток главной и шторки (v=249, владелец; до того свои были только у шторки). Путь от корня
+   сайта, images/menu/ — кадры 720×340 (v=248 — 600×260) из артов владельца; герб FN уменьшен на тёмных полях. Пусто —
+   арт, как раньше: статьи — арт статьи; иначе у плитки главной лица записей, у шторки — без арта. */
+const MENU_ART = {all: 'images/menu/emblem.webp', article: '', story: 'images/menu/pyramid.webp', place: 'images/menu/markers.webp',
+  building: 'images/menu/neon-city.webp', character: 'images/menu/characters.webp'};
+const menuArt = (k, info) => MENU_ART[k] || (['news', 'article'].includes(k) ? info[k]?.art : '') || '';
+// Плитки разделов на главной. Арт — menuArt; без него — лица записей (как в V3).
 const plur = (n, a, b, c) => `${n} ${plural(n, a, b, c)}`;
 export function sectionTiles(state, onPick) {
   const info = modeInfo(state);
@@ -255,7 +261,7 @@ export function sectionTiles(state, onPick) {
     story: n => plur(n, 'сюжет', 'сюжета', 'сюжетов'), place: n => plur(n, 'маркер', 'маркера', 'маркеров'),
     building: n => plur(n, 'здание', 'здания', 'зданий'), character: n => plur(n, 'персонаж', 'персонажа', 'персонажей')};
   const tile = ([k, label]) => {
-    const art = ['news', 'article', 'building'].includes(k) && info[k].art;
+    const art = menuArt(k, info);
     // «Статьи и лор» — на всю ширину (v=231: плитки «События» нет, ряд из одной плитки).
     return el('button', {class: `tile${art ? ' bg' : ''}${k === 'article' ? ' wide' : ''}`, style: art ? bg(art) : null, 'aria-pressed': String(picked.has(k)), onclick: () => onPick(k)},
       art ? null : pics(info[k].items || []), el('span', {class: 't-title'}, label), el('span', {class: 't-sub'}, sub[k](info[k].count)));
@@ -263,11 +269,7 @@ export function sectionTiles(state, onPick) {
   return el('nav', {class: 'tiles', 'aria-label': 'Разделы'}, NAV.map(tile));
 }
 /* В шторке — «На главную» и разделы сеткой 3 × 2 (v=231, владелец); название и число, счётчики — как у плиток главной.
-   Фон плитки — арт раздела (v=232): MENU_ART — свои арты разделов (путь от корня сайта; v=248 — images/menu/, кадры
-   600×260 из папки артов владельца); пусто — арт, как у плитки главной (статьи), иначе без арта. */
-const MENU_ART = {all: 'images/menu/phenome.webp', article: '', story: 'images/menu/stories.webp', place: 'images/menu/markers.webp',
-  building: 'images/menu/city.webp', character: 'images/menu/characters.webp'};
-const menuArt = (k, info) => MENU_ART[k] || (k === 'article' ? info[k]?.art : '') || '';
+   Фон плитки — арт раздела (v=232), menuArt выше. */
 export function sectionMenu(state, onPick) {
   const info = modeInfo(state);
   const tile = (k, label, count) => {

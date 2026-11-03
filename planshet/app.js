@@ -1,6 +1,6 @@
 /* Планшет карты (02.11.2026, перенос планшета): режим «Ноды». С v=219 — не страница во фрейме, а модули,
    которые карта грузит при первом показе и ставит в #planshet (js/planshet.js). Основа — макет mock/n6. */
-import {makeShell} from './shell.js?v=26';
-export {setShared} from './model.js?v=26';
-import {renderMain} from './home.js?v=26';
+import {makeShell} from './shell.js?v=27';
+export {setShared} from './model.js?v=27';
+import {renderMain} from './home.js?v=27';
 export const mount = (root, opts) => makeShell({root, renderMain, ...opts});
