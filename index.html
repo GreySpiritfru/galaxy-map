@@ -6,14 +6,14 @@
   <title>Карта галактики — Феном</title>
   <!-- Скрипт Telegram — своя копия (v=199): telegram.org из РФ без VPN не
        отвечает, и этот блокирующий <script> вешал страницу на ~35 с. -->
-  <script src="js/vendor/telegram-web-app.js?v=254"></script>
+  <script src="js/vendor/telegram-web-app.js?v=256"></script>
   <!-- Самый тяжёлый файл на странице (~2.7 МБ после пережатия подложки в WebP,
        см. tools/optimize-map-svg.py) — без preload браузер начинает качать его
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
   <link rel="preload" href="images/splash-logo.webp" as="image" />
-  <link rel="stylesheet" href="css/styles.css?v=254" />
+  <link rel="stylesheet" href="css/styles.css?v=256" />
 </head>
 <body>
 
@@ -152,7 +152,7 @@
   <div class="node-dock system-dock">
   <div class="node-links system-links" id="systemLinks" hidden></div>
   <div class="system-toolbar lore-toolbar tabbar">
-    <button class="toolbar-close-btn" id="systemBack" aria-label="Закрыть">✕</button>
+    <button class="toolbar-close-btn" id="systemBack" aria-label="Закрыть"><svg class="ui-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
     <button class="tabbar-btn active" id="systemMapTab">
       <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></svg></span><span class="tabbar-btn-label">Карта системы</span>
     </button>
@@ -179,7 +179,7 @@
     <div class="node-dock">
       <div class="node-links" id="phenomLinks" hidden></div>
       <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
-      <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть">✕</button>
+      <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть"><svg class="ui-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       <!-- Тело окна — две вкладки: «Описание» (базовая, подсвечена при
            открытии) и «Статья» (только если у точки есть ссылка на статью),
            applyNodeToolbar/showNodeBody в js/node-window.js. -->
@@ -223,7 +223,7 @@
     <div class="node-dock">
       <div class="node-links" id="storyLinks" hidden></div>
       <div class="phenom-toolbar lore-toolbar tabbar" id="storyToolbar">
-      <button class="toolbar-close-btn" id="storyClose" aria-label="Закрыть">✕</button>
+      <button class="toolbar-close-btn" id="storyClose" aria-label="Закрыть"><svg class="ui-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       <!-- Родителя тут нет — он в строке плашки (#storyLinks). -->
       <!-- Тело окна — «Описание» и «Статья», как у нижнего слоя. -->
       <button class="tabbar-btn active" id="storyDescription">
@@ -256,7 +256,7 @@
     <div class="node-dock">
       <div class="node-links" id="charLinks" hidden></div>
       <div class="phenom-toolbar lore-toolbar tabbar" id="charToolbar">
-      <button class="toolbar-close-btn" id="charToolbarClose" aria-label="Закрыть">✕</button>
+      <button class="toolbar-close-btn" id="charToolbarClose" aria-label="Закрыть"><svg class="ui-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
       <!-- Базовая вкладка — тело окна: анкета. -->
       <button class="tabbar-btn active" id="charSheet">
         <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5.5" y="4.5" width="13" height="16" rx="2"/><path d="M9.5 4.5V3.3h5v1.2"/><path d="M8.8 10h6.4M8.8 13.5h6.4M8.8 17h3.8"/></svg></span><span class="tabbar-btn-label">Анкета</span>
@@ -282,6 +282,6 @@
      не в модуле, — за ним следит navigation.js (Esc / «назад» закрывают игру). -->
 <div class="flappy-overlay" id="flappyOverlay" role="dialog" aria-modal="true" aria-label="Мини-игра Flappy Phenome"></div>
 
-<script type="module" src="js/main.js?v=254" onerror="window.__bootFail && window.__bootFail()"></script>
+<script type="module" src="js/main.js?v=256" onerror="window.__bootFail && window.__bootFail()"></script>
 </body>
 </html>

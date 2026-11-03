@@ -556,3 +556,19 @@ body.planshet-on #planshet .p-menu-body { background: rgba(12,12,18,0.97); }
 #planshet .res-row > .row { flex: 1; min-width: 0; }
 #planshet .res-map { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; color: var(--act); }
 #planshet .res-map svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ===== v=256 (planshet ?v=32): общие правила панелей — шторка (вариант В облака; см. конец css/styles.css). ===== */
+#planshet .p-mini-icon svg { width: 24px; height: 24px; }
+#planshet .p-menu-sections, #planshet .p-menu-row { border-radius: 14px; background: rgba(255,255,255,0.04); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+#planshet .p-menu-row { gap: 0; padding: 4px; margin-top: 4px; }
+#planshet .p-menu .p-menu-section { border-radius: 10px; }
+/* Кнопки нижнего ряда — без своих подложек (как вкладки и панель карты); «Схема» — без бирюзового. */
+#planshet .p-menu .p-mini, #planshet .p-menu .p-menu-ship { min-height: 52px; padding: 4px 2px; gap: 3px; border-radius: 10px; background: none; box-shadow: none; }
+#planshet .p-menu .p-mini { font-size: 12px; font-weight: 600; line-height: 15px; }
+/* Выбранное — «линза»; у раздела с артом подложку не видно — только линия, плотнее (без рамки 2 px и полосы слева). */
+#planshet .p-menu .p-mini[aria-pressed="true"] { color: #AFEEEE; background: rgba(175,238,238,0.15); box-shadow: inset 0 0 0 1px rgba(175,238,238,0.3); }
+#planshet .p-menu .tile[aria-pressed="true"] { outline: none; box-shadow: inset 0 0 0 1.5px rgba(175,238,238,0.65); }
+#planshet .p-menu-body { box-shadow: inset 1px 0 rgba(255,255,255,0.08), inset -1px 0 rgba(255,255,255,0.08), inset 0 1px rgba(255,255,255,0.08); }
+@media (min-width: 1000px) {
+  #planshet .p-menu .p-mini, #planshet .p-menu .p-menu-ship { flex-direction: row; gap: 8px; min-height: 48px; font-size: 14px; }
+}

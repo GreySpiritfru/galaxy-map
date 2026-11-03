@@ -1,26 +1,26 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=254';
-import { closeModal } from './modal.js?v=254';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=254';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, focusSubmapChar, setSubmapRecordHandler } from './phenom.js?v=254';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=254';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=254';
-import { openCharacter, closeCharacter } from './characters.js?v=254';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=254';
-import { markerEl } from './node-window.js?v=254';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=254';
-import { hideSplash } from './splash.js?v=254';
-import { fetchT, showLoadError } from './net.js?v=254';
-import { noteRecord, setRestorer } from './navigation.js?v=254';
-import { buildRecords, resolveAddress } from './records.js?v=254';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=254';
-import { decodeAddress } from './address.js?v=254';
-import { findInRecord } from './find-in-text.js?v=254';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=254';
-import { REF_ARTICLES } from './articles.js?v=254';
-import { LOCAL_ARTICLES } from './reader.js?v=254';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=256';
+import { closeModal } from './modal.js?v=256';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=256';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, focusSubmapChar, setSubmapRecordHandler } from './phenom.js?v=256';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=256';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=256';
+import { openCharacter, closeCharacter } from './characters.js?v=256';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=256';
+import { markerEl } from './node-window.js?v=256';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=256';
+import { hideSplash } from './splash.js?v=256';
+import { fetchT, showLoadError } from './net.js?v=256';
+import { noteRecord, setRestorer } from './navigation.js?v=256';
+import { buildRecords, resolveAddress } from './records.js?v=256';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=256';
+import { decodeAddress } from './address.js?v=256';
+import { findInRecord } from './find-in-text.js?v=256';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=256';
+import { REF_ARTICLES } from './articles.js?v=256';
+import { LOCAL_ARTICLES } from './reader.js?v=256';
 
 const SVG_PATH = 'map.svg';
 
@@ -182,7 +182,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=254').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=256').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -1191,9 +1191,10 @@ function finishMapPick(p) {
       if (ref.mode === 'embed' && def) {
         modules.push({moduleId: ref.moduleId, title: def.title, selector: def.selector, url: art.url, articleTitle: art.title});
       }
+      // Буквы у статьи нет (v=255): маркер без арта рисует книгу-значок (markerEl), а не эмодзи 📖.
       if (!materials.some(m => m.id === art.id)) {
         materials.push({id: art.id, kind: 'article', label: art.title.replace(/\s*\(ред\.\)\s*$/, ''), name: art.title,
-          kindLabel: 'Статья', letter: '📖', shape: 'square', url: art.url, anchor: def ? def.selector.from : ''});
+          kindLabel: 'Статья', letter: '', shape: 'square', url: art.url, anchor: def ? def.selector.from : ''});
       }
     }
     return {modules, materials};
@@ -2769,7 +2770,7 @@ function finishMapPick(p) {
       id: rec.id, code: '', title: rec.title, shortTitle: '', recruit: '', images: [], description: '',
       documentUrl: rec.url, beacon: false, completed: false, article: null, modules: [], materials: [],
       submap: null, parentMeta: null, self: {id: rec.id, kind: 'article', label: rec.title.replace(/\s*\(ред\.\)\s*$/, ''),
-        name: rec.title, letter: '📖', shape: 'square'},
+        name: rec.title, letter: '', shape: 'square'},
       canEdit: false, characters: [], insideLabel: 'Используется в',
       children: users.map(r => recordMeta(r)), roster: [], branch: [],
     };

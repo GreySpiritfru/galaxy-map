@@ -1515,31 +1515,35 @@ body.planshet-on .map-dock .dock-bar { background: rgba(12,12,18,0.97); }
   overflow-y: auto;
   overscroll-behavior: contain;
 }
+/* v=255 (вариант C): разделы «Внутри» / «Материалы» / «Персонажи» — ПОТОКОМ,
+   а не колонками. Раздел — во всю длину своих маркеров (flex-basis: auto),
+   встаёт в линию, пока влезает; не влез — на новую линию, там сжимается до
+   её ширины и переносит маркеры внутри себя (min-width: 0). Так у Фенома места,
+   статья и персонажи — одной линией, у сюжета персонажи — во всю ширину, а на
+   компьютере всё в одну линию. Было: места — колонкой 64/136 px слева
+   (высокий столбик и пустота справа), персонажи — справа, между ними черта. */
 .node-links-cols {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
-  padding: 10px 10px 8px;
+  gap: 12px;
+  padding: 8px 8px 12px;
 }
 .node-links-col {
+  flex: 0 1 auto;   /* не растягиваться: разделы в линии — вплотную слева, без дыр между ними */
+  display: flex;
+  flex-direction: column;
+  gap: 4px;         /* подпись — ряд маркеров */
+  min-width: 0;
+}
+/* Ряд маркеров раздела (переносится внутри раздела). */
+.node-links-row {
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
   align-items: flex-start;
-  gap: 8px;
+  gap: 8px 4px;
   min-width: 0;
-}
-.node-links-col.is-points { flex: 0 0 auto; width: 64px; }
-.node-links-col.is-points.is-wide { width: 136px; }
-.node-links-col.is-chars { flex: 1 1 0; }
-/* Колонка одна (только места или только персонажи) — во всю ширину. */
-.node-links-col:only-child { flex: 1 1 auto; width: auto; }
-.node-links-sep {
-  flex: 0 0 auto;
-  align-self: stretch;
-  width: 1px;
-  margin: 2px 10px;
-  background: rgba(255,255,255,0.14);
-  opacity: calc((var(--p) - 0.6) * 2.5);
 }
 .link-chip {
   flex: 0 0 auto;
@@ -1547,14 +1551,26 @@ body.planshet-on .map-dock .dock-bar { background: rgba(12,12,18,0.97); }
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  width: 50px;
-  padding: 0;
+  /* v=255: ширина по подписи, не меньше цели касания 48 и не больше 64
+     (было ровно 50 у всех): короткие имена — плотнее, длинные — не режутся
+     сильнее прежнего. */
+  width: auto;
+  min-width: 48px;
+  max-width: 64px;
+  min-height: 48px;
+  padding: 0 2px;
+  box-sizing: border-box;
   border: none;
+  border-radius: 8px;
   background: none;
   color: rgba(255,255,255,0.78);
   font: inherit;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
+.link-chip:active { background: rgba(255,255,255,0.09); }
+@media (hover: hover) { .link-chip:hover { background: rgba(255,255,255,0.05); } }
+.link-chip:focus-visible { outline: 2px solid rgba(175,238,238,0.7); outline-offset: -2px; }
 /* Ячейка маркера одной высоты у всех — маркеры разного размера стоят по
    центру, подписи на одной линии. */
 .link-chip-slot {
@@ -1578,8 +1594,10 @@ body.planshet-on .map-dock .dock-bar { background: rgba(12,12,18,0.97); }
    точка и персонаж — оба квадраты, разница только в скруглении. */
 .link-chip--point .link-chip-marker { width: 36px; height: 36px; font-size: 15px; }
 /* Названия мест длиннее имён («Крейсер Горизонт») — чип шире и подпись в
-   две строки, иначе «Крейсе…». */
-.link-chip--point { width: 64px; }
+   две строки, иначе «Крейсе…». v=255: до 72 px по подписи и без полей (было
+   ровно 64 — «Расовая энциклопе…» обрезалась); у Фенома на 360 px места,
+   статья и персонажи так встают в одну линию. */
+.link-chip--point { max-width: 72px; padding: 0; }
 .link-chip--point .link-chip-caption {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -1591,7 +1609,7 @@ body.planshet-on .map-dock .dock-bar { background: rgba(12,12,18,0.97); }
   overflow-wrap: break-word;
   text-align: center;
 }
-.link-chip--char .link-chip-marker { width: 30px; height: 30px; font-size: 13px; }
+.link-chip--char .link-chip-marker { width: 32px; height: 32px; font-size: 14px; }  /* v=255: было 30 */
 /* Союзники — одной группой на золотой подложке (v=178; раньше — пунктирная
    рамка, как нить союза на карте). Подложка — отдельным слоем, чтобы
    проявляться вместе с раскрытием. Отрицательные поля — чипы в группе стоят
@@ -1600,9 +1618,9 @@ body.planshet-on .map-dock .dock-bar { background: rgba(12,12,18,0.97); }
   position: relative;
   flex: 0 0 auto;
   display: flex;
-  gap: 6px;
-  margin: -3px 0;
-  padding: 3px 5px;
+  gap: 4px;          /* v=255: как между одиночными (было 6) */
+  margin: -2px 0;
+  padding: 2px 4px;  /* v=255: шаг 4 (было 3/5) */
   border-radius: 12px;
 }
 .link-group::before {
@@ -1662,7 +1680,7 @@ body.planshet-on .map-dock .dock-bar { background: rgba(12,12,18,0.97); }
 }
 .node-crumb {
   flex: 0 1 auto;
-  min-width: 44px;
+  min-width: 48px;   /* v=255: цель ≥ 48 (было 44) */
   max-width: 45%;
   padding: 0 2px 0 6px;
   color: rgba(255,255,255,0.62);
@@ -2010,15 +2028,17 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   border-top: none;
 }
 /* Окно с одной вкладкой (v=225, .single ставит js/node-window.js syncSingle): одна строка — ✕/↩ слева, дальше
-   строка связей; единственная кнопка «Описание» не показывается. Строка при прокрутке не прячется (в ней выход). */
-.node-dock.single {
-  flex-direction: row;
-  align-items: flex-end;
-  background: rgba(16,16,24,0.95);
-}
+   строка связей; единственная кнопка «Описание» не показывается. Строка при прокрутке не прячется (в ней выход).
+   v=255: ✕ — поверх левого края строки (position: absolute), а строка — 56 px, как ✕, и отступает слева на его
+   ширину. Было (v=225–254): ✕ и строка — соседи в ряду с align-items: flex-end: строка 48 px в плашке 56 стояла на
+   4 px ниже центра, а раскрытая панель уводила строку наверх, ✕ оставался внизу. Теперь ✕ всегда в линию со
+   строкой, а раскрытые разделы — во всю ширину плашки, и под ✕ не остаётся пустой полосы. */
+.node-dock.single { background: rgba(16,16,24,0.95); }
 .node-dock.single > .tabbar {
-  order: -1;
-  flex: 0 0 auto;
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 56px;
   padding: 0;
   border-top: none;
   border-radius: 20px 0 0 20px;
@@ -2027,12 +2047,13 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
 .node-dock.single > .tabbar .tabbar-btn { display: none !important; }
 .node-dock.single > .tabbar .toolbar-close-btn { min-height: 56px; }
 .node-dock.single > .node-links {
-  flex: 1 1 auto;
-  min-width: 0;
-  border-radius: 0 20px 20px 0;
+  border-radius: 20px;
   background: none;
 }
-.node-dock.single > .node-links[hidden] + .tabbar { border-radius: 20px; }
+.node-dock.single > .node-links > .node-strip { height: 56px; padding-left: 64px; }
+/* Строки нет — ✕ один, обычным потоком (иначе плашка схлопнулась бы в ноль). */
+.node-dock.single > .node-links[hidden] + .tabbar,
+.phenom-overlay.map-view .node-dock.single > .tabbar { position: relative; border-radius: 20px; }
 /* Окно системы (v=179): та же плашка поверх карты системы. Своё у панели
    (.system-toolbar — полоса сверху до v=179) здесь снимается. */
 .node-dock.system-dock { z-index: 210; }
@@ -2047,6 +2068,12 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
    это время — отдельная капсула: своё скругление сверху, своя тень и ободок.
    До v=193 было наоборот: уезжали вкладки (класс tabs-moving). */
 .node-dock > .tabbar { position: relative; z-index: 2; }
+/* Компьютер (v=255, вариант C): плашка шире — 720 px, как колонка текста
+   окна (--window-column 760 минус поля), а не 560: в раскрытой панели
+   разделы встают в одну линию, в ряд — до 13 персонажей вместо 9. */
+@media (min-width: 1000px) {
+  .node-dock { max-width: 720px; }
+}
 .node-dock::after { z-index: 3; }
 .node-dock.dock-snap > .node-links { transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.22s ease; }
 .phenom-card.strip-hiding > .node-dock { box-shadow: none; }
@@ -2785,22 +2812,40 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
 .node-module-source a { color: #AFEEEE; }
 .node-module-broken { color: #f0b37e; font-size: 14px; }
 
-/* Подписи групп в колонке мест нижней панели: «Внутри» / «Материалы». Во
-   всю ширину колонки, проявляются вместе с подписями маркеров. */
+/* Подписи разделов нижней панели: «Внутри» / «Материалы» / «Персонажи»
+   (v=255 — над каждым разделом, когда их больше одного). Во всю ширину
+   раздела, проявляются вместе с подписями маркеров. Цвет — серый, а не
+   бирюзовый (v=255): бирюзовый — только выбранное/текущее. */
 .node-links-cap {
-  flex: 0 0 100%;
+  padding-left: 2px;
   font-size: 10px;
-  line-height: 1.2;
+  line-height: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: rgba(175,238,238,0.75);
+  color: rgba(255,255,255,0.5);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   opacity: calc((var(--p) - 0.6) * 2.5);
 }
-/* Статья — значок 📖 на тёмной заглушке (не цветной букве точки). */
-.node-marker.kind-article { background: rgba(175,238,238,0.14); font-size: 0.75em; }
+/* Статья без арта — линейная книга (v=255, markerEl; было эмодзи 📖) на
+   тёмной заглушке, цветом текста. Значок — 2/3 маркера: в маркере 36 px это
+   24 px, как у вкладок; в стопке 22 px — 15 px, линия толще, чтобы книга
+   не терялась. */
+/* Фон непрозрачный: в стопке лица внахлёст, и сквозь полупрозрачный просвечивала рамка соседа. */
+.node-marker.kind-article { background: #23232b; color: rgba(255,255,255,0.85); }
+.node-marker-icon {
+  display: block;
+  width: 66.7%;
+  height: 66.7%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.node-stack-face .node-marker-icon,
+.node-strip-marker .node-marker-icon { width: 72%; height: 72%; stroke-width: 2; }
 
 @media (max-width: 600px) {
   /* Окно точки — на весь экран и на телефоне (24.09.2026), полей тут нет. */
@@ -3796,3 +3841,48 @@ mark.find-hit.find-cur { animation: findFlash 2.2s ease-out; }
 .find-count { flex: none; padding: 0 6px; font-variant-numeric: tabular-nums; }
 .find-more { min-width: 0; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #AFEEEE; font-weight: 500; }
 .find-more[hidden] { display: none; }
+
+/* ===== v=256: ОБЩИЕ ПРАВИЛА ПАНЕЛЕЙ (вариант В облака 03.11 — notes/briefs/img/window-panel-review/menu-sync/; владелец
+   04.11 «выглядит хорошо»). Одни значения для панели карты, шторки «Феном ▴» и плашек окон: выбранное везде — «линза»
+   панели карты (бирюзовый текст + подложка 15 % + линия 30 %), группы — карточками 4 % с белой линией, кнопки без своих
+   подложек, подписи под значками 12 px / 600, значки 24 px, бирюзовый — только у выбранного. Правила шторки — в конце
+   planshet/planshet.css. ===== */
+:root {
+  --ui-panel-text: rgb(12,12,18);   /* плашка окна над текстом — сплошная: при 0.95 текст просвечивал */
+  --ui-line: rgba(255,255,255,0.08); --ui-sep: rgba(255,255,255,0.07);
+  --ui-text: #ececf2; --ui-muted: #9a9aa8; --ui-act: #AFEEEE;
+  --ui-sel-bg: rgba(175,238,238,0.15); --ui-sel-line: rgba(175,238,238,0.3);
+  --ui-card: rgba(255,255,255,0.04);
+  --r-btn: 10px; --r-card: 14px; --ui-label: 12px;
+}
+/* Кнопки берут шрифт страницы (сами не наследуют — было Arial). */
+.tabbar-btn, .tabbar .toolbar-close-btn, .link-chip, .node-crumb, .node-strip-open { font-family: inherit; }
+/* ✕ / ↩ — линейные значки 24 px (js/navigation.js, index.html). */
+.ui-x { display: block; width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+/* Бирюзовый — только выбранное: число у стопки и подписи — цветом текста. */
+.node-stack-n { color: var(--ui-text); }
+.tabbar-btn:not(.active), .link-chip { color: var(--ui-text); }
+.node-dock > .node-links, .node-dock > .tabbar, .node-dock.single { background: var(--ui-panel-text); }
+.map-dock .dock-bar { box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 0 0 0 1px var(--ui-line); }
+.map-dock.menu-open .dock-bar { box-shadow: 0 8px 26px rgba(0,0,0,0.45), inset 1px 0 var(--ui-line), inset -1px 0 var(--ui-line), inset 0 -1px var(--ui-line), inset 0 1px var(--ui-sep); }
+.view-lens { border-radius: var(--r-btn); }
+.node-dock > .tabbar .tabbar-btn.active { color: var(--ui-act); background: var(--ui-sel-bg); box-shadow: inset 0 0 0 1px var(--ui-sel-line); border-radius: var(--r-btn); }
+/* Маркеры раскрытой плашки — одной карточкой. Без подписей разделов (v=256): между группой мест/статей и персонажами —
+   зазор 16 px (внутри группы — 4), при переносе — строка 8 px. */
+/* Отступ сверху — прозрачной рамкой, не margin: высоту тела JS берёт по cols.offsetHeight (margin туда не входит —
+   было 4 px лишней прокрутки и полоса справа). */
+.node-links-cols { margin: 0 4px; border-top: 4px solid transparent; background-clip: padding-box; padding: 6px; gap: 8px 16px;
+  border-radius: var(--r-card); background-color: var(--ui-card); box-shadow: inset 0 0 0 1px var(--ui-line); }
+.node-links-col { gap: 0; }
+.dock-label, .tabbar-btn-label { font-size: var(--ui-label); font-weight: 600; line-height: 15px; }
+.link-chip-caption { font-size: 11px; font-family: inherit; }
+/* Строка окна: название — Tektur, как «Феном» на панели; родитель — приглушённым. */
+.node-strip-title { font-family: 'Tektur', system-ui, sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 0.01em; }
+.node-crumb { color: var(--ui-muted); font-size: 13px; }
+.node-strip-open, .node-crumb { border-radius: var(--r-btn); }
+/* Компьютер: значок слева, подпись справа — как режимы панели карты. */
+@media (min-width: 1000px) {
+  .node-dock > .tabbar .tabbar-btn { flex: 0 0 auto; flex-direction: row; gap: 8px; min-height: 48px; padding: 0 18px; }
+  .node-dock > .tabbar .tabbar-btn-label { font-size: 14px; line-height: 18px; }
+  .node-dock > .tabbar .toolbar-close-btn { min-height: 48px; }
+}

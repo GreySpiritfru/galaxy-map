@@ -1,4 +1,4 @@
-import {C, el, BASE, firstImage, viewKind, newsFor, newsItem, plural} from './common.js?v=30';
+import {C, el, BASE, firstImage, viewKind, newsFor, newsItem, plural} from './common.js?v=32';
 
 export function artOf(r) {
   if (!r) return '';

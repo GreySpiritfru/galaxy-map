@@ -9,7 +9,7 @@
    в модале, район/здание — Феном на вкладке схемы.
    options: {tab, instant} — вкладка (rolls, notes) и без перелёта камеры.
    ============================================================ */
-import { resolveAddress } from './records.js?v=254';
+import { resolveAddress } from './records.js?v=256';
 
 let registry = null;
 let markReady;

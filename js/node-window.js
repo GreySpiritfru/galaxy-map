@@ -15,13 +15,13 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=254';
-import { REF_ARTICLES } from './articles.js?v=254';
-import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=254';
-import { renderSheetCard } from './sheet-card.js?v=254';
-import { wireImageGallery } from './viewer.js?v=254';
-import { frameHtml, safeHttps } from './net.js?v=254';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=254';
+import { escapeHtml } from './modal.js?v=256';
+import { REF_ARTICLES } from './articles.js?v=256';
+import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=256';
+import { renderSheetCard } from './sheet-card.js?v=256';
+import { wireImageGallery } from './viewer.js?v=256';
+import { frameHtml, safeHttps } from './net.js?v=256';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=256';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -637,6 +637,12 @@ function descriptionHtml(view) {
 
    Битый путь к картинке — откат на букву (по событию error, как createMapIcon
    на карте откатывается на заглушку). */
+/* Статья без арта (v=255) — линейная книга, та же, что у вкладки «Статья»
+   (index.html): эмодзи 📖 в маркере 36 px и в стопке 22 px был крошечным и
+   выбивался из набора значков. Размер и линию задаёт css (.node-marker-icon). */
+const BOOK_SVG = '<svg class="node-marker-icon" viewBox="0 0 24 24" aria-hidden="true">'
+  + '<path d="M12 6.8C10 5.3 7 4.8 4 5.3v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5z"/><path d="M12 6.8v13"/></svg>';
+
 export function markerEl(meta, extraClass) {
   const el = document.createElement('span');
   el.className = ['node-marker', 'shape-' + (meta.shape || 'circle'),
@@ -644,6 +650,7 @@ export function markerEl(meta, extraClass) {
     .filter(Boolean).join(' ');
   if (meta.ring) el.style.borderColor = meta.ring;
   const letter = () => {
+    if (meta.kind === 'article') { el.innerHTML = BOOK_SVG; return; }
     el.textContent = meta.letter || '?';
     if (meta.fill) el.style.background = meta.fill;
   };
@@ -743,55 +750,71 @@ const pinnedFirst = (list) => [...list.filter(i => i.pinned), ...list.filter(i =
    лица для стопки, чтобы каждое лицо летело в свой маркер. */
 /* Материалы (02.11.2026, перенос планшета, шаг 4): статьи, куски которых
    показаны в теле окна (modules.json + relations.json), — статья целиком.
-   В колонке мест, после них, с подписями групп «Внутри» / «Материалы»
-   (подписи — только когда групп больше одной, «Материалы» — всегда: значок
-   📖 сам не говорит, что это статья). */
+   После мест, с подписями групп «Внутри» / «Материалы» (подписи — только
+   когда групп больше одной, «Материалы» — всегда: значок книги сам не
+   говорит, что это статья). С v=255 — своим разделом, см. ниже. */
+/* Раскладка v=255 (обзор плашки, вариант C): не две колонки, а РАЗДЕЛЫ
+   потоком — «Внутри», «Материалы», «Персонажи» встают в одну линию, пока
+   влезают, а не влез — переносится целиком на следующую и там занимает всю
+   ширину (css .node-links-cols). Было (v=179–254): места — колонкой 64 px
+   слева, персонажи — справа; у Фенома три места столбиком давали панель
+   ~250 px с пустой полосой под двумя персонажами, а у альянса колонка мест
+   была шире, чем нужно. Разделы различают подписи (когда разделов больше
+   одного) — вертикальная черта между колонками больше не нужна. */
 function linkParts(view, go) {
   const kids = pinnedFirst(Array.isArray(view.children) ? view.children : []);
   const materials = Array.isArray(view.materials) ? view.materials : [];
   const points = [...kids, ...materials];
   const groups = groupByLinks(pinnedFirst(Array.isArray(view.characters) ? view.characters : []));
   const chars = groups.flat();
-  const pointsCol = document.createElement('div');
-  // Мест больше трёх — колонка в два ряда, иначе вытягивалась бы вверх.
-  pointsCol.className = 'node-links-col is-points' + (points.length > 3 ? ' is-wide' : '');
-  const caption = (text) => {
-    const c = document.createElement('span');
-    c.className = 'node-links-cap';
-    c.textContent = text;
-    pointsCol.appendChild(c);
+  // Раздел: подпись и ряд маркеров (возвращается ряд). Подпись — НЕ в ряду:
+  // в переносящемся ряду её ширина сложилась бы с маркерами и раздел вышел
+  // бы вдвое шире; рядом с рядом она только не даёт разделу стать уже себя.
+  const sections = [];
+  const section = (cls, text) => {
+    const col = document.createElement('div');
+    col.className = 'node-links-col ' + cls;
+    if (text) {
+      const c = document.createElement('span');
+      c.className = 'node-links-cap';
+      c.textContent = text;
+      col.appendChild(c);
+    }
+    const row = document.createElement('div');
+    row.className = 'node-links-row';
+    col.appendChild(row);
+    sections.push(col);
+    return row;
   };
-  if (kids.length && (materials.length || view.insideLabel)) caption(view.insideLabel || 'Внутри');
-  const pointChips = kids.map(p => linkChip(p, go.point));
-  pointChips.forEach(c => pointsCol.appendChild(c));
-  if (materials.length) {
-    caption('Материалы');
-    materials.forEach(m => {
-      const chip = linkChip(m, () => go.material(m));
-      pointChips.push(chip);
-      pointsCol.appendChild(chip);
+  /* v=256 (владелец 04.11): подписей «Внутри» / «Материалы» / «Персонажи» нет — «в и так забитую панельку текст» не
+     нужен. Места и статьи — одной группой (книга сама отличает статью), персонажи — своей, отделены зазором шире. */
+  const pointChips = [];
+  if (kids.length || materials.length) {
+    const col = section('is-points', '');
+    kids.forEach(p => { const chip = linkChip(p, go.point); pointChips.push(chip); col.appendChild(chip); });
+    materials.forEach(m => { const chip = linkChip(m, () => go.material(m)); pointChips.push(chip); col.appendChild(chip); });
+  }
+  const charChips = [];
+  if (chars.length) {
+    const col = section('is-chars', '');
+    groups.forEach(group => {
+      if (group.length === 1) {
+        const chip = linkChip(group[0], go.char);
+        charChips.push(chip);
+        col.appendChild(chip);
+        return;
+      }
+      const box = document.createElement('span');
+      box.className = 'link-group';
+      group.forEach(c => {
+        const chip = linkChip(c, go.char);
+        charChips.push(chip);
+        box.appendChild(chip);
+      });
+      col.appendChild(box);
     });
   }
-  const charsCol = document.createElement('div');
-  charsCol.className = 'node-links-col is-chars';
-  const charChips = [];
-  groups.forEach(group => {
-    if (group.length === 1) {
-      const chip = linkChip(group[0], go.char);
-      charChips.push(chip);
-      charsCol.appendChild(chip);
-      return;
-    }
-    const box = document.createElement('span');
-    box.className = 'link-group';
-    group.forEach(c => {
-      const chip = linkChip(c, go.char);
-      charChips.push(chip);
-      box.appendChild(chip);
-    });
-    charsCol.appendChild(box);
-  });
-  return {points, chars, pointsCol, charsCol, pointChips, charChips};
+  return {points, chars, sections, pointChips, charChips};
 }
 
 // Стопка в строке: до STACK_FACES маркеров внахлёст (первый — сверху) и число.
@@ -1037,6 +1060,7 @@ export function renderNodeLinks(el, view, handlers, opts) {
   const kind = (opts && opts.fold) || 'point';
   el.textContent = '';
   if (el.__refit) { liveRows.delete(el.__refit); el.__refit = null; }
+  if (el.__ro) { el.__ro.disconnect(); el.__ro = null; }
   // Перерисовка посреди раскрытия (перешли по маркеру, пока панель ехала):
   // недоигранная анимация не должна оставить плашку «в движении» — тогда
   // её высота (--dock-h) больше не пересчитывалась бы.
@@ -1067,18 +1091,12 @@ export function renderNodeLinks(el, view, handlers, opts) {
   const card = el.closest('.phenom-card');
   if (!canOpen) { if (card) syncDock(card); return; }
 
-  // Тело раскрытой панели: колонки (одна — во всю ширину), между ними черта.
+  // Тело раскрытой панели: разделы потоком (v=255, linkParts), без черты.
   const body = document.createElement('div');
   body.className = 'node-links-body';
   const cols = document.createElement('div');
   cols.className = 'node-links-cols';
-  if (parts.pointChips.length) cols.appendChild(parts.pointsCol);
-  if (parts.pointChips.length && parts.charChips.length) {
-    const sep = document.createElement('span');
-    sep.className = 'node-links-sep';
-    cols.appendChild(sep);
-  }
-  if (parts.charChips.length) cols.appendChild(parts.charsCol);
+  parts.sections.forEach(s => cols.appendChild(s));
   body.appendChild(cols);
   el.appendChild(body);
 
@@ -1229,6 +1247,30 @@ export function renderNodeLinks(el, view, handlers, opts) {
   el.__refit = () => { tries = 0; refit(); };
   liveRows.add(el.__refit);
   refit();
+
+  /* ⚠️ v=255 (баг «лишнее место над/под персонажами» у Переворота): окна
+     вызывают renderNodeLinks, когда плашка ещё в виде одной вкладки (.single
+     снимает syncSingle наблюдателем — уже ПОСЛЕ, в микрозадаче), и колонки
+     мерились по ширине «плашка минус ✕»: на 360 px персонажи вставали в три
+     ряда, высота тела запоминалась под три, а показывались два — ~58 px
+     пустоты. Теперь ширина колонок или строки поменялась (ушёл/пришёл
+     .single, поворот, раскладка разделов) — перемер: высота и полёт лиц. */
+  if (window.ResizeObserver) {
+    // Размер на момент замера выше: первый отклик наблюдателя с тем же
+    // размером — не повод мерить второй раз.
+    const sizeKey = () => `${cols.offsetWidth}x${cols.offsetHeight}/${strip.open.offsetWidth}`;
+    let last = measured ? sizeKey() : '';
+    const ro = new ResizeObserver(() => {
+      if (!body.isConnected) { ro.disconnect(); return; }
+      const key = sizeKey();
+      if (key === last || !cols.offsetWidth) return;
+      last = key;
+      if (fitted) el.__refit();
+    });
+    ro.observe(cols);
+    ro.observe(strip.open);
+    el.__ro = ro;
+  }
 }
 
 /* Кнопки ряда-таббара. refs — элементы конкретного слоя (у каждого свои id в

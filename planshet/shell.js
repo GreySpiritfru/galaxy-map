@@ -1,7 +1,7 @@
-import {C,el,MAP_SVG,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=30';
-import {inChip} from './filters.js?v=30';
-import {createHistory} from './history.js?v=30';
-import {sectionMenu,toggleSection,currentSection} from './home.js?v=30';
+import {C,el,MAP_SVG,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=32';
+import {inChip} from './filters.js?v=32';
+import {createHistory} from './history.js?v=32';
+import {sectionMenu,toggleSection,currentSection} from './home.js?v=32';
 const FILTER_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.4V19l-3.6-1.8v-4.8z"/></svg>';
 const HELP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.5"/><circle class="dot" cx="12" cy="16.8" r=".6"/></svg>';
 const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
