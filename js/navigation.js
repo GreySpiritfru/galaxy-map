@@ -39,14 +39,14 @@
    + записи стопки; по ней, как и раньше, — History API, фокус и ✕/↩.
    Временные слои (Flappy, обучение, статья в модале) — по-прежнему по DOM.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=246';
-import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap, getOpenSystem } from './system-view.js?v=246';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=246';
-import { closeStory, isStoryOpen } from './stories.js?v=246';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=246';
-import { closeTour, isTourOpen } from './tour.js?v=246';
-import { isViewerOpen, closeViewer } from './viewer.js?v=246';
-import { planshetDepth, planshetBack } from './planshet.js?v=246';
+import { closeModal, isArticleOpen } from './modal.js?v=247';
+import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap, getOpenSystem } from './system-view.js?v=247';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=247';
+import { closeStory, isStoryOpen } from './stories.js?v=247';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=247';
+import { closeTour, isTourOpen } from './tour.js?v=247';
+import { isViewerOpen, closeViewer } from './viewer.js?v=247';
+import { planshetDepth, planshetBack } from './planshet.js?v=247';
 
 /* Мини-игра (js/flappy.js, v=195) — модуль грузится только по нажатию, поэтому
    отсюда его не импортируем: смотрим на класс слоя, закрываем событием. */
@@ -146,22 +146,26 @@ function depth() {
    внутри системы), поэтому система больше не проверяется первой — только её
    статья расы (isSystemLoreOpen), а сама система закрывается последней, как
    самый нижний слой. */
+/* true — что-то закрыли (ночной аудит, п.10: popstate засчитывается в popstateCloses только тогда). nav-close — карте:
+   «назад» игрока, отложенное открытие окна после перелёта камеры отменяется (js/map.js). */
 function closeTop() {
-  if (closeViewer()) return;
-  if (isFlappyOpen()) { closeFlappy(); return; }
-  if (isTourOpen()) { closeTour(); return; }
-  if (isArticleOpen()) { if (isSystemLoreOpen()) showSystemMap(); else closeModal(); return; }
+  document.dispatchEvent(new Event('nav-close'));
+  if (closeViewer()) return true;
+  if (isFlappyOpen()) { closeFlappy(); return true; }
+  if (isTourOpen()) { closeTour(); return true; }
+  if (isArticleOpen()) { if (isSystemLoreOpen()) showSystemMap(); else closeModal(); return true; }
   syncScreens();
   const top = screens[screens.length - 1];
-  if (!top) { planshetBack(); return; }
+  if (!top) return !!planshetBack();
   const prev = screens[screens.length - 2];
   // Под верхней записью — другая запись того же слоя: открыть её снова.
   if (prev && prev.layer === top.layer && prev.id && restorer) {
     screens.pop();
-    if (restorer(prev) !== false) { scheduleSync(); return; }
+    if (restorer(prev) !== false) { scheduleSync(); return true; }
     screens.push(top);
   }
   layerOf(top.layer).close();
+  return true;
 }
 
 // Закрыть верхний слой снаружи (v=241: переход к соседней записи из «найдено в тексте» — вбок, а не стопкой).
@@ -227,8 +231,9 @@ history.pushState({guard: true}, '');
 window.addEventListener('popstate', () => {
   if (ownTraversals > 0) { ownTraversals--; return; }
   if (depth() > 0) {
-    popstateCloses++;
-    closeTop();
+    // Ничего не закрылось (шторка как раз сворачивается) — запись браузер всё равно съел: она больше не наша.
+    if (closeTop()) popstateCloses++;
+    else pushedByUs = Math.max(0, pushedByUs - 1);
     return;
   }
   // Открыто ничего нет, а "назад" всё равно пришёл — значит съеден страж

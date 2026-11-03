@@ -11,12 +11,12 @@
    .over-map), шторка — над прозрачной подложкой (тап мимо — закрыть), поиск — своим экраном, как в «Нодах».
    Закрыли и то и другое — поверхность снова прячется. Раздел из шторки и новость из поиска — в «Ноды».
    ============================================================ */
-import { loadMirrorDoc } from './reader.js?v=246';
+import { loadMirrorDoc } from './reader.js?v=247';
 
 const root = document.getElementById('planshet');
 const dock = document.getElementById('controls');
 // Версия модулей planshet/ — та же, что ?v= в их импортах и у planshet.css.
-const PV = 24;
+const PV = 25;
 let shell = null, loading = null;
 // nodesOn — планшет показан режимом «Ноды» (showPlanshet); over — открыт над картой шторкой или поиском.
 let nodesOn = false, over = false;
@@ -31,9 +31,15 @@ const dataOrTimeout = () => Promise.race([mapData, new Promise(resolve => setTim
 
 /* Прогрев (v=236): модули и данные планшета — заранее, когда карта уже показана и браузер свободен, чтобы первое
    открытие шторки не ждало загрузки (на карте шторка — главное меню). */
+/* v=247 (ночной аудит, п.7: одной задачей ~490 мс при ×4 CPU): по шагам — модули, потом стили, потом сборка; лента
+   при прогреве не рисуется (lazyMain в planshet/shell.js — рисуется при первом показе «Нод»). Пока карту тянут пальцем
+   (svg.panning) — ждём. */
+const idle = fn => {
+  const run = () => document.querySelector('.svg-widget > svg.panning') ? setTimeout(() => idle(fn), 300) : fn();
+  if (window.requestIdleCallback) requestIdleCallback(run, {timeout: 4000}); else setTimeout(run, 800);
+};
 export function warmPlanshet() {
-  const go = () => ensure();
-  if (window.requestIdleCallback) requestIdleCallback(go, {timeout: 4000}); else setTimeout(go, 1500);
+  idle(() => import(`../planshet/app.js?v=${PV}`).then(() => idle(() => { cssReady = loadCss(); idle(() => ensure()); })));
 }
 
 /* Отступы под панель карты: --dock-top — от низа экрана до верха панели (шторка встаёт над ней),
@@ -49,6 +55,9 @@ function fit() {
   const bar = dock.querySelector('.dock-bar')?.getBoundingClientRect();
   if (bar?.width) { root.style.setProperty('--dock-l', bar.left + 'px'); root.style.setProperty('--dock-w', bar.width + 'px'); }
 }
+// Поворот экрана, смена ширины, панель поменяла размер — шторка снова по панели (ночной аудит, п.6: наблюдателя не было).
+window.addEventListener('resize', fit);
+if (dock && window.ResizeObserver) new ResizeObserver(fit).observe(dock);
 /* Шторка просто выезжает снизу из-за панели (v=238, владелец: «простая анимация выезда»; в v=236–237 — из центра,
    и боковые края не успевали сложиться). Едет внутренний слой .p-menu-body (transform — на видеокарте), рамка .p-menu
    его обрезает по верхнему краю панели. Отдельного появления кнопок нет. */
@@ -136,8 +145,10 @@ function viewTools() {
   return labels;
 }
 
+let cssReady = null;
 function loadCss() {
-  return new Promise(res => {
+  if (cssReady) return cssReady;
+  return cssReady = new Promise(res => {
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = `planshet/planshet.css?v=${PV}`;
@@ -157,6 +168,7 @@ function ensure() {
         shipIcon: () => window.__mapShipIcon?.() || Promise.resolve(null),
         onLeave: () => nodesOn ? null : window.__mapToPlanshet?.(),
         tools: viewTools,
+        lazyMain: true,
         onMenuOpen: growMenu,
         onMenuClose: shrinkMenu,
       });
@@ -171,7 +183,7 @@ export function showPlanshet(on) {
   if (!root) return;
   nodesOn = !!on;
   over = false;
-  if (on) { ensure(); shell?.refreshMenu(); }
+  if (on) { ensure().then(sh => sh.showMain()); shell?.refreshMenu(); }
   else if (shell) shell.closeMenu();
   if (shell) changed(); else { sync(); document.dispatchEvent(new Event('planshet-change')); }
   fit();
@@ -181,8 +193,14 @@ export const isPlanshetShown = () => !!root && !root.hidden;
 export const planshetSurface = () => root;
 
 // Шторка «Феном ▴» и поиск — после загрузки данных (до неё разделам нечего показать). Не в «Нодах» — над картой.
+let menuWaiting = false;   // первая загрузка: повторный тап не встаёт в очередь (ночной аудит, п.9)
 export async function togglePlanshetMenu() {
-  await ensure(); await shell.ready;
+  if (!shell) {
+    if (menuWaiting) return;
+    menuWaiting = true;
+    try { await ensure(); await shell.ready; } finally { menuWaiting = false; }
+  }
+  fit();
   if (!nodesOn) over = true;
   shell.toggleMenu();
   changed();
@@ -191,6 +209,7 @@ export async function togglePlanshetMenu() {
    на карте не закрывается первым нажатием, а показывается (он и так «открыт», просто не был виден). */
 export async function openPlanshetSearch() {
   const s = await ensure();
+  fit();
   if (!nodesOn && !over) { over = true; if (s.isSearchOpen()) { changed(); return; } }
   s.toggleSearch();
   changed();

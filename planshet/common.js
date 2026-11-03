@@ -1,10 +1,9 @@
-import { articleText, linkText, search } from '../js/linker.js?v=246';
-import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=24';
+import { articleText, linkText, search } from '../js/linker.js?v=247';
+import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=25';
 export { C, load, viewKind, pointModules, alsoIn };
 export const BASE = new URL('../', import.meta.url).href;
 export const truth = v => v === true || /^(true|1)$/i.test(String(v ?? ''));
 export const KIND = {world: 'Маркер', system: 'Система', zone: 'Район', story: 'Сюжет', place: 'Маркер', building: 'Здание', character: 'Персонаж', article: 'Статья', news: 'Новость'};
-export const KIND_MANY = {world: 'Маркеры', system: 'Системы', zone: 'Районы', story: 'Сюжеты', place: 'Маркеры', building: 'Здания', character: 'Персонажи', article: 'Статьи', news: 'Новости'};
 const SHORT = {'kreyser-gorizont': 'Горизонт'};
 const ORDER = ['story-1', 'kreyser-gorizont', 'story-2'];
 export const ARCHIVE = 'arch-characters';
@@ -42,67 +41,6 @@ export function linked(text, selfId, seen, onOpen) {
   return frag;
 }
 export const para = (text, ctx, lbl) => el('p', {}, lbl ? el('span', {class: 'lbl'}, lbl + '. ') : null, linked(text, ctx.self, ctx.seen, ctx.open));
-
-/* ---------- блоки статей — как js/reader.js (белый список, якоря) ---------- */
-const INLINE = {strong: 'strong', em: 'em', s: 's', u: 'u', code: 'code'};
-const BLOCK = {p: 'p', h2: 'h2', h3: 'h3', h4: 'h4', blockquote: 'blockquote', pre: 'pre', li: 'li'};
-function build(nodes, parent, ctx) {
-  for (const n of Array.isArray(nodes) ? nodes : [nodes]) {
-    if (typeof n === 'string') parent.append(ctx.seen ? linked(n, ctx.self, ctx.seen, ctx.open) : n);
-    else if (n && typeof n === 'object') { const e = element(n, ctx); if (e) parent.append(e); }
-  }
-}
-function element(n, ctx) {
-  const t = n.t;
-  let e;
-  if (INLINE[t]) { e = document.createElement(INLINE[t]); build(n.c, e, ctx); }
-  else if (t === 'br') return document.createElement('br');
-  else if (t === 'a') {
-    const h = typeof n.href === 'string' ? n.href : '';
-    if (h.startsWith('#')) e = el('a', {href: h, 'data-anchor-link': h.slice(1), 'data-document':ctx.documentId || C.byId.get(ctx.self)?.sheet || ctx.self});
-    else if (/^https?:\/\//i.test(h)) e = el('a', {href: h, target: '_blank', rel: 'noopener'});
-    else e = document.createElement('span');
-    build(n.c, e, {...ctx, seen: null});
-  } else if (BLOCK[t]) {
-    e = document.createElement(BLOCK[t]);
-    if (n.align === 'center' || n.align === 'right') e.classList.add('is-' + n.align);
-    build(n.c, e, ctx);
-  } else if (t === 'ul' || t === 'ol') { e = document.createElement(t); build(n.c, e, ctx); }
-  else if (t === 'hr') e = document.createElement('hr');
-  else if (t === 'figure') {
-    if (typeof n.src !== 'string') return null;
-    const src = /^https?:\/\//i.test(n.src) ? n.src : BASE + n.src;
-    e = el('figure', {}, el('img', {src, alt: '', loading: 'lazy', width: n.w || null, height: n.h || null}));
-    if (Array.isArray(n.cap)) { const cap = document.createElement('figcaption'); build(n.cap, cap, ctx); e.append(cap); }
-  } else if (t === 'section') {
-    e = el('section', {class: 'mirror-box'});
-    if (Number.isFinite(n.hue)) e.style.setProperty('--box-hue', String(Math.round(n.hue)));
-    if (Number.isFinite(n.sat)) e.style.setProperty('--box-sat', Math.round(n.sat) + '%');
-    build(n.c, e, ctx);
-  } else if (t === 'toc') {
-    e = el('nav', {class: 'mirror-toc'}, el('ul', {}, (n.items || []).map(it =>
-      el('li', {class: 'lvl-' + Math.min(3, Math.max(1, it.l | 0))}, el('a', {href: '#' + it.a, 'data-anchor-link': it.a, 'data-document': ctx.documentId || C.byId.get(ctx.self)?.sheet || ctx.self}, String(it.x || ''))))));
-  } else if (t === 'anchor') e = el('span', {class: 'anchor'});
-  else return null;
-  if (typeof n.id === 'string') e.dataset.anchor = n.id;
-  return e;
-}
-export function renderBlocks(blocks, ctx) {
-  const box = el('div', {class: 'mirror-article'});
-  build(blocks, box, ctx);
-  return box;
-}
-// Якоря внутри карточки: есть на экране — прокрутка; нет — missing(id).
-export function wireAnchors(container, open) {
-  container.addEventListener('click', e => {
-    const a = e.target.closest('a[data-anchor-link]');
-    if (!a) return;
-    e.preventDefault();
-    const id = a.dataset.document;
-    if (!id) return;
-    open?.(id, a.dataset.anchorLink, {history: 'replace'});
-  });
-}
 
 /* ---------- модули ---------- */
 export const plain = b => articleText({c: [b]});
@@ -210,13 +148,8 @@ export function newsItem(n, open, expanded = false) {
   }}, el('span', {class: 'news-title'}, n.title), el('span', {class: 'news-meta'}, newsMeta(n)), el('span', {class: 'news-lede'}, lede(n)));
   return el('li', {class: `news-item ${n.voice}`}, head, body);
 }
-export const newsOfBuilding = idOrTitle => {
- const b=C.byId.get(idOrTitle) || C.records.find(r=>viewKind(r)==='building' && r.title===idOrTitle);
- return b ? C.news.items.filter(n=>C.byId.get(n.id)?.context.placeIds.includes(b.id)) : [];
-};
 
 /* ---------- списки ---------- */
-export const charsOf = id => C.records.filter(r => viewKind(r) === 'character' && C.raw[r.id]?.parent === id);
 export const places = () => C.records.filter(r => viewKind(r) === 'place');
 export const buildings = () => C.records.filter(r => viewKind(r) === 'building');
 export const articles = () => C.records.filter(r => viewKind(r) === 'article');
@@ -234,14 +167,6 @@ export function placeSub(r) {
   const parent = p.parent && C.byId.get(p.parent)?.title;
   return parent ? `в ${parent}` : (p.description || '').split(/(?<=[.!?])\s/)[0].slice(0, 70);
 }
-// Здания по районам — выпадающие списки (как на фандом-вики).
-export function buildingsByZone(open, openFirst = false) {
-  const groups = new Map();
-  for (const b of buildings()) { const z = b.zone || 'Без района'; if (!groups.has(z)) groups.set(z, []); groups.get(z).push(b); }
-  return [...groups].map(([z, bs], i) => el('details', {class: 'drop', open: openFirst && i === 0},
-    el('summary', {}, el('span', {}, z), el('span', {class: 'count'}, String(bs.length))), rows(bs, null, open)));
-}
-
 /* ---------- поиск: фильтры по виду, популярное выше ---------- */
 const norm = s => String(s || '').toLowerCase().replace(/ё/g, 'е').replace(/[«»"']/g, '').trim();
 export function searchAll(q, kind = 'all', limit = 40) {
@@ -254,7 +179,6 @@ export function searchAll(q, kind = 'all', limit = 40) {
   for (const h of hits) counts[h.kind] = (counts[h.kind] || 0) + 1;
   return {counts, hits: (kind === 'all' ? hits : hits.filter(h => h.kind === kind)).slice(0, limit)};
 }
-export const WHERE = {title: 'в названии', alias: 'по имени', text: 'в тексте'};
 export const mentionsOf = id => (C.refs[id] || []).map(x => C.byId.get(x)).filter(Boolean)
   .sort((a, b) => (C.pop[b.id] || 0) - (C.pop[a.id] || 0));
 
@@ -282,11 +206,4 @@ export function cardSections(r,open) {
  }else if(p.description)out.push({title:'Коротко',body:p.description.split(/\n+/).map(t=>para(t,ctx))});
  if(p.recruit&&!truth(p.completed))out.push({title:'Набор',body:para(p.recruit,ctx)});
  return out;
-}
-export function cardMeta(r) {
- const k=viewKind(r),p=C.raw[r.id]||{};
- if(k==='character')return [p.race,p.role?.toLowerCase()].filter(Boolean).join(', ');
- if(k==='story')return 'Сюжет, '+storyState(r.id)[0];
- if(k==='place')return [r.flags.alliance&&'Альянс',r.flags.location&&'Локация'].filter(Boolean).join(' · ')||'Маркер';
- return KIND[k]||'';
 }

@@ -9,7 +9,7 @@
    в модале, район/здание — Феном на вкладке схемы.
    options: {tab, instant} — вкладка (rolls, notes) и без перелёта камеры.
    ============================================================ */
-import { resolveAddress } from './records.js?v=246';
+import { resolveAddress } from './records.js?v=247';
 
 let registry = null;
 let markReady;
@@ -21,7 +21,6 @@ export function setRegistry(reg) {
   markReady(reg);
 }
 export function getRegistry() { return registry; }
-export function getRecord(id) { return registry ? registry.byId.get(id) || null : null; }
 export function setRecordOpener(kind, fn) { openers[kind] = fn; }
 
 /* true — открыто; false — нет такой записи или её не умеем открыть. */

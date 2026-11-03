@@ -1,7 +1,6 @@
-import {C, pickedStories, viewKind} from './common.js?v=24';
+import {pickedStories, viewKind} from './common.js?v=25';
 
 export const SECTIONS = [['news','События'],['article','Статьи и лор'],['story','Сюжеты'],['place','Маркеры'],['building','Районы и здания'],['character','Персонажи']];
-export const MODES = [['all','Всё'], ...SECTIONS];
 export function inChip(r, chip) {
   if (chip === 'all') return true;
   const ids = pickedStories(chip).map(s => s.id), kind = viewKind(r);
@@ -9,4 +8,3 @@ export function inChip(r, chip) {
   if (kind === 'news' || kind === 'character') return ids.includes(r.context.storyId);
   return true;
 }
-export const inMode = (r, mode) => mode === 'all' || (mode === 'place' ? ['place','system'].includes(viewKind(r)) : mode === 'building' ? ['building','zone'].includes(r.kind) : viewKind(r) === mode);

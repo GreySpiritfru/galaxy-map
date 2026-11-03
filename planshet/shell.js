@@ -1,7 +1,7 @@
-import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=24';
-import {inChip} from './filters.js?v=24';
-import {createHistory} from './history.js?v=24';
-import {sectionMenu,toggleSection,currentSection} from './home.js?v=24';
+import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=25';
+import {inChip} from './filters.js?v=25';
+import {createHistory} from './history.js?v=25';
+import {sectionMenu,toggleSection,currentSection} from './home.js?v=25';
 const FILTER_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.4V19l-3.6-1.8v-4.8z"/></svg>';
 const HELP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.5"/><circle class="dot" cx="12" cy="16.8" r=".6"/></svg>';
 const MAP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></svg>';
@@ -16,7 +16,7 @@ const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"
    С v=227 шторка и поиск открываются и над картой (js/planshet.js, .over-map): onShip/shipIcon — первый пункт
    шторки «Схема корабля Феном»; onLeave — перейти в «Ноды», когда показать надо ленту (раздел, новость из поиска).
    tools — кнопка вида в ряду сюжетов (v=229: на карте «Меньше подписей», в «Нодах» «Граф связей»; js/planshet.js). */
-export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour, onShip, shipIcon, onLeave = () => {}, tools, onMenuOpen, onMenuClose}) {
+export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour, onShip, shipIcon, onLeave = () => {}, tools, onMenuOpen, onMenuClose, lazyMain = false}) {
   const state = {chip: 'all', stack: [], kind: 'all', q: ''};
   // Обычное текстовое поле: у type="search" Android рисует свой ✕ рядом с нашим (было два крестика).
   const input = el('input', {type: 'text', inputmode: 'search', enterkeyhint: 'search', placeholder: 'Поиск по Феному', 'aria-label': 'Поиск', autocomplete: 'off'});
@@ -103,6 +103,7 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
   function renderMenu() {
     const pick = k => {
       closeMenu();
+      showMain();   // лента могла быть не нарисована (прогрев, lazyMain) — toggleSection нужна она
       if (currentSection() !== k) { toggleSection(k); root.scrollTo(0, 0); }
       onLeave();
     };
@@ -306,10 +307,13 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
   // До загрузки данных поиск недоступен; набранное до этого — пересчитать.
   input.disabled = true;
   input.placeholder = 'Загрузка…';
+  /* lazyMain (v=247, прогрев js/planshet.js): лента не рисуется, пока «Ноды» не показаны — showMain() её дорисует. */
+  let mainPending = false;
+  const showMain = () => { if (mainPending && C.records) { mainPending = false; renderMain(main, state, open); } };
   const ready=load().then(() => {
     input.disabled = false;
     input.placeholder = 'Поиск по Феному';
-    renderMain(main, state, open);
+    if (lazyMain && root.hidden) mainPending = true; else renderMain(main, state, open);
     if (input.value) onInput();
     onChange();
   }).catch(err => {
@@ -329,5 +333,6 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
     openSearch, closeSearch, toggleSearch, isSearchOpen, openMenu, closeMenu, toggleMenu, isMenuOpen, isMenuShown,
     // Режим сменился при открытой шторке — кнопка вида и «Сюжет» должны быть от нового режима (Codex, v=236).
     refreshMenu: () => { if (isMenuOpen()) renderMenu(); },
+    showMain: () => ready.then(showMain),
     filtered: () => state.chip !== 'all', depth, backStep};
 }

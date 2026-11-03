@@ -26,22 +26,6 @@
 #planshet .wrap { max-width: var(--col); margin: 0 auto; padding: 0 var(--gutter); }
 #planshet h1, #planshet h2, #planshet h3, #planshet .display { font-family: var(--display); font-weight: 700; line-height: 1.2; margin: 0; }
 
-/* Шапка: крупное «Феном» + поиск как в Telegram */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* Новости */
 #planshet .news { list-style: none; margin: 0; padding: 0; }
 #planshet .news-item { border-left: 3px solid var(--story); margin: 0 0 4px; background: var(--panel); border-radius: 0 10px 10px 0; }
@@ -85,30 +69,13 @@
 #planshet details.drop .count { margin-left: auto; color: var(--muted); font-weight: 400; font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { #planshet details.drop > summary::before { transition: none; } }
 
-/* Обложки сюжетов */
-#planshet .covers { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); scrollbar-width: none; }
-#planshet .covers::-webkit-scrollbar { display: none; }
-#planshet .cover { flex: none; width: 76%; max-width: 300px; height: 150px; border-radius: 14px; scroll-snap-align: start; background: var(--raise) center / cover no-repeat; position: relative; overflow: hidden; display: flex; align-items: flex-end; }
-#planshet .cover::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,11,16,0) 30%, rgba(11,11,16,0.94) 100%); }
-#planshet .cover-text { position: relative; display: flex; gap: 10px; align-items: center; padding: 12px; }
-#planshet .cover-text img, #planshet .cover-text .ph { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex: none; border: 2px solid rgba(255,255,255,0.15); background: var(--raise); }
-#planshet .cover-title { display: block; font-family: var(--display); font-weight: 700; font-size: 17px; line-height: 1.2; }
-
 /* Карточка на весь экран */
 #planshet .sheet { position: fixed; inset: 0; z-index: 20; background: rgba(5,5,10,0.6); display: flex; justify-content: center; }
 #planshet .sheet[hidden] { display: none; }
-#planshet .sheet-panel { width: 100%; max-width: calc(var(--col) + 2 * var(--gutter)); height: 100%; overflow-y: auto; background: var(--panel); animation: planshetUp .2s ease-out; }
-@keyframes planshetUp { from { transform: translateY(20px); } }
-@media (prefers-reduced-motion: reduce) { #planshet .sheet-panel { animation: none; } }
-#planshet .sheet-bar { position: sticky; top: 0; z-index: 2; display: flex; justify-content: space-between; align-items: center; padding: calc(env(safe-area-inset-top, 0px) + 6px) 8px 6px; background: var(--panel); border-bottom: 1px solid var(--line); }
-#planshet .sheet-bar button { height: 44px; min-width: 44px; padding: 0 12px; color: var(--act); }
+
+
 #planshet .card { padding: 16px var(--gutter) 96px; }
-#planshet .card-head { display: flex; gap: 14px; align-items: center; }
-#planshet .card-head > img, #planshet .card-head > .ph { width: 68px; height: 68px; border-radius: 50%; object-fit: cover; flex: none; background: var(--raise); }
-#planshet .card-head h1 { font-size: 24px; }
-#planshet .card-meta { color: var(--muted); font-size: 14px; margin-top: 4px; }
-#planshet .card-art { height: 140px; margin: -16px calc(-1 * var(--gutter)) 12px; background: var(--raise) center / cover no-repeat;
-  -webkit-mask-image: linear-gradient(180deg, #000 55%, transparent); mask-image: linear-gradient(180deg, #000 55%, transparent); }
+
 #planshet .onmap { display: inline-block; margin-top: 10px; }
 #planshet .short { color: var(--soft); font-size: 16px; margin: 16px 0 0; }
 #planshet .module { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
@@ -120,19 +87,6 @@
 #planshet .clip { color: var(--soft); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 2px 0 0; }
 #planshet .xref { color: var(--act); text-decoration: none; border-bottom: 1px solid rgba(175,238,238,0.35); }
 #planshet .pic img { max-width: 100%; border-radius: 10px; }
-
-/* Сводка-«инфобокс» и навигационный блок (идеи фандом-вики) */
-#planshet .infobox { margin: 14px 0 0; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--raise); }
-#planshet .ib-art { height: 120px; background: center / cover no-repeat; }
-#planshet .ib-img { width: 100%; max-height: 220px; object-fit: cover; }
-#planshet .ib-title { font-family: var(--display); font-weight: 700; padding: 10px 14px 4px; font-size: 16px; }
-#planshet .infobox dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 0; padding: 6px 14px 12px; font-size: 14px; }
-#planshet .infobox dt { color: var(--muted); }
-#planshet .infobox dd { margin: 0; }
-#planshet .navbox { margin-top: 26px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-#planshet .nb-title { padding: 8px 12px; background: rgba(175,238,238,0.07); font-family: var(--display); font-weight: 700; font-size: 14px; }
-#planshet .nb-items { padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 14px; }
-#planshet .nb-items a { text-decoration: none; }
 
 /* Статьи — как в карте (css/styles.css .mirror-article), под тёмную панель */
 #planshet .mirror-article { color: #e8e8ee; font: 15px/1.6 var(--body); overflow-wrap: break-word; }
@@ -171,31 +125,8 @@
 #planshet .group { margin: 0 0 20px; }
 #planshet .group > h3 { font-size: 14px; color: var(--muted); font-family: var(--body); font-weight: 600; margin: 0 0 6px; }
 
-/* Только для макетов */
-
-
-
-
-
-
-
 #planshet .module, #planshet .mirror-article [data-anchor] { scroll-margin-top: 112px; }
 
-/* Кнопка-фильтр справа от поиска (N4): сюжет + раздел, выпадающий список */
-#planshet .filter-box { position: relative; flex: none; }
-#planshet .filter-btn { width: 38px; height: 38px; border-radius: 19px; background: var(--raise); color: var(--muted); display: grid; place-items: center; position: relative; }
-#planshet .filter-btn.on { color: var(--act); }
-#planshet .filter-btn.on::after { content: ''; position: absolute; top: 7px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: var(--act); }
-#planshet .filter-btn[aria-expanded="true"] { background: rgba(175,238,238,0.12); }
-#planshet .filter-menu { position: absolute; right: 0; top: 46px; z-index: 6; width: min(310px, calc(100vw - 2 * var(--gutter))); display: grid; grid-template-columns: 1fr 1.15fr; gap: 4px 10px;
-  padding: 10px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 14px 34px rgba(0,0,0,0.55); }
-#planshet .filter-menu[hidden] { display: none; }
-#planshet .f-group h3 { font-size: 12px; font-weight: 600; color: var(--muted); margin: 2px 8px 4px; }
-#planshet .f-opts { display: grid; }
-#planshet .f-opts button { height: 36px; padding: 0 8px 0 24px; border-radius: 8px; text-align: left; color: var(--soft); font-size: 14px; position: relative; white-space: nowrap; }
-#planshet .f-opts button[aria-pressed="true"] { color: var(--act); background: rgba(175,238,238,0.09); }
-#planshet .f-opts button[aria-pressed="true"]::before { content: '✓'; position: absolute; left: 8px; }
-#planshet .f-reset { grid-column: 1 / -1; height: 36px; border-top: 1px solid var(--line); color: var(--act); font-size: 14px; margin-top: 4px; }
 #planshet .f-note { color: var(--muted); font-size: 13px; margin: 12px 0 0; }
 #planshet .f-note button { color: var(--act); font-size: 13px; }
 
@@ -221,11 +152,9 @@
 #planshet .el-title { display: block; font-family: var(--display); font-weight: 700; font-size: 15px; line-height: 1.15; }
 #planshet .el-sub { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
 #planshet .el-letter { position: absolute; top: 8px; left: 12px; font-family: var(--display); font-size: 40px; color: rgba(175,238,238,0.18); }
-#planshet .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-#planshet .mini-open { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 2px 0 6px; }
 
 /* Переключатели разделов с артом (V4 + плитки) */
-#planshet .sectors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 4px 0 12px; }
+
 #planshet .sector { position: relative; height: 66px; border-radius: 12px; overflow: hidden; background: var(--raise) center / cover no-repeat; display: flex; align-items: flex-end; text-align: left; }
 #planshet .sector::before { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(11,11,16,0.25), rgba(11,11,16,0.9)); }
 #planshet .sector span { position: relative; padding: 6px 8px; font-weight: 600; font-size: 13px; line-height: 1.15; }
@@ -234,35 +163,21 @@
 #planshet .sector[aria-pressed="true"] span { color: var(--act); }
 
 /* Полки (N2) */
-#planshet .shelf { margin-top: 22px; }
-#planshet .shelf-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
-#planshet .shelf-head h2 { font-size: 18px; }
-#planshet .shelf-head span { color: var(--muted); font-size: 13px; }
+
 #planshet .shelf-row { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); scrollbar-width: none; }
 #planshet .shelf-row::-webkit-scrollbar { display: none; }
 #planshet .shelf-row .el-tile { flex: none; width: 42%; max-width: 180px; scroll-snap-align: start; }
 #planshet .shelf-row .el-tile.wide { width: 74%; max-width: 300px; }
 
 /* Меню разделов (N3) — выпадает по нажатию (на телефоне нет наведения) */
-#planshet .menu-bar { display: flex; gap: 6px; margin-top: 16px; }
-#planshet .menu-btn { flex: 1; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--panel); padding: 0 12px; display: flex; justify-content: space-between; align-items: center; }
-#planshet .menu-btn[aria-expanded="true"] { border-color: var(--act); color: var(--act); }
+
 #planshet .menu { margin-top: 8px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 4px 10px; }
 #planshet .menu[hidden] { display: none; }
 #planshet .menu details.drop:first-child { border-top: 0; }
-#planshet .menu .peek { display: flex; gap: 6px; overflow-x: auto; padding: 0 0 10px; scrollbar-width: none; }
-#planshet .menu .peek .el-tile { flex: none; width: 112px; min-height: 76px; }
-#planshet .mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
 /* ---------- из n6.css ---------- */
-/* N5 «Выпуски»: «Всё» — всё на одной странице (большие плитки разделов, события, эпохи,
-   библиотека); плитка открывает выпуск раздела, плитки сжимаются в закреплённую строку. */
-
-
-/* На «Всё» строка не в потоке: выезжает из-под шапки, когда большие плитки ушли вверх */
-
-
-@media (prefers-reduced-motion: reduce) {  }
+/* N5 «Выпуски»: «Всё» — разделы, события, эпохи и библиотека на одной странице;
+   плитка открывает выпуск раздела. */
 
 /* Плитки разделов на «Всё» — как в V3 (снимок владельца 01.11): компактные, арт или лица записей */
 #planshet .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
@@ -297,7 +212,6 @@
 #planshet .lib-group > summary span { color: var(--muted); font-weight: 400; font-size: 13px; }
 #planshet .lib-group .rows { padding: 0 6px 6px; }
 #planshet .lib-group .lib-sub:first-child { border-top: 0; }
-#planshet .sys-lore { display: block; margin: 10px 0; color: var(--act); text-align: left; }
 
 /* Карточка персонажа (владелец 01.11): слева — имя, прозвище, раса, возраст; справа — арт;
    ниже — пункты анкеты по шаблону (внешность, голос, биография, параметры, снаряжение; язык и транспорт — строкой) */
@@ -330,61 +244,14 @@
 #planshet .pc-gallery button { flex: none; scroll-snap-align: start; cursor: zoom-in; }
 #planshet .pc-gallery img { height: 190px; max-width: 80vw; object-fit: cover; border-radius: 12px; display: block; }
 
-/* Просмотр картинки: на весь экран, щипок/колесо/двойной тап — приближение, тянуть — двигать, свайп — следующая */
-
-
-
-
-
-
-
-
-
-/* Карточка здания (владелец 01.11): арт над текстом; под ним район — коротко и где на корабле; ниже текст здания */
-#planshet .bc-art { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 16px; background: var(--raise) center / cover no-repeat; box-shadow: 0 0 0 1px var(--line); cursor: zoom-in; }
-#planshet .bc-name { font-size: 24px; line-height: 1.15; margin: 14px 0 2px; }
-#planshet .bc-kind { color: var(--muted); font-size: 13px; }
-#planshet .bc-zone { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--raise); }
-#planshet .bc-zone-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-#planshet .bc-zone-head button { color: var(--act); font-weight: 600; text-align: left; }
-#planshet .bc-zone-head span { color: var(--muted); font-size: 13px; text-align: right; }
-#planshet .bc-zone p { margin: 6px 0 0; color: var(--soft); font-size: 14px; line-height: 1.4; }
-#planshet .bc-text { margin-top: 18px; }
-#planshet .bc-text p { margin: 0 0 10px; }
-#planshet .zc-lore { color: var(--soft); margin: 8px 0 0; }
-
-/* Карточка сюжета — как окно сюжета на карте (баннер, название, «Набор открыт» с кнопками, описание) + новости */
-#planshet .st-art { display: block; width: 100%; aspect-ratio: 16 / 10; border-radius: 16px; background: var(--raise) center / cover no-repeat; box-shadow: 0 0 0 1px var(--line); cursor: zoom-in; }
-#planshet .st-recruit { margin-top: 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255,215,106,0.45); background: rgba(255,215,106,0.07); }
-#planshet .st-recruit h2 { font-size: 16px; color: var(--story); margin: 0 0 6px; }
-#planshet .st-recruit p { margin: 0 0 8px; color: var(--soft); font-size: 14px; line-height: 1.4; }
-#planshet .st-join { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
-#planshet .st-join a { flex: 1 1 140px; text-align: center; padding: 9px 10px; border-radius: 10px; background: var(--raise); color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600; }
-#planshet .st-desc p { margin: 0 0 10px; }
-
 /* Оглавление статьи (владелец 01.11: вместо выпадающего «Разделы: N» — ссылки, но оформленные) */
 #planshet .toc { margin: 14px 0 6px; padding: 10px 14px 6px; border-radius: 14px; background: var(--raise); }
 #planshet .toc h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 4px; }
 #planshet .toc ol { list-style: none; margin: 0; padding: 0; }
 #planshet .toc li + li { border-top: 1px solid rgba(175,238,238,0.07); }
 #planshet .toc a { display: block; padding: 8px 0; color: var(--act); text-decoration: none; font-size: 15px; line-height: 1.25; }
-#planshet .toc .l1 a { padding-left: 16px; color: var(--soft); font-size: 14px; }
-#planshet .toc .l2 a { padding-left: 32px; color: var(--soft); font-size: 14px; }
-#planshet .toc .l1 a::before, #planshet .toc .l2 a::before { content: '— '; color: var(--muted); }
-
-/* Несколько разделов сразу — заголовок-раздел между ними */
-#planshet .sec-title { font-size: 13px; font-weight: 600; color: var(--act); margin: 30px 0 -14px; padding-top: 12px; border-top: 1px solid var(--line); }
-#planshet .sec-title:first-child { margin-top: 2px; border-top: 0; padding-top: 0; }
 
 /* Строка плиток, выпуски, связи, схема — из N4 */
-
-
-
-
-
-
-
-
 
 #planshet .issue { padding: 12px 0 4px; }
 #planshet .issue h3 { font-size: 15px; color: var(--muted); font-weight: 600; margin: 14px 0 8px; }
@@ -508,76 +375,20 @@
 #planshet .pc-gallery button { flex: none; scroll-snap-align: start; cursor: zoom-in; }
 #planshet .pc-gallery img { height: 190px; max-width: 80vw; object-fit: cover; border-radius: 12px; display: block; }
 
-/* Просмотр картинки: на весь экран, щипок/колесо/двойной тап — приближение, тянуть — двигать, свайп — следующая */
-
-
-
-
-
-
-
-
-
-/* Карточка здания (владелец 01.11): арт над текстом; под ним район — коротко и где на корабле; ниже текст здания */
-#planshet .bc-art { display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 16px; background: var(--raise) center / cover no-repeat; box-shadow: 0 0 0 1px var(--line); cursor: zoom-in; }
-#planshet .bc-name { font-size: 24px; line-height: 1.15; margin: 14px 0 2px; }
-#planshet .bc-kind { color: var(--muted); font-size: 13px; }
-#planshet .bc-zone { margin-top: 14px; padding: 12px 14px; border-radius: 14px; background: var(--raise); }
-#planshet .bc-zone-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-#planshet .bc-zone-head button { color: var(--act); font-weight: 600; text-align: left; }
-#planshet .bc-zone-head span { color: var(--muted); font-size: 13px; text-align: right; }
-#planshet .bc-zone p { margin: 6px 0 0; color: var(--soft); font-size: 14px; line-height: 1.4; }
-#planshet .bc-text { margin-top: 18px; }
-#planshet .bc-text p { margin: 0 0 10px; }
-#planshet .zc-lore { color: var(--soft); margin: 8px 0 0; }
-
-/* Карточка сюжета — как окно сюжета на карте (баннер, название, «Набор открыт» с кнопками, описание) + новости */
-#planshet .st-art { display: block; width: 100%; aspect-ratio: 16 / 10; border-radius: 16px; background: var(--raise) center / cover no-repeat; box-shadow: 0 0 0 1px var(--line); cursor: zoom-in; }
-#planshet .st-recruit { margin-top: 14px; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(255,215,106,0.45); background: rgba(255,215,106,0.07); }
-#planshet .st-recruit h2 { font-size: 16px; color: var(--story); margin: 0 0 6px; }
-#planshet .st-recruit p { margin: 0 0 8px; color: var(--soft); font-size: 14px; line-height: 1.4; }
-#planshet .st-join { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
-#planshet .st-join a { flex: 1 1 140px; text-align: center; padding: 9px 10px; border-radius: 10px; background: var(--raise); color: var(--text); text-decoration: none; font-size: 14px; font-weight: 600; }
-#planshet .st-desc p { margin: 0 0 10px; }
-
 /* Оглавление статьи (владелец 01.11: вместо выпадающего «Разделы: N» — ссылки, но оформленные) */
 #planshet .toc { margin: 14px 0 6px; padding: 10px 14px 6px; border-radius: 14px; background: var(--raise); }
 #planshet .toc h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin: 0 0 4px; }
 #planshet .toc ol { list-style: none; margin: 0; padding: 0; }
 #planshet .toc li + li { border-top: 1px solid rgba(175,238,238,0.07); }
 #planshet .toc a { display: block; padding: 8px 0; color: var(--act); text-decoration: none; font-size: 15px; line-height: 1.25; }
-#planshet .toc .l1 a { padding-left: 16px; color: var(--soft); font-size: 14px; }
-#planshet .toc .l2 a { padding-left: 32px; color: var(--soft); font-size: 14px; }
-#planshet .toc .l1 a::before, #planshet .toc .l2 a::before { content: '— '; color: var(--muted); }
 
-/* Несколько разделов сразу — заголовок-раздел между ними */
-
-#planshet .sheet-rest, #planshet .sheet-full { margin-top: 22px; }
-#planshet .sheet-rest > summary, #planshet .sheet-full > summary { color: var(--act); cursor: pointer; padding: 12px 0; }
-#planshet .sheet-original { margin-top: 12px; }
+#planshet .sheet-rest { margin-top: 22px; }
+#planshet .sheet-rest > summary { color: var(--act); cursor: pointer; padding: 12px 0; }
 
 /* ---------- из shell.css ---------- */
-#planshet .sheet-panel {position:relative; padding-bottom:0; scroll-padding-top:64px; scroll-padding-bottom:110px;}
+
 #planshet .card {padding-bottom:130px;}
-#planshet .record-dock {position:fixed;bottom:calc(env(safe-area-inset-bottom, 0px) + 8px);left:50%;transform:translateX(-50%);width:calc(100% - 16px);max-width:656px;z-index:4;border:1px solid rgba(175,238,238,.22);border-radius:16px;background:#12121b;box-shadow:0 8px 32px #0009;overflow:hidden;}
-#planshet .dock-head {display:flex;align-items:center;gap:6px;min-height:48px;padding:6px 12px;}
-#planshet .dock-parent {color:var(--muted);max-width:36%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-#planshet .dock-current {flex:1;min-width:0;display:flex;gap:8px;align-items:center;justify-content:space-between;color:var(--act);font-weight:600;}
-#planshet .dock-current > span:first-child {overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
-#planshet .dock-stacks {display:flex;gap:7px;flex:none;color:var(--soft);font-size:12px;}
-#planshet .dock-groups {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:8px 12px 12px;max-height:45vh;overflow-y:auto;border-top:1px solid var(--line);}
-#planshet .dock-groups[hidden] {display:none;}
-#planshet .dock-group h3 {font:600 12px var(--body);color:var(--muted);margin:0 0 5px;}
-#planshet .dock-link {display:flex;width:100%;align-items:center;gap:7px;padding:6px 0;line-height:1.2;font-size:14px;}
-#planshet .dock-link img, #planshet .dock-link .ph {width:26px;height:26px;object-fit:cover;border-radius:6px;flex:none;}
-#planshet .dock-group[data-relation="allies"] .dock-link {color:var(--story);}
-#planshet .dock-actions {border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;padding:7px 12px;font-size:12px;}
-#planshet .dock-actions button {color:var(--act);}
-#planshet .dock-actions .stub {color:var(--muted);}
-#planshet .stub-dialog {position:fixed;inset:0;z-index:35;display:grid;place-items:center;background:#000a;padding:20px;}
-#planshet .stub-dialog > div {max-width:450px;width:100%;padding:20px;border-radius:16px;background:var(--raise);border:1px solid var(--line);}
-#planshet .stub-dialog p {color:var(--soft);}
-#planshet .stub-dialog button {padding:10px 0;color:var(--act);}
+
 #planshet .mirror-article figure img {cursor:zoom-in;}
 #planshet .inline-back {color:var(--act);padding:10px 0;}
 
@@ -643,11 +454,9 @@
 body.planshet-on #planshet .p-menu-body { background: rgba(12,12,18,0.97); }
 /* Тени нет (v=235, владелец): clip-path анимации её обрезал, и она выскакивала в конце. */
 #planshet .p-menu[hidden] { display: none; }
-#planshet .p-menu-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-#planshet .p-menu-head h2 { font-size: 20px; }
+
 /* Цели нажатия в шторке — 48 px по высоте (автопроверка tools/ui_check.py, v=222). */
-#planshet .p-menu-home { min-height: 56px; padding: 0 12px; border-radius: 12px; background: var(--raise); color: var(--soft); font-size: 14px; font-weight: 600; text-align: center; }
-#planshet .p-menu-home[aria-pressed="true"] { color: var(--act); background: rgba(175,238,238,0.09); }
+
 #planshet .p-menu-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
 #planshet .p-menu-section { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 6px;
   min-width: 0; min-height: 48px; padding: 6px 10px; border-radius: 12px; background: var(--raise); font-size: 14px; line-height: 1.25; }
@@ -655,15 +464,6 @@ body.planshet-on #planshet .p-menu-body { background: rgba(12,12,18,0.97); }
 #planshet .p-menu-count { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
 #planshet .p-menu-section[aria-pressed="true"] { color: var(--act); background: rgba(175,238,238,0.12); box-shadow: inset 3px 0 var(--act); }
 #planshet .p-menu-section[aria-pressed="true"] .p-menu-count { color: var(--act); }
-#planshet .p-menu .f-group { margin-top: 4px; }
-#planshet .p-menu .f-group h3 { margin: 0 2px 4px; }
-#planshet .p-menu .f-opts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
-#planshet .p-menu .f-opts button { min-height: 48px; height: auto; min-width: 48px; padding: 6px 12px; border-radius: 12px;
-  background: var(--raise); text-align: center; white-space: normal; }
-#planshet .p-menu .f-opts button[aria-pressed="true"]::before { content: none; }
-#planshet .p-menu-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;
-  margin-top: 8px; padding-top: 4px; border-top: 1px solid var(--line); }
-#planshet .p-menu-links button { color: var(--act); font-size: 14px; line-height: 1.3; min-height: 48px; padding: 4px 2px; }
 
 /* ===== Шторка «Феном», v=231–232 (владелец) =====
    Сверху своей плашкой — «На главную» и разделы сеткой 3 × 2; под ней четыре кнопки в ряд: значок сверху, подпись снизу.

@@ -1,4 +1,4 @@
-import {articleText, buildAliases, mentions, buildSearchIndex} from '../js/linker.js?v=246';
+import {articleText, buildAliases, mentions, buildSearchIndex} from '../js/linker.js?v=247';
 
 export let C = null;
 let pending;
@@ -241,25 +241,4 @@ export function alsoIn(ids,artId) {
   return C.records.filter(r=>r.content.moduleRefs.some(ref=>{
     const m=C.resolvedModules[ref.moduleId];return ref.mode==='embed'&&m?.articleId===artId&&ids.has(m.selector.from);
   })).map(r=>r.id);
-}
-export function relationGroups(id) {
-  const r=C?.byId.get(id);if (!r)return [];
-  const groups=[{key:'inside',label:'Внутри',items:(C.children.get(id)||[]).map(id=>({id}))},
-    {key:'allies',label:'Союзы',items:[...(C.allies.get(id)||[])].map(id=>({id}))},
-    {key:'materials',label:'Материалы',items:[]},{key:'used-in',label:'Используется в',items:[]}];
-  const append=(key,item)=>{const g=groups.find(g=>g.key===key);if(!g.items.some(x=>x.id===item.id))g.items.push(item);};
-  for (const ref of r.content.moduleRefs) {const m=C.resolvedModules[ref.moduleId];append('materials',{id:ref.recordId,anchor:m?.selector.from||ref.anchor,moduleId:ref.moduleId,mode:ref.mode});}
-  if (r.kind==='system'&&r.lore?.url) {
-    const [url,anchor]=r.lore.url.split('#'),entry=Object.entries(C.articlesIndex.articles).find(([source])=>bare(source)===bare(url))?.[1];
-    if (entry&&C.byId.has(docId(entry)))append('materials',{id:docId(entry),anchor});
-  }
-  for (const other of C.records) for (const ref of other.content.moduleRefs) {
-    const m=C.resolvedModules[ref.moduleId];
-    if(ref.recordId===id||m?.articleId===id)append('used-in',{id:other.id,anchor:ref.moduleId?`module-${ref.moduleId}`:undefined,moduleId:ref.moduleId});
-  }
-  for(const rel of C.relations.items.filter(rel=>rel.type==='related')) {
-    if(rel.from===id)append('materials',{id:rel.to});
-    if(rel.to===id)append('used-in',{id:rel.from});
-  }
-  return groups.filter(group=>group.items.length);
 }

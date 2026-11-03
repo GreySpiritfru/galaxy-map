@@ -1,26 +1,26 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=246';
-import { closeModal } from './modal.js?v=246';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=246';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, focusSubmapChar, setSubmapRecordHandler } from './phenom.js?v=246';
-import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=246';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=246';
-import { openCharacter, closeCharacter } from './characters.js?v=246';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=246';
-import { markerEl } from './node-window.js?v=246';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=246';
-import { hideSplash } from './splash.js?v=246';
-import { fetchT, showLoadError } from './net.js?v=246';
-import { noteRecord, setRestorer } from './navigation.js?v=246';
-import { buildRecords, resolveAddress } from './records.js?v=246';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=246';
-import { decodeAddress } from './address.js?v=246';
-import { findInRecord } from './find-in-text.js?v=246';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=246';
-import { REF_ARTICLES } from './articles.js?v=246';
-import { LOCAL_ARTICLES } from './reader.js?v=246';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=247';
+import { closeModal } from './modal.js?v=247';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=247';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, focusSubmapChar, setSubmapRecordHandler } from './phenom.js?v=247';
+import { initEditor, canEditNodes, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=247';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=247';
+import { openCharacter, closeCharacter } from './characters.js?v=247';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=247';
+import { markerEl } from './node-window.js?v=247';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=247';
+import { hideSplash } from './splash.js?v=247';
+import { fetchT, showLoadError } from './net.js?v=247';
+import { noteRecord, setRestorer } from './navigation.js?v=247';
+import { buildRecords, resolveAddress } from './records.js?v=247';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=247';
+import { decodeAddress } from './address.js?v=247';
+import { findInRecord } from './find-in-text.js?v=247';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=247';
+import { REF_ARTICLES } from './articles.js?v=247';
+import { LOCAL_ARTICLES } from './reader.js?v=247';
 
 const SVG_PATH = 'map.svg';
 
@@ -182,7 +182,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=246').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=247').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.
@@ -652,16 +652,31 @@ function finishMapPick(p) {
      гасится. В css у панели touch-action: none (иначе браузер забрал бы жест
      себе и прислал pointercancel) и user-select: none (на компьютере текст
      кнопок выделялся, и карта переставала тащиться). */
+  /* ⚠️ v=247 (ночной аудит 03.11): кнопка панели срабатывает по pointerup, а не по click. После свайпа по карте и
+     во время её инерции браузер click не присылает вовсе (Chromium, < ~300 мс после броска), а прежняя ловушка
+     «съесть следующий click 350 мс» глотала уже следующий настоящий тап. Теперь: отпустили палец на той же кнопке без
+     сдвига дальше порога — нажимаем её сами (synthetic), а настоящий click от пальца/мыши сразу после — гасим.
+     Клавиатура и чтец экрана (click без pointerdown) проходят как есть. Касание панели останавливает инерцию карты,
+     как касание самой карты; под планшетом и экраном поиска (body.planshet-on, карта не видна) жест её не двигает. */
   const DRAG_SLOP_PX = 8;
   const controlsEl = document.getElementById('controls');
+  let synthetic = false, lastDownAt = -1e9;
+  controlsEl?.addEventListener('click', (ce) => {
+    if (synthetic || ce.detail === 0 || performance.now() - lastDownAt > 1000) return;
+    ce.stopPropagation(); ce.preventDefault();
+  }, true);
   controlsEl?.addEventListener('pointerdown', (e) => {
     if (e.button && e.button !== 0) return;
+    lastDownAt = performance.now();
+    pz.stopMotion();
     const id = e.pointerId, sx = e.clientX, sy = e.clientY;
-    let pan = null;
+    const btn = e.target.closest('button');
+    const canPan = !document.body.classList.contains('planshet-on');
+    let pan = null, moved = false;
     const move = (ev) => {
       if (ev.pointerId !== id) return;
       const dx = ev.clientX - sx, dy = ev.clientY - sy;
-      if (!pan && Math.hypot(dx, dy) > DRAG_SLOP_PX) pan = pz.externalPan();
+      if (!moved && Math.hypot(dx, dy) > DRAG_SLOP_PX) { moved = true; if (canPan) pan = pz.externalPan(); }
       if (pan) { ev.preventDefault(); pan.move(dx, dy); }
     };
     const stop = (ev) => {
@@ -669,12 +684,13 @@ function finishMapPick(p) {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', stop);
       window.removeEventListener('pointercancel', stop);
-      if (!pan) return;
-      pan.end();
-      // Отпустили над кнопкой — её click не должен сработать.
-      const eat = (ce) => { ce.stopPropagation(); ce.preventDefault(); };
-      window.addEventListener('click', eat, {capture: true, once: true});
-      setTimeout(() => window.removeEventListener('click', eat, {capture: true}), 350);
+      lastDownAt = performance.now();
+      if (pan) { pan.end(); return; }
+      if (moved || ev.type !== 'pointerup' || !btn || btn.disabled) return;
+      const under = document.elementFromPoint(ev.clientX, ev.clientY);
+      if (!under || !btn.contains(under)) return;
+      synthetic = true;
+      try { btn.click(); } finally { synthetic = false; }
     };
     window.addEventListener('pointermove', move, {passive: false});
     window.addEventListener('pointerup', stop);
@@ -769,7 +785,10 @@ function finishMapPick(p) {
   const LAYER_IDS = ['modalBackdrop', 'systemOverlay', 'phenomOverlay', 'storyOverlay', 'charOverlay', 'tourOverlay', 'flappyOverlay'];
   const anyLayerOpen = () => LAYER_IDS.some(id => document.getElementById(id)?.classList.contains('open'));
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cancelPendingOpen(); });
-  window.addEventListener('popstate', cancelPendingOpen);
+  /* Не по popstate (ночной аудит, п.3): свои history.go() навигации — тоже popstate, и «на карте» из поиска (поиск
+     закрылся → history.go(-1)) снимал открытие окна после перелёта. nav-close шлёт js/navigation.js closeTop —
+     «назад» игрока: Esc, BackButton Telegram, браузер. */
+  document.addEventListener('nav-close', cancelPendingOpen);
   svg.addEventListener('pointerdown', cancelPendingOpen);
   function focusAndOpen(x, y, openFn, instant) {
     cancelPendingOpen();
@@ -1376,6 +1395,7 @@ function finishMapPick(p) {
   // позиции у неё нет вообще, открываем её окно сразу. instant — см.
   // focusAndOpen выше: передаётся дальше без изменений.
   // opts — передаются в openNode (у системы: focusId — на какую точку внутри навести камеру).
+  const systemOf = node => { for (let n = node.parent; n; n = n.parent) if (n.kind === 'system') return n; return null; };
   function goToNode(node, instant, opts) {
     if (!node.onMap) { openNode(node, opts); return; }
     /* В режиме "Ноды" весь граф помещается в кадр целиком (камера наведена на
@@ -1386,6 +1406,16 @@ function finishMapPick(p) {
     // Точка внутри системы на карте галактики стоит в звезде системы — камера
     // летит к системе. Уже открытая система: камера карты не видна, сразу.
     if (node.mapHidden && isSystemOpen()) { openNode(node, opts); return; }
+    /* Закрытая система (ночной аудит, п.4): перелёт к её звезде, потом вид системы с камерой на точке, поверх — окно
+       точки; opts.showOnly («на карте» из поиска) — только система, без окна. */
+    const sys = node.mapHidden && node.kind !== 'system' ? systemOf(node) : null;
+    if (sys) {
+      focusAndOpen(node.x, node.y, () => {
+        openNode(sys, {focusId: node.id});
+        if (!(opts && opts.showOnly)) openNode(node, opts);
+      }, instant);
+      return;
+    }
     focusAndOpen(node.x, node.y, () => openNode(node, opts), instant);
   }
 
@@ -1751,11 +1781,14 @@ function finishMapPick(p) {
   }
 
   function wireSystemWindows(graph) {
+    // Камера на точке — или на её ближайшем предке со своим местом в системе (персонаж сюжета внутри системы; аудит, п.4).
+    const placed = node => { for (let n = node; n && n.kind !== 'system'; n = n.parent) if (hasSystemPlace(n)) return n; return null; };
     const focusIn = (sys, node, duration) => {
-      if (!sys || !sys.pz || !hasSystemPlace(node)) return;
+      const at = placed(node);
+      if (!sys || !sys.pz || !at) return;
       const full = sys.pz.getInitialViewBox().w;
       const w = Math.min(sys.pz.getViewBox().w, full * SYSTEM_FOCUS_SHARE);
-      sys.pz.focusOn(node.data.systemX, node.data.systemY, w, duration);
+      sys.pz.focusOn(at.data.systemX, at.data.systemY, w, duration);
     };
 
     setSystemDecorator(({slug, svg: sysSvg, pz: sysPz, focusId}) => {
@@ -2678,7 +2711,7 @@ function finishMapPick(p) {
     if (rec) { openHostSchema(node); focusSubmap(rec.mapTargets[0].key, false); return true; }
     const host = submapCharHost(node);
     if (host) { openHostSchema(host); focusSubmapChar(node.id); return true; }
-    goToNode(node);
+    goToNode(node, false, {showOnly: true});
     return true;
   };
   setRecordOpener('world', openGraphRecord);
@@ -2950,13 +2983,7 @@ function finishMapPick(p) {
     const graph = await graphReady;
     const phenom = graph.get('phenome');
     if (!phenom) return;
-    /* ⚠️ Шторка только что закрылась — navigation.js отматывает её запись в истории (history.go), и этот popstate
-       гасит отложенное открытие окна после перелёта (cancelPendingOpen выше): камера долетала, окна не было.
-       Ждём этот шаг (или 400 мс, если записи не было). */
-    await new Promise(done => {
-      const t = setTimeout(done, 400);
-      window.addEventListener('popstate', () => { clearTimeout(t); setTimeout(done, 0); }, {once: true});
-    });
+    // До v=247 здесь ждали popstate закрытия шторки (он снимал открытие окна) — теперь отмена только по nav-close.
     goToNode(phenom, false, {submap: true});
   };
   // Значок пункта — маркер Фенома (переходы рисуются формой маркера, правило 24.09.2026).

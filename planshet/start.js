@@ -1,4 +1,4 @@
-import {C, el, BASE, firstImage, viewKind, newsFor, newsItem} from './common.js?v=24';
+import {C, el, BASE, firstImage, viewKind, newsFor, newsItem} from './common.js?v=25';
 
 export function artOf(r) {
   if (!r) return '';
@@ -33,9 +33,3 @@ export function zones() {
     return {id,name:r.title,bs,art:bs.find(b=>b.image)?.image || r.image};
   });
 }
-const PART = {city:'Феном-Сити, жилой цилиндр', front:'Передняя оболочка'};
-export const zoneLore = name => {
-  const zone = C.records.find(r => r.kind === 'zone' && r.title === name);
-  return zone?.text || '';
-};
-export const zonePart = name => PART[C.records.find(r => r.kind === 'zone' && r.title === name)?.part] || '';

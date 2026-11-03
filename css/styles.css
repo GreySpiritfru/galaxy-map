@@ -901,14 +901,6 @@ body.planshet-on .map-dock .dock-bar { background: rgba(12,12,18,0.97); }
   text-overflow: ellipsis;
   max-width: 100%;
 }
-.dock-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-}
-.dock-emoji { font-size: 20px; line-height: 1; }
 /* Маркер Фенома вместо 🚀 (ставит map.js). */
 .map-dock .corner-node-icon { flex: 0 0 auto; width: 26px; height: 26px; margin: -1px 0; font-size: 12px; }
 /* Линейные иконки — цветом подписи: активный режим красится целиком.
@@ -2532,26 +2524,6 @@ body:has(#charOverlay.open) #storyOverlay > .phenom-card {
   .story-banner-img { max-height: 32vh; }
 }
 
-/* Портрет персонажа — теперь только в выпадающем списке 👥 окна Фенома
-   (renderPhenomCharList в js/phenom.js). Ряд персонажей в окне точки с
-   24.09.2026 — это ряд переходов (.node-links, renderNodeLinks). */
-.story-character-chip {
-  width: 46px;
-  height: 46px;
-  flex-shrink: 0;
-  padding: 0;
-  border: 1.5px solid #AFEEEE;
-  border-radius: 13px;
-  background: rgba(175,238,238,0.12);
-  overflow: hidden;
-  cursor: pointer;
-}
-.story-character-chip img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
 .story-character-fallback {
   display: flex;
   align-items: center;
@@ -2720,14 +2692,6 @@ svg.nodes-mode.far-links .hotspot.nodes-only { display: inline; }
    созвездие (.system-cluster), которое масштабируется ЦЕЛИКОМ, см.
    drawSystemMarkers в js/map.js. */
 .system-markers .hotspot { cursor: pointer; }
-
-/* Та же защита от меню «сохранить картинку», что у маркеров карты (см.
-   .hotspot image выше) — здесь аватары это обычные HTML-картинки. */
-.story-character-chip img {
-  pointer-events: none;
-  -webkit-user-drag: none;
-  -webkit-touch-callout: none;
-}
 
 /* Ряд кнопок "привязанные сюжеты" внутри окна Феном (см. setPhenomChildren
    в js/phenom.js). Наполняется из графа связей, поэтому кнопок может быть

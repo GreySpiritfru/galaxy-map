@@ -5,7 +5,7 @@
    ▲ ▼ «2 из 7» ✕; на последнем совпадении ▼ ведёт к следующей записи из результатов, на первом ▲ — к предыдущей
    (nav.next / nav.prev от планшета). Строка уходит вместе с окном.
    ============================================================ */
-import { closeTopLayer } from './navigation.js?v=246';
+import { closeTopLayer } from './navigation.js?v=247';
 
 const LAYERS = ['modalBackdrop', 'charOverlay', 'storyOverlay', 'phenomOverlay', 'systemOverlay'];
 const SKIP = 'script, style, button, .node-dock, .tabbar, .lore-toolbar, .find-bar';
@@ -116,17 +116,20 @@ function step(d) {
 
 /* q — запрос; nav = {next?: {title, go}, prev?: {title, go}, last?: true — начать с последнего совпадения}.
    Ждёт, пока окно отрисует текст (статья качается отдельно), до 4 с. */
+let calls = 0;   // номер последнего вызова: прежний, ещё ждущий отрисовки, уходит молча (ночной аудит, п.8)
 export async function findInRecord(q, nav = {}) {
   cleanup();
   const re = pattern(q);
   if (!re) return false;
+  const me = ++calls;
   let root = null, marks = [];
   for (let t = 0; t < 4000 && !marks.length; t += 120) {
     await new Promise(r => setTimeout(r, t ? 120 : 60));
+    if (me !== calls) return false;
     root = topLayer();
     if (root) marks = markAll(root, re);
   }
-  if (!marks.length) return false;
+  if (!marks.length || me !== calls) return false;
   const bar = document.createElement('div');
   bar.className = 'find-bar';
   bar.setAttribute('role', 'toolbar');
