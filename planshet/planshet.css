@@ -136,8 +136,17 @@
 #planshet .now-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 #planshet .now-head h2 { font-size: 22px; }
 #planshet .now-head span { color: var(--muted); font-size: 13px; }
-#planshet details.older { margin-top: 6px; }
-#planshet details.older > summary { font-weight: 400; color: var(--act); }
+#planshet details.older { margin-top: 10px; border-top: 0; }
+/* v=251 (владелец): «Ещё N событий, раньше» — не отдельной плашкой, а продолжением ленты: тот же тёмный фон, что у
+   новостей, скруглённый низ «язычком» и полоска-ручка сверху (как у шторки); цвета нейтральные, без бирюзового. Открыто —
+   «Свернуть», ранние события — ниже. */
+#planshet details.older > summary { flex-direction: column; justify-content: center; gap: 5px; min-height: 48px; padding: 8px 14px 10px;
+  border-radius: 0 0 22px 22px; background: var(--panel); color: var(--soft); font-size: 14px; font-weight: 600; }
+#planshet details.older > summary::before, #planshet details.older[open] > summary::before { content: ''; width: 36px; height: 4px;
+  border-radius: 2px; background: var(--muted); opacity: 0.55; transform: none; }
+#planshet details.older .less, #planshet details.older[open] .more { display: none; }
+#planshet details.older[open] .less { display: inline; }
+#planshet details.older[open] > summary { margin-bottom: 8px; }
 #planshet .h { font-size: 20px; margin: 24px 0 10px; }
 
 /* Плитка-элемент: арт на всю плитку, подпись снизу */
@@ -164,7 +173,7 @@
 
 /* Полки (N2) */
 
-#planshet .shelf-row { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); scrollbar-width: none; }
+#planshet .shelf-row { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); scrollbar-width: none; }
 #planshet .shelf-row::-webkit-scrollbar { display: none; }
 #planshet .shelf-row .el-tile { flex: none; width: 42%; max-width: 180px; scroll-snap-align: start; }
 #planshet .shelf-row .el-tile.wide { width: 74%; max-width: 300px; }
@@ -200,7 +209,12 @@
 #planshet .lib-list details[open] > summary::after { transform: rotate(90deg); }
 #planshet .lib-mods { padding: 0 0 8px; }
 #planshet .lib-mods button { display: block; width: 100%; text-align: left; padding: 7px 14px 7px 26px; color: var(--soft); font-size: 14px; }
-#planshet .lib-mods .lib-whole { color: var(--act); font-weight: 600; }
+/* v=250: статья библиотеки — div.lib-art: details (заголовок → разделы) и «Открыть» справа поверх строки заголовка. */
+#planshet .lib-art { position: relative; }
+#planshet .lib-list > * + .lib-art, #planshet .lib-list > .lib-art + * { border-top: 1px solid var(--line); }
+#planshet .lib-list .lib-art > details > summary { padding-right: 124px; min-height: 48px; }
+#planshet .lib-list .lib-art > .lib-open { position: absolute; top: 0; right: 34px; width: auto; min-width: 48px; min-height: 48px;
+  padding: 0 12px; border-radius: 8px; background: var(--raise); color: #fff; font-weight: 600; }
 #planshet .lib-sub { font-size: 12px; font-weight: 600; color: var(--muted); padding: 12px 14px 2px; border-top: 1px solid var(--line); }
 
 /* Библиотека на «Всё»: статьи лора открыты, остальные группы свёрнуты */
@@ -291,8 +305,28 @@
 #planshet .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 
 /* Сюжет — выпадающий: плитка с артом, под ней выезжает сама «статья» сюжета */
-#planshet .acc + .acc { margin-top: 8px; }
-#planshet .acc > .el-tile { width: 100%; }
+/* v=250 (владелец): сюжет — одна карточка в рамке (арт, подпись, кнопки), между карточками — зазор; бирки на арте нет. */
+#planshet .acc { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); overflow: hidden; }
+#planshet .acc + .acc, #planshet .fam + .acc { margin-top: 14px; }
+#planshet .fam-row.is-acc + .fam-row.is-acc { margin-top: 14px; }
+#planshet .acc > .el-tile { width: 100%; border-radius: 13px 13px 0 0; }
+#planshet .acc.recruit > .el-tile .el-sub { color: var(--story); font-weight: 700; }
+#planshet .acc > .acc-desc { margin: 8px 12px 0; }
+#planshet .acc > .acc-slot .acc-body { margin: 8px 12px 0; }
+/* v=252 (владелец): кнопка сюжета — на арте над названием, одна: «Открыть целиком» | значок карты. Прямоугольник со
+   слегка скруглёнными углами, общий тёмный фон, без обводки, текст и значок белые, между ними — тонкая белая черта.
+   Бирюзовым (как ссылки) и «таблетками» в «Нодах» кнопки не делать. top ставит JS по замеру названия. */
+#planshet .acc { position: relative; }
+#planshet .acc > .el-tile { min-height: 164px; }
+#planshet .acc > .acc-desc { margin-bottom: 12px; }
+#planshet .acc-bar { position: absolute; top: 60px; left: 11px; z-index: 1; display: flex; align-items: stretch;
+  border-radius: 8px; background: rgba(10,10,16,0.72); overflow: hidden; }
+#planshet .acc-bar > button { display: inline-flex; align-items: center; min-height: 48px; padding: 0 14px;
+  color: #fff; font-size: 14px; font-weight: 600; white-space: nowrap; }
+#planshet .acc-bar > .acc-map { position: relative; display: grid; place-items: center; width: 48px; min-height: 48px; color: #fff; margin: 0; }
+#planshet .acc-bar > .acc-map::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 1px; background: rgba(255,255,255,0.55); }
+#planshet .acc-bar > .acc-map svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+#planshet .acc-bar > button:active, #planshet .acc-bar > .acc-map:active { background: rgba(255,255,255,0.08); }
 #planshet .acc > .el-tile::after { content: '›'; position: absolute; right: 12px; bottom: 10px; font-size: 22px; color: var(--soft); transition: transform .25s; }
 #planshet .acc > .el-tile[aria-expanded="true"]::after { transform: rotate(90deg); }
 #planshet .acc-body { margin: 6px 0 4px; padding: 4px 12px 12px; border-left: 3px solid var(--story); background: var(--panel); border-radius: 0 10px 10px 0; }
@@ -304,12 +338,26 @@
 #planshet .acc-actions button, #planshet .acc-actions a { color: var(--act); font-size: 14px; }
 @media (prefers-reduced-motion: reduce) { #planshet .acc > .el-tile::after { transition: none; } }
 
-/* Эпохи — лента времени под событиями: от текущей (события выше) вглубь */
+/* Эпохи — лента времени под событиями: от текущей (события выше) вглубь.
+   v=250 (владелец): та же линия с точками, но горизонтально и листается — главная короче на ~0,7 экрана (была ~675 px).
+   Линия — отрезком у каждой эпохи до следующей (через зазор), у последней — только под точкой. */
 #planshet .epochs-sec { margin-top: 26px; }
-#planshet .epochs { list-style: none; padding: 0; margin: 0; position: relative; }
-#planshet .epochs::before { content: ''; position: absolute; left: 7px; top: 14px; bottom: 18px; width: 2px; background: rgba(175,238,238,0.22); }
-#planshet .epoch > button { display: block; width: 100%; text-align: left; padding: 8px 0 10px 28px; position: relative; }
-#planshet .epoch > button::before { content: ''; position: absolute; left: 1px; top: 12px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--act); background: var(--bg); }
+#planshet .epochs { list-style: none; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); display: flex; gap: 12px;
+  overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); scrollbar-width: none; }
+#planshet .epochs::-webkit-scrollbar { display: none; }
+#planshet .epoch { flex: none; width: 62%; max-width: 250px; position: relative; scroll-snap-align: start; }
+#planshet .epoch::before { content: ''; position: absolute; left: 0; right: -12px; top: 7px; height: 2px; background: rgba(175,238,238,0.22); }
+#planshet .epoch:last-child::before { right: auto; width: 14px; }
+#planshet .epoch.now { padding-top: 0; }
+/* Ползунок ленты эпох — справа от заголовка (v=251): дорожка 96 px, тянется пальцем и мышью. */
+#planshet .ep-track { position: relative; flex: none; width: 96px; height: 28px; align-self: center; cursor: grab; touch-action: none; }
+#planshet .ep-track::before { content: ''; position: absolute; left: 0; right: 0; top: 12px; height: 4px; border-radius: 2px; background: rgba(175,238,238,0.14); }
+#planshet .ep-thumb { position: absolute; left: 0; top: 11px; height: 6px; border-radius: 3px; background: var(--act); opacity: 0.75; }
+#planshet .ep-track.off { visibility: hidden; }
+#planshet .epochs { cursor: grab; user-select: none; -webkit-user-select: none; }
+#planshet .epochs.dragging { cursor: grabbing; user-select: none; }   /* класс now — и у ленты новостей (#planshet .now: отступ 18 px сверху) */
+#planshet .epoch > button { display: block; width: 100%; min-height: 48px; text-align: left; padding: 22px 6px 6px 0; position: relative; }
+#planshet .epoch > button::before { content: ''; position: absolute; left: 0; top: 1px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--act); background: var(--bg); }
 #planshet .epoch.now > button::before { background: var(--story); border-color: var(--story); }
 #planshet .ep-n { display: block; color: var(--muted); font-size: 12px; }
 #planshet .epoch.now .ep-n { color: var(--story); }

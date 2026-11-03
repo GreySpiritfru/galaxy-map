@@ -6,14 +6,14 @@
   <title>Карта галактики — Феном</title>
   <!-- Скрипт Telegram — своя копия (v=199): telegram.org из РФ без VPN не
        отвечает, и этот блокирующий <script> вешал страницу на ~35 с. -->
-  <script src="js/vendor/telegram-web-app.js?v=249"></script>
+  <script src="js/vendor/telegram-web-app.js?v=253"></script>
   <!-- Самый тяжёлый файл на странице (~2.7 МБ после пережатия подложки в WebP,
        см. tools/optimize-map-svg.py) — без preload браузер начинает качать его
        только после разбора HTML и выполнения JS до строки с fetch() в map.js;
        так эта загрузка стартует параллельно с остальным. -->
   <link rel="preload" href="map.svg" as="fetch" crossorigin />
   <link rel="preload" href="images/splash-logo.webp" as="image" />
-  <link rel="stylesheet" href="css/styles.css?v=249" />
+  <link rel="stylesheet" href="css/styles.css?v=253" />
 </head>
 <body>
 
@@ -154,10 +154,10 @@
   <div class="system-toolbar lore-toolbar tabbar">
     <button class="toolbar-close-btn" id="systemBack" aria-label="Закрыть">✕</button>
     <button class="tabbar-btn active" id="systemMapTab">
-      <span class="tabbar-btn-icon" aria-hidden="true">🗺️</span><span class="tabbar-btn-label">Карта системы</span>
+      <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></svg></span><span class="tabbar-btn-label">Карта системы</span>
     </button>
     <button class="tabbar-btn" id="systemLore">
-      <span class="tabbar-btn-icon" aria-hidden="true">👑</span><span class="tabbar-btn-label">Контролирующая раса</span>
+      <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 17.5 3.5 7.8l4.8 3.6L12 5.5l3.7 5.9 4.8-3.6-1 9.7z"/><path d="M5.5 20.5h13"/></svg></span><span class="tabbar-btn-label">Контролирующая раса</span>
     </button>
   </div>
   </div>
@@ -184,24 +184,24 @@
            открытии) и «Статья» (только если у точки есть ссылка на статью),
            applyNodeToolbar/showNodeBody в js/node-window.js. -->
       <button class="tabbar-btn active" id="phenomDescriptionTab">
-        <span class="tabbar-btn-icon" aria-hidden="true">📄</span><span class="tabbar-btn-label">Описание</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 6.5h14M5 10.5h11M5 14.5h14M5 18.5h8"/></svg></span><span class="tabbar-btn-label">Описание</span>
       </button>
       <button class="tabbar-btn" id="phenomArticleTab" style="display:none">
-        <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Статья</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 6.8C10 5.3 7 4.8 4 5.3v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5z"/><path d="M12 6.8v13"/></svg></span><span class="tabbar-btn-label">Статья</span>
       </button>
       <!-- «Игра» — состав ветки (v=177), только если в ней есть персонажи
            (renderGame в js/node-window.js). -->
       <button class="tabbar-btn" id="phenomGameTab" style="display:none">
-        <span class="tabbar-btn-icon" aria-hidden="true">♟️</span><span class="tabbar-btn-label">Игра</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="6.5" r="2.6"/><path d="M9.8 10.6h4.4l1 5.4H8.8z"/><path d="M6.5 20h11l-1-4H7.5z"/></svg></span><span class="tabbar-btn-label">Игра</span>
       </button>
       <!-- Своя карта точки (поле submap, сейчас у Фенома) — схема корабля
            ship/ во фрейме, вкладкой (openSubmapView в js/phenom.js). -->
       <button class="tabbar-btn" id="phenomMapTab" hidden>
-        <span class="tabbar-btn-icon" aria-hidden="true">🗺️</span><span class="tabbar-btn-label">Карта</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></svg></span><span class="tabbar-btn-label">Карта</span>
       </button>
       <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
       <button class="tabbar-btn" id="phenomEdit" hidden>
-        <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 19.5l1-4.4L15.6 5a2.1 2.1 0 0 1 3 0l.4.4a2.1 2.1 0 0 1 0 3L8.9 18.5z"/><path d="M13.6 7l3.4 3.4"/></svg></span><span class="tabbar-btn-label">Правка</span>
       </button>
     </div>
     </div>
@@ -227,17 +227,17 @@
       <!-- Родителя тут нет — он в строке плашки (#storyLinks). -->
       <!-- Тело окна — «Описание» и «Статья», как у нижнего слоя. -->
       <button class="tabbar-btn active" id="storyDescription">
-        <span class="tabbar-btn-icon" aria-hidden="true">📄</span><span class="tabbar-btn-label">Описание</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 6.5h14M5 10.5h11M5 14.5h14M5 18.5h8"/></svg></span><span class="tabbar-btn-label">Описание</span>
       </button>
       <button class="tabbar-btn" id="storyArticle" style="display:none">
-        <span class="tabbar-btn-icon" aria-hidden="true">📖</span><span class="tabbar-btn-label">Статья</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 6.8C10 5.3 7 4.8 4 5.3v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5z"/><path d="M12 6.8v13"/></svg></span><span class="tabbar-btn-label">Статья</span>
       </button>
       <button class="tabbar-btn" id="storyGame" style="display:none">
-        <span class="tabbar-btn-icon" aria-hidden="true">♟️</span><span class="tabbar-btn-label">Игра</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="6.5" r="2.6"/><path d="M9.8 10.6h4.4l1 5.4H8.8z"/><path d="M6.5 20h11l-1-4H7.5z"/></svg></span><span class="tabbar-btn-label">Игра</span>
       </button>
       <!-- Только владелец группы, карта из лички бота — showNodeEditor в js/editor.js. -->
       <button class="tabbar-btn" id="storyEdit" hidden>
-        <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 19.5l1-4.4L15.6 5a2.1 2.1 0 0 1 3 0l.4.4a2.1 2.1 0 0 1 0 3L8.9 18.5z"/><path d="M13.6 7l3.4 3.4"/></svg></span><span class="tabbar-btn-label">Правка</span>
       </button>
     </div>
     </div>
@@ -259,17 +259,17 @@
       <button class="toolbar-close-btn" id="charToolbarClose" aria-label="Закрыть">✕</button>
       <!-- Базовая вкладка — тело окна: анкета. -->
       <button class="tabbar-btn active" id="charSheet">
-        <span class="tabbar-btn-icon" aria-hidden="true">📋</span><span class="tabbar-btn-label">Анкета</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5.5" y="4.5" width="13" height="16" rx="2"/><path d="M9.5 4.5V3.3h5v1.2"/><path d="M8.8 10h6.4M8.8 13.5h6.4M8.8 17h3.8"/></svg></span><span class="tabbar-btn-label">Анкета</span>
       </button>
       <!-- Только у своих персонажей в карте, открытой из лички бота — js/editor.js. -->
       <button class="tabbar-btn" id="charEdit" hidden>
-        <span class="tabbar-btn-icon" aria-hidden="true">✏️</span><span class="tabbar-btn-label">Правка</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 19.5l1-4.4L15.6 5a2.1 2.1 0 0 1 3 0l.4.4a2.1 2.1 0 0 1 0 3L8.9 18.5z"/><path d="M13.6 7l3.4 3.4"/></svg></span><span class="tabbar-btn-label">Правка</span>
       </button>
       <button class="tabbar-btn" id="charNotes">
-        <span class="tabbar-btn-icon" aria-hidden="true">📝</span><span class="tabbar-btn-label">Заметки</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 4.5h15v10l-5 5h-10z"/><path d="M14.5 19.5v-5h5"/><path d="M8 9h8M8 12.5h4.5"/></svg></span><span class="tabbar-btn-label">Заметки</span>
       </button>
       <button class="tabbar-btn" id="charRolls">
-        <span class="tabbar-btn-icon" aria-hidden="true">🎲</span><span class="tabbar-btn-label">Броски</span>
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.6v8.8L12 21l-8-4.6V7.6z"/><path d="M12 3 7.4 14.2h9.2z"/><path d="M4 7.6l3.4 6.6M20 7.6l-3.4 6.6M7.4 14.2 12 21l4.6-6.8"/></svg></span><span class="tabbar-btn-label">Броски</span>
       </button>
     </div>
     </div>
@@ -282,6 +282,6 @@
      не в модуле, — за ним следит navigation.js (Esc / «назад» закрывают игру). -->
 <div class="flappy-overlay" id="flappyOverlay" role="dialog" aria-modal="true" aria-label="Мини-игра Flappy Phenome"></div>
 
-<script type="module" src="js/main.js?v=249" onerror="window.__bootFail && window.__bootFail()"></script>
+<script type="module" src="js/main.js?v=253" onerror="window.__bootFail && window.__bootFail()"></script>
 </body>
 </html>

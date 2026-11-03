@@ -1,6 +1,6 @@
-import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=27';
-import {inChip} from './filters.js?v=27';
-import {newsNow,elTile,zones,artOf,bg} from './start.js?v=27';
+import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,MAP_SVG,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=30';
+import {inChip} from './filters.js?v=30';
+import {newsNow,elTile,zones,artOf,bg} from './start.js?v=30';
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.7,.2,1)';
 // Выдвинуть/задвинуть: высота коробки плавно идёт от старого содержимого к новому.
@@ -51,12 +51,69 @@ function epochs() {
 function epochLine(open) {
   const es = epochs();
   if (!es.length) return null;
-  return el('section', {class: 'epochs-sec'},
-    el('div', {class: 'now-head'}, el('h2', {}, 'Эпохи Фенома'), el('span', {}, 'что было раньше')),
-    el('ol', {class: 'epochs'}, es.map(e => el('li', {class: `epoch${e.now ? ' now' : ''}`},
-      el('button', {onclick: () => open(EPOCHS, e.anchor)},
-        el('span', {class: 'ep-n'}, e.now ? `${e.n}-я эпоха — сейчас, её события выше` : `${e.n}-я эпоха`),
-        el('span', {class: 'ep-title'}, e.title), el('span', {class: 'ep-lede'}, e.lede))))));
+  const strip = el('ol', {class: 'epochs'}, es.map(e => el('li', {class: `epoch${e.now ? ' now' : ''}`},
+    el('button', {onclick: () => open(EPOCHS, e.anchor)},
+      el('span', {class: 'ep-n'}, e.now ? `${e.n}-я · сейчас` : `${e.n}-я эпоха`),
+      el('span', {class: 'ep-title'}, e.title), el('span', {class: 'ep-lede'}, e.lede)))));
+  const thumb = el('span', {class: 'ep-thumb'}), track = el('div', {class: 'ep-track', 'aria-hidden': 'true'}, thumb);
+  dragScroll(strip, track, thumb);
+  return el('section', {class: 'epochs-sec'}, el('div', {class: 'now-head'}, el('h2', {}, 'Эпохи Фенома'), track), strip);
+}
+/* Лента эпох листается и без пальца (v=251, владелец: «на компьютере не двигается»): мышью тянуть саму ленту, а справа от
+   заголовка — ползунок: видно, где ты в ленте, и его можно тянуть (пальцем тоже). Пока тянем — без щелчка (snap) к
+   эпохе, после — щелчок к ближайшей. Перетаскивание мышью гасит клик по эпохе под курсором. */
+function dragScroll(strip, track, thumb) {
+  const max = () => strip.scrollWidth - strip.clientWidth;
+  const sync = () => {
+    const tw = track.clientWidth, w = Math.max(20, tw * strip.clientWidth / Math.max(1, strip.scrollWidth));
+    track.classList.toggle('off', max() <= 1);
+    thumb.style.width = w + 'px';
+    thumb.style.transform = `translateX(${max() > 1 ? (tw - w) * strip.scrollLeft / max() : 0}px)`;
+  };
+  strip.addEventListener('scroll', sync, {passive: true});
+  new ResizeObserver(sync).observe(strip);
+  // Тянем — без щелчка к эпохе; отпустили — плавно к ближайшей, и только по приезде щелчок обратно (v=252: резкий
+  // перескок и выделение текста под курсором давали «дёрганое» движение на компьютере).
+  let settle = 0;
+  const hold = on => {
+    clearTimeout(settle);
+    if (on) { strip.style.scrollSnapType = 'none'; return; }
+    // Место эпохи — от первой (offsetLeft считается от предка, а не от ленты): эпоха i у края — scrollLeft = её сдвиг.
+    const at = [...strip.children].map(li => li.offsetLeft - strip.firstElementChild.offsetLeft);
+    const to = Math.min(max(), at.reduce((b, x) => Math.abs(x - strip.scrollLeft) < Math.abs(b - strip.scrollLeft) ? x : b, 0));
+    strip.scrollTo({left: to, behavior: still ? 'auto' : 'smooth'});
+    settle = setTimeout(() => { strip.style.scrollSnapType = ''; }, still ? 0 : 450);
+  };
+  track.addEventListener('pointerdown', e => {
+    e.preventDefault(); track.setPointerCapture(e.pointerId); hold(true);
+    const go = ev => {
+      const r = track.getBoundingClientRect(), w = thumb.offsetWidth;
+      strip.scrollLeft = Math.min(1, Math.max(0, (ev.clientX - r.left - w / 2) / Math.max(1, r.width - w))) * max();
+    };
+    go(e);
+    const up = () => { track.removeEventListener('pointermove', go); hold(false); };
+    track.addEventListener('pointermove', go);
+    track.addEventListener('pointerup', up, {once: true});
+    track.addEventListener('pointercancel', up, {once: true});
+  });
+  strip.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'mouse' || e.button) return;
+    e.preventDefault();   // без выделения текста и его автопрокрутки; click по эпохе всё равно придёт
+    const x0 = e.clientX, s0 = strip.scrollLeft;
+    let moved = false;
+    const move = ev => {
+      if (!moved && Math.abs(ev.clientX - x0) > 5) { moved = true; hold(true); strip.classList.add('dragging'); }
+      if (moved) strip.scrollLeft = s0 - (ev.clientX - x0);
+    };
+    const up = () => {
+      window.removeEventListener('pointermove', move);
+      if (!moved) return;
+      hold(false); strip.classList.remove('dragging');
+      strip.addEventListener('click', ce => { ce.stopPropagation(); ce.preventDefault(); }, {capture: true, once: true});
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up, {once: true});
+  });
 }
 
 // Режимы: число и арт плитки, содержимое под строкой.
@@ -116,20 +173,31 @@ function peopleRows(rs, open, home) {
 
 function storyAcc(r, open) {
   const slot = el('div', {class: 'acc-slot'});
-  const [st] = storyState(r.id);
+  const [st, kind] = storyState(r.id);
   const head = elTile(r, open, st, 'wide', () => {
     const on = head.getAttribute('aria-expanded') !== 'true';
     // Открыт один сюжет: соседний задвигается.
     if (on) head.closest('.issue')?.querySelectorAll('.acc > [aria-expanded="true"]').forEach(h => h !== head && h.click());
     head.setAttribute('aria-expanded', String(on));
     const parts = cardSections(r, open).filter(s => s.title !== 'Новости сюжета').map(s => [el('h4', {}, s.title), s.body]);
-    slide(slot, on ? el('div', {class: 'acc-body'}, parts,
-      el('div', {class: 'acc-actions'}, el('button', {onclick: () => open(r.id)}, 'Открыть целиком'), mapLink(r))) : []);
+    slide(slot, on ? el('div', {class: 'acc-body'}, parts) : []);
   });
   head.setAttribute('aria-expanded', 'false');
-  if (C.raw[r.id]?.recruit && !truth(C.raw[r.id]?.completed)) head.append(el('span', {class: 'tile-tag'}, 'Идёт набор'));
+  // v=250 (владелец): бирки «Идёт набор» на арте нет — «набор открыт» в подписи жёлтым; карточка в рамке — текст не
+  // прилипает к соседнему сюжету. v=252: на арте над названием — одна кнопка: слева «Открыть целиком», за белой чертой —
+  // значок карты (без подписи). Соседка плитки, не внутри неё: плитка — <button>, касание кнопки не раскрывает сюжет;
+  // место над названием — по замеру (название бывает в две строки).
   const d = descOf(r);
-  return el('div', {class: 'acc'}, head, d ? el('p', {class: 'acc-desc'}, d) : null, slot);
+  const pin = r.mapTargets?.length ? el('a', {class: 'acc-map', href: BASE + 'index.html?open=' + encodeURIComponent(r.id),
+    'aria-label': `«${r.title}» на карте`, title: 'Показать на карте',
+    onclick(e) { if (window.__mapShowOnMap) { e.preventDefault(); window.__mapShowOnMap(r.id); } }}) : null;
+  if (pin) pin.innerHTML = MAP_SVG;
+  const bar = el('div', {class: 'acc-bar'}, el('button', {onclick: () => open(r.id)}, 'Открыть целиком'), pin);
+  const text = head.querySelector('.el-text');
+  const place = () => { bar.style.top = Math.max(8, head.offsetTop + text.offsetTop - bar.offsetHeight - 2) + 'px'; };
+  new ResizeObserver(place).observe(head);
+  new ResizeObserver(place).observe(text);
+  return el('div', {class: `acc${kind === 'recruit' ? ' recruit' : ''}`}, head, bar, d ? el('p', {class: 'acc-desc'}, d) : null, slot);
 }
 
 /* ---------- выпуск раздела ---------- */
@@ -160,9 +228,11 @@ function entry(r, open, meta = '') {
 // Статья в библиотеке — выпадающий список её разделов (модулей); раздел открывает статью сразу на нём.
 function libArticle(r, open) {
   const mods = articleModules(C.docs[r.id]).filter(m => m.title && m.title !== 'Вступление');
-  return el('details', {'data-state-key':'library:'+r.id}, el('summary', {}, el('b', {}, r.title), el('span', {}, sentences(annotations()[r.id], 1))),
-    el('div', {class: 'lib-mods'}, el('button', {class: 'lib-whole', onclick: () => open(r.id)}, 'Открыть целиком'),
-      mods.map(m => el('button', {onclick: () => open(r.id, m.anchor || null)}, m.title))));
+  // v=250 (владелец): «Открыть» — на плашке статьи, рядом с заголовком (не внутри summary: касание кнопки не раскрывает).
+  return el('div', {class: 'lib-art'},
+    el('details', {'data-state-key':'library:'+r.id}, el('summary', {}, el('b', {}, r.title), el('span', {}, sentences(annotations()[r.id], 1))),
+      mods.length ? el('div', {class: 'lib-mods'}, mods.map(m => el('button', {onclick: () => open(r.id, m.anchor || null)}, m.title))) : null),
+    el('button', {class: 'lib-open', onclick: () => open(r.id)}, 'Открыть'));
 }
 function library(ids, open, title = 'Библиотека раздела', note = 'первоисточники', finished = []) {
   const rs = ids.map(id => C.byId.get(id)).filter(Boolean);
@@ -198,7 +268,7 @@ function issue(kind, state, open, opts = {}) {
       for (const r of list) { const p = C.byId.has(C.raw[r.id]?.parent) ? C.raw[r.id].parent : ''; if (!byParent.has(p)) byParent.set(p, []); byParent.get(p).push(r); }
       return [...byParent].map(([p, rs]) => p ? fam(famHead(C.byId.get(p), open, note), rs.map(r => storyAcc(r, open)), 'is-acc') : rs.map(r => storyAcc(r, open)));
     };
-    if (rest.length) out.push(head('Сюжеты', 'нажмите — раскроется'), families(rest, 'здесь идут'));
+    if (rest.length) out.push(head('Сюжеты'), families(rest, 'здесь идут'));
     // На «Всё» завершённые — в библиотеке («Архив»), не в списке.
     if (fin.length && !opts.home) out.push(head('Завершённые'), families(fin, 'здесь шёл'));
   } else if (kind === 'place') {
@@ -219,8 +289,8 @@ function issue(kind, state, open, opts = {}) {
       head('Районы и здания'),
       zones().map(z => el('section', {class: 'zone'},
         el('button', {class: 'zone-head', onclick: () => open(z.id)}, el('b', {}, z.name),
-          el('span', {}, `${z.bs.length} ${plural(z.bs.length, 'здание', 'здания', 'зданий')}`)),
-        el('div', {class: 'shelf-row'}, z.bs.map(b => elTile(b, open, '', 'mini'))))),
+          el('span', {}, z.bs.length ? `${z.bs.length} ${plural(z.bs.length, 'здание', 'здания', 'зданий')}` : 'зданий на схеме пока нет')),
+        z.bs.length ? el('div', {class: 'shelf-row'}, z.bs.map(b => elTile(b, open, '', 'mini'))) : null)),
       library([DISTRICTS], open));
   } else if (kind === 'character') {
     const recruit = storiesOf(state.chip).filter(r => C.raw[r.id]?.recruit && !done(r));
@@ -298,7 +368,7 @@ function homeLibrary(state, open) {
   const ps = C.records.filter(r => viewKind(r) === 'character'), arch = stories().filter(done);
   const inside = r => kidsOf(r.id).filter(k => viewKind(k) === 'story').map(k => `«${shortOf(k.id)}»`).join(', ');
   return el('section', {class: 'library'}, head('Библиотека'),
-    group('Статьи лора', lore().length, el('div', {class: 'lib-list', style: 'border:0;border-top:1px solid var(--line);border-radius:0'}, lore().map(r => libArticle(r, open))), true),
+    group('Статьи лора', lore().length, el('div', {class: 'lib-list', style: 'border:0;border-top:1px solid var(--line);border-radius:0'}, lore().map(r => libArticle(r, open)))),
     group('Альянсы', marks.length, rows(marks, r => sentences(descOf(r), 1).slice(0, 80), open)),
     group('Локации', locs.length + systems().length, [rows(locs, placeSub, open),
       el('div', {class: 'lib-sub'}, 'Системы'), rows(systems(), r => inside(r) ? `здесь ${inside(r)}` : r.lore?.label || '', open)]),
@@ -342,9 +412,8 @@ export function renderMain(main, state, open) {
   const key = [...picked].sort().join();
   const changed = built && built.key !== key;
   built = {chip: state.chip, key, body};
-  main.replaceChildren(body,
-    el('p', {class: 'row-sub', style: 'margin:18px 0 8px'}, 'Впервые здесь? ', el('a', {href: BASE + 'index.html?open=tour',
-      onclick(e) { if (window.__mapStartTour) { e.preventDefault(); window.__mapStartTour(); } }}, 'Короткая экскурсия по карте')));
+  // Строки «Впервые здесь? Короткая экскурсия» под главной и каждым разделом нет (v=250, владелец): обучение — в шторке.
+  main.replaceChildren(body);
   if (changed) {
     scroller().scrollTo(0, 0);
     if (!still) body.animate([{opacity: 0, transform: 'translateY(8px)'}, {opacity: 1, transform: 'none'}], {duration: 220, easing: EASE});

@@ -1,5 +1,5 @@
-import { articleText, linkText, search } from '../js/linker.js?v=249';
-import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=27';
+import { articleText, linkText, search } from '../js/linker.js?v=253';
+import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=30';
 export { C, load, viewKind, pointModules, alsoIn };
 export const BASE = new URL('../', import.meta.url).href;
 export const truth = v => v === true || /^(true|1)$/i.test(String(v ?? ''));
@@ -195,6 +195,8 @@ export function fontLink() {
 
 
 // Сама карта переходит из «Нод» на карту и летит к маркеру (window.__mapShowOnMap, js/map.js).
+// Значок карты (складная карта) — строки поиска и карточка сюжета.
+export const MAP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></svg>';
 export const mapLink = r => r.mapTargets?.length ? el('a',{class:'onmap',href:BASE+'index.html?open='+encodeURIComponent(r.id),
   onclick(e){if(window.__mapShowOnMap){e.preventDefault();window.__mapShowOnMap(r.id);}}},'Показать на карте') : null;
 export function cardSections(r,open) {

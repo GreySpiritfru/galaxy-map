@@ -1,4 +1,4 @@
-import {C, el, BASE, firstImage, viewKind, newsFor, newsItem} from './common.js?v=27';
+import {C, el, BASE, firstImage, viewKind, newsFor, newsItem, plural} from './common.js?v=30';
 
 export function artOf(r) {
   if (!r) return '';
@@ -18,11 +18,12 @@ export function newsNow(state, open, n = 5) {
   return el('section', {class: 'now'},
     el('div', {class: 'now-head'}, el('h2', {}, 'Что сейчас происходит'), el('span', {}, 'События мира')),
     ns.length ? el('ol', {class: 'news'}, ns.slice(0, n).map(x => newsItem(x, open))) : el('p', {class: 'empty'}, 'Новостей по этому сюжету пока нет.'),
-    ns.length > n ? el('details', {class: 'drop older', 'data-state-key': 'news-older'}, el('summary', {}, `Ещё ${ns.length - n}, раньше`),
+    ns.length > n ? el('details', {class: 'drop older', 'data-state-key': 'news-older'}, el('summary', {}, el('span', {class: 'more'}, `Ещё ${ns.length - n} ${plural(ns.length - n, 'событие', 'события', 'событий')}, раньше`), el('span', {class: 'less'}, 'Свернуть')),
       el('ol', {class: 'news'}, ns.slice(n).map(x => newsItem(x, open)))) : null);
 }
+// Все районы схемы (v=250: раньше — только те, где есть здания; 4 района пропадали), в порядке ship/records.json.
 export function zones() {
-  const groups = new Map();
+  const groups = new Map(C.records.filter(r => r.kind === 'zone').map(z => [z.id, []]));
   for (const b of C.records.filter(r => r.kind === 'building')) {
     if (!b.parentId) continue;
     if (!groups.has(b.parentId)) groups.set(b.parentId, []);
@@ -30,6 +31,6 @@ export function zones() {
   }
   return [...groups].map(([id,bs]) => {
     const r=C.byId.get(id);
-    return {id,name:r.title,bs,art:bs.find(b=>b.image)?.image || r.image};
+    return {id,name:r?.title||id,bs,art:bs.find(b=>b.image)?.image || r?.image};
   });
 }

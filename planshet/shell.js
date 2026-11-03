@@ -1,10 +1,9 @@
-import {C,el,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=27';
-import {inChip} from './filters.js?v=27';
-import {createHistory} from './history.js?v=27';
-import {sectionMenu,toggleSection,currentSection} from './home.js?v=27';
+import {C,el,MAP_SVG,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=30';
+import {inChip} from './filters.js?v=30';
+import {createHistory} from './history.js?v=30';
+import {sectionMenu,toggleSection,currentSection} from './home.js?v=30';
 const FILTER_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.4V19l-3.6-1.8v-4.8z"/></svg>';
 const HELP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.5"/><circle class="dot" cx="12" cy="16.8" r=".6"/></svg>';
-const MAP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></svg>';
 const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
 /* Планшет в карте (с 02.11.2026, v=219 — без фрейма, прямо в #planshet). Шапки нет (владелец: верх
@@ -267,11 +266,12 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
     if (q.length < 2) {
       out.push(scopeLine(), el('p', {class: 'p-hint'}, 'Наберите хотя бы 2 буквы: имя персонажа, место, слово из события.'));
       const last = recent().map(id => C.byId.get(id));
-      if (last.length) out.push(group('Недавно открытые', rows(last, r => KIND[viewKind(r)], open)));
+      // Как результаты поиска — со значком «на карте» (v=250, владелец).
+      if (last.length) out.push(group('Недавно открытые', el('div', {class: 'rows'}, last.map(r => resultRow(r, KIND[viewKind(r)], open)))));
       else {
         const popular = C.records.filter(r => ['story', 'place', 'character'].includes(viewKind(r)))
           .sort((a, b) => (C.pop[b.id] || 0) - (C.pop[a.id] || 0)).slice(0, 6);
-        out.push(group('Чаще всего упоминаются', rows(popular, r => KIND[viewKind(r)], open)));
+        out.push(group('Чаще всего упоминаются', el('div', {class: 'rows'}, popular.map(r => resultRow(r, KIND[viewKind(r)], open)))));
       }
     } else {
       const all = searchAll(q, 'all', 200).hits.map(h => ({...h, r: C.byId.get(h.id)}));

@@ -1423,6 +1423,11 @@ body.planshet-on .map-dock .dock-bar { background: rgba(12,12,18,0.97); }
   font-size: 19px;
   line-height: 1;
 }
+/* v=253 (владелец): вместо эмодзи — линейные значки в стиле шторки «Нод» (20 px, линия 1.7, цвет подписи вкладки);
+   правила — notes/ui-style.md. */
+.tabbar-btn-icon { display: grid; place-items: center; height: 20px; }
+.tabbar-btn-icon svg { display: block; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.7;
+  stroke-linecap: round; stroke-linejoin: round; }
 
 /* Маркер точки в HTML (markerEl в js/node-window.js) — ОДИН на кнопку
    родителя, ряд переходов и список под «+N». Правило: эмодзи — действие,
