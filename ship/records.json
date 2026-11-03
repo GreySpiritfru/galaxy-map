@@ -216,6 +216,12 @@
       "sourceKey": "Вестибюль",
       "name": "Вестибюль",
       "zone": "zone:phenome:modules"
+    },
+    {
+      "id": "building:phenome:marble-fountain-hotel",
+      "sourceKey": "Отель «Мраморный фонтан»",
+      "name": "Отель «Мраморный фонтан»",
+      "zone": "zone:phenome:modules"
     }
   ]
 }
