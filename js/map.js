@@ -1191,9 +1191,10 @@ function finishMapPick(p) {
       if (ref.mode === 'embed' && def) {
         modules.push({moduleId: ref.moduleId, title: def.title, selector: def.selector, url: art.url, articleTitle: art.title});
       }
+      // Буквы у статьи нет (v=255): маркер без арта рисует книгу-значок (markerEl), а не эмодзи 📖.
       if (!materials.some(m => m.id === art.id)) {
         materials.push({id: art.id, kind: 'article', label: art.title.replace(/\s*\(ред\.\)\s*$/, ''), name: art.title,
-          kindLabel: 'Статья', letter: '📖', shape: 'square', url: art.url, anchor: def ? def.selector.from : ''});
+          kindLabel: 'Статья', letter: '', shape: 'square', url: art.url, anchor: def ? def.selector.from : ''});
       }
     }
     return {modules, materials};
@@ -2769,7 +2770,7 @@ function finishMapPick(p) {
       id: rec.id, code: '', title: rec.title, shortTitle: '', recruit: '', images: [], description: '',
       documentUrl: rec.url, beacon: false, completed: false, article: null, modules: [], materials: [],
       submap: null, parentMeta: null, self: {id: rec.id, kind: 'article', label: rec.title.replace(/\s*\(ред\.\)\s*$/, ''),
-        name: rec.title, letter: '📖', shape: 'square'},
+        name: rec.title, letter: '', shape: 'square'},
       canEdit: false, characters: [], insideLabel: 'Используется в',
       children: users.map(r => recordMeta(r)), roster: [], branch: [],
     };
