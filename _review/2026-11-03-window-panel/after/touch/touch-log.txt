@@ -1,0 +1,50 @@
+360 район (одна вкладка): [["phenomOverlay","storyOverlay"],{"h":56,"single":true,"open":false,"bodyH":0,"colsH":82,"title":"Центральный город"}]
+360 сюжет после района: {"h":112,"single":false,"open":false,"bodyH":0,"colsH":128,"title":"Переворот"}
+360 раскрыть сюжет тапом: {"h":240,"single":false,"open":true,"bodyH":128,"colsH":128,"title":"Переворот","lishnee":0}
+360 тап по персонажу: {"layers":["phenomOverlay","storyOverlay","charOverlay"],"dock":{"h":112,"single":false,"open":false,"bodyH":null,"colsH":null,"title":"Шелди У'окер"}}
+360 тап по родителю (назад): {"layers":["phenomOverlay","storyOverlay"],"dock":{"h":240,"single":false,"open":true,"bodyH":128,"colsH":128,"title":"Переворот"}}
+360 свернуть тапом: {"h":112,"single":false,"open":false,"bodyH":0,"colsH":128,"title":"Переворот"}
+360 протяжка вверх: {"dock":{"h":240,"single":false,"open":true,"bodyH":128,"colsH":128,"title":"Переворот"},"layers":["phenomOverlay","storyOverlay"]}
+360 ✕/↩ шаг назад: {"layers":["phenomOverlay","storyOverlay"],"dock":{"h":138,"single":true,"open":true,"bodyH":82,"colsH":82,"title":"Центральный город"}}
+360 ✕ закрывает: ["phenomOverlay"]
+360 Феном раскрыть: {"h":210,"single":false,"open":true,"bodyH":98,"colsH":98,"title":"Феном"}
+360 Феном: тап по месту: {"layers":["phenomOverlay","storyOverlay"],"dock":{"h":240,"single":false,"open":true,"bodyH":128,"colsH":128,"title":"Крейсер Горизонт"}}
+360 назад по родителю: {"layers":["phenomOverlay"],"dock":{"h":210,"single":false,"open":true,"bodyH":98,"colsH":98,"title":"Феном"}}
+360 Федерация: центры: {"h":56,"close":702,"strip":702,"title":702}
+360 Федерация раскрыта: {"h":154,"close":604,"strip":604,"title":604}
+360 Федерация ✕: []
+360 система раскрыть: {"h":194,"single":false,"open":true,"bodyH":82,"colsH":82,"title":"Точки в системе"}
+360 ОШИБКИ: ["Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED","ReferenceError: PIXI is not defined"]
+390 район (одна вкладка): [["phenomOverlay","storyOverlay"],{"h":56,"single":true,"open":false,"bodyH":0,"colsH":82,"title":"Центральный город"}]
+390 сюжет после района: {"h":112,"single":false,"open":false,"bodyH":0,"colsH":128,"title":"Переворот"}
+390 раскрыть сюжет тапом: {"h":240,"single":false,"open":true,"bodyH":128,"colsH":128,"title":"Переворот","lishnee":0}
+390 тап по персонажу: {"layers":["phenomOverlay","storyOverlay","charOverlay"],"dock":{"h":112,"single":false,"open":false,"bodyH":null,"colsH":null,"title":"Шелди У'окер"}}
+390 тап по родителю (назад): {"layers":["phenomOverlay","storyOverlay"],"dock":{"h":240,"single":false,"open":true,"bodyH":128,"colsH":128,"title":"Переворот"}}
+390 свернуть тапом: {"h":112,"single":false,"open":false,"bodyH":0,"colsH":128,"title":"Переворот"}
+390 протяжка вверх: {"dock":{"h":240,"single":false,"open":true,"bodyH":128,"colsH":128,"title":"Переворот"},"layers":["phenomOverlay","storyOverlay"]}
+390 ✕/↩ шаг назад: {"layers":["phenomOverlay","storyOverlay"],"dock":{"h":138,"single":true,"open":true,"bodyH":82,"colsH":82,"title":"Центральный город"}}
+390 ✕ закрывает: ["phenomOverlay"]
+390 Феном раскрыть: {"h":210,"single":false,"open":true,"bodyH":98,"colsH":98,"title":"Феном"}
+390 Феном: тап по месту: {"layers":["phenomOverlay","storyOverlay"],"dock":{"h":182,"single":false,"open":true,"bodyH":70,"colsH":70,"title":"Крейсер Горизонт"}}
+390 назад по родителю: {"layers":["phenomOverlay"],"dock":{"h":210,"single":false,"open":true,"bodyH":98,"colsH":98,"title":"Феном"}}
+390 Федерация: центры: {"h":56,"close":806,"strip":806,"title":806}
+390 Федерация раскрыта: {"h":154,"close":708,"strip":708,"title":708}
+390 Федерация ✕: []
+390 система раскрыть: {"h":194,"single":false,"open":true,"bodyH":82,"colsH":82,"title":"Точки в системе"}
+390 ОШИБКИ: ["Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED","ReferenceError: PIXI is not defined"]
+1280 район (одна вкладка): [["phenomOverlay","storyOverlay"],{"h":56,"single":true,"open":false,"bodyH":0,"colsH":82,"title":"Центральный город"}]
+1280 сюжет после района: {"h":112,"single":false,"open":false,"bodyH":0,"colsH":70,"title":"Переворот"}
+1280 раскрыть сюжет тапом: {"h":182,"single":false,"open":true,"bodyH":70,"colsH":70,"title":"Переворот","lishnee":0}
+1280 тап по персонажу: {"layers":["phenomOverlay","storyOverlay","charOverlay"],"dock":{"h":112,"single":false,"open":false,"bodyH":null,"colsH":null,"title":"Шелди У'окер"}}
+1280 тап по родителю (назад): {"layers":["phenomOverlay","storyOverlay"],"dock":{"h":182,"single":false,"open":true,"bodyH":70,"colsH":70,"title":"Переворот"}}
+1280 свернуть тапом: {"h":112,"single":false,"open":false,"bodyH":0,"colsH":70,"title":"Переворот"}
+1280 ✕/↩ шаг назад: {"layers":["phenomOverlay","storyOverlay"],"dock":{"h":56,"single":true,"open":false,"bodyH":0,"colsH":82,"title":"Центральный город"}}
+1280 ✕ закрывает: ["phenomOverlay"]
+1280 Феном раскрыть: {"h":210,"single":false,"open":true,"bodyH":98,"colsH":98,"title":"Феном"}
+1280 Феном: тап по месту: {"layers":["phenomOverlay","storyOverlay"],"dock":{"h":182,"single":false,"open":true,"bodyH":70,"colsH":70,"title":"Крейсер Горизонт"}}
+1280 назад по родителю: {"layers":["phenomOverlay"],"dock":{"h":210,"single":false,"open":true,"bodyH":98,"colsH":98,"title":"Феном"}}
+1280 Федерация: центры: {"h":56,"close":762,"strip":762,"title":762}
+1280 Федерация раскрыта: {"h":154,"close":664,"strip":664,"title":664}
+1280 Федерация ✕: []
+1280 система раскрыть: {"h":194,"single":false,"open":true,"bodyH":82,"colsH":82,"title":"Точки в системе"}
+1280 ОШИБКИ: ["Failed to load resource: net::ERR_TUNNEL_CONNECTION_FAILED","ReferenceError: PIXI is not defined"]
