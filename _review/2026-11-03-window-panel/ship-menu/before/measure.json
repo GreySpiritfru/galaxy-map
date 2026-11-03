@@ -1,0 +1,1184 @@
+{
+ "tag": "before",
+ "runs": [
+  {
+   "mode": "ship",
+   "view": "360",
+   "m": {
+    "vw": 360,
+    "vh": 740,
+    "bar": {
+     "x": 10,
+     "y": 676,
+     "w": 288,
+     "h": 54,
+     "radius": "20px",
+     "bg": "rgba(16, 16, 24, 0.86)",
+     "left": 10,
+     "right": 62,
+     "bottom": 10
+    },
+    "btns": [
+     {
+      "f": "all",
+      "x": 14,
+      "y": 680,
+      "w": 56,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgb(175, 238, 238)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "nose",
+      "x": 70,
+      "y": 680,
+      "w": 56,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "city",
+      "x": 126,
+      "y": 680,
+      "w": 56,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "rings",
+      "x": 182,
+      "y": 680,
+      "w": 56,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "stern",
+      "x": 238,
+      "y": 680,
+      "w": 56,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     }
+    ],
+    "edit": {
+     "x": 306,
+     "y": 681,
+     "w": 44,
+     "h": 44,
+     "radius": "50%",
+     "icon": "20×20",
+     "stroke": "1.7px",
+     "color": "rgba(255, 255, 255, 0.72)",
+     "bg": "rgba(16, 16, 24, 0.86)"
+    },
+    "cardBottomCss": "76px"
+   },
+   "parts": [
+    {
+     "active": "nose",
+     "actives": 1,
+     "lensX": 60,
+     "lensW": 56,
+     "btnX": 60,
+     "btnW": 56,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "city",
+     "actives": 1,
+     "lensX": 116,
+     "lensW": 56,
+     "btnX": 116,
+     "btnW": 56,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "rings",
+     "actives": 1,
+     "lensX": 172,
+     "lensW": 56,
+     "btnX": 172,
+     "btnW": 56,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "stern",
+     "actives": 1,
+     "lensX": 228,
+     "lensW": 56,
+     "btnX": 228,
+     "btnW": 56,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "all",
+     "actives": 1,
+     "lensX": 4,
+     "lensW": 56,
+     "btnX": 4,
+     "btnW": 56,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    }
+   ],
+   "errors": [],
+   "tapZone": "Район лесов",
+   "card": {
+    "shown": true,
+    "top": 446.4,
+    "bottom": 664,
+    "dockTop": 676,
+    "gap": 12,
+    "radius": "18px"
+   },
+   "cardClose": {
+    "w": 30,
+    "h": 30,
+    "right": 8,
+    "top": 6
+   },
+   "cardClosed": true,
+   "editBar": {
+    "shown": true,
+    "top": 610.3,
+    "bottom": 664,
+    "dockTop": 676,
+    "gap": 12,
+    "radius": "16px"
+   },
+   "editBarBtns": [
+    {
+     "w": 103,
+     "h": 33,
+     "radius": "10px",
+     "border": "none 0px",
+     "color": "rgb(232, 232, 239)"
+    },
+    {
+     "w": 60,
+     "h": 33,
+     "radius": "10px",
+     "border": "none 0px",
+     "color": "rgb(232, 232, 239)"
+    }
+   ],
+   "editActive": {
+    "cls": true,
+    "color": "rgb(175, 238, 238)"
+   }
+  },
+  {
+   "mode": "ship",
+   "view": "390",
+   "m": {
+    "vw": 390,
+    "vh": 844,
+    "bar": {
+     "x": 10,
+     "y": 780,
+     "w": 318,
+     "h": 54,
+     "radius": "20px",
+     "bg": "rgba(16, 16, 24, 0.86)",
+     "left": 10,
+     "right": 62,
+     "bottom": 10
+    },
+    "btns": [
+     {
+      "f": "all",
+      "x": 14,
+      "y": 784,
+      "w": 62,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgb(175, 238, 238)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "nose",
+      "x": 76,
+      "y": 784,
+      "w": 62,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "city",
+      "x": 138,
+      "y": 784,
+      "w": 62,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "rings",
+      "x": 200,
+      "y": 784,
+      "w": 62,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "stern",
+      "x": 262,
+      "y": 784,
+      "w": 62,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     }
+    ],
+    "edit": {
+     "x": 336,
+     "y": 785,
+     "w": 44,
+     "h": 44,
+     "radius": "50%",
+     "icon": "20×20",
+     "stroke": "1.7px",
+     "color": "rgba(255, 255, 255, 0.72)",
+     "bg": "rgba(16, 16, 24, 0.86)"
+    },
+    "cardBottomCss": "76px"
+   },
+   "parts": [
+    {
+     "active": "nose",
+     "actives": 1,
+     "lensX": 66,
+     "lensW": 62,
+     "btnX": 66,
+     "btnW": 62,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "city",
+     "actives": 1,
+     "lensX": 128,
+     "lensW": 62,
+     "btnX": 128,
+     "btnW": 62,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "rings",
+     "actives": 1,
+     "lensX": 190,
+     "lensW": 62,
+     "btnX": 190,
+     "btnW": 62,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "stern",
+     "actives": 1,
+     "lensX": 252,
+     "lensW": 62,
+     "btnX": 252,
+     "btnW": 62,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "all",
+     "actives": 1,
+     "lensX": 4,
+     "lensW": 62,
+     "btnX": 4,
+     "btnW": 62,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    }
+   ],
+   "errors": [],
+   "tapZone": "Район лесов",
+   "card": {
+    "shown": true,
+    "top": 570.7,
+    "bottom": 768,
+    "dockTop": 780,
+    "gap": 12,
+    "radius": "18px"
+   },
+   "cardClose": {
+    "w": 30,
+    "h": 30,
+    "right": 8,
+    "top": 6
+   },
+   "cardClosed": true,
+   "editBar": {
+    "shown": true,
+    "top": 719.2,
+    "bottom": 768,
+    "dockTop": 780,
+    "gap": 12,
+    "radius": "16px"
+   },
+   "editBarBtns": [
+    {
+     "w": 103,
+     "h": 33,
+     "radius": "10px",
+     "border": "none 0px",
+     "color": "rgb(232, 232, 239)"
+    },
+    {
+     "w": 60,
+     "h": 33,
+     "radius": "10px",
+     "border": "none 0px",
+     "color": "rgb(232, 232, 239)"
+    }
+   ],
+   "editActive": {
+    "cls": true,
+    "color": "rgb(175, 238, 238)"
+   }
+  },
+  {
+   "mode": "ship",
+   "view": "1280",
+   "m": {
+    "vw": 1280,
+    "vh": 800,
+    "bar": {
+     "x": 335.6,
+     "y": 732,
+     "w": 548.7,
+     "h": 52,
+     "radius": "18px",
+     "bg": "rgba(16, 16, 24, 0.86)",
+     "left": 335.6,
+     "right": 395.7,
+     "bottom": 16
+    },
+    "btns": [
+     {
+      "f": "all",
+      "x": 339.6,
+      "y": 736,
+      "w": 122.6,
+      "h": 44,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "14px/18px",
+      "color": "rgb(175, 238, 238)",
+      "labelPos": "справа"
+     },
+     {
+      "f": "nose",
+      "x": 462.3,
+      "y": 736,
+      "w": 90.1,
+      "h": 44,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "14px/18px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "справа"
+     },
+     {
+      "f": "city",
+      "x": 552.4,
+      "y": 736,
+      "w": 105,
+      "h": 44,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "14px/18px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "справа"
+     },
+     {
+      "f": "rings",
+      "x": 657.4,
+      "y": 736,
+      "w": 114.2,
+      "h": 44,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "14px/18px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "справа"
+     },
+     {
+      "f": "stern",
+      "x": 771.6,
+      "y": 736,
+      "w": 108.8,
+      "h": 44,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "14px/18px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "справа"
+     }
+    ],
+    "edit": {
+     "x": 892.3,
+     "y": 732,
+     "w": 52,
+     "h": 52,
+     "radius": "50%",
+     "icon": "20×20",
+     "stroke": "1.7px",
+     "color": "rgba(255, 255, 255, 0.72)",
+     "bg": "rgba(16, 16, 24, 0.86)"
+    },
+    "cardBottomCss": "80px"
+   },
+   "parts": [
+    {
+     "active": "nose",
+     "actives": 1,
+     "lensX": 127,
+     "lensW": 90,
+     "btnX": 127,
+     "btnW": 90,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "city",
+     "actives": 1,
+     "lensX": 217,
+     "lensW": 105,
+     "btnX": 217,
+     "btnW": 105,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "rings",
+     "actives": 1,
+     "lensX": 322,
+     "lensW": 114,
+     "btnX": 322,
+     "btnW": 114,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "stern",
+     "actives": 1,
+     "lensX": 436,
+     "lensW": 109,
+     "btnX": 436,
+     "btnW": 109,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "all",
+     "actives": 1,
+     "lensX": 4,
+     "lensW": 123,
+     "btnX": 4,
+     "btnW": 123,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    }
+   ],
+   "errors": [],
+   "tapZone": "Район лесов",
+   "card": {
+    "shown": true,
+    "top": 392.2,
+    "bottom": 720,
+    "dockTop": 732,
+    "gap": 12,
+    "radius": "18px"
+   },
+   "cardClose": {
+    "w": 30,
+    "h": 30,
+    "right": 8,
+    "top": 6
+   },
+   "cardClosed": true,
+   "editBar": {
+    "shown": true,
+    "top": 675.2,
+    "bottom": 724,
+    "dockTop": 732,
+    "gap": 8,
+    "radius": "16px"
+   },
+   "editBarBtns": [
+    {
+     "w": 103,
+     "h": 33,
+     "radius": "10px",
+     "border": "none 0px",
+     "color": "rgb(232, 232, 239)"
+    },
+    {
+     "w": 60,
+     "h": 33,
+     "radius": "10px",
+     "border": "none 0px",
+     "color": "rgb(232, 232, 239)"
+    }
+   ],
+   "editActive": {
+    "cls": true,
+    "color": "rgb(175, 238, 238)"
+   }
+  },
+  {
+   "mode": "map",
+   "view": "360",
+   "m": {
+    "vw": 360,
+    "vh": 657,
+    "bar": {
+     "x": 10,
+     "y": 593,
+     "w": 288,
+     "h": 54,
+     "radius": "20px",
+     "bg": "rgba(16, 16, 24, 0.86)",
+     "left": 10,
+     "right": 62,
+     "bottom": 10
+    },
+    "btns": [
+     {
+      "f": "all",
+      "x": 14,
+      "y": 597,
+      "w": 56,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgb(175, 238, 238)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "nose",
+      "x": 70,
+      "y": 597,
+      "w": 56,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "city",
+      "x": 126,
+      "y": 597,
+      "w": 56,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "rings",
+      "x": 182,
+      "y": 597,
+      "w": 56,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "stern",
+      "x": 238,
+      "y": 597,
+      "w": 56,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     }
+    ],
+    "edit": {
+     "x": 306,
+     "y": 598,
+     "w": 44,
+     "h": 44,
+     "radius": "50%",
+     "icon": "20×20",
+     "stroke": "1.7px",
+     "color": "rgba(255, 255, 255, 0.72)",
+     "bg": "rgba(16, 16, 24, 0.86)"
+    },
+    "cardBottomCss": "76px"
+   },
+   "parts": [
+    {
+     "active": "nose",
+     "actives": 1,
+     "lensX": 60,
+     "lensW": 56,
+     "btnX": 60,
+     "btnW": 56,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "city",
+     "actives": 1,
+     "lensX": 116,
+     "lensW": 56,
+     "btnX": 116,
+     "btnW": 56,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "rings",
+     "actives": 1,
+     "lensX": 172,
+     "lensW": 56,
+     "btnX": 172,
+     "btnW": 56,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "stern",
+     "actives": 1,
+     "lensX": 228,
+     "lensW": 56,
+     "btnX": 228,
+     "btnW": 56,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "all",
+     "actives": 1,
+     "lensX": 4,
+     "lensW": 56,
+     "btnX": 4,
+     "btnW": 56,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    }
+   ],
+   "errors": [],
+   "frame": {
+    "frameBottom": 657,
+    "windowDockTop": 667
+   },
+   "card": {
+    "shown": true,
+    "top": 363.4,
+    "bottom": 581,
+    "dockTop": 593,
+    "gap": 12,
+    "radius": "18px"
+   },
+   "cardClose": {
+    "w": 30,
+    "h": 30,
+    "right": 8,
+    "top": 6
+   },
+   "cardClosed": true,
+   "editBar": {
+    "shown": true,
+    "top": 527.3,
+    "bottom": 581,
+    "dockTop": 593,
+    "gap": 12,
+    "radius": "16px"
+   },
+   "editBarBtns": [
+    {
+     "w": 103,
+     "h": 33,
+     "radius": "10px",
+     "border": "none 0px",
+     "color": "rgb(232, 232, 239)"
+    },
+    {
+     "w": 60,
+     "h": 33,
+     "radius": "10px",
+     "border": "none 0px",
+     "color": "rgb(232, 232, 239)"
+    }
+   ],
+   "editActive": {
+    "cls": true,
+    "color": "rgb(175, 238, 238)"
+   }
+  },
+  {
+   "mode": "map",
+   "view": "390",
+   "m": {
+    "vw": 390,
+    "vh": 761,
+    "bar": {
+     "x": 10,
+     "y": 697,
+     "w": 318,
+     "h": 54,
+     "radius": "20px",
+     "bg": "rgba(16, 16, 24, 0.86)",
+     "left": 10,
+     "right": 62,
+     "bottom": 10
+    },
+    "btns": [
+     {
+      "f": "all",
+      "x": 14,
+      "y": 701,
+      "w": 62,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgb(175, 238, 238)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "nose",
+      "x": 76,
+      "y": 701,
+      "w": 62,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "city",
+      "x": 138,
+      "y": 701,
+      "w": 62,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "rings",
+      "x": 200,
+      "y": 701,
+      "w": 62,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     },
+     {
+      "f": "stern",
+      "x": 262,
+      "y": 701,
+      "w": 62,
+      "h": 46,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "10px/12px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "снизу"
+     }
+    ],
+    "edit": {
+     "x": 336,
+     "y": 702,
+     "w": 44,
+     "h": 44,
+     "radius": "50%",
+     "icon": "20×20",
+     "stroke": "1.7px",
+     "color": "rgba(255, 255, 255, 0.72)",
+     "bg": "rgba(16, 16, 24, 0.86)"
+    },
+    "cardBottomCss": "76px"
+   },
+   "parts": [
+    {
+     "active": "nose",
+     "actives": 1,
+     "lensX": 66,
+     "lensW": 62,
+     "btnX": 66,
+     "btnW": 62,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "city",
+     "actives": 1,
+     "lensX": 128,
+     "lensW": 62,
+     "btnX": 128,
+     "btnW": 62,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "rings",
+     "actives": 1,
+     "lensX": 190,
+     "lensW": 62,
+     "btnX": 190,
+     "btnW": 62,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "stern",
+     "actives": 1,
+     "lensX": 252,
+     "lensW": 62,
+     "btnX": 252,
+     "btnW": 62,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "all",
+     "actives": 1,
+     "lensX": 4,
+     "lensW": 62,
+     "btnX": 4,
+     "btnW": 62,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    }
+   ],
+   "errors": [],
+   "frame": {
+    "frameBottom": 761,
+    "windowDockTop": 771
+   },
+   "card": {
+    "shown": true,
+    "top": 487.7,
+    "bottom": 685,
+    "dockTop": 697,
+    "gap": 12,
+    "radius": "18px"
+   },
+   "cardClose": {
+    "w": 30,
+    "h": 30,
+    "right": 8,
+    "top": 6
+   },
+   "cardClosed": true,
+   "editBar": {
+    "shown": true,
+    "top": 636.2,
+    "bottom": 685,
+    "dockTop": 697,
+    "gap": 12,
+    "radius": "16px"
+   },
+   "editBarBtns": [
+    {
+     "w": 103,
+     "h": 33,
+     "radius": "10px",
+     "border": "none 0px",
+     "color": "rgb(232, 232, 239)"
+    },
+    {
+     "w": 60,
+     "h": 33,
+     "radius": "10px",
+     "border": "none 0px",
+     "color": "rgb(232, 232, 239)"
+    }
+   ],
+   "editActive": {
+    "cls": true,
+    "color": "rgb(175, 238, 238)"
+   }
+  },
+  {
+   "mode": "map",
+   "view": "1280",
+   "m": {
+    "vw": 1280,
+    "vh": 717,
+    "bar": {
+     "x": 335.6,
+     "y": 649,
+     "w": 548.7,
+     "h": 52,
+     "radius": "18px",
+     "bg": "rgba(16, 16, 24, 0.86)",
+     "left": 335.6,
+     "right": 395.7,
+     "bottom": 16
+    },
+    "btns": [
+     {
+      "f": "all",
+      "x": 339.6,
+      "y": 653,
+      "w": 122.6,
+      "h": 44,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "14px/18px",
+      "color": "rgb(175, 238, 238)",
+      "labelPos": "справа"
+     },
+     {
+      "f": "nose",
+      "x": 462.3,
+      "y": 653,
+      "w": 90.1,
+      "h": 44,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "14px/18px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "справа"
+     },
+     {
+      "f": "city",
+      "x": 552.4,
+      "y": 653,
+      "w": 105,
+      "h": 44,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "14px/18px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "справа"
+     },
+     {
+      "f": "rings",
+      "x": 657.4,
+      "y": 653,
+      "w": 114.2,
+      "h": 44,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "14px/18px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "справа"
+     },
+     {
+      "f": "stern",
+      "x": 771.6,
+      "y": 653,
+      "w": 108.8,
+      "h": 44,
+      "icon": "22×22",
+      "stroke": "1.7px",
+      "label": "14px/18px",
+      "color": "rgba(255, 255, 255, 0.66)",
+      "labelPos": "справа"
+     }
+    ],
+    "edit": {
+     "x": 892.3,
+     "y": 649,
+     "w": 52,
+     "h": 52,
+     "radius": "50%",
+     "icon": "20×20",
+     "stroke": "1.7px",
+     "color": "rgba(255, 255, 255, 0.72)",
+     "bg": "rgba(16, 16, 24, 0.86)"
+    },
+    "cardBottomCss": "80px"
+   },
+   "parts": [
+    {
+     "active": "nose",
+     "actives": 1,
+     "lensX": 127,
+     "lensW": 90,
+     "btnX": 127,
+     "btnW": 90,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "city",
+     "actives": 1,
+     "lensX": 217,
+     "lensW": 105,
+     "btnX": 217,
+     "btnW": 105,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "rings",
+     "actives": 1,
+     "lensX": 322,
+     "lensW": 114,
+     "btnX": 322,
+     "btnW": 114,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "stern",
+     "actives": 1,
+     "lensX": 436,
+     "lensW": 109,
+     "btnX": 436,
+     "btnW": 109,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    },
+    {
+     "active": "all",
+     "actives": 1,
+     "lensX": 4,
+     "lensW": 123,
+     "btnX": 4,
+     "btnW": 123,
+     "activeColor": "rgb(175, 238, 238)",
+     "otherColor": "rgba(255, 255, 255, 0.66)",
+     "ok": true
+    }
+   ],
+   "errors": [],
+   "frame": {
+    "frameBottom": 717,
+    "windowDockTop": 727
+   },
+   "card": {
+    "shown": true,
+    "top": 480.3,
+    "bottom": 637,
+    "dockTop": 649,
+    "gap": 12,
+    "radius": "18px"
+   },
+   "cardClose": {
+    "w": 30,
+    "h": 30,
+    "right": 8,
+    "top": 6
+   },
+   "cardClosed": true,
+   "editBar": {
+    "shown": true,
+    "top": 592.2,
+    "bottom": 641,
+    "dockTop": 649,
+    "gap": 8,
+    "radius": "16px"
+   },
+   "editBarBtns": [
+    {
+     "w": 103,
+     "h": 33,
+     "radius": "10px",
+     "border": "none 0px",
+     "color": "rgb(232, 232, 239)"
+    },
+    {
+     "w": 60,
+     "h": 33,
+     "radius": "10px",
+     "border": "none 0px",
+     "color": "rgb(232, 232, 239)"
+    }
+   ],
+   "editActive": {
+    "cls": true,
+    "color": "rgb(175, 238, 238)"
+   }
+  }
+ ]
+}
