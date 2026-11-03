@@ -1,0 +1,72 @@
+360-phenome-closed       dock h   112 ->   112 | small 0->0 emoji 2->0
+360-phenome-open         dock h   360 ->   292 | small 0->0 emoji 2->0
+   is-points  w 64->116 perRow [1, 1, 1]->[2, 1] markerGap []->[24] chipW [64]->[56] chipH [62, 50]->[62, 50] trunc []->[]
+   is-chars   w 245->217 perRow [2]->[2] markerGap [26]->[24] chipW [50]->[54] chipH [50]->[50] trunc []->[]
+360-story1-closed        dock h   112 ->   112 | small 0->0 emoji 0->0
+360-story1-open          dock h   296 ->   236 | small 0->0 emoji 0->0
+   is-chars   w 330->342 perRow [5, 4]->[7, 2] markerGap [26, 28, 33, 38]->[19] chipW [50]->[49] chipH [50]->[50] trunc []->[]
+360-terrane-closed       dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 4->0
+360-terrane-open         dock h   148 ->   150 | strip-dock -50 -> -47 | x-strip 96 -> 0 | small 0->0 emoji 4->0
+   is-points  w 266->342 perRow [2]->[2] markerGap [36]->[33] chipW [64]->[65] chipH [62]->[62] trunc ['📖Расовая энциклопедия']->['Расовая энциклопедия']
+360-char-closed          dock h   112 ->   112 | small 0->0 emoji 0->0
+360-char-open            dock h   180 ->   178 | small 0->0 emoji 0->0
+   is-chars   w 330->342 perRow [2]->[2] markerGap [28]->[19] chipW [50]->[49] chipH [50]->[50] trunc []->[]
+360-article-closed       dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 1->0
+360-article-open         dock h   136 ->   138 | strip-dock -44 -> -41 | x-strip 84 -> 0 | small 0->0 emoji 1->0
+   is-points  w 266->342 perRow [1]->[1] markerGap []->[] chipW [64]->[65] chipH [50]->[50] trunc []->[]
+360-zone-closed          dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 0->0
+360-zone-open            dock h   128 ->   134 | strip-dock -40 -> -39 | x-strip 76 -> 0 | small 0->0 emoji 0->0
+   is-points  w 266->342 perRow [2]->[2] markerGap [36]->[33] chipW [64]->[65] chipH [62, 50]->[62, 50] trunc []->[]
+360-building-closed      dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 0->0
+360-building-open        dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 0->0
+360-system-closed        dock h   112 ->   112 | small 0->0 emoji 0->0
+360-system-open          dock h   192 ->   190 | small 0->0 emoji 0->0
+   is-points  w 330->342 perRow [1]->[1] markerGap []->[] chipW [64]->[65] chipH [62]->[62] trunc []->[]
+390-phenome-closed       dock h   112 ->   112 | small 0->0 emoji 2->0
+390-phenome-open         dock h   360 ->   292 | small 0->0 emoji 2->0
+   is-points  w 64->116 perRow [1, 1, 1]->[2, 1] markerGap []->[24] chipW [64]->[56] chipH [62, 50]->[62, 50] trunc []->[]
+   is-chars   w 275->247 perRow [2]->[2] markerGap [26]->[19] chipW [50]->[49] chipH [50]->[50] trunc []->[]
+390-story1-closed        dock h   112 ->   112 | small 0->0 emoji 0->0
+390-story1-open          dock h   238 ->   236 | small 0->0 emoji 0->0
+   is-chars   w 360->372 perRow [5, 4]->[7, 2] markerGap [26, 28, 33, 38]->[23] chipW [50]->[53] chipH [50]->[50] trunc []->[]
+390-terrane-closed       dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 4->0
+390-terrane-open         dock h   148 ->   150 | strip-dock -50 -> -47 | x-strip 96 -> 0 | small 0->0 emoji 4->0
+   is-points  w 296->372 perRow [2]->[2] markerGap [36]->[27] chipW [64]->[59] chipH [62]->[62] trunc ['📖Расовая энциклопедия']->[]
+390-char-closed          dock h   112 ->   112 | small 0->0 emoji 0->0
+390-char-open            dock h   180 ->   178 | small 0->0 emoji 0->0
+   is-chars   w 360->372 perRow [2]->[2] markerGap [28]->[23] chipW [50]->[53] chipH [50]->[50] trunc []->[]
+390-article-closed       dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 1->0
+390-article-open         dock h   136 ->   138 | strip-dock -44 -> -41 | x-strip 84 -> 0 | small 0->0 emoji 1->0
+   is-points  w 296->372 perRow [1]->[1] markerGap []->[] chipW [64]->[59] chipH [50]->[50] trunc []->[]
+390-zone-closed          dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 0->0
+390-zone-open            dock h   128 ->   134 | strip-dock -40 -> -39 | x-strip 76 -> 0 | small 0->0 emoji 0->0
+   is-points  w 296->372 perRow [2]->[2] markerGap [36]->[27] chipW [64]->[59] chipH [62, 50]->[62, 50] trunc []->[]
+390-building-closed      dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 0->0
+390-building-open        dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 0->0
+390-system-closed        dock h   112 ->   112 | small 0->0 emoji 0->0
+390-system-open          dock h   192 ->   190 | small 0->0 emoji 0->0
+   is-points  w 360->372 perRow [1]->[1] markerGap []->[] chipW [64]->[59] chipH [62]->[62] trunc []->[]
+1280-phenome-closed      dock h   112 ->   112 | small 0->0 emoji 2->0
+1280-phenome-open        dock h   360 ->   292 | small 0->0 emoji 2->0
+   is-points  w 64->116 perRow [1, 1, 1]->[2, 1] markerGap []->[24] chipW [64]->[56] chipH [62, 50]->[62, 50] trunc []->[]
+   is-chars   w 455->427 perRow [2]->[2] markerGap [26]->[23] chipW [50]->[53] chipH [50]->[50] trunc []->[]
+1280-story1-closed       dock h   112 ->   112 | small 0->0 emoji 0->0
+1280-story1-open         dock h   238 ->   178 | small 0->0 emoji 0->0
+   is-chars   w 540->552 perRow [9]->[9] markerGap [26, 28, 33, 38]->[20] chipW [50]->[50] chipH [50]->[50] trunc []->[]
+1280-terrane-closed      dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 4->0
+1280-terrane-open        dock h   148 ->   150 | strip-dock -50 -> -47 | x-strip 96 -> 0 | small 0->0 emoji 4->0
+   is-points  w 476->552 perRow [2]->[2] markerGap [36]->[26] chipW [64]->[58] chipH [62]->[62] trunc ['📖Расовая энциклопедия']->[]
+1280-char-closed         dock h   112 ->   112 | small 0->0 emoji 0->0
+1280-char-open           dock h   180 ->   178 | small 0->0 emoji 0->0
+   is-chars   w 540->552 perRow [2]->[2] markerGap [28]->[20] chipW [50]->[50] chipH [50]->[50] trunc []->[]
+1280-article-closed      dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 1->0
+1280-article-open        dock h   136 ->   138 | strip-dock -44 -> -41 | x-strip 84 -> 0 | small 0->0 emoji 1->0
+   is-points  w 476->552 perRow [1]->[1] markerGap []->[] chipW [64]->[58] chipH [50]->[50] trunc []->[]
+1280-zone-closed         dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 0->0
+1280-zone-open           dock h   128 ->   134 | strip-dock -40 -> -39 | x-strip 76 -> 0 | small 0->0 emoji 0->0
+   is-points  w 476->552 perRow [2]->[2] markerGap [36]->[26] chipW [64]->[58] chipH [62, 50]->[62, 50] trunc []->[]
+1280-building-closed     dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 0->0
+1280-building-open       dock h    56 ->    56 | strip-dock 4 -> 0 | x-strip -4 -> 0 | small 0->0 emoji 0->0
+1280-system-closed       dock h   112 ->   112 | small 0->0 emoji 0->0
+1280-system-open         dock h   192 ->   190 | small 0->0 emoji 0->0
+   is-points  w 540->552 perRow [1]->[1] markerGap []->[] chipW [64]->[58] chipH [62]->[62] trunc []->[]

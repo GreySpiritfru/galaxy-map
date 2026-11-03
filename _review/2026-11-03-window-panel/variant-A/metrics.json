@@ -1,0 +1,5419 @@
+{
+ "360-phenome-closed": {
+  "dock": {
+   "x": 5,
+   "y": 618,
+   "w": 350,
+   "h": 112,
+   "cy": 674
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 5,
+   "y": 618,
+   "w": 350,
+   "h": 48,
+   "cy": 642
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 13,
+    "y": 630,
+    "w": 24,
+    "h": 24,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 45,
+    "y": 634,
+    "w": 149.9,
+    "h": 16,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 202.9,
+    "y": 631,
+    "w": 64.6,
+    "h": 22,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 275.5,
+    "y": 631,
+    "w": 49.5,
+    "h": 22,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 635,
+    "w": 14,
+    "h": 14,
+    "cy": 642,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 666,
+   "w": 350,
+   "h": 64,
+   "cy": 698
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 670,
+    "w": 64,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Описание",
+    "x": 75,
+    "y": 670,
+    "w": 137,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Карта",
+    "x": 212,
+    "y": 670,
+    "w": 137,
+    "h": 56,
+    "cy": 698
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 670,
+   "w": 64,
+   "h": 56,
+   "cy": 698,
+   "offCenterDock": 24
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "360-phenome-open": {
+  "dock": {
+   "x": 5,
+   "y": 372,
+   "w": 350,
+   "h": 358,
+   "cy": 551
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 5,
+   "y": 372,
+   "w": 350,
+   "h": 48,
+   "cy": 396
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 13,
+    "y": 384,
+    "w": 24,
+    "h": 24,
+    "cy": 396,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 45,
+    "y": 388,
+    "w": 149.9,
+    "h": 16,
+    "cy": 396,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 202.9,
+    "y": 385,
+    "w": 64.6,
+    "h": 22,
+    "cy": 396,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 275.5,
+    "y": 385,
+    "w": 49.5,
+    "h": 22,
+    "cy": 396,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 389,
+    "w": 14,
+    "h": 14,
+    "cy": 396,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 666,
+   "w": 350,
+   "h": 64,
+   "cy": 698
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 670,
+    "w": 64,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Описание",
+    "x": 75,
+    "y": 670,
+    "w": 137,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Карта",
+    "x": 212,
+    "y": 670,
+    "w": 137,
+    "h": 56,
+    "cy": 698
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 670,
+   "w": 64,
+   "h": 56,
+   "cy": 698,
+   "offCenterDock": 147
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 5,
+   "y": 420,
+   "w": 350,
+   "h": 246,
+   "cy": 543
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 13,
+    "y": 428,
+    "w": 64,
+    "h": 230,
+    "cy": 543,
+    "chips": 3,
+    "perRow": [
+     1,
+     1,
+     1
+    ],
+    "gaps": [],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     62,
+     50
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [],
+    "topGap": 20,
+    "emptyAboveChips": 28
+   },
+   {
+    "cls": "node-links-col is-chars",
+    "x": 94,
+    "y": 428,
+    "w": 253,
+    "h": 50,
+    "cy": 453,
+    "chips": 2,
+    "perRow": [
+     2
+    ],
+    "gaps": [
+     4
+    ],
+    "chipW": [
+     48
+    ],
+    "chipH": [
+     50
+    ],
+    "markers": [
+     32
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "360-story1-closed": {
+  "dock": {
+   "x": 5,
+   "y": 618,
+   "w": 350,
+   "h": 112,
+   "cy": 674
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 5,
+   "y": 618,
+   "w": 350,
+   "h": 48,
+   "cy": 642
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 9,
+    "y": 618,
+    "w": 97.8,
+    "h": 48,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 13,
+    "y": 630,
+    "w": 24,
+    "h": 24,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 110.8,
+    "y": 634,
+    "w": 141.5,
+    "h": 16,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 260.3,
+    "y": 631,
+    "w": 64.7,
+    "h": 22,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 635,
+    "w": 14,
+    "h": 14,
+    "cy": 642,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 666,
+   "w": 350,
+   "h": 64,
+   "cy": 698
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 670,
+    "w": 64,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Описание",
+    "x": 75,
+    "y": 670,
+    "w": 137,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Игра",
+    "x": 212,
+    "y": 670,
+    "w": 137,
+    "h": 56,
+    "cy": 698
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 670,
+   "w": 64,
+   "h": 56,
+   "cy": 698,
+   "offCenterDock": 24
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "360-story1-open": {
+  "dock": {
+   "x": 5,
+   "y": 494,
+   "w": 350,
+   "h": 236,
+   "cy": 612
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 5,
+   "y": 494,
+   "w": 350,
+   "h": 48,
+   "cy": 518
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 9,
+    "y": 494,
+    "w": 97.8,
+    "h": 48,
+    "cy": 518,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 13,
+    "y": 506,
+    "w": 24,
+    "h": 24,
+    "cy": 518,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 110.8,
+    "y": 510,
+    "w": 141.5,
+    "h": 16,
+    "cy": 518,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 260.3,
+    "y": 507,
+    "w": 64.7,
+    "h": 22,
+    "cy": 518,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 511,
+    "w": 14,
+    "h": 14,
+    "cy": 518,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 666,
+   "w": 350,
+   "h": 64,
+   "cy": 698
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 670,
+    "w": 64,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Описание",
+    "x": 75,
+    "y": 670,
+    "w": 137,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Игра",
+    "x": 212,
+    "y": 670,
+    "w": 137,
+    "h": 56,
+    "cy": 698
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 670,
+   "w": 64,
+   "h": 56,
+   "cy": 698,
+   "offCenterDock": 86
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 5,
+   "y": 542,
+   "w": 350,
+   "h": 124,
+   "cy": 604
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-chars",
+    "x": 13,
+    "y": 550,
+    "w": 334,
+    "h": 108,
+    "cy": 604,
+    "chips": 9,
+    "perRow": [
+     5,
+     4
+    ],
+    "gaps": [
+     4,
+     12,
+     8
+    ],
+    "chipW": [
+     48
+    ],
+    "chipH": [
+     50
+    ],
+    "markers": [
+     32
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "360-terrane-closed": {
+  "dock": {
+   "x": 5,
+   "y": 674,
+   "w": 350,
+   "h": 56,
+   "cy": 702
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 674,
+   "w": 286,
+   "h": 56,
+   "cy": 702
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 690,
+    "w": 24,
+    "h": 24,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 109,
+    "y": 694,
+    "w": 158.5,
+    "h": 16,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 275.5,
+    "y": 691,
+    "w": 49.5,
+    "h": 22,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 695,
+    "w": 14,
+    "h": 14,
+    "cy": 702,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 674,
+   "w": 64,
+   "h": 56,
+   "cy": 702
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 5,
+    "y": 674,
+    "w": 64,
+    "h": 56,
+    "cy": 702
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 674,
+   "w": 64,
+   "h": 56,
+   "cy": 702,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "360-terrane-open": {
+  "dock": {
+   "x": 5,
+   "y": 576,
+   "w": 350,
+   "h": 154,
+   "cy": 653
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 576,
+   "w": 286,
+   "h": 56,
+   "cy": 604
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 592,
+    "w": 24,
+    "h": 24,
+    "cy": 604,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 109,
+    "y": 596,
+    "w": 158.5,
+    "h": 16,
+    "cy": 604,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 275.5,
+    "y": 593,
+    "w": 49.5,
+    "h": 22,
+    "cy": 604,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 597,
+    "w": 14,
+    "h": 14,
+    "cy": 604,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 576,
+   "w": 64,
+   "h": 56,
+   "cy": 604
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 5,
+    "y": 576,
+    "w": 64,
+    "h": 56,
+    "cy": 604
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 576,
+   "w": 64,
+   "h": 56,
+   "cy": 604,
+   "offCenterDock": -49
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 69,
+   "y": 632,
+   "w": 286,
+   "h": 98,
+   "cy": 681
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 77,
+    "y": 640,
+    "w": 270,
+    "h": 82,
+    "cy": 681,
+    "chips": 2,
+    "perRow": [
+     2
+    ],
+    "gaps": [
+     8
+    ],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     62
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [
+     "Расовая энциклопедия"
+    ],
+    "topGap": 20,
+    "emptyAboveChips": 28
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "360-char-closed": {
+  "dock": {
+   "x": 5,
+   "y": 618,
+   "w": 350,
+   "h": 112,
+   "cy": 674
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 5,
+   "y": 618,
+   "w": 350,
+   "h": 48,
+   "cy": 642
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 9,
+    "y": 618,
+    "w": 122,
+    "h": 48,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 13,
+    "y": 630,
+    "w": 24,
+    "h": 24,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 135,
+    "y": 634,
+    "w": 132.5,
+    "h": 16,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 275.5,
+    "y": 631,
+    "w": 49.5,
+    "h": 22,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 635,
+    "w": 14,
+    "h": 14,
+    "cy": 642,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 666,
+   "w": 350,
+   "h": 64,
+   "cy": 698
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 670,
+    "w": 64,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Анкета",
+    "x": 75,
+    "y": 670,
+    "w": 91.3,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Заметки",
+    "x": 166.3,
+    "y": 670,
+    "w": 91.3,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Броски",
+    "x": 257.7,
+    "y": 670,
+    "w": 91.3,
+    "h": 56,
+    "cy": 698
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 670,
+   "w": 64,
+   "h": 56,
+   "cy": 698,
+   "offCenterDock": 24
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "360-char-open": {
+  "dock": {
+   "x": 5,
+   "y": 552,
+   "w": 350,
+   "h": 178,
+   "cy": 641
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 5,
+   "y": 552,
+   "w": 350,
+   "h": 48,
+   "cy": 576
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 9,
+    "y": 552,
+    "w": 122,
+    "h": 48,
+    "cy": 576,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 13,
+    "y": 564,
+    "w": 24,
+    "h": 24,
+    "cy": 576,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 135,
+    "y": 568,
+    "w": 132.5,
+    "h": 16,
+    "cy": 576,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 275.5,
+    "y": 565,
+    "w": 49.5,
+    "h": 22,
+    "cy": 576,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 569,
+    "w": 14,
+    "h": 14,
+    "cy": 576,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 666,
+   "w": 350,
+   "h": 64,
+   "cy": 698
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 670,
+    "w": 64,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Анкета",
+    "x": 75,
+    "y": 670,
+    "w": 91.3,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Заметки",
+    "x": 166.3,
+    "y": 670,
+    "w": 91.3,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Броски",
+    "x": 257.7,
+    "y": 670,
+    "w": 91.3,
+    "h": 56,
+    "cy": 698
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 670,
+   "w": 64,
+   "h": 56,
+   "cy": 698,
+   "offCenterDock": 57
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 5,
+   "y": 600,
+   "w": 350,
+   "h": 66,
+   "cy": 633
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-chars",
+    "x": 13,
+    "y": 608,
+    "w": 334,
+    "h": 50,
+    "cy": 633,
+    "chips": 2,
+    "perRow": [
+     2
+    ],
+    "gaps": [
+     4
+    ],
+    "chipW": [
+     48
+    ],
+    "chipH": [
+     50
+    ],
+    "markers": [
+     32
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "360-article-closed": {
+  "dock": {
+   "x": 5,
+   "y": 674,
+   "w": 350,
+   "h": 56,
+   "cy": 702
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 674,
+   "w": 286,
+   "h": 56,
+   "cy": 702
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 690,
+    "w": 24,
+    "h": 24,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 109,
+    "y": 694,
+    "w": 175.9,
+    "h": 16,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 292.9,
+    "y": 691,
+    "w": 32.1,
+    "h": 22,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 695,
+    "w": 14,
+    "h": 14,
+    "cy": 702,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 674,
+   "w": 64,
+   "h": 56,
+   "cy": 702
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 5,
+    "y": 674,
+    "w": 64,
+    "h": 56,
+    "cy": 702
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 674,
+   "w": 64,
+   "h": 56,
+   "cy": 702,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "360-article-open": {
+  "dock": {
+   "x": 5,
+   "y": 588,
+   "w": 350,
+   "h": 142,
+   "cy": 659
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 588,
+   "w": 286,
+   "h": 56,
+   "cy": 616
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 604,
+    "w": 24,
+    "h": 24,
+    "cy": 616,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 109,
+    "y": 608,
+    "w": 175.9,
+    "h": 16,
+    "cy": 616,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 292.9,
+    "y": 605,
+    "w": 32.1,
+    "h": 22,
+    "cy": 616,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 609,
+    "w": 14,
+    "h": 14,
+    "cy": 616,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 588,
+   "w": 64,
+   "h": 56,
+   "cy": 616
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 5,
+    "y": 588,
+    "w": 64,
+    "h": 56,
+    "cy": 616
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 588,
+   "w": 64,
+   "h": 56,
+   "cy": 616,
+   "offCenterDock": -43
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 69,
+   "y": 644,
+   "w": 286,
+   "h": 86,
+   "cy": 687
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 77,
+    "y": 652,
+    "w": 270,
+    "h": 70,
+    "cy": 687,
+    "chips": 1,
+    "perRow": [
+     1
+    ],
+    "gaps": [],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     50
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [],
+    "topGap": 20,
+    "emptyAboveChips": 28
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "360-zone-closed": {
+  "dock": {
+   "x": 5,
+   "y": 674,
+   "w": 350,
+   "h": 56,
+   "cy": 702
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 674,
+   "w": 286,
+   "h": 56,
+   "cy": 702
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 73,
+    "y": 674,
+    "w": 86.5,
+    "h": 56,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 690,
+    "w": 24,
+    "h": 24,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 163.5,
+    "y": 694,
+    "w": 104,
+    "h": 16,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 275.5,
+    "y": 691,
+    "w": 49.5,
+    "h": 22,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 695,
+    "w": 14,
+    "h": 14,
+    "cy": 702,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 674,
+   "w": 64,
+   "h": 56,
+   "cy": 702
+  },
+  "tabs": [
+   {
+    "t": "↩",
+    "x": 5,
+    "y": 674,
+    "w": 64,
+    "h": 56,
+    "cy": 702
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 674,
+   "w": 64,
+   "h": 56,
+   "cy": 702,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 2,
+  "errs": []
+ },
+ "360-zone-open": {
+  "dock": {
+   "x": 5,
+   "y": 596,
+   "w": 350,
+   "h": 134,
+   "cy": 663
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 596,
+   "w": 286,
+   "h": 56,
+   "cy": 624
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 73,
+    "y": 596,
+    "w": 86.5,
+    "h": 56,
+    "cy": 624,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 612,
+    "w": 24,
+    "h": 24,
+    "cy": 624,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 163.5,
+    "y": 616,
+    "w": 104,
+    "h": 16,
+    "cy": 624,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 275.5,
+    "y": 613,
+    "w": 49.5,
+    "h": 22,
+    "cy": 624,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 617,
+    "w": 14,
+    "h": 14,
+    "cy": 624,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 596,
+   "w": 64,
+   "h": 56,
+   "cy": 624
+  },
+  "tabs": [
+   {
+    "t": "↩",
+    "x": 5,
+    "y": 596,
+    "w": 64,
+    "h": 56,
+    "cy": 624
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 596,
+   "w": 64,
+   "h": 56,
+   "cy": 624,
+   "offCenterDock": -39
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 69,
+   "y": 652,
+   "w": 286,
+   "h": 78,
+   "cy": 691
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 77,
+    "y": 660,
+    "w": 270,
+    "h": 62,
+    "cy": 691,
+    "chips": 2,
+    "perRow": [
+     2
+    ],
+    "gaps": [
+     8
+    ],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     62,
+     50
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 2,
+  "errs": []
+ },
+ "360-building-closed": {
+  "dock": {
+   "x": 5,
+   "y": 674,
+   "w": 350,
+   "h": 56,
+   "cy": 702
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 674,
+   "w": 286,
+   "h": 56,
+   "cy": 702
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 73,
+    "y": 674,
+    "w": 125.1,
+    "h": 56,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 690,
+    "w": 24,
+    "h": 24,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 202.1,
+    "y": 694,
+    "w": 144.9,
+    "h": 16,
+    "cy": 702,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 674,
+   "w": 64,
+   "h": 56,
+   "cy": 702
+  },
+  "tabs": [
+   {
+    "t": "↩",
+    "x": 5,
+    "y": 674,
+    "w": 64,
+    "h": 56,
+    "cy": 702
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 674,
+   "w": 64,
+   "h": 56,
+   "cy": 702,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 2,
+  "errs": []
+ },
+ "360-building-open": {
+  "dock": {
+   "x": 5,
+   "y": 674,
+   "w": 350,
+   "h": 56,
+   "cy": 702
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 674,
+   "w": 286,
+   "h": 56,
+   "cy": 702
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 73,
+    "y": 674,
+    "w": 125.1,
+    "h": 56,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 690,
+    "w": 24,
+    "h": 24,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 202.1,
+    "y": 694,
+    "w": 144.9,
+    "h": 16,
+    "cy": 702,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 674,
+   "w": 64,
+   "h": 56,
+   "cy": 702
+  },
+  "tabs": [
+   {
+    "t": "↩",
+    "x": 5,
+    "y": 674,
+    "w": 64,
+    "h": 56,
+    "cy": 702
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 674,
+   "w": 64,
+   "h": 56,
+   "cy": 702,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 2,
+  "errs": []
+ },
+ "360-system-closed": {
+  "dock": {
+   "x": 5,
+   "y": 618,
+   "w": 350,
+   "h": 112,
+   "cy": 674
+  },
+  "single": false,
+  "classes": "node-dock system-dock",
+  "strip": {
+   "x": 5,
+   "y": 618,
+   "w": 350,
+   "h": 48,
+   "cy": 642
+  },
+  "stripItems": [
+   {
+    "cls": "node-strip-title",
+    "x": 13,
+    "y": 634,
+    "w": 271.9,
+    "h": 16,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 292.9,
+    "y": 631,
+    "w": 32.1,
+    "h": 22,
+    "cy": 642,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 635,
+    "w": 14,
+    "h": 14,
+    "cy": 642,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 666,
+   "w": 350,
+   "h": 64,
+   "cy": 698
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 670,
+    "w": 64,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Карта системы",
+    "x": 83,
+    "y": 670,
+    "w": 266,
+    "h": 56,
+    "cy": 698
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 670,
+   "w": 64,
+   "h": 56,
+   "cy": 698,
+   "offCenterDock": 24
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 0,
+  "errs": []
+ },
+ "360-system-open": {
+  "dock": {
+   "x": 5,
+   "y": 540,
+   "w": 350,
+   "h": 190,
+   "cy": 635
+  },
+  "single": false,
+  "classes": "node-dock system-dock",
+  "strip": {
+   "x": 5,
+   "y": 540,
+   "w": 350,
+   "h": 48,
+   "cy": 564
+  },
+  "stripItems": [
+   {
+    "cls": "node-strip-title",
+    "x": 13,
+    "y": 556,
+    "w": 271.9,
+    "h": 16,
+    "cy": 564,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 292.9,
+    "y": 553,
+    "w": 32.1,
+    "h": 22,
+    "cy": 564,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 333,
+    "y": 557,
+    "w": 14,
+    "h": 14,
+    "cy": 564,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 666,
+   "w": 350,
+   "h": 64,
+   "cy": 698
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 670,
+    "w": 64,
+    "h": 56,
+    "cy": 698
+   },
+   {
+    "t": "Карта системы",
+    "x": 83,
+    "y": 670,
+    "w": 266,
+    "h": 56,
+    "cy": 698
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 670,
+   "w": 64,
+   "h": 56,
+   "cy": 698,
+   "offCenterDock": 63
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 5,
+   "y": 588,
+   "w": 350,
+   "h": 78,
+   "cy": 627
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 13,
+    "y": 596,
+    "w": 334,
+    "h": 62,
+    "cy": 627,
+    "chips": 1,
+    "perRow": [
+     1
+    ],
+    "gaps": [],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     62
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 0,
+  "errs": []
+ },
+ "390-phenome-closed": {
+  "dock": {
+   "x": 5,
+   "y": 722,
+   "w": 380,
+   "h": 112,
+   "cy": 778
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 5,
+   "y": 722,
+   "w": 380,
+   "h": 48,
+   "cy": 746
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 13,
+    "y": 734,
+    "w": 24,
+    "h": 24,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 45,
+    "y": 738,
+    "w": 179.9,
+    "h": 16,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 232.9,
+    "y": 735,
+    "w": 64.6,
+    "h": 22,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 305.5,
+    "y": 735,
+    "w": 49.5,
+    "h": 22,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 739,
+    "w": 14,
+    "h": 14,
+    "cy": 746,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 770,
+   "w": 380,
+   "h": 64,
+   "cy": 802
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 774,
+    "w": 64,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Описание",
+    "x": 75,
+    "y": 774,
+    "w": 152,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Карта",
+    "x": 227,
+    "y": 774,
+    "w": 152,
+    "h": 56,
+    "cy": 802
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 774,
+   "w": 64,
+   "h": 56,
+   "cy": 802,
+   "offCenterDock": 24
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "390-phenome-open": {
+  "dock": {
+   "x": 5,
+   "y": 476,
+   "w": 380,
+   "h": 358,
+   "cy": 655
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 5,
+   "y": 476,
+   "w": 380,
+   "h": 48,
+   "cy": 500
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 13,
+    "y": 488,
+    "w": 24,
+    "h": 24,
+    "cy": 500,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 45,
+    "y": 492,
+    "w": 179.9,
+    "h": 16,
+    "cy": 500,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 232.9,
+    "y": 489,
+    "w": 64.6,
+    "h": 22,
+    "cy": 500,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 305.5,
+    "y": 489,
+    "w": 49.5,
+    "h": 22,
+    "cy": 500,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 493,
+    "w": 14,
+    "h": 14,
+    "cy": 500,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 770,
+   "w": 380,
+   "h": 64,
+   "cy": 802
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 774,
+    "w": 64,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Описание",
+    "x": 75,
+    "y": 774,
+    "w": 152,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Карта",
+    "x": 227,
+    "y": 774,
+    "w": 152,
+    "h": 56,
+    "cy": 802
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 774,
+   "w": 64,
+   "h": 56,
+   "cy": 802,
+   "offCenterDock": 147
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 5,
+   "y": 524,
+   "w": 380,
+   "h": 246,
+   "cy": 647
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 13,
+    "y": 532,
+    "w": 64,
+    "h": 230,
+    "cy": 647,
+    "chips": 3,
+    "perRow": [
+     1,
+     1,
+     1
+    ],
+    "gaps": [],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     62,
+     50
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [],
+    "topGap": 20,
+    "emptyAboveChips": 28
+   },
+   {
+    "cls": "node-links-col is-chars",
+    "x": 94,
+    "y": 532,
+    "w": 283,
+    "h": 50,
+    "cy": 557,
+    "chips": 2,
+    "perRow": [
+     2
+    ],
+    "gaps": [
+     4
+    ],
+    "chipW": [
+     48
+    ],
+    "chipH": [
+     50
+    ],
+    "markers": [
+     32
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "390-story1-closed": {
+  "dock": {
+   "x": 5,
+   "y": 722,
+   "w": 380,
+   "h": 112,
+   "cy": 778
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 5,
+   "y": 722,
+   "w": 380,
+   "h": 48,
+   "cy": 746
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 9,
+    "y": 722,
+    "w": 97.8,
+    "h": 48,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 13,
+    "y": 734,
+    "w": 24,
+    "h": 24,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 110.8,
+    "y": 738,
+    "w": 171.5,
+    "h": 16,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 290.3,
+    "y": 735,
+    "w": 64.7,
+    "h": 22,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 739,
+    "w": 14,
+    "h": 14,
+    "cy": 746,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 770,
+   "w": 380,
+   "h": 64,
+   "cy": 802
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 774,
+    "w": 64,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Описание",
+    "x": 75,
+    "y": 774,
+    "w": 152,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Игра",
+    "x": 227,
+    "y": 774,
+    "w": 152,
+    "h": 56,
+    "cy": 802
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 774,
+   "w": 64,
+   "h": 56,
+   "cy": 802,
+   "offCenterDock": 24
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "390-story1-open": {
+  "dock": {
+   "x": 5,
+   "y": 598,
+   "w": 380,
+   "h": 236,
+   "cy": 716
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 5,
+   "y": 598,
+   "w": 380,
+   "h": 48,
+   "cy": 622
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 9,
+    "y": 598,
+    "w": 97.8,
+    "h": 48,
+    "cy": 622,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 13,
+    "y": 610,
+    "w": 24,
+    "h": 24,
+    "cy": 622,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 110.8,
+    "y": 614,
+    "w": 171.5,
+    "h": 16,
+    "cy": 622,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 290.3,
+    "y": 611,
+    "w": 64.7,
+    "h": 22,
+    "cy": 622,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 615,
+    "w": 14,
+    "h": 14,
+    "cy": 622,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 770,
+   "w": 380,
+   "h": 64,
+   "cy": 802
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 774,
+    "w": 64,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Описание",
+    "x": 75,
+    "y": 774,
+    "w": 152,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Игра",
+    "x": 227,
+    "y": 774,
+    "w": 152,
+    "h": 56,
+    "cy": 802
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 774,
+   "w": 64,
+   "h": 56,
+   "cy": 802,
+   "offCenterDock": 86
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 5,
+   "y": 646,
+   "w": 380,
+   "h": 124,
+   "cy": 708
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-chars",
+    "x": 13,
+    "y": 654,
+    "w": 364,
+    "h": 108,
+    "cy": 708,
+    "chips": 9,
+    "perRow": [
+     5,
+     4
+    ],
+    "gaps": [
+     4,
+     12,
+     8
+    ],
+    "chipW": [
+     48
+    ],
+    "chipH": [
+     50
+    ],
+    "markers": [
+     32
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "390-terrane-closed": {
+  "dock": {
+   "x": 5,
+   "y": 778,
+   "w": 380,
+   "h": 56,
+   "cy": 806
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 778,
+   "w": 316,
+   "h": 56,
+   "cy": 806
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 794,
+    "w": 24,
+    "h": 24,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 109,
+    "y": 798,
+    "w": 188.5,
+    "h": 16,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 305.5,
+    "y": 795,
+    "w": 49.5,
+    "h": 22,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 799,
+    "w": 14,
+    "h": 14,
+    "cy": 806,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 778,
+   "w": 64,
+   "h": 56,
+   "cy": 806
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 5,
+    "y": 778,
+    "w": 64,
+    "h": 56,
+    "cy": 806
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 778,
+   "w": 64,
+   "h": 56,
+   "cy": 806,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "390-terrane-open": {
+  "dock": {
+   "x": 5,
+   "y": 680,
+   "w": 380,
+   "h": 154,
+   "cy": 757
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 680,
+   "w": 316,
+   "h": 56,
+   "cy": 708
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 696,
+    "w": 24,
+    "h": 24,
+    "cy": 708,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 109,
+    "y": 700,
+    "w": 188.5,
+    "h": 16,
+    "cy": 708,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 305.5,
+    "y": 697,
+    "w": 49.5,
+    "h": 22,
+    "cy": 708,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 701,
+    "w": 14,
+    "h": 14,
+    "cy": 708,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 680,
+   "w": 64,
+   "h": 56,
+   "cy": 708
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 5,
+    "y": 680,
+    "w": 64,
+    "h": 56,
+    "cy": 708
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 680,
+   "w": 64,
+   "h": 56,
+   "cy": 708,
+   "offCenterDock": -49
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 69,
+   "y": 736,
+   "w": 316,
+   "h": 98,
+   "cy": 785
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 77,
+    "y": 744,
+    "w": 300,
+    "h": 82,
+    "cy": 785,
+    "chips": 2,
+    "perRow": [
+     2
+    ],
+    "gaps": [
+     8
+    ],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     62
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [
+     "Расовая энциклопедия"
+    ],
+    "topGap": 20,
+    "emptyAboveChips": 28
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "390-char-closed": {
+  "dock": {
+   "x": 5,
+   "y": 722,
+   "w": 380,
+   "h": 112,
+   "cy": 778
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 5,
+   "y": 722,
+   "w": 380,
+   "h": 48,
+   "cy": 746
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 9,
+    "y": 722,
+    "w": 122,
+    "h": 48,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 13,
+    "y": 734,
+    "w": 24,
+    "h": 24,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 135,
+    "y": 738,
+    "w": 162.5,
+    "h": 16,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 305.5,
+    "y": 735,
+    "w": 49.5,
+    "h": 22,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 739,
+    "w": 14,
+    "h": 14,
+    "cy": 746,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 770,
+   "w": 380,
+   "h": 64,
+   "cy": 802
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 774,
+    "w": 64,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Анкета",
+    "x": 75,
+    "y": 774,
+    "w": 101.3,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Заметки",
+    "x": 176.3,
+    "y": 774,
+    "w": 101.3,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Броски",
+    "x": 277.7,
+    "y": 774,
+    "w": 101.3,
+    "h": 56,
+    "cy": 802
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 774,
+   "w": 64,
+   "h": 56,
+   "cy": 802,
+   "offCenterDock": 24
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "390-char-open": {
+  "dock": {
+   "x": 5,
+   "y": 656,
+   "w": 380,
+   "h": 178,
+   "cy": 745
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 5,
+   "y": 656,
+   "w": 380,
+   "h": 48,
+   "cy": 680
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 9,
+    "y": 656,
+    "w": 122,
+    "h": 48,
+    "cy": 680,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 13,
+    "y": 668,
+    "w": 24,
+    "h": 24,
+    "cy": 680,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 135,
+    "y": 672,
+    "w": 162.5,
+    "h": 16,
+    "cy": 680,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 305.5,
+    "y": 669,
+    "w": 49.5,
+    "h": 22,
+    "cy": 680,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 673,
+    "w": 14,
+    "h": 14,
+    "cy": 680,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 770,
+   "w": 380,
+   "h": 64,
+   "cy": 802
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 774,
+    "w": 64,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Анкета",
+    "x": 75,
+    "y": 774,
+    "w": 101.3,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Заметки",
+    "x": 176.3,
+    "y": 774,
+    "w": 101.3,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Броски",
+    "x": 277.7,
+    "y": 774,
+    "w": 101.3,
+    "h": 56,
+    "cy": 802
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 774,
+   "w": 64,
+   "h": 56,
+   "cy": 802,
+   "offCenterDock": 57
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 5,
+   "y": 704,
+   "w": 380,
+   "h": 66,
+   "cy": 737
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-chars",
+    "x": 13,
+    "y": 712,
+    "w": 364,
+    "h": 50,
+    "cy": 737,
+    "chips": 2,
+    "perRow": [
+     2
+    ],
+    "gaps": [
+     4
+    ],
+    "chipW": [
+     48
+    ],
+    "chipH": [
+     50
+    ],
+    "markers": [
+     32
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "390-article-closed": {
+  "dock": {
+   "x": 5,
+   "y": 778,
+   "w": 380,
+   "h": 56,
+   "cy": 806
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 778,
+   "w": 316,
+   "h": 56,
+   "cy": 806
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 794,
+    "w": 24,
+    "h": 24,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 109,
+    "y": 798,
+    "w": 205.9,
+    "h": 16,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 322.9,
+    "y": 795,
+    "w": 32.1,
+    "h": 22,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 799,
+    "w": 14,
+    "h": 14,
+    "cy": 806,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 778,
+   "w": 64,
+   "h": 56,
+   "cy": 806
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 5,
+    "y": 778,
+    "w": 64,
+    "h": 56,
+    "cy": 806
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 778,
+   "w": 64,
+   "h": 56,
+   "cy": 806,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "390-article-open": {
+  "dock": {
+   "x": 5,
+   "y": 692,
+   "w": 380,
+   "h": 142,
+   "cy": 763
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 692,
+   "w": 316,
+   "h": 56,
+   "cy": 720
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 708,
+    "w": 24,
+    "h": 24,
+    "cy": 720,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 109,
+    "y": 712,
+    "w": 205.9,
+    "h": 16,
+    "cy": 720,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 322.9,
+    "y": 709,
+    "w": 32.1,
+    "h": 22,
+    "cy": 720,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 713,
+    "w": 14,
+    "h": 14,
+    "cy": 720,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 692,
+   "w": 64,
+   "h": 56,
+   "cy": 720
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 5,
+    "y": 692,
+    "w": 64,
+    "h": 56,
+    "cy": 720
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 692,
+   "w": 64,
+   "h": 56,
+   "cy": 720,
+   "offCenterDock": -43
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 69,
+   "y": 748,
+   "w": 316,
+   "h": 86,
+   "cy": 791
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 77,
+    "y": 756,
+    "w": 300,
+    "h": 70,
+    "cy": 791,
+    "chips": 1,
+    "perRow": [
+     1
+    ],
+    "gaps": [],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     50
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [],
+    "topGap": 20,
+    "emptyAboveChips": 28
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "390-zone-closed": {
+  "dock": {
+   "x": 5,
+   "y": 778,
+   "w": 380,
+   "h": 56,
+   "cy": 806
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 778,
+   "w": 316,
+   "h": 56,
+   "cy": 806
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 73,
+    "y": 778,
+    "w": 95.5,
+    "h": 56,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 794,
+    "w": 24,
+    "h": 24,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 172.5,
+    "y": 798,
+    "w": 125,
+    "h": 16,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 305.5,
+    "y": 795,
+    "w": 49.5,
+    "h": 22,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 799,
+    "w": 14,
+    "h": 14,
+    "cy": 806,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 778,
+   "w": 64,
+   "h": 56,
+   "cy": 806
+  },
+  "tabs": [
+   {
+    "t": "↩",
+    "x": 5,
+    "y": 778,
+    "w": 64,
+    "h": 56,
+    "cy": 806
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 778,
+   "w": 64,
+   "h": 56,
+   "cy": 806,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 2,
+  "errs": []
+ },
+ "390-zone-open": {
+  "dock": {
+   "x": 5,
+   "y": 700,
+   "w": 380,
+   "h": 134,
+   "cy": 767
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 700,
+   "w": 316,
+   "h": 56,
+   "cy": 728
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 73,
+    "y": 700,
+    "w": 95.5,
+    "h": 56,
+    "cy": 728,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 716,
+    "w": 24,
+    "h": 24,
+    "cy": 728,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 172.5,
+    "y": 720,
+    "w": 125,
+    "h": 16,
+    "cy": 728,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 305.5,
+    "y": 717,
+    "w": 49.5,
+    "h": 22,
+    "cy": 728,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 721,
+    "w": 14,
+    "h": 14,
+    "cy": 728,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 700,
+   "w": 64,
+   "h": 56,
+   "cy": 728
+  },
+  "tabs": [
+   {
+    "t": "↩",
+    "x": 5,
+    "y": 700,
+    "w": 64,
+    "h": 56,
+    "cy": 728
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 700,
+   "w": 64,
+   "h": 56,
+   "cy": 728,
+   "offCenterDock": -39
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 69,
+   "y": 756,
+   "w": 316,
+   "h": 78,
+   "cy": 795
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 77,
+    "y": 764,
+    "w": 300,
+    "h": 62,
+    "cy": 795,
+    "chips": 2,
+    "perRow": [
+     2
+    ],
+    "gaps": [
+     8
+    ],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     62,
+     50
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 2,
+  "errs": []
+ },
+ "390-building-closed": {
+  "dock": {
+   "x": 5,
+   "y": 778,
+   "w": 380,
+   "h": 56,
+   "cy": 806
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 778,
+   "w": 316,
+   "h": 56,
+   "cy": 806
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 73,
+    "y": 778,
+    "w": 138.6,
+    "h": 56,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 794,
+    "w": 24,
+    "h": 24,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 215.6,
+    "y": 798,
+    "w": 161.4,
+    "h": 16,
+    "cy": 806,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 778,
+   "w": 64,
+   "h": 56,
+   "cy": 806
+  },
+  "tabs": [
+   {
+    "t": "↩",
+    "x": 5,
+    "y": 778,
+    "w": 64,
+    "h": 56,
+    "cy": 806
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 778,
+   "w": 64,
+   "h": 56,
+   "cy": 806,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 2,
+  "errs": []
+ },
+ "390-building-open": {
+  "dock": {
+   "x": 5,
+   "y": 778,
+   "w": 380,
+   "h": 56,
+   "cy": 806
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 69,
+   "y": 778,
+   "w": 316,
+   "h": 56,
+   "cy": 806
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 73,
+    "y": 778,
+    "w": 138.6,
+    "h": 56,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 77,
+    "y": 794,
+    "w": 24,
+    "h": 24,
+    "cy": 806,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 215.6,
+    "y": 798,
+    "w": 161.4,
+    "h": 16,
+    "cy": 806,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 778,
+   "w": 64,
+   "h": 56,
+   "cy": 806
+  },
+  "tabs": [
+   {
+    "t": "↩",
+    "x": 5,
+    "y": 778,
+    "w": 64,
+    "h": 56,
+    "cy": 806
+   }
+  ],
+  "close": {
+   "x": 5,
+   "y": 778,
+   "w": 64,
+   "h": 56,
+   "cy": 806,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 2,
+  "errs": []
+ },
+ "390-system-closed": {
+  "dock": {
+   "x": 5,
+   "y": 722,
+   "w": 380,
+   "h": 112,
+   "cy": 778
+  },
+  "single": false,
+  "classes": "node-dock system-dock",
+  "strip": {
+   "x": 5,
+   "y": 722,
+   "w": 380,
+   "h": 48,
+   "cy": 746
+  },
+  "stripItems": [
+   {
+    "cls": "node-strip-title",
+    "x": 13,
+    "y": 738,
+    "w": 301.9,
+    "h": 16,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 322.9,
+    "y": 735,
+    "w": 32.1,
+    "h": 22,
+    "cy": 746,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 739,
+    "w": 14,
+    "h": 14,
+    "cy": 746,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 770,
+   "w": 380,
+   "h": 64,
+   "cy": 802
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 774,
+    "w": 64,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Карта системы",
+    "x": 83,
+    "y": 774,
+    "w": 296,
+    "h": 56,
+    "cy": 802
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 774,
+   "w": 64,
+   "h": 56,
+   "cy": 802,
+   "offCenterDock": 24
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 0,
+  "errs": []
+ },
+ "390-system-open": {
+  "dock": {
+   "x": 5,
+   "y": 644,
+   "w": 380,
+   "h": 190,
+   "cy": 739
+  },
+  "single": false,
+  "classes": "node-dock system-dock",
+  "strip": {
+   "x": 5,
+   "y": 644,
+   "w": 380,
+   "h": 48,
+   "cy": 668
+  },
+  "stripItems": [
+   {
+    "cls": "node-strip-title",
+    "x": 13,
+    "y": 660,
+    "w": 301.9,
+    "h": 16,
+    "cy": 668,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 322.9,
+    "y": 657,
+    "w": 32.1,
+    "h": 22,
+    "cy": 668,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 363,
+    "y": 661,
+    "w": 14,
+    "h": 14,
+    "cy": 668,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 5,
+   "y": 770,
+   "w": 380,
+   "h": 64,
+   "cy": 802
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 11,
+    "y": 774,
+    "w": 64,
+    "h": 56,
+    "cy": 802
+   },
+   {
+    "t": "Карта системы",
+    "x": 83,
+    "y": 774,
+    "w": 296,
+    "h": 56,
+    "cy": 802
+   }
+  ],
+  "close": {
+   "x": 11,
+   "y": 774,
+   "w": 64,
+   "h": 56,
+   "cy": 802,
+   "offCenterDock": 63
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 5,
+   "y": 692,
+   "w": 380,
+   "h": 78,
+   "cy": 731
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 13,
+    "y": 700,
+    "w": 364,
+    "h": 62,
+    "cy": 731,
+    "chips": 1,
+    "perRow": [
+     1
+    ],
+    "gaps": [],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     62
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 0,
+  "errs": []
+ },
+ "1280-phenome-closed": {
+  "dock": {
+   "x": 360,
+   "y": 678,
+   "w": 560,
+   "h": 112,
+   "cy": 734
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 360,
+   "y": 678,
+   "w": 560,
+   "h": 48,
+   "cy": 702
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 368,
+    "y": 690,
+    "w": 24,
+    "h": 24,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 400,
+    "y": 694,
+    "w": 359.9,
+    "h": 16,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 767.9,
+    "y": 691,
+    "w": 64.6,
+    "h": 22,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 840.5,
+    "y": 691,
+    "w": 49.5,
+    "h": 22,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 695,
+    "w": 14,
+    "h": 14,
+    "cy": 702,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 726,
+   "w": 560,
+   "h": 64,
+   "cy": 758
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 366,
+    "y": 730,
+    "w": 64,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Описание",
+    "x": 430,
+    "y": 730,
+    "w": 242,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Карта",
+    "x": 672,
+    "y": 730,
+    "w": 242,
+    "h": 56,
+    "cy": 758
+   }
+  ],
+  "close": {
+   "x": 366,
+   "y": 730,
+   "w": 64,
+   "h": 56,
+   "cy": 758,
+   "offCenterDock": 24
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "1280-phenome-open": {
+  "dock": {
+   "x": 360,
+   "y": 432,
+   "w": 560,
+   "h": 358,
+   "cy": 611
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 360,
+   "y": 432,
+   "w": 560,
+   "h": 48,
+   "cy": 456
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 368,
+    "y": 444,
+    "w": 24,
+    "h": 24,
+    "cy": 456,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 400,
+    "y": 448,
+    "w": 359.9,
+    "h": 16,
+    "cy": 456,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 767.9,
+    "y": 445,
+    "w": 64.6,
+    "h": 22,
+    "cy": 456,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 840.5,
+    "y": 445,
+    "w": 49.5,
+    "h": 22,
+    "cy": 456,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 449,
+    "w": 14,
+    "h": 14,
+    "cy": 456,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 726,
+   "w": 560,
+   "h": 64,
+   "cy": 758
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 366,
+    "y": 730,
+    "w": 64,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Описание",
+    "x": 430,
+    "y": 730,
+    "w": 242,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Карта",
+    "x": 672,
+    "y": 730,
+    "w": 242,
+    "h": 56,
+    "cy": 758
+   }
+  ],
+  "close": {
+   "x": 366,
+   "y": 730,
+   "w": 64,
+   "h": 56,
+   "cy": 758,
+   "offCenterDock": 147
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 360,
+   "y": 480,
+   "w": 560,
+   "h": 246,
+   "cy": 603
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 368,
+    "y": 488,
+    "w": 64,
+    "h": 230,
+    "cy": 603,
+    "chips": 3,
+    "perRow": [
+     1,
+     1,
+     1
+    ],
+    "gaps": [],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     62,
+     50
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [],
+    "topGap": 20,
+    "emptyAboveChips": 28
+   },
+   {
+    "cls": "node-links-col is-chars",
+    "x": 449,
+    "y": 488,
+    "w": 463,
+    "h": 50,
+    "cy": 513,
+    "chips": 2,
+    "perRow": [
+     2
+    ],
+    "gaps": [
+     4
+    ],
+    "chipW": [
+     48
+    ],
+    "chipH": [
+     50
+    ],
+    "markers": [
+     32
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "1280-story1-closed": {
+  "dock": {
+   "x": 360,
+   "y": 678,
+   "w": 560,
+   "h": 112,
+   "cy": 734
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 360,
+   "y": 678,
+   "w": 560,
+   "h": 48,
+   "cy": 702
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 364,
+    "y": 678,
+    "w": 97.8,
+    "h": 48,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 368,
+    "y": 690,
+    "w": 24,
+    "h": 24,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 465.8,
+    "y": 694,
+    "w": 351.5,
+    "h": 16,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 825.3,
+    "y": 691,
+    "w": 64.7,
+    "h": 22,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 695,
+    "w": 14,
+    "h": 14,
+    "cy": 702,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 726,
+   "w": 560,
+   "h": 64,
+   "cy": 758
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 366,
+    "y": 730,
+    "w": 64,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Описание",
+    "x": 430,
+    "y": 730,
+    "w": 242,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Игра",
+    "x": 672,
+    "y": 730,
+    "w": 242,
+    "h": 56,
+    "cy": 758
+   }
+  ],
+  "close": {
+   "x": 366,
+   "y": 730,
+   "w": 64,
+   "h": 56,
+   "cy": 758,
+   "offCenterDock": 24
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "1280-story1-open": {
+  "dock": {
+   "x": 360,
+   "y": 612,
+   "w": 560,
+   "h": 178,
+   "cy": 701
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 360,
+   "y": 612,
+   "w": 560,
+   "h": 48,
+   "cy": 636
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 364,
+    "y": 612,
+    "w": 97.8,
+    "h": 48,
+    "cy": 636,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 368,
+    "y": 624,
+    "w": 24,
+    "h": 24,
+    "cy": 636,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 465.8,
+    "y": 628,
+    "w": 351.5,
+    "h": 16,
+    "cy": 636,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 825.3,
+    "y": 625,
+    "w": 64.7,
+    "h": 22,
+    "cy": 636,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 629,
+    "w": 14,
+    "h": 14,
+    "cy": 636,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 726,
+   "w": 560,
+   "h": 64,
+   "cy": 758
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 366,
+    "y": 730,
+    "w": 64,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Описание",
+    "x": 430,
+    "y": 730,
+    "w": 242,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Игра",
+    "x": 672,
+    "y": 730,
+    "w": 242,
+    "h": 56,
+    "cy": 758
+   }
+  ],
+  "close": {
+   "x": 366,
+   "y": 730,
+   "w": 64,
+   "h": 56,
+   "cy": 758,
+   "offCenterDock": 57
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 360,
+   "y": 660,
+   "w": 560,
+   "h": 66,
+   "cy": 693
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-chars",
+    "x": 368,
+    "y": 668,
+    "w": 544,
+    "h": 50,
+    "cy": 693,
+    "chips": 9,
+    "perRow": [
+     9
+    ],
+    "gaps": [
+     4,
+     12,
+     8
+    ],
+    "chipW": [
+     48
+    ],
+    "chipH": [
+     50
+    ],
+    "markers": [
+     32
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "1280-terrane-closed": {
+  "dock": {
+   "x": 360,
+   "y": 734,
+   "w": 560,
+   "h": 56,
+   "cy": 762
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 424,
+   "y": 734,
+   "w": 496,
+   "h": 56,
+   "cy": 762
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 432,
+    "y": 750,
+    "w": 24,
+    "h": 24,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 464,
+    "y": 754,
+    "w": 368.5,
+    "h": 16,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 840.5,
+    "y": 751,
+    "w": 49.5,
+    "h": 22,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 755,
+    "w": 14,
+    "h": 14,
+    "cy": 762,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 734,
+   "w": 64,
+   "h": 56,
+   "cy": 762
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 360,
+    "y": 734,
+    "w": 64,
+    "h": 56,
+    "cy": 762
+   }
+  ],
+  "close": {
+   "x": 360,
+   "y": 734,
+   "w": 64,
+   "h": 56,
+   "cy": 762,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "1280-terrane-open": {
+  "dock": {
+   "x": 360,
+   "y": 636,
+   "w": 560,
+   "h": 154,
+   "cy": 713
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 424,
+   "y": 636,
+   "w": 496,
+   "h": 56,
+   "cy": 664
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 432,
+    "y": 652,
+    "w": 24,
+    "h": 24,
+    "cy": 664,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 464,
+    "y": 656,
+    "w": 368.5,
+    "h": 16,
+    "cy": 664,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 840.5,
+    "y": 653,
+    "w": 49.5,
+    "h": 22,
+    "cy": 664,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 657,
+    "w": 14,
+    "h": 14,
+    "cy": 664,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 636,
+   "w": 64,
+   "h": 56,
+   "cy": 664
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 360,
+    "y": 636,
+    "w": 64,
+    "h": 56,
+    "cy": 664
+   }
+  ],
+  "close": {
+   "x": 360,
+   "y": 636,
+   "w": 64,
+   "h": 56,
+   "cy": 664,
+   "offCenterDock": -49
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 424,
+   "y": 692,
+   "w": 496,
+   "h": 98,
+   "cy": 741
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 432,
+    "y": 700,
+    "w": 480,
+    "h": 82,
+    "cy": 741,
+    "chips": 2,
+    "perRow": [
+     2
+    ],
+    "gaps": [
+     8
+    ],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     62
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [
+     "Расовая энциклопедия"
+    ],
+    "topGap": 20,
+    "emptyAboveChips": 28
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "1280-char-closed": {
+  "dock": {
+   "x": 360,
+   "y": 678,
+   "w": 560,
+   "h": 112,
+   "cy": 734
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 360,
+   "y": 678,
+   "w": 560,
+   "h": 48,
+   "cy": 702
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 364,
+    "y": 678,
+    "w": 122,
+    "h": 48,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 368,
+    "y": 690,
+    "w": 24,
+    "h": 24,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 490,
+    "y": 694,
+    "w": 342.5,
+    "h": 16,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 840.5,
+    "y": 691,
+    "w": 49.5,
+    "h": 22,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 695,
+    "w": 14,
+    "h": 14,
+    "cy": 702,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 726,
+   "w": 560,
+   "h": 64,
+   "cy": 758
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 366,
+    "y": 730,
+    "w": 64,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Анкета",
+    "x": 430,
+    "y": 730,
+    "w": 161.3,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Заметки",
+    "x": 591.3,
+    "y": 730,
+    "w": 161.3,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Броски",
+    "x": 752.7,
+    "y": 730,
+    "w": 161.3,
+    "h": 56,
+    "cy": 758
+   }
+  ],
+  "close": {
+   "x": 366,
+   "y": 730,
+   "w": 64,
+   "h": 56,
+   "cy": 758,
+   "offCenterDock": 24
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "1280-char-open": {
+  "dock": {
+   "x": 360,
+   "y": 612,
+   "w": 560,
+   "h": 178,
+   "cy": 701
+  },
+  "single": false,
+  "classes": "node-dock dock-snap",
+  "strip": {
+   "x": 360,
+   "y": 612,
+   "w": 560,
+   "h": 48,
+   "cy": 636
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 364,
+    "y": 612,
+    "w": 122,
+    "h": 48,
+    "cy": 636,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 368,
+    "y": 624,
+    "w": 24,
+    "h": 24,
+    "cy": 636,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 490,
+    "y": 628,
+    "w": 342.5,
+    "h": 16,
+    "cy": 636,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 840.5,
+    "y": 625,
+    "w": 49.5,
+    "h": 22,
+    "cy": 636,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 629,
+    "w": 14,
+    "h": 14,
+    "cy": 636,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 726,
+   "w": 560,
+   "h": 64,
+   "cy": 758
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 366,
+    "y": 730,
+    "w": 64,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Анкета",
+    "x": 430,
+    "y": 730,
+    "w": 161.3,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Заметки",
+    "x": 591.3,
+    "y": 730,
+    "w": 161.3,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Броски",
+    "x": 752.7,
+    "y": 730,
+    "w": 161.3,
+    "h": 56,
+    "cy": 758
+   }
+  ],
+  "close": {
+   "x": 366,
+   "y": 730,
+   "w": 64,
+   "h": 56,
+   "cy": 758,
+   "offCenterDock": 57
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 360,
+   "y": 660,
+   "w": 560,
+   "h": 66,
+   "cy": 693
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-chars",
+    "x": 368,
+    "y": 668,
+    "w": 544,
+    "h": 50,
+    "cy": 693,
+    "chips": 2,
+    "perRow": [
+     2
+    ],
+    "gaps": [
+     4
+    ],
+    "chipW": [
+     48
+    ],
+    "chipH": [
+     50
+    ],
+    "markers": [
+     32
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "1280-article-closed": {
+  "dock": {
+   "x": 360,
+   "y": 734,
+   "w": 560,
+   "h": 56,
+   "cy": 762
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 424,
+   "y": 734,
+   "w": 496,
+   "h": 56,
+   "cy": 762
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 432,
+    "y": 750,
+    "w": 24,
+    "h": 24,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 464,
+    "y": 754,
+    "w": 385.9,
+    "h": 16,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 857.9,
+    "y": 751,
+    "w": 32.1,
+    "h": 22,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 755,
+    "w": 14,
+    "h": 14,
+    "cy": 762,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 734,
+   "w": 64,
+   "h": 56,
+   "cy": 762
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 360,
+    "y": 734,
+    "w": 64,
+    "h": 56,
+    "cy": 762
+   }
+  ],
+  "close": {
+   "x": 360,
+   "y": 734,
+   "w": 64,
+   "h": 56,
+   "cy": 762,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "1280-article-open": {
+  "dock": {
+   "x": 360,
+   "y": 648,
+   "w": 560,
+   "h": 142,
+   "cy": 719
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 424,
+   "y": 648,
+   "w": 496,
+   "h": 56,
+   "cy": 676
+  },
+  "stripItems": [
+   {
+    "cls": "node-marker",
+    "x": 432,
+    "y": 664,
+    "w": 24,
+    "h": 24,
+    "cy": 676,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 464,
+    "y": 668,
+    "w": 385.9,
+    "h": 16,
+    "cy": 676,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 857.9,
+    "y": 665,
+    "w": 32.1,
+    "h": 22,
+    "cy": 676,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 669,
+    "w": 14,
+    "h": 14,
+    "cy": 676,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 648,
+   "w": 64,
+   "h": 56,
+   "cy": 676
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 360,
+    "y": 648,
+    "w": 64,
+    "h": 56,
+    "cy": 676
+   }
+  ],
+  "close": {
+   "x": 360,
+   "y": 648,
+   "w": 64,
+   "h": 56,
+   "cy": 676,
+   "offCenterDock": -43
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 424,
+   "y": 704,
+   "w": 496,
+   "h": 86,
+   "cy": 747
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 432,
+    "y": 712,
+    "w": 480,
+    "h": 70,
+    "cy": 747,
+    "chips": 1,
+    "perRow": [
+     1
+    ],
+    "gaps": [],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     50
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [],
+    "topGap": 20,
+    "emptyAboveChips": 28
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 1,
+  "errs": []
+ },
+ "1280-zone-closed": {
+  "dock": {
+   "x": 360,
+   "y": 734,
+   "w": 560,
+   "h": 56,
+   "cy": 762
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 424,
+   "y": 734,
+   "w": 496,
+   "h": 56,
+   "cy": 762
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 428,
+    "y": 734,
+    "w": 97.8,
+    "h": 56,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 432,
+    "y": 750,
+    "w": 24,
+    "h": 24,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 529.8,
+    "y": 754,
+    "w": 302.7,
+    "h": 16,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 840.5,
+    "y": 751,
+    "w": 49.5,
+    "h": 22,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 755,
+    "w": 14,
+    "h": 14,
+    "cy": 762,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 734,
+   "w": 64,
+   "h": 56,
+   "cy": 762
+  },
+  "tabs": [
+   {
+    "t": "↩",
+    "x": 360,
+    "y": 734,
+    "w": 64,
+    "h": 56,
+    "cy": 762
+   }
+  ],
+  "close": {
+   "x": 360,
+   "y": 734,
+   "w": 64,
+   "h": 56,
+   "cy": 762,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 2,
+  "errs": []
+ },
+ "1280-zone-open": {
+  "dock": {
+   "x": 360,
+   "y": 656,
+   "w": 560,
+   "h": 134,
+   "cy": 723
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 424,
+   "y": 656,
+   "w": 496,
+   "h": 56,
+   "cy": 684
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 428,
+    "y": 656,
+    "w": 97.8,
+    "h": 56,
+    "cy": 684,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 432,
+    "y": 672,
+    "w": 24,
+    "h": 24,
+    "cy": 684,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 529.8,
+    "y": 676,
+    "w": 302.7,
+    "h": 16,
+    "cy": 684,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 840.5,
+    "y": 673,
+    "w": 49.5,
+    "h": 22,
+    "cy": 684,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 677,
+    "w": 14,
+    "h": 14,
+    "cy": 684,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 656,
+   "w": 64,
+   "h": 56,
+   "cy": 684
+  },
+  "tabs": [
+   {
+    "t": "↩",
+    "x": 360,
+    "y": 656,
+    "w": 64,
+    "h": 56,
+    "cy": 684
+   }
+  ],
+  "close": {
+   "x": 360,
+   "y": 656,
+   "w": 64,
+   "h": 56,
+   "cy": 684,
+   "offCenterDock": -39
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 424,
+   "y": 712,
+   "w": 496,
+   "h": 78,
+   "cy": 751
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 432,
+    "y": 720,
+    "w": 480,
+    "h": 62,
+    "cy": 751,
+    "chips": 2,
+    "perRow": [
+     2
+    ],
+    "gaps": [
+     8
+    ],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     62,
+     50
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 2,
+  "errs": []
+ },
+ "1280-building-closed": {
+  "dock": {
+   "x": 360,
+   "y": 734,
+   "w": 560,
+   "h": 56,
+   "cy": 762
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 424,
+   "y": 734,
+   "w": 496,
+   "h": 56,
+   "cy": 762
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 428,
+    "y": 734,
+    "w": 176.8,
+    "h": 56,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 432,
+    "y": 750,
+    "w": 24,
+    "h": 24,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 608.8,
+    "y": 754,
+    "w": 303.2,
+    "h": 16,
+    "cy": 762,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 734,
+   "w": 64,
+   "h": 56,
+   "cy": 762
+  },
+  "tabs": [
+   {
+    "t": "↩",
+    "x": 360,
+    "y": 734,
+    "w": 64,
+    "h": 56,
+    "cy": 762
+   }
+  ],
+  "close": {
+   "x": 360,
+   "y": 734,
+   "w": 64,
+   "h": 56,
+   "cy": 762,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 2,
+  "errs": []
+ },
+ "1280-building-open": {
+  "dock": {
+   "x": 360,
+   "y": 734,
+   "w": 560,
+   "h": 56,
+   "cy": 762
+  },
+  "single": true,
+  "classes": "node-dock single dock-snap",
+  "strip": {
+   "x": 424,
+   "y": 734,
+   "w": 496,
+   "h": 56,
+   "cy": 762
+  },
+  "stripItems": [
+   {
+    "cls": "node-crumb",
+    "x": 428,
+    "y": 734,
+    "w": 176.8,
+    "h": 56,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-marker",
+    "x": 432,
+    "y": 750,
+    "w": 24,
+    "h": 24,
+    "cy": 762,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-title",
+    "x": 608.8,
+    "y": 754,
+    "w": 303.2,
+    "h": 16,
+    "cy": 762,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 734,
+   "w": 64,
+   "h": 56,
+   "cy": 762
+  },
+  "tabs": [
+   {
+    "t": "↩",
+    "x": 360,
+    "y": 734,
+    "w": 64,
+    "h": 56,
+    "cy": 762
+   }
+  ],
+  "close": {
+   "x": 360,
+   "y": 734,
+   "w": 64,
+   "h": 56,
+   "cy": 762,
+   "offCenterDock": 0
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 2,
+  "errs": []
+ },
+ "1280-system-closed": {
+  "dock": {
+   "x": 360,
+   "y": 678,
+   "w": 560,
+   "h": 112,
+   "cy": 734
+  },
+  "single": false,
+  "classes": "node-dock system-dock",
+  "strip": {
+   "x": 360,
+   "y": 678,
+   "w": 560,
+   "h": 48,
+   "cy": 702
+  },
+  "stripItems": [
+   {
+    "cls": "node-strip-title",
+    "x": 368,
+    "y": 694,
+    "w": 481.9,
+    "h": 16,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 857.9,
+    "y": 691,
+    "w": 32.1,
+    "h": 22,
+    "cy": 702,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 695,
+    "w": 14,
+    "h": 14,
+    "cy": 702,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 726,
+   "w": 560,
+   "h": 64,
+   "cy": 758
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 366,
+    "y": 730,
+    "w": 64,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Карта системы",
+    "x": 438,
+    "y": 730,
+    "w": 476,
+    "h": 56,
+    "cy": 758
+   }
+  ],
+  "close": {
+   "x": 366,
+   "y": 730,
+   "w": 64,
+   "h": 56,
+   "cy": 758,
+   "offCenterDock": 24
+  },
+  "smallTargets": [],
+  "emojiMarkers": 0,
+  "cards": 0,
+  "errs": []
+ },
+ "1280-system-open": {
+  "dock": {
+   "x": 360,
+   "y": 600,
+   "w": 560,
+   "h": 190,
+   "cy": 695
+  },
+  "single": false,
+  "classes": "node-dock system-dock",
+  "strip": {
+   "x": 360,
+   "y": 600,
+   "w": 560,
+   "h": 48,
+   "cy": 624
+  },
+  "stripItems": [
+   {
+    "cls": "node-strip-title",
+    "x": 368,
+    "y": 616,
+    "w": 481.9,
+    "h": 16,
+    "cy": 624,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-stack",
+    "x": 857.9,
+    "y": 613,
+    "w": 32.1,
+    "h": 22,
+    "cy": 624,
+    "offCenter": 0
+   },
+   {
+    "cls": "node-strip-chev",
+    "x": 898,
+    "y": 617,
+    "w": 14,
+    "h": 14,
+    "cy": 624,
+    "offCenter": 0
+   }
+  ],
+  "tabbar": {
+   "x": 360,
+   "y": 726,
+   "w": 560,
+   "h": 64,
+   "cy": 758
+  },
+  "tabs": [
+   {
+    "t": "✕",
+    "x": 366,
+    "y": 730,
+    "w": 64,
+    "h": 56,
+    "cy": 758
+   },
+   {
+    "t": "Карта системы",
+    "x": 438,
+    "y": 730,
+    "w": 476,
+    "h": 56,
+    "cy": 758
+   }
+  ],
+  "close": {
+   "x": 366,
+   "y": 730,
+   "w": 64,
+   "h": 56,
+   "cy": 758,
+   "offCenterDock": 63
+  },
+  "smallTargets": [],
+  "body": {
+   "x": 360,
+   "y": 648,
+   "w": 560,
+   "h": 78,
+   "cy": 687
+  },
+  "cols": [
+   {
+    "cls": "node-links-col is-points",
+    "x": 368,
+    "y": 656,
+    "w": 544,
+    "h": 62,
+    "cy": 687,
+    "chips": 1,
+    "perRow": [
+     1
+    ],
+    "gaps": [],
+    "chipW": [
+     64
+    ],
+    "chipH": [
+     62
+    ],
+    "markers": [
+     36
+    ],
+    "truncated": [],
+    "topGap": 0,
+    "emptyAboveChips": 8
+   }
+  ],
+  "emojiMarkers": 0,
+  "cards": 0,
+  "errs": []
+ }
+}
