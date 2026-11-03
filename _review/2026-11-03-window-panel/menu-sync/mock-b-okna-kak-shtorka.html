@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Вариант Б: окна как шторка</title>
+<link rel="stylesheet" href="../../../css/styles.css">
+<link rel="stylesheet" href="../../../planshet/planshet.css">
+<style>
+@font-face{font-family:'Tektur';font-weight:400 900;font-display:block;src:url(../../../fonts/tektur-cyrillic.woff2) format('woff2');unicode-range:U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116}
+@font-face{font-family:'Tektur';font-weight:400 900;font-display:block;src:url(../../../fonts/tektur-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+2000-206F}
+html,body{height:auto;overflow:auto}
+body{background:#0b0b10;color:#e6e6ee;font:15px/1.45 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+.mock-head{max-width:1232px;margin:0 auto;padding:16px 16px 4px}
+.mock-head h1{margin:0 0 4px;font:700 20px/1.2 'Tektur',system-ui,sans-serif}
+.mock-head p{margin:0;color:#c8c8d2;font-size:15px}
+.stages{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;padding:12px 0 24px}
+@media (min-width:1000px){.stages{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;max-width:1280px;margin:0 auto;padding:16px 24px 32px;box-sizing:border-box}}
+.stage{position:relative;height:var(--h);overflow:hidden;background:#06070b}
+@media (min-width:1000px){.stage{border-radius:16px}}
+.stage-cap{position:absolute;z-index:40;top:8px;left:12px;padding:2px 8px;border-radius:6px;background:#06070bdd;color:#c8c8d2;font:600 13px/1.4 system-ui,sans-serif}
+.stage.map{background:#06070b url(до-390-карта.png) center -120px/390px auto no-repeat}
+@media (min-width:1000px){.stage.map{background:#06070b url(до-1280-карта.png) center -260px/1280px auto no-repeat}}
+.stage.win{background:#06070b url(до-390-карта.png) center -300px/390px auto no-repeat}
+@media (min-width:1000px){.stage.win{background:#06070b url(до-1280-карта.png) center -200px/1280px auto no-repeat}}
+.stage .phenom-card{position:absolute;inset:0;height:auto}
+.mock-text{padding:44px 16px 0;max-width:680px;margin:0 auto;font-size:17px;line-height:1.6;color:#e6e6ee}
+.mock-text p{margin:0 0 14px}
+/* Шторка в макете: не fixed к экрану, а над панелью своей сцены (место ставит скрипт внизу). */
+.stage #planshet{position:absolute;inset:0;z-index:25;padding:0;background:none;pointer-events:none;overflow:visible}
+.stage #planshet .p-menu{position:absolute;pointer-events:auto}
+</style>
+<style>
+/* 1. Подписи вкладок — шрифтом панели (кнопки не наследуют шрифт: сейчас Arial). */
+.tabbar-btn,.tabbar .toolbar-close-btn,.link-chip,.node-crumb,.node-strip-open{font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+/* 2. ✕ — линейный значок 24 px, как остальные. */
+.ui-x{display:block;width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
+/* 3. Статья в «Материалах» — книга линией (сейчас эмодзи 📖). */
+.node-marker.kind-article{color:#ececf2}
+.node-marker.kind-article .ui-book{width:62%;height:62%;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+/* 4. Значки шторки — 24 px, как во вкладках окон и на панели карты (сейчас 20). */
+#planshet .p-mini-icon svg{width:24px;height:24px}
+/* 5. Бирюзовый — только выбранное: число у стопки, «Внутри»/«Материалы», кнопка «Схема». */
+.node-stack-n{color:#ececf2}
+.node-links-cap{color:#9a9aa8;text-transform:none;letter-spacing:0;font-size:11px;font-weight:600}
+#planshet .p-menu .p-menu-ship{background-color:rgba(255,255,255,0.07);box-shadow:none}
+/* 6. Текст кнопок — одним цветом #ececf2 (вкладки были 65 % белого, подписи маркеров 78 %). */
+.tabbar-btn:not(.active),.link-chip{color:#ececf2}
+
+/* Вкладки — отдельные кнопки шторки: подложка 7 %, скругление 10, зазор 4. */
+.node-dock > .tabbar{gap:4px;padding:4px;border-top:1px solid rgba(255,255,255,0.07)}
+.node-dock > .tabbar .tabbar-btn{min-height:56px;padding:4px;gap:3px;border-radius:10px;background:rgba(255,255,255,0.07)}
+.tabbar-btn-label{font-size:12px;font-weight:600;line-height:1.2}
+/* Выбранная вкладка — как выбранный раздел шторки: бирюзовый текст и бирюзовая подложка 12 %. */
+.node-dock > .tabbar .tabbar-btn.active{background:rgba(175,238,238,0.12)}
+/* ✕ — такая же кнопка 56 × 56, черта справа больше не нужна: кнопки и так разделены зазором. */
+.node-dock > .tabbar .toolbar-close-btn{width:56px;min-height:56px;border-radius:10px;background:rgba(255,255,255,0.07)}
+.node-dock > .tabbar .toolbar-close-btn::after{display:none}
+.node-dock.single > .tabbar{padding:4px}
+/* Раскрытая панель — маркеры на своей подложке, как разделы шторки (4 %, скругление 14). */
+.node-links-cols{margin:4px 4px 0;padding:8px;border-radius:14px;background:rgba(255,255,255,0.04);box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08)}
+.node-strip-open,.node-crumb{border-radius:10px}
+/* И сама шторка: рамка подложки разделов — белая, не бирюзовая (бирюзовый — только выбранное). */
+#planshet .p-menu-sections{box-shadow:inset 0 0 0 1px rgba(255,255,255,0.08)}
+#planshet .p-menu .p-mini{border-radius:10px}
+</style>
+</head><body>
+<header class="mock-head"><h1>Вариант Б: окна как шторка</h1><p>Меняются плашки окон: вкладки и ✕ — отдельными кнопками с подложкой, маркеры раскрытой панели — на своей подложке.</p></header>
+<main class="stages">
+  <section class="stage map" style="--h:330px"><span class="stage-cap">Шторка «Феном» над картой</span>
+    <div id="planshet"><div class="p-menu" id="planshetMenu" role="dialog" aria-label="Разделы планшета" tabindex="-1"><div class="p-menu-body"><nav class="tiles p-menu-sections" aria-label="Разделы"><button class="tile p-menu-section has-art" aria-pressed="true" style="--art: url(&quot;../../../images/menu/emblem.webp&quot;);"><span class="t-title p-menu-title">На главную</span></button><button class="tile p-menu-section has-art" aria-pressed="false" style="--art: url(&quot;../../../articles/img/a9cc3ef599644363.webp&quot;);"><span class="t-title p-menu-title">Статьи и лор</span><span class="p-menu-count">6</span></button><button class="tile p-menu-section has-art" aria-pressed="false" style="--art: url(&quot;../../../images/menu/pyramid.webp&quot;);"><span class="t-title p-menu-title">Сюжеты</span><span class="p-menu-count">4</span></button><button class="tile p-menu-section has-art" aria-pressed="false" style="--art: url(&quot;../../../images/menu/markers.webp&quot;);"><span class="t-title p-menu-title">Маркеры</span><span class="p-menu-count">20</span></button><button class="tile p-menu-section has-art" aria-pressed="false" style="--art: url(&quot;../../../images/menu/neon-city.webp&quot;);"><span class="t-title p-menu-title">Районы и здания</span><span class="p-menu-count">24</span></button><button class="tile p-menu-section has-art" aria-pressed="false" style="--art: url(&quot;../../../images/menu/characters.webp&quot;);"><span class="t-title p-menu-title">Персонажи</span><span class="p-menu-count">26</span></button></nav><div class="p-menu-row"><button class="p-mini p-menu-ship" aria-label="Схема корабля Феном"><span class="p-mini-icon p-ship-icon" aria-hidden="true"><span class="node-marker shape-hexagon kind-world corner-node-icon" aria-hidden="true" style="border-color: rgb(255, 255, 255);"><img alt="" src="../../../images/markers/logophenome.webp"></span></span><span>Схема</span></button><button id="menuLabels" class="p-mini p-tool" aria-pressed="true" aria-label="Меньше подписей"><span class="p-mini-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.8 12.4V5.1c0-.7.6-1.3 1.3-1.3h7.3l8 8-8.6 8.6z"></path><circle cx="8.3" cy="8.3" r="1.5"></circle></svg></span><span>Надписи</span></button><label class="p-mini p-select"><span class="p-mini-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.4V19l-3.6-1.8v-4.8z"></path></svg></span><span>Фильтры</span><select aria-label="Сюжет"><option value="all">Все сюжеты</option><option value="story-1">Переворот</option><option value="kreyser-gorizont">Горизонт</option><option value="story-2">Бездна</option><option value="archive">Архив</option></select></label><button class="p-mini" aria-label="Как пользоваться картой"><span class="p-mini-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.5"></path><circle class="dot" cx="12" cy="16.8" r=".6"></circle></svg></span><span>Обучение</span></button></div></div></div></div><div class="map-dock menu-open" id="controls">
+    
+    <button id="helpBtn" hidden="" aria-label="Как пользоваться картой"></button>
+    <button id="labelsToggle" hidden="" aria-label="Меньше подписей" class="active"></button>
+    <button id="sortToggle" hidden="" aria-label="Граф связей" title="Граф связей"></button>
+    <div class="dock-bar">
+      
+      <div class="dock-planshet" id="dockPlanshet">
+        <button id="planshetBrand" class="dock-brand" aria-haspopup="dialog" aria-expanded="true" title="Схема корабля, разделы, сюжет, помощь" aria-controls="planshetMenu">
+          <span class="dock-brand-name">Феном</span>
+        </button>
+        <button id="planshetSearch" class="dock-tool" title="Поиск" aria-label="Поиск"><svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M15.5 15.5 21 21"></path></svg></button>
+      </div>
+      
+      <div class="dock-modes" id="viewSwitch" role="group" aria-label="Режим просмотра карты">
+        <span class="view-lens ready" aria-hidden="true" style="width: 70px; transform: translateX(74px);"></span>
+        <button class="view-switch-btn dock-item" data-view="nodes" aria-label="Ноды" title="Граф связей: все точки и их связи, без самой карты" aria-pressed="false">
+          <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7.6l8-1.2M6.8 10.1l3.9 6.3M17.3 8.2l-4.1 8.1"></path><circle cx="5.5" cy="8" r="2.5"></circle><circle cx="18.5" cy="6" r="2.5"></circle><circle cx="12" cy="18.5" r="2.5"></circle></svg>
+          <span class="dock-label">Ноды</span>
+        </button>
+        <button class="view-switch-btn dock-item active" data-view="map" aria-label="Карта" title="Карта галактики" aria-pressed="true">
+          <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"></path><path d="M9 4.5v13M15 6.5v13"></path></svg>
+          <span class="dock-label">Карта</span>
+        </button>
+        <button class="view-switch-btn dock-item" data-view="graphics" aria-label="Графика" title="Карта без политической раскраски — только фон, гиперлейны и названия систем" aria-pressed="false">
+          <svg class="dock-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a1.5 1.5 0 0 1 3 0 3 3 0 0 1-6 0 4.5 4.5 0 0 1 9 0 6 6 0 0 1-12 0"></path><circle class="dock-svg-dot" cx="19.6" cy="5.4" r="1"></circle><circle class="dock-svg-dot" cx="4.6" cy="18.8" r="0.8"></circle></svg>
+          <span class="dock-label">Графика</span>
+        </button>
+      </div>
+      
+    </div>
+  </div></section>
+  <section class="stage win" style="--h:420px"><span class="stage-cap">Окно Фенома: строка раскрыта</span>
+    <div class="phenom-card"><div class="mock-text"><p>Межпланетным советом Фенома совсем недавно в качестве капитана был избран терран по имени Дэнни Макфарлейн. Несмотря на сомнительное досье, среди слушателей анонимного голосования нашлось большое количество тех, кто поддержал его кандидатуру — всё из-за выделения субсидий на экологическое благополучие нескольких планет.</p><p>Капитан Макфарлейн провёл за штурвалом три недели, прежде чем оказалось, что он засланец — спецагент Федерации, который намеренно телепортировал Феном в планетное пространство державы-наёмника, что с превеликим удовольствием приняла корабль в свои владения и при помощи всех имеющихся рычагов управления подделала местный политический режим под свою диктатуру.</p></div><div class="node-dock dock-snap">
+      <div class="node-links is-expanding is-open" id="phenomLinks" style="--p: 1.0000;"><div class="node-strip"><button type="button" class="node-strip-open" title="Все переходы — нажми или потяни" aria-expanded="true"><span class="node-marker shape-hexagon kind-world node-strip-marker" style="border-color: rgb(255, 255, 255);"><img alt="" src="../../../images/markers/logophenome.webp"></span><span class="node-strip-title">Феном</span><span class="node-stack" title="Внутри и материалы: 3"><span class="node-marker shape-circle kind-world node-stack-face" style="border-color: rgb(255, 215, 106); z-index: 3;"><img alt="" src="../../../images/nodes/kreyser-gorizont-marker.jpg?v=1790523943"></span><span class="node-marker shape-circle kind-world node-stack-face" style="border-color: rgb(255, 215, 106); z-index: 2;"><img alt="" src="../../../images/markers/from-ashes.webp"></span><span class="node-marker shape-square kind-article node-stack-face" style="z-index: 1;"><svg class="ui-book" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.8C10 5.3 7 4.8 4 5.3v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5z"/><path d="M12 6.8v13"/></svg></span><span class="node-stack-n">3</span></span><span class="node-stack" title="Персонажи: 2"><span class="node-marker shape-square kind-character node-stack-face" style="border-color: rgb(175, 238, 238); z-index: 3;"><img alt="" src="../../../images/markers/ledo.webp"></span><span class="node-marker shape-square kind-character node-stack-face" style="border-color: rgb(175, 238, 238); z-index: 2;"><img alt="" src="../../../images/markers/teki.webp"></span><span class="node-stack-n">2</span></span><span class="node-strip-chev"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5"></path></svg></span></button></div><div class="node-links-body" style="height: 248px;"><div class="node-links-cols"><div class="node-links-col is-points"><span class="node-links-cap">Внутри</span><button type="button" class="link-chip link-chip--point" title="Крейсер Горизонт"><span class="link-chip-slot"><span class="node-marker shape-circle kind-world link-chip-marker" style="border-color: rgb(255, 215, 106); --dx: 202.0; --dy: -65.0; --s: 0.611; --o0: 1;"><img alt="" src="../../../images/nodes/kreyser-gorizont-marker.jpg?v=1790523943"></span></span><span class="link-chip-caption">Крейсер Горизонт</span></button><button type="button" class="link-chip link-chip--point" title="1. Переворот на Феноме"><span class="link-chip-slot"><span class="node-marker shape-circle kind-world link-chip-marker" style="border-color: rgb(255, 215, 106); --dx: 217.0; --dy: -135.0; --s: 0.611; --o0: 1;"><img alt="" src="../../../images/markers/from-ashes.webp"></span></span><span class="link-chip-caption">Переворот</span></button><span class="node-links-cap">Материалы</span><button type="button" class="link-chip link-chip--point" title="Статья: Районы Фенома (ред.)"><span class="link-chip-slot"><span class="node-marker shape-square kind-article link-chip-marker" style="--dx: 232.0; --dy: -213.0; --s: 0.611; --o0: 1;"><svg class="ui-book" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.8C10 5.3 7 4.8 4 5.3v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5z"/><path d="M12 6.8v13"/></svg></span></span><span class="link-chip-caption">Районы Фенома</span></button></div><span class="node-links-sep"></span><div class="node-links-col is-chars"><span class="link-group"><button type="button" class="link-chip link-chip--char" title="Ледо Плазац"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); --dx: 188.0; --dy: -48.0; --s: 0.733; --o0: 1;"><img alt="" src="../../../images/markers/ledo.webp"></span></span><span class="link-chip-caption">Ледо</span></button><button type="button" class="link-chip link-chip--char" title="Текила Сансет"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); --dx: 147.0; --dy: -48.0; --s: 0.733; --o0: 1;"><img alt="" src="../../../images/markers/teki.webp"></span></span><span class="link-chip-caption">Текила</span></button></span></div></div></div></div>
+      <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
+      <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть"><svg class="ui-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+      
+      <button class="tabbar-btn active" id="phenomDescriptionTab" aria-pressed="true">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 6.5h14M5 10.5h11M5 14.5h14M5 18.5h8"></path></svg></span><span class="tabbar-btn-label">Описание</span>
+      </button>
+      <button class="tabbar-btn" id="phenomArticleTab" style="display:none" aria-pressed="false" title="Статья">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 6.8C10 5.3 7 4.8 4 5.3v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5z"></path><path d="M12 6.8v13"></path></svg></span><span class="tabbar-btn-label">Статья</span>
+      </button>
+      
+      <button class="tabbar-btn" id="phenomGameTab" style="display: none;" aria-pressed="false">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="6.5" r="2.6"></circle><path d="M9.8 10.6h4.4l1 5.4H8.8z"></path><path d="M6.5 20h11l-1-4H7.5z"></path></svg></span><span class="tabbar-btn-label">Игра</span>
+      </button>
+      
+      <button class="tabbar-btn" id="phenomMapTab" aria-pressed="false">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"></path><path d="M9 4.5v13M15 6.5v13"></path></svg></span><span class="tabbar-btn-label">Карта</span>
+      </button>
+      
+      <button class="tabbar-btn" id="phenomEdit" hidden="" aria-pressed="false">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 19.5l1-4.4L15.6 5a2.1 2.1 0 0 1 3 0l.4.4a2.1 2.1 0 0 1 0 3L8.9 18.5z"></path><path d="M13.6 7l3.4 3.4"></path></svg></span><span class="tabbar-btn-label">Правка</span>
+      </button>
+    </div>
+    </div></div></section>
+  <section class="stage win" style="--h:190px"><span class="stage-cap">Окно сюжета: строка свёрнута</span>
+    <div class="phenom-card"><div class="mock-text"><p>Межпланетным советом Фенома совсем недавно в качестве капитана был избран терран по имени Дэнни Макфарлейн. Несмотря на сомнительное досье, среди слушателей анонимного голосования нашлось большое количество тех, кто поддержал его кандидатуру — всё из-за выделения субсидий на экологическое благополучие нескольких планет.</p><p>Капитан Макфарлейн провёл за штурвалом три недели, прежде чем оказалось, что он засланец — спецагент Федерации, который намеренно телепортировал Феном в планетное пространство державы-наёмника, что с превеликим удовольствием приняла корабль в свои владения и при помощи всех имеющихся рычагов управления подделала местный политический режим под свою диктатуру.</p></div><div class="node-dock dock-snap">
+      <div class="node-links" id="phenomLinks" style="--p: 0.0000;"><div class="node-strip"><button type="button" class="node-crumb" title="Место: Феном"><span class="node-marker shape-hexagon kind-world node-strip-marker" style="border-color: rgb(255, 255, 255);"><img alt="" src="../../../images/markers/logophenome.webp"></span><span class="node-crumb-name">Феном</span><span class="node-crumb-sep" aria-hidden="true">›</span></button><button type="button" class="node-strip-open" title="Все переходы — нажми или потяни" aria-expanded="false"><span class="node-strip-title">Переворот</span><span class="node-stack" title="Персонажи: 9"><span class="node-marker shape-square kind-character node-stack-face" style="border-color: rgb(175, 238, 238); z-index: 3;"><img alt="" src="../../../images/naito.jpg"></span><span class="node-marker shape-square kind-character node-stack-face" style="border-color: rgb(175, 238, 238); z-index: 2;"><img alt="" src="../../../images/characters/ket-uollen.jpg?v=1789493214"></span><span class="node-marker shape-square kind-character node-stack-face" style="border-color: rgb(175, 238, 238); z-index: 1;"><img alt="" src="../../../images/markers/fox.webp"></span><span class="node-stack-n">9</span></span><span class="node-strip-chev"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5"></path></svg></span></button></div><div class="node-links-body" style="height: 0px;"><div class="node-links-cols"><div class="node-links-col is-chars"><span class="link-group"><button type="button" class="link-chip link-chip--char" title="Найто Афетович"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); --dx: 193.0; --dy: -48.0; --s: 0.733; --o0: 1;"><img alt="" src="../../../images/naito.jpg"></span></span><span class="link-chip-caption">Найто</span></button><button type="button" class="link-chip link-chip--char" title="Кэт Уоллен"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); --dx: 152.0; --dy: -48.0; --s: 0.733; --o0: 1;"><img alt="" src="../../../images/characters/ket-uollen.jpg?v=1789493214"></span></span><span class="link-chip-caption">Кэт</span></button><button type="button" class="link-chip link-chip--char" title="Фокс"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); --dx: 111.0; --dy: -48.0; --s: 0.733; --o0: 1;"><img alt="" src="../../../images/markers/fox.webp"></span></span><span class="link-chip-caption">Фокс</span></button></span><span class="link-group"><button type="button" class="link-chip link-chip--char" title="Сорэн Расский"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); --dx: 43.0; --dy: -48.0; --s: 0.733; --o0: 0;"><img alt="" src="../../../images/markers/soren.webp"></span></span><span class="link-chip-caption">Сорэн</span></button><button type="button" class="link-chip link-chip--char" title="Стил"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); --dx: -13.0; --dy: -48.0; --s: 0.733; --o0: 0;"><img alt="" src="../../../images/markers/stil.webp"></span></span><span class="link-chip-caption">Стил</span></button></span><span class="link-group"><button type="button" class="link-chip link-chip--char" title="Пауль Лангерганс"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); --dx: 223.0; --dy: -106.0; --s: 0.733; --o0: 0;"><img alt="" src="../../../images/markers/paul.webp"></span></span><span class="link-chip-caption">Пауль</span></button><button type="button" class="link-chip link-chip--char" title="Теодор Драйзер"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); background: rgba(175, 238, 238, 0.92); --dx: 167.0; --dy: -106.0; --s: 0.733; --o0: 0;">Т</span></span><span class="link-chip-caption">Теодор</span></button></span><button type="button" class="link-chip link-chip--char" title="Райден Аматеру"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); --dx: 104.0; --dy: -106.0; --s: 0.733; --o0: 0;"><img alt="" src="../../../images/markers/rain.webp"></span></span><span class="link-chip-caption">Райден</span></button><button type="button" class="link-chip link-chip--char" title="Шелди У'окер"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); --dx: 46.0; --dy: -106.0; --s: 0.733; --o0: 0;"><img alt="" src="../../../images/markers/shell.webp"></span></span><span class="link-chip-caption">Шелди</span></button></div></div></div></div>
+      <div class="phenom-toolbar lore-toolbar tabbar" id="phenomToolbar">
+      <button class="toolbar-close-btn" id="phenomClose" aria-label="Закрыть"><svg class="ui-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+      
+      <button class="tabbar-btn active" id="phenomDescriptionTab" aria-pressed="true">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 6.5h14M5 10.5h11M5 14.5h14M5 18.5h8"></path></svg></span><span class="tabbar-btn-label">Описание</span>
+      </button>
+      <button class="tabbar-btn" id="phenomArticleTab" style="display:none" aria-pressed="false" title="Статья">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 6.8C10 5.3 7 4.8 4 5.3v13c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-13c-3-.5-6 0-8 1.5z"></path><path d="M12 6.8v13"></path></svg></span><span class="tabbar-btn-label">Статья</span>
+      </button>
+      
+      <button class="tabbar-btn" id="phenomGameTab" style="" aria-pressed="false">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="6.5" r="2.6"></circle><path d="M9.8 10.6h4.4l1 5.4H8.8z"></path><path d="M6.5 20h11l-1-4H7.5z"></path></svg></span><span class="tabbar-btn-label">Игра</span>
+      </button>
+      
+      <button class="tabbar-btn" id="phenomMapTab" hidden="" aria-pressed="false">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"></path><path d="M9 4.5v13M15 6.5v13"></path></svg></span><span class="tabbar-btn-label">Карта</span>
+      </button>
+      
+      <button class="tabbar-btn" id="phenomEdit" hidden="" aria-pressed="false">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 19.5l1-4.4L15.6 5a2.1 2.1 0 0 1 3 0l.4.4a2.1 2.1 0 0 1 0 3L8.9 18.5z"></path><path d="M13.6 7l3.4 3.4"></path></svg></span><span class="tabbar-btn-label">Правка</span>
+      </button>
+    </div>
+    </div></div></section>
+  <section class="stage win" style="--h:170px"><span class="stage-cap">Окно персонажа: три вкладки</span>
+    <div class="phenom-card"><div class="mock-text"><p>Межпланетным советом Фенома совсем недавно в качестве капитана был избран терран по имени Дэнни Макфарлейн. Несмотря на сомнительное досье, среди слушателей анонимного голосования нашлось большое количество тех, кто поддержал его кандидатуру — всё из-за выделения субсидий на экологическое благополучие нескольких планет.</p><p>Капитан Макфарлейн провёл за штурвалом три недели, прежде чем оказалось, что он засланец — спецагент Федерации, который намеренно телепортировал Феном в планетное пространство державы-наёмника, что с превеликим удовольствием приняла корабль в свои владения и при помощи всех имеющихся рычагов управления подделала местный политический режим под свою диктатуру.</p></div><div class="node-dock dock-snap">
+      <div class="node-links" id="charLinks" style="--p: 0;"><div class="node-strip"><button type="button" class="node-crumb" title="Сюжет: 1. Переворот на Феноме"><span class="node-marker shape-circle kind-world node-strip-marker" style="border-color: rgb(255, 215, 106);"><img alt="" src="../../../images/markers/from-ashes.webp"></span><span class="node-crumb-name">Переворот</span><span class="node-crumb-sep" aria-hidden="true">›</span></button><button type="button" class="node-strip-open" title="Все переходы — нажми или потяни" aria-expanded="false"><span class="node-strip-title">Найто Афетович</span><span class="node-stack" title="Персонажи: 2"><span class="node-marker shape-square kind-character node-stack-face" style="border-color: rgb(175, 238, 238); z-index: 3;"><img alt="" src="../../../images/markers/fox.webp"></span><span class="node-marker shape-square kind-character node-stack-face" style="border-color: rgb(175, 238, 238); z-index: 2;"><img alt="" src="../../../images/characters/ket-uollen.jpg?v=1789493214"></span><span class="node-stack-n">2</span></span><span class="node-strip-chev"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5"></path></svg></span></button></div><div class="node-links-body" style="height: 0px;"><div class="node-links-cols"><div class="node-links-col is-chars"><button type="button" class="link-chip link-chip--char" title="Фокс"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); --dx: 278.0; --dy: -48.0; --s: 0.733; --o0: 1;"><img alt="" src="../../../images/markers/fox.webp"></span></span><span class="link-chip-caption">Фокс</span></button><button type="button" class="link-chip link-chip--char" title="Кэт Уоллен"><span class="link-chip-slot"><span class="node-marker shape-square kind-character link-chip-marker" style="border-color: rgb(175, 238, 238); --dx: 235.0; --dy: -48.0; --s: 0.733; --o0: 1;"><img alt="" src="../../../images/characters/ket-uollen.jpg?v=1789493214"></span></span><span class="link-chip-caption">Кэт</span></button></div></div></div></div>
+      <div class="phenom-toolbar lore-toolbar tabbar" id="charToolbar">
+      <button class="toolbar-close-btn" id="charToolbarClose" aria-label="Закрыть"><svg class="ui-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+      
+      <button class="tabbar-btn active" id="charSheet" aria-pressed="true">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5.5" y="4.5" width="13" height="16" rx="2"></rect><path d="M9.5 4.5V3.3h5v1.2"></path><path d="M8.8 10h6.4M8.8 13.5h6.4M8.8 17h3.8"></path></svg></span><span class="tabbar-btn-label">Анкета</span>
+      </button>
+      
+      <button class="tabbar-btn" id="charEdit" hidden="" aria-pressed="false">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 19.5l1-4.4L15.6 5a2.1 2.1 0 0 1 3 0l.4.4a2.1 2.1 0 0 1 0 3L8.9 18.5z"></path><path d="M13.6 7l3.4 3.4"></path></svg></span><span class="tabbar-btn-label">Правка</span>
+      </button>
+      <button class="tabbar-btn" id="charNotes" aria-pressed="false">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 4.5h15v10l-5 5h-10z"></path><path d="M14.5 19.5v-5h5"></path><path d="M8 9h8M8 12.5h4.5"></path></svg></span><span class="tabbar-btn-label">Заметки</span>
+      </button>
+      <button class="tabbar-btn" id="charRolls" aria-pressed="false">
+        <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.6v8.8L12 21l-8-4.6V7.6z"></path><path d="M12 3 7.4 14.2h9.2z"></path><path d="M4 7.6l3.4 6.6M20 7.6l-3.4 6.6M7.4 14.2 12 21l4.6-6.8"></path></svg></span><span class="tabbar-btn-label">Броски</span>
+      </button>
+    </div>
+    </div></div></section>
+  <section class="stage win" style="--h:170px"><span class="stage-cap">Окно системы</span>
+    <div class="phenom-card"><div class="mock-text"><p>Межпланетным советом Фенома совсем недавно в качестве капитана был избран терран по имени Дэнни Макфарлейн. Несмотря на сомнительное досье, среди слушателей анонимного голосования нашлось большое количество тех, кто поддержал его кандидатуру — всё из-за выделения субсидий на экологическое благополучие нескольких планет.</p><p>Капитан Макфарлейн провёл за штурвалом три недели, прежде чем оказалось, что он засланец — спецагент Федерации, который намеренно телепортировал Феном в планетное пространство державы-наёмника, что с превеликим удовольствием приняла корабль в свои владения и при помощи всех имеющихся рычагов управления подделала местный политический режим под свою диктатуру.</p></div><div class="node-dock system-dock">
+  <div class="node-links system-links" id="systemLinks" style="--p: 0.0000;"><div class="node-strip"><button type="button" class="node-strip-open" title="Все переходы — нажми или потяни" aria-expanded="false"><span class="node-strip-title">Точки в системе</span><span class="node-stack" title="Места и сюжеты: 1"><span class="node-marker shape-circle kind-world is-done node-stack-face" style="border-color: rgb(138, 143, 152); z-index: 3;"><img alt="" src="../../../images/markers/gxexp.webp"></span><span class="node-stack-n">1</span></span><span class="node-strip-chev"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 7.5 6 4l3.5 3.5"></path></svg></span></button></div><div class="node-links-body" style="height: 0px;"><div class="node-links-cols"><div class="node-links-col is-points"><button type="button" class="link-chip link-chip--point" title="К.3. Гигаструктура G-UX71"><span class="link-chip-slot"><span class="node-marker shape-circle kind-world is-done link-chip-marker" style="border-color: rgb(138, 143, 152); --dx: 291.0; --dy: -45.0; --s: 0.611; --o0: 1;"><img alt="" src="../../../images/markers/gxexp.webp"></span></span><span class="link-chip-caption">Гигаструктура G-UX71</span></button></div></div></div></div>
+  <div class="system-toolbar lore-toolbar tabbar">
+    <button class="toolbar-close-btn" id="systemBack" aria-label="Закрыть"><svg class="ui-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></button>
+    <button class="tabbar-btn active" id="systemMapTab" aria-pressed="true">
+      <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"></path><path d="M9 4.5v13M15 6.5v13"></path></svg></span><span class="tabbar-btn-label">Карта системы</span>
+    </button>
+    <button class="tabbar-btn" id="systemLore" aria-pressed="false">
+      <span class="tabbar-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4.5 17.5 3.5 7.8l4.8 3.6L12 5.5l3.7 5.9 4.8-3.6-1 9.7z"></path><path d="M5.5 20.5h13"></path></svg></span><span class="tabbar-btn-label">Контролирующая раса</span>
+    </button>
+  </div>
+  </div></div></section></main>
+
+<script>
+addEventListener('load', () => {
+  for (const st of document.querySelectorAll('.stage')) {
+    const bar = st.querySelector('.dock-bar'), menu = st.querySelector('.p-menu');
+    if (bar && menu) {
+      const s = st.getBoundingClientRect(), b = bar.getBoundingClientRect();
+      Object.assign(menu.style, {left: (b.left - s.left) + 'px', width: b.width + 'px', bottom: (s.bottom - b.top) + 'px'});
+    }
+    const lens = st.querySelector('.view-lens'), act = st.querySelector('.dock-modes .dock-item.active');
+    if (lens && act) { lens.style.width = act.offsetWidth + 'px'; lens.style.transform = 'translateX(' + act.offsetLeft + 'px)'; }
+    for (const body of st.querySelectorAll('.node-links.is-open > .node-links-body')) {
+      body.style.height = body.firstElementChild.getBoundingClientRect().height + 'px';
+    }
+  }
+  document.body.dataset.ready = '1';
+});
+</script>
+</body></html>
