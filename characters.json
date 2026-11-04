@@ -406,5 +406,19 @@
     "color": "",
     "x": -175,
     "y": -100
+  },
+  {
+    "id": "bleyk-seybl",
+    "name": "Блейк Сейбл",
+    "race": "",
+    "role": "",
+    "player": "",
+    "sheetUrl": "",
+    "parent": "",
+    "links": [],
+    "image": "",
+    "color": "",
+    "x": -175,
+    "y": -100
   }
 ]
