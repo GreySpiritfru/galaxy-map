@@ -1,3 +1,4 @@
+@import url('picker.css?v=40');   /* свой список фильтра (planshet/picker.js) — версия = PV */
 /* ============================================================
    Планшет (режим «Ноды») — стили. С 02.11.2026 (v=219) планшет живёт прямо в карте, в #planshet
    (js/planshet.js), а не страницей во фрейме: все правила — внутри #planshet, чтобы не смешиваться со
@@ -147,6 +148,20 @@
 #planshet details.older .less, #planshet details.older[open] .more { display: none; }
 #planshet details.older[open] .less { display: inline; }
 #planshet details.older[open] > summary { margin-bottom: 8px; }
+#planshet .news-controls { position: relative; min-height: 56px; margin-top: 10px; }
+#planshet .news-controls details.older { margin-top: 0; }
+/* v=258 (владелец): полоса «Ещё N событий ранее» — во всю ширину, фильтр — внутри неё справа, за чертой (два соседа
+   на одном фоне, а не кнопка в кнопке: касание фильтра не раскрывает события). */
+#planshet .news-controls details.older > summary { margin-right: 0; min-height: 52px; padding-left: 14px; padding-right: 118px; white-space: nowrap; }
+#planshet .news-filter { position: absolute; top: 0; right: 0; display: flex; align-items: center; justify-content: center;
+  gap: 6px; width: 108px; height: 52px; padding: 0 10px; box-sizing: border-box;
+  border-radius: 0 0 22px 0; background: none; color: #ececf2; font-size: 14px; font-weight: 600; cursor: pointer; }
+#planshet .news-filter::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 1px; background: rgba(255,255,255,0.18); }
+#planshet .news-controls.solo { min-height: 52px; border-radius: 0 0 22px 22px; background: var(--panel); }
+#planshet .news-controls.solo .news-filter { position: relative; width: 100%; border-radius: 0 0 22px 22px; }
+#planshet .news-controls.solo .news-filter::before { display: none; }
+#planshet .news-filter-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#planshet .news-filter.selected { background: none; box-shadow: none; }   /* выбранный сюжет — его цветом (filterName) */
 #planshet .h { font-size: 20px; margin: 24px 0 10px; }
 
 /* Плитка-элемент: арт на всю плитку, подпись снизу */
@@ -557,7 +572,7 @@ body.planshet-on #planshet .p-menu-body { background: rgba(12,12,18,0.97); }
 #planshet .res-map { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; color: var(--act); }
 #planshet .res-map svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 
-/* ===== v=256 (planshet ?v=32): общие правила панелей — шторка (вариант В облака; см. конец css/styles.css). ===== */
+/* ===== v=256 (planshet ?v=33): общие правила панелей — шторка (вариант В облака; см. конец css/styles.css). ===== */
 #planshet .p-mini-icon svg { width: 24px; height: 24px; }
 #planshet .p-menu-sections, #planshet .p-menu-row { border-radius: 14px; background: rgba(255,255,255,0.04); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
 #planshet .p-menu-row { gap: 0; padding: 4px; margin-top: 4px; }
@@ -572,3 +587,29 @@ body.planshet-on #planshet .p-menu-body { background: rgba(12,12,18,0.97); }
 @media (min-width: 1000px) {
   #planshet .p-menu .p-mini, #planshet .p-menu .p-menu-ship { flex-direction: row; gap: 8px; min-height: 48px; font-size: 14px; }
 }
+
+/* ===== v=258 (planshet ?v=36): цвета сюжетов, вкладыш карточки сюжета — владелец 07.11 ===== */
+/* Полоска новости — цветом её сюжета (сводки «Говорят в мире» — свой красный, правило .said сильнее). */
+#planshet .news-item { border-left-color: var(--news-c, var(--story)); }
+/* Точка цвета сюжета — в подписи фильтра (шторка, новости). */
+#planshet .f-dot { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; vertical-align: 1px; flex: none; }
+/* Карточка сюжета: рамка — цветом сюжета. */
+/* v=260 (владелец): цвет сюжета — полосой слева (как плашка «Набор открыт» и выбранный раздел), а не рамкой по кругу;
+   рамка — обычная тонкая линия. Полоса поверх арта и вкладыша, загибается по скруглению карточки. */
+#planshet .acc { border: 1px solid var(--line); }
+#planshet .acc::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; z-index: 2; width: 4px; background: var(--st, transparent); pointer-events: none; }
+#planshet .acc > .el-tile { min-height: 150px; }
+/* Название и состояние внизу арта — во вкладыше; здесь скрыты (для чтеца остаются). */
+#planshet .acc > .el-tile .el-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+/* Вкладыш: вплотную к левому верхнему углу (угол обрезает рамка карточки), занимает левую часть, справа растворяется в арт. */
+#planshet .acc-tab { position: absolute; top: 0; left: 0; z-index: 1; display: flex; align-items: stretch; max-width: calc(100% - 40px);
+  padding-right: 40px; background: linear-gradient(90deg, rgba(10,10,16,0.86), rgba(10,10,16,0.86) calc(100% - 40px), rgba(10,10,16,0)); }
+#planshet .acc-open { display: flex; flex-direction: column; justify-content: center; min-width: 0; min-height: 56px; padding: 8px 12px 9px 14px;
+  color: #fff; text-align: left; }
+#planshet .acc-name { font-family: var(--display); font-weight: 700; font-size: 16px; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#planshet .acc-st { margin-top: 3px; color: var(--soft); font-size: 13px; line-height: 1.2; }
+#planshet .acc.recruit .acc-st { color: var(--story); font-weight: 700; }
+#planshet .acc-tab > .acc-map { position: relative; display: grid; place-items: center; flex: none; width: 48px; min-height: 56px; color: #fff; }
+#planshet .acc-tab > .acc-map::before { content: ''; position: absolute; left: 0; top: 14px; bottom: 14px; width: 1px; background: rgba(255,255,255,0.5); }
+#planshet .acc-tab > .acc-map svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+#planshet .acc-open:active, #planshet .acc-tab > .acc-map:active { background: rgba(255,255,255,0.08); }

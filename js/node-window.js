@@ -15,13 +15,13 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=256';
-import { REF_ARTICLES } from './articles.js?v=256';
-import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=256';
-import { renderSheetCard } from './sheet-card.js?v=256';
-import { wireImageGallery } from './viewer.js?v=256';
-import { frameHtml, safeHttps } from './net.js?v=256';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=256';
+import { escapeHtml } from './modal.js?v=261';
+import { REF_ARTICLES } from './articles.js?v=261';
+import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=261';
+import { renderSheetCard } from './sheet-card.js?v=261';
+import { wireImageGallery } from './viewer.js?v=261';
+import { frameHtml, safeHttps } from './net.js?v=261';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=261';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -94,12 +94,12 @@ export function renderFrame(container, url) {
 function recruitHtml(view, floating) {
   if (!view.recruit || view.completed) return '';
   return `<div class="node-recruit${floating ? ' is-floating' : ''}">
-      ${floating ? '<button type="button" class="node-recruit-close" aria-label="Скрыть">✕</button>' : ''}
-      <div class="node-recruit-head">📣 Набор открыт</div>
+      ${floating ? '<button type="button" class="node-recruit-close" aria-label="Скрыть"><svg class="ui-x" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>' : ''}
+      <div class="node-recruit-head"><svg class="node-recruit-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h3l7 4V6L7 10z"/><path d="M17.5 9.5a3.5 3.5 0 0 1 0 5"/></svg>Набор открыт</div>
       <div class="node-recruit-body">${escapeHtml(view.recruit).replace(/\n/g, '<br>')}</div>
       <div class="node-recruit-actions">
-        <button type="button" class="node-recruit-btn" data-join="form">📝 Шаблон анкеты</button>
-        <button type="button" class="node-recruit-btn" data-join="contacts">💬 Написать нам</button>
+        <button type="button" class="node-recruit-btn" data-join="form" aria-label="Шаблон анкеты"><svg class="node-recruit-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M9.5 12h6M9.5 15.5h6"/></svg>Анкета</button>
+        <button type="button" class="node-recruit-btn" data-join="contacts" aria-label="Написать нам"><svg class="node-recruit-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 5.5h15v10h-9l-4 3.5v-3.5h-2z"/></svg>Написать</button>
       </div>
     </div>`;
 }
@@ -143,6 +143,8 @@ export function renderNodeContent(container, view) {
   delete container.dataset.tab;
   container.__gameScroll = 0;
   container.insertAdjacentHTML('afterbegin', `<div class="node-desc">${descriptionHtml(view)}</div>`);
+  const newsSlot = container.firstElementChild.querySelector('.node-news-slot');
+  if (newsSlot) fillNews(newsSlot, view.id);
   wireImageGallery(container.firstElementChild);
   appendModules(container.firstElementChild, view, container);
   appendDocument(container.firstElementChild, view, container);
@@ -622,8 +624,57 @@ function descriptionHtml(view) {
     ${view.documentUrl ? '' : `<div class="story-title">${codeHtml}${escapeHtml(view.title || '')}${doneHtml}</div>`}
     ${view.subtitle ? `<div class="story-subtitle">${escapeHtml(view.subtitle)}</div>` : ''}
     ${recruitHtml(view, false)}
+    ${view.id ? '<div class="node-news-slot"></div>' : ''}
     ${descHtml}
   `;
+}
+
+/* Новости записи (v=261, владелец 07.11 — через сессию новостей): во всех окнах маркеров (Феном, сюжеты, места, районы
+   и здания схемы) — свёрнутый блок «Новости · N» в начале окна, до описания. Связь с записью: сюжет новости (story),
+   места и здания (places), персонажи (people); у места — ещё новости сюжетов, которые идут в нём (parent в world.json),
+   у района — новости его зданий (zone в ship/records.json). Нет связанных — блока нет. Данные — свои fetch (браузер их
+   уже грузил — из кэша): окно не ждёт планшет, он грузится лениво. Вид новости — как в ленте «Нод»: полоса слева цветом
+   сюжета, у сводок «Говорят в мире» — красная; касание раскрывает текст. */
+let newsData = null;
+function loadNewsData() {
+  if (!newsData) {
+    newsData = Promise.all(['news.json', 'world.json', 'ship/records.json']
+      .map(u => fetch(u).then(r => (r.ok ? r.json() : null)).catch(() => null)))
+      .then(([news, world, ship]) => ({
+        items: Array.isArray(news?.items) ? news.items : [],
+        world: Array.isArray(world) ? world : [],
+        buildings: Array.isArray(ship?.buildings) ? ship.buildings : [],
+      }));
+  }
+  return newsData;
+}
+function newsOf(id, d) {
+  const stories = new Set(d.world.filter(r => r.parent === id && r.story).map(r => r.id));
+  const inZone = new Set(d.buildings.filter(b => b.zone === id).map(b => b.id));
+  return d.items.filter(n => n.story === id || stories.has(n.story)
+    || (n.places || []).some(p => p === id || inZone.has(p)) || (n.people || []).includes(id));
+}
+function fillNews(slot, id) {
+  loadNewsData().then(d => {
+    if (!slot.isConnected) return;
+    const list = newsOf(id, d);
+    if (!list.length) { slot.remove(); return; }
+    const byId = new Map(d.world.map(r => [r.id, r]));
+    const story = n => byId.get(n.story);
+    const meta = n => [n.voice === 'said' ? `Говорят в мире: ${(n.source || 'слух').toLowerCase()}`
+      : (story(n)?.shortTitle || story(n)?.title || 'История Фенома'), n.posts].filter(Boolean).join(' · ');
+    const paras = n => (n.text ? n.text.split(/\n\s*\n/) : [n.happened, n.why, n.now]).map(s => (s || '').trim()).filter(Boolean);
+    const item = n => {
+      const c = n.voice !== 'said' && story(n)?.color;
+      return `<li class="node-news-item${n.voice === 'said' ? ' said' : ''}"${c ? ` style="--news-c:${escapeHtml(c)}"` : ''}>
+        <details><summary><b>${escapeHtml(n.title || '')}</b><span>${escapeHtml(meta(n))}</span></summary>
+          ${paras(n).map(p => `<p>${escapeHtml(p)}</p>`).join('')}
+          ${n.place ? `<p class="node-news-where">Где: ${escapeHtml(n.place)}</p>` : ''}
+        </details></li>`;
+    };
+    slot.innerHTML = `<details class="story-accordion node-news"><summary>Новости · ${list.length}</summary>
+      <ol class="node-news-list">${list.map(item).join('')}</ol></details>`;
+  });
 }
 
 /* ПРАВИЛО (24.09.2026): эмодзи — это действие, форма маркера — это точка.

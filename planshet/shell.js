@@ -1,8 +1,7 @@
-import {C,el,MAP_SVG,load,fontLink,chipList,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=32';
-import {inChip} from './filters.js?v=32';
-import {createHistory} from './history.js?v=32';
-import {sectionMenu,toggleSection,currentSection} from './home.js?v=32';
-const FILTER_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.4V19l-3.6-1.8v-4.8z"/></svg>';
+import {C,el,MAP_SVG,storyFilterButton,filterName,load,fontLink,chipList,chipLabel,FILTER_SVG,searchAll,mentionsOf,row,rows,KIND,viewKind} from './common.js?v=40';
+import {inChip} from './filters.js?v=40';
+import {createHistory} from './history.js?v=40';
+import {sectionMenu,toggleSection,currentSection} from './home.js?v=40';
 const HELP_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.5"/><circle class="dot" cx="12" cy="16.8" r=".6"/></svg>';
 const LENS = '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
 
@@ -116,13 +115,9 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
   const icon = svg => { const n = el('span', {class: 'p-mini-icon', 'aria-hidden': 'true'}); n.innerHTML = svg; return n; };
   // Фильтр по сюжету — выпадающий список (v=230). Видна подпись выбранного, сам <select> — прозрачный поверх кнопки.
   function storySelect() {
-    const list = chipList();
-    const sel = el('select', {'aria-label': 'Сюжет', onchange() { setFilter(sel.value, state.kind); renderMenu(); }},
-      list.map(([id, label]) => el('option', {value: id}, id === 'all' ? 'Все сюжеты' : label)));
-    sel.value = state.chip;
+    // v=258: список — общий с фильтром новостей (storyOptions: идущие, потом «Архив»); выбранный — цветом сюжета.
     // Подпись — одно слово (v=232, владелец): «Фильтры», а выбран сюжет — его название (не влезло — «…»).
-    const label = state.chip === 'all' ? 'Фильтры' : list.find(c => c[0] === state.chip)?.[1] || 'Фильтры';
-    return el('label', {class: 'p-mini p-select'}, icon(FILTER_SVG), el('span', {}, label), sel);
+    return storyFilterButton('p-mini p-select', state.chip, v => setFilter(v, state.kind), [icon(FILTER_SVG), filterName(state.chip, 'Фильтры')]);
   }
   // Схема корабля (до v=227 — своя кнопка на панели, теперь путь к ней через шторку).
   function shipButton() {
@@ -216,8 +211,11 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
 
   // Фильтр по сюжету (шторка) и раздел (плитки): влияет и на ленту, и на поиск.
   function setFilter(chip, kind) {
+    const scroll = root.scrollTop, sameSection = state.kind === kind;
     state.chip = chip; state.kind = kind;
     if (isSearchOpen()) renderResults(); else renderMain(main, state, open);
+    if (sameSection) root.scrollTo(0, scroll);
+    if (isMenuOpen()) renderMenu();
     onChange();
   }
   state.setFilter = setFilter;
@@ -231,7 +229,7 @@ export function makeShell({root, renderMain, onChange = () => {}, onHelp, onTour
   }
   // Где ищем: везде или в сюжете из шторки (и как вернуть «везде»).
   function scopeLine(found, total) {
-    const story = state.chip !== 'all' ? chipList().find(c => c[0] === state.chip)?.[1] : '';
+    const story = state.chip !== 'all' ? chipLabel(state.chip) : '';
     const count = found == null ? '' : `: найдено ${found}${story && total > found ? ` из ${total}` : ''}`;
     return el('p', {class: 'p-scope'}, story ? `Ищу в сюжете «${story}»${count}. ` : `Ищу везде${count}`,
       story ? el('button', {onclick: () => setFilter('all', state.kind)}, 'Искать везде') : null);

@@ -1,10 +1,14 @@
-import { articleText, linkText, search } from '../js/linker.js?v=256';
-import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=32';
+import { articleText, linkText, search } from '../js/linker.js?v=261';
+import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=40';
+import {openPicker, closePicker} from './picker.js?v=40';
+// «Назад» (BackButton Telegram, браузер) сначала закрывает открытый список — js/navigation.js closeTop.
+window.__planshetClosePicker = closePicker;
 export { C, load, viewKind, pointModules, alsoIn };
 export const BASE = new URL('../', import.meta.url).href;
 export const truth = v => v === true || /^(true|1)$/i.test(String(v ?? ''));
 export const KIND = {world: 'Маркер', system: 'Система', zone: 'Район', story: 'Сюжет', place: 'Маркер', building: 'Здание', character: 'Персонаж', article: 'Статья', news: 'Новость'};
-const SHORT = {'kreyser-gorizont': 'Горизонт'};
+// Короткие имена, которых нет в данных: «О. Гил'ви» все зовут Спиритом (владелец 07.11).
+const SHORT = {'kreyser-gorizont': 'Горизонт', gilvi: 'Спирит'};
 const ORDER = ['story-1', 'kreyser-gorizont', 'story-2'];
 export const ARCHIVE = 'arch-characters';
 export const EPOCHS = 'lore/epochs';
@@ -117,25 +121,54 @@ export function pickedStories(chip) {
   return all.filter(s => s.id === chip);
 }
 export const chipList = () => [['all', 'Всё'], ...stories().filter(s => !truth(C.raw[s.id]?.completed)).map(s => [s.id, shortOf(s.id)]), ['archive', 'Архив']];
+/* Цвет сюжета — поле color в world.json (v=258, владелец): им же кольцо маркера на карте, полоска новости, ободок
+   карточки сюжета, точка и название в фильтре. Сводки «Говорят в мире» — свой красный (--said), не цвет сюжета. */
+export const storyColor = id => C.raw[id]?.color || '';
+/* Список фильтра по сюжету — ОДИН для шторки и новостей (v=258, владелец: «одна и та же кнопка по смыслу»): все →
+   идущие → отдельной группой «Архив» (весь архив и завершённые по одному) — последним. */
+export function storyOptions() {
+  const done = s => truth(C.raw[s.id]?.completed);
+  const opt = (s, extra) => ({id: s.id, label: shortOf(s.id), color: storyColor(s.id), ...extra});
+  return [{id: 'all', label: 'Все сюжеты'},
+    ...stories().filter(s => !done(s)).map(s => opt(s, C.raw[s.id]?.recruit ? {note: 'набор открыт'} : {})),
+    {id: 'archive', label: 'Весь архив', group: 'Архив'},
+    ...stories().filter(done).map(s => opt(s, {group: 'Архив'}))];
+}
+/* Кнопка фильтра по сюжету — свой список (planshet/picker.js, Codex 07.11; системный <select> «не подходит по стилистике»,
+   владелец): цвета сюжетов, группа «Архив» последней. Один и тот же в шторке и в новостях. */
+export function storyFilterButton(cls, value, onChange, children, ariaLabel = 'Сюжет') {
+  const btn = el('button', {class: cls, type: 'button', 'aria-haspopup': 'listbox', 'aria-expanded': 'false', 'aria-label': ariaLabel,
+    onclick() { openPicker(btn, {title: 'Сюжет', value, options: storyOptions(), onChange}); }}, children);
+  return btn;
+}
+// Подпись выбранного в кнопке фильтра — цветом сюжета, с точкой.
+export function filterName(chip, allText, cls = '') {
+  const o = storyOptions().find(x => x.id === chip);
+  const c = o?.color || '';
+  return el('span', {class: cls, style: c ? `color:${c}` : null},
+    c ? el('i', {class: 'f-dot', style: `background:${c}`, 'aria-hidden': 'true'}) : null,
+    chip === 'all' ? allText : (o?.label || chipLabel(chip)));
+}
+export const chipLabel = chip => chipList().find(([id]) => id === chip)?.[1] || shortOf(chip);
+export const FILTER_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6.2 7.4V19l-3.6-1.8v-4.8z"/></svg>';
 export function newsFor(chip) {
   const items = C.news.items || [];
   if (chip === 'all') return items;
-  if (chip === 'archive') return items.filter(n => truth(C.raw[n.story]?.completed));
+  if (chip === 'archive') return items.filter(n => n.archived || truth(C.raw[n.story]?.completed));
   return items.filter(n => n.story === chip);
 }
-export const newsMeta = n => n.voice === 'said' ? `Говорят в мире: ${(n.source || 'слух').toLowerCase()}` : `${shortOf(n.story)}, посты: ${n.posts}`;
-export const lede = n => n.happened.split(/(?<=[.!?])\s/)[0];
-// Тело новости (что было / зачем / что теперь / пометки / лица).
+// Строка над новостью: сюжет (или источник для «говорят в мире») · месяцы публикации постов (notes/news-style.md).
+export const newsMeta = n => [n.voice === 'said' ? `Говорят в мире: ${(n.source || 'слух').toLowerCase()}` : n.chapter || (n.story ? shortOf(n.story) : 'История Фенома'), n.posts].filter(Boolean).join(' · ');
+// Текст новости: `text` — абзацы через пустую строку; старые записи — happened/why/now.
+export const newsParas = n => n.text ? n.text.split(/\n\s*\n/).map(s => s.trim()).filter(Boolean) : [n.happened, n.why, n.now].filter(Boolean);
+export const lede = n => (newsParas(n)[0] || '').split(/(?<=[.!?])\s/)[0];
+// Тело новости: абзацы, место, время мира, лица.
 export function newsBody(n, open) {
   const ctx = {self: n.id, seen: new Set(), open};
   return [
-    para(n.happened, ctx),
-    n.why ? para(n.why, ctx, 'Зачем') : null,
-    n.now ? para(n.now, ctx, n.nowLabel || 'Что теперь') : null,
+    ...newsParas(n).map(t => para(t, ctx)),
     n.place ? el('p', {class: 'news-where'}, `Где: ${n.place}`) : null,
     n.world ? el('p', {class: 'news-where'}, `Когда в мире: ${n.world}`) : null,
-    n.status === 'claim' ? el('p', {class: 'status-note'}, 'Это слова персонажей, а не установленный факт.') : null,
-    n.status === 'last-seen' ? el('p', {class: 'status-note'}, 'Так было в последний раз, когда это место появлялось в постах. Сейчас может быть иначе.') : null,
     faces((n.people || []).map(id => C.byId.get(id)).filter(Boolean), open, 'cast'),
   ];
 }
@@ -146,7 +179,8 @@ export function newsItem(n, open, expanded = false) {
     const o = head.getAttribute('aria-expanded') !== 'true';
     head.setAttribute('aria-expanded', String(o)); body.hidden = !o;
   }}, el('span', {class: 'news-title'}, n.title), el('span', {class: 'news-meta'}, newsMeta(n)), el('span', {class: 'news-lede'}, lede(n)));
-  return el('li', {class: `news-item ${n.voice}`}, head, body);
+  const c = n.voice !== 'said' && storyColor(n.story);
+  return el('li', {class: `news-item ${n.voice}`, style: c ? `--news-c:${c}` : null}, head, body);
 }
 
 /* ---------- списки ---------- */
@@ -154,7 +188,7 @@ export const places = () => C.records.filter(r => viewKind(r) === 'place');
 export const buildings = () => C.records.filter(r => viewKind(r) === 'building');
 export const articles = () => C.records.filter(r => viewKind(r) === 'article');
 export function face(r, open) {
-  return el('button', {class: 'face', onclick: () => open(r.id)}, img(r.image, r.title), el('span', {}, r.title.split(/\s+/)[0]));
+  return el('button', {class: 'face', onclick: () => open(r.id)}, img(r.image, r.title), el('span', {}, SHORT[r.id] || C.raw[r.id]?.shortTitle || r.title.replace(/^(?:\p{L}\.\s*)+/u, '').split(/\s+/)[0]));
 }
 export const faces = (rs, open, cls = 'faces') => rs.length ? el('div', {class: cls}, rs.map(r => face(r, open))) : null;
 export function row(r, sub, open) {
@@ -202,9 +236,10 @@ export const mapLink = r => r.mapTargets?.length ? el('a',{class:'onmap',href:BA
 export function cardSections(r,open) {
  const p=C.raw[r.id]||{}, b=C.news.briefs?.[r.id], ctx={self:r.id,seen:new Set(),open}, out=[];
  if(b) {out.push({title:'Коротко',body:para(b.summary,ctx)});
-  out.push({title:'Где идёт игра сейчас',body:el('ul',{},(b.playing||[]).map(x=>el('li',{},el('strong',{},x.place),' — ',linked(x.text,r.id,ctx.seen,open))))});
-  out.push({title:'Что известно',body:el('ol',{},(b.known||[]).map(t=>el('li',{},linked(t,r.id,ctx.seen,open))))});
-  out.push({title:'Опасности',body:el('ol',{},(b.dangers||[]).map(t=>el('li',{},linked(t,r.id,ctx.seen,open))))});
+  // пустые разделы сводки не показываем (у завершённых сюжетов нет «Где идёт игра»)
+  if(b.playing?.length)out.push({title:'Где идёт игра сейчас',body:el('ul',{},b.playing.map(x=>el('li',{},el('strong',{},x.place),' — ',linked(x.text,r.id,ctx.seen,open))))});
+  if(b.known?.length)out.push({title:'Что известно',body:el('ol',{},b.known.map(t=>el('li',{},linked(t,r.id,ctx.seen,open))))});
+  if(b.dangers?.length)out.push({title:'Опасности',body:el('ol',{},b.dangers.map(t=>el('li',{},linked(t,r.id,ctx.seen,open))))});
  }else if(p.description)out.push({title:'Коротко',body:p.description.split(/\n+/).map(t=>para(t,ctx))});
  if(p.recruit&&!truth(p.completed))out.push({title:'Набор',body:para(p.recruit,ctx)});
  return out;

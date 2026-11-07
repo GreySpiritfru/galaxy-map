@@ -1,4 +1,4 @@
-import {C, el, BASE, firstImage, viewKind, newsFor, newsItem, plural} from './common.js?v=32';
+import {C, el, BASE, firstImage, viewKind, newsFor, newsItem, plural, FILTER_SVG, storyFilterButton, filterName} from './common.js?v=40';
 
 export function artOf(r) {
   if (!r) return '';
@@ -15,11 +15,19 @@ export function elTile(r, open, sub = '', cls = '', onclick = () => open(r.id)) 
 }
 export function newsNow(state, open, n = 5) {
   const ns = newsFor(state.chip);
+  // v=258 (владелец): фильтр — тот же список, что в шторке (storyOptions), и внутри полосы «Ещё N событий ранее» справа.
+  const icon = el('span', {class: 'p-mini-icon', 'aria-hidden': 'true'});
+  icon.innerHTML = FILTER_SVG;
+  const filter = storyFilterButton(`news-filter${state.chip === 'all' ? '' : ' selected'}`, state.chip, v => {
+    state.setFilter(v, state.kind);
+    document.querySelector('#planshet .news-filter')?.focus({preventScroll: true});
+  }, [icon, filterName(state.chip, 'Все', 'news-filter-name')], 'Фильтр событий по сюжету');
   return el('section', {class: 'now'},
     el('div', {class: 'now-head'}, el('h2', {}, 'Что сейчас происходит'), el('span', {}, 'События мира')),
     ns.length ? el('ol', {class: 'news'}, ns.slice(0, n).map(x => newsItem(x, open))) : el('p', {class: 'empty'}, 'Новостей по этому сюжету пока нет.'),
-    ns.length > n ? el('details', {class: 'drop older', 'data-state-key': 'news-older'}, el('summary', {}, el('span', {class: 'more'}, `Ещё ${ns.length - n} ${plural(ns.length - n, 'событие', 'события', 'событий')}, раньше`), el('span', {class: 'less'}, 'Свернуть')),
-      el('ol', {class: 'news'}, ns.slice(n).map(x => newsItem(x, open)))) : null);
+    el('div', {class: `news-controls${ns.length > n ? '' : ' solo'}`},
+      ns.length > n ? el('details', {class: 'drop older', 'data-state-key': 'news-older'}, el('summary', {}, el('span', {class: 'more'}, `Ещё ${ns.length - n} ${plural(ns.length - n, 'событие', 'события', 'событий')} ранее`), el('span', {class: 'less'}, 'Свернуть')),
+        el('ol', {class: 'news'}, ns.slice(n).map(x => newsItem(x, open)))) : null, filter));
 }
 // Все районы схемы (v=250: раньше — только те, где есть здания; 4 района пропадали), в порядке ship/records.json.
 export function zones() {

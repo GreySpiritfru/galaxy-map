@@ -1,6 +1,6 @@
-import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,MAP_SVG,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=32';
-import {inChip} from './filters.js?v=32';
-import {newsNow,elTile,zones,artOf,bg} from './start.js?v=32';
+import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,MAP_SVG,storyColor,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=40';
+import {inChip} from './filters.js?v=40';
+import {newsNow,elTile,zones,artOf,bg} from './start.js?v=40';
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.7,.2,1)';
 // Выдвинуть/задвинуть: высота коробки плавно идёт от старого содержимого к новому.
@@ -183,21 +183,20 @@ function storyAcc(r, open) {
     slide(slot, on ? el('div', {class: 'acc-body'}, parts) : []);
   });
   head.setAttribute('aria-expanded', 'false');
-  // v=250 (владелец): бирки «Идёт набор» на арте нет — «набор открыт» в подписи жёлтым; карточка в рамке — текст не
-  // прилипает к соседнему сюжету. v=252: на арте над названием — одна кнопка: слева «Открыть целиком», за белой чертой —
-  // значок карты (без подписи). Соседка плитки, не внутри неё: плитка — <button>, касание кнопки не раскрывает сюжет;
-  // место над названием — по замеру (название бывает в две строки).
-  const d = descOf(r);
+  // v=250 (владелец): карточка в рамке — текст не прилипает к соседнему сюжету. v=258: рамка — цветом сюжета
+  // (world.json color: им же новости и маркер на карте); на арте слева сверху — «вкладыш»: название и состояние («набор
+  // открыт» — жёлтым) — это и есть «открыть целиком», за белой чертой — значок карты; справа вкладыш растворяется в арт.
+  // Вкладыш — сосед плитки, не внутри неё (плитка — <button>): касание вкладыша не раскрывает сюжет; остальной арт —
+  // раскрывает, как раньше. Название и состояние внизу арта (elTile) скрыты — для чтеца остаются.
+  const d = descOf(r), c = storyColor(r.id);
   const pin = r.mapTargets?.length ? el('a', {class: 'acc-map', href: BASE + 'index.html?open=' + encodeURIComponent(r.id),
     'aria-label': `«${r.title}» на карте`, title: 'Показать на карте',
     onclick(e) { if (window.__mapShowOnMap) { e.preventDefault(); window.__mapShowOnMap(r.id); } }}) : null;
   if (pin) pin.innerHTML = MAP_SVG;
-  const bar = el('div', {class: 'acc-bar'}, el('button', {onclick: () => open(r.id)}, 'Открыть целиком'), pin);
-  const text = head.querySelector('.el-text');
-  const place = () => { bar.style.top = Math.max(8, head.offsetTop + text.offsetTop - bar.offsetHeight - 2) + 'px'; };
-  new ResizeObserver(place).observe(head);
-  new ResizeObserver(place).observe(text);
-  return el('div', {class: `acc${kind === 'recruit' ? ' recruit' : ''}`}, head, bar, d ? el('p', {class: 'acc-desc'}, d) : null, slot);
+  const tab = el('div', {class: 'acc-tab'},
+    el('button', {class: 'acc-open', 'aria-label': `Открыть «${r.title}» целиком`, onclick: () => open(r.id)},
+      el('span', {class: 'acc-name'}, r.title), el('span', {class: 'acc-st'}, st)), pin);
+  return el('div', {class: `acc${kind === 'recruit' ? ' recruit' : ''}`, style: c ? `--st:${c}` : null}, head, tab, d ? el('p', {class: 'acc-desc'}, d) : null, slot);
 }
 
 /* ---------- выпуск раздела ---------- */
@@ -249,7 +248,7 @@ const done = r => truth(C.raw[r.id]?.completed);
 
 function issue(kind, state, open, opts = {}) {
   const out = [];
-  const chipName = chipList().find(c => c[0] === state.chip)?.[1];
+  const chipName = chipList().find(c => c[0] === state.chip)?.[1] || shortOf(state.chip);
   if (state.chip !== 'all' && ['article', 'place', 'building'].includes(kind))
     out.push(el('p', {class: 'f-note'}, `Сюжет «${chipName}» здесь не действует — показано всё. `,
       el('button', {onclick: () => state.setFilter('all', kind)}, 'Сбросить')));

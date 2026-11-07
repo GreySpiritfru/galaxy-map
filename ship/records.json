@@ -99,8 +99,8 @@
     },
     {
       "id": "building:phenome:artifact-shop",
-      "sourceKey": "Лавка артефактов",
-      "name": "Лавка артефактов",
+      "sourceKey": "Лавка «Астральные прогнозы»",
+      "name": "Лавка «Астральные прогнозы»",
       "zone": "zone:phenome:new-development"
     },
     {

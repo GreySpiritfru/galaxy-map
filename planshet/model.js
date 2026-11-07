@@ -1,4 +1,4 @@
-import {articleText, buildAliases, mentions, buildSearchIndex} from '../js/linker.js?v=256';
+import {articleText, buildAliases, mentions, buildSearchIndex} from '../js/linker.js?v=261';
 
 export let C = null;
 let pending;
@@ -11,6 +11,9 @@ const unique = values => [...new Set(values.filter(Boolean))];
 const bare = url => String(url || '').split('#')[0].replace(/\/+$/, '');
 const docId = entry => entry.file.replace(/^articles\//, '').replace(/\.json$/, '');
 const truth = v => v === true || /^(true|1)$/i.test(String(v ?? ''));
+// Имена зданий, которые по тексту НЕ ссылаются: «Фронтир» — это и район («Фронтир» у трущоб держится),
+// «Foxhounds» — агентство Фокса («агент Foxhounds»), а не тату-салон.
+const BUILDING_NO_LINK = new Set(['Фронтир', 'Foxhounds']);
 const finite = (x,y) => Number.isFinite(x) && Number.isFinite(y);
 export const viewKind = r => r?.kind === 'world' ? (r.flags.story ? 'story' : 'place') : r?.kind;
 
@@ -160,16 +163,19 @@ async function loadAll() {
     const zone=explicitZone||schemaZone,images=gallery(lore);
     if (!images.length&&original.file) images.push('ship/bld/'+original.file);
     raw[b.id]={...original,id:b.id,parent:zone?.id||null,draft:!!b.draft};
-    add({id:b.id,kind:'building',title:b.name,source:{type:'ship-building',key:b.sourceKey},parentId:zone?.id||null,
-      zone:zone?.name||'',zoneId:zone?.id||null,draft:!!b.draft,images,image:images[0]||'',text:lore.text||'',noLink:true,
+    // Ссылки по тексту (07.11.2026, владелец): здание с собственным именем в «…» ссылается по этому имени
+    // («Астральные прогнозы», «Дайс»). Общие названия («Ломбард», «Ратуша») — нет, иначе ссылкой станет любое слово.
+    const properName=(b.name.match(/«([^»]+)»/)||[])[1],linkName=properName&&/^\p{Lu}/u.test(properName)&&!BUILDING_NO_LINK.has(properName)?properName:'';
+    add({id:b.id,kind:'building',title:b.name,aliases:linkName?[linkName]:[],source:{type:'ship-building',key:b.sourceKey},parentId:zone?.id||null,
+      zone:zone?.name||'',zoneId:zone?.id||null,draft:!!b.draft,images,image:images[0]||'',text:lore.text||'',noLink:!linkName,
       content:{intro:lore.text||'',ownDocument:null,moduleRefs:[]},mapTargets:finite(original.x,original.y)?[{type:'ship',recordId:'phenome',buildingId:b.id,x:original.x,y:original.y}]:[]});
   }
   for (const n of list(news.items)) {
     const placeIds=unique([...list(n.places),relations.newsPlaces?.[n.id]]);
     raw[n.id]=n;
-    add({id:n.id,kind:'news',title:n.title,source:{type:'news',key:n.id},story:n.story||null,places:placeIds,people:list(n.people),
-      context:{storyId:n.story||null,placeIds,peopleIds:list(n.people)},summary:n.happened||'',text:[n.text,n.happened,n.why,n.now].filter(Boolean).join('\n'),
-      content:{intro:n.happened||'',ownDocument:null,moduleRefs:[]}});
+    add({id:n.id,kind:'news',title:n.title,source:{type:'news',key:n.id},story:n.story||null,archived:!!n.archived,places:placeIds,people:list(n.people),
+      context:{storyId:n.story||null,placeIds,peopleIds:list(n.people)},summary:(n.text||'').split(/\n\s*\n/)[0]||n.happened||'',text:[n.text,n.happened,n.why,n.now].filter(Boolean).join('\n'),
+      content:{intro:(n.text||'').split(/\n\s*\n/)[0]||n.happened||'',ownDocument:null,moduleRefs:[]}});
   }
   // Финальная регистрация закончена. Ниже только проекции и индексы; поздних add нет.
   const byId=new Map(records.map(r=>[r.id,r]));
