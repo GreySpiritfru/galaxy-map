@@ -1,0 +1,85 @@
+{
+ "v": 1,
+ "note": "Вики в Telegram: какие статьи лора бот выкладывает сообщениями и как делит на разделы (сервер: wiki_render.py). id — запись articles/index.json с own; split — сообщение на каждый заголовок этого уровня и выше; units — границы вручную (from — id блока статьи); без них статья идёт одним сообщением. Анкеты персонажей сюда не входят.",
+ "groups": [
+  {
+   "title": "Мир",
+   "articles": [
+    {
+     "id": "tt/greyspirit/toTVpow7sb1",
+     "title": "Описание галактики"
+    },
+    {
+     "id": "tt/greyspirit/y7G2E4B490h",
+     "split": "h3",
+     "intro": "О расах"
+    },
+    {
+     "id": "tt/greyspirit/SEOWfJxAewY",
+     "title": "Магический лор",
+     "units": [
+      {
+       "title": "История и школы магии"
+      },
+      {
+       "from": "PxX6"
+      },
+      {
+       "from": "vK7C"
+      },
+      {
+       "from": "rvSS"
+      },
+      {
+       "from": "e5M4"
+      }
+     ]
+    },
+    {
+     "id": "tt/greyspirit/gf7sBYkW_di",
+     "title": "Технологии и экономика",
+     "units": [
+      {
+       "title": "Экономика"
+      },
+      {
+       "from": "DMDz"
+      }
+     ]
+    },
+    {
+     "id": "tt/greyspirit/4tRzyNaVfEQ",
+     "title": "Районы Фенома",
+     "units": [
+      {
+       "title": "1. Передняя оболочка"
+      },
+      {
+       "from": "zzhw"
+      },
+      {
+       "from": "76Qo"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "title": "Сюжеты",
+   "articles": [
+    {
+     "id": "own/bezdna"
+    },
+    {
+     "id": "own/gux71"
+    },
+    {
+     "id": "own/kartograf"
+    },
+    {
+     "id": "own/pustynya"
+    }
+   ]
+  }
+ ]
+}
