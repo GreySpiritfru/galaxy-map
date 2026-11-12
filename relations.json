@@ -127,6 +127,141 @@
       "moduleId": "phenome-rear",
       "mode": "embed",
       "order": 30
+    },
+    {
+      "id": "r-korporatsiya-kartograf-kartograf-ad",
+      "type": "material",
+      "from": "korporatsiya-kartograf",
+      "to": "own/kartograf",
+      "moduleId": "kartograf-ad",
+      "mode": "embed",
+      "order": 10
+    },
+    {
+      "id": "r-korporatsiya-kartograf-gux71-expedition",
+      "type": "material",
+      "from": "korporatsiya-kartograf",
+      "to": "own/gux71",
+      "moduleId": "gux71-expedition",
+      "mode": "embed",
+      "order": 20
+    },
+    {
+      "id": "r-story-2-bezdna-what",
+      "type": "material",
+      "from": "story-2",
+      "to": "own/bezdna",
+      "moduleId": "bezdna-what",
+      "mode": "embed",
+      "order": 10
+    },
+    {
+      "id": "r-story-2-bezdna-levels",
+      "type": "material",
+      "from": "story-2",
+      "to": "own/bezdna",
+      "moduleId": "bezdna-levels",
+      "mode": "embed",
+      "order": 20
+    },
+    {
+      "id": "r-story-2-bezdna-stations",
+      "type": "material",
+      "from": "story-2",
+      "to": "own/bezdna",
+      "moduleId": "bezdna-stations",
+      "mode": "embed",
+      "order": 30
+    },
+    {
+      "id": "r-story-2-bezdna-survival",
+      "type": "material",
+      "from": "story-2",
+      "to": "own/bezdna",
+      "moduleId": "bezdna-survival",
+      "mode": "embed",
+      "order": 40
+    },
+    {
+      "id": "r-story-2-bezdna-mrak",
+      "type": "material",
+      "from": "story-2",
+      "to": "own/bezdna",
+      "moduleId": "bezdna-mrak",
+      "mode": "embed",
+      "order": 50
+    },
+    {
+      "id": "r-story-k3-gux71-about",
+      "type": "material",
+      "from": "story-k3",
+      "to": "own/gux71",
+      "moduleId": "gux71-about",
+      "mode": "embed",
+      "order": 10
+    },
+    {
+      "id": "r-story-k3-gux71-features",
+      "type": "material",
+      "from": "story-k3",
+      "to": "own/gux71",
+      "moduleId": "gux71-features",
+      "mode": "embed",
+      "order": 20
+    },
+    {
+      "id": "r-story-k3-gux71-labs",
+      "type": "material",
+      "from": "story-k3",
+      "to": "own/gux71",
+      "moduleId": "gux71-labs",
+      "mode": "embed",
+      "order": 30
+    },
+    {
+      "id": "r-story-k3-gux71-platform",
+      "type": "material",
+      "from": "story-k3",
+      "to": "own/gux71",
+      "moduleId": "gux71-platform",
+      "mode": "embed",
+      "order": 40
+    },
+    {
+      "id": "r-story-k3-gux71-dangers",
+      "type": "material",
+      "from": "story-k3",
+      "to": "own/gux71",
+      "moduleId": "gux71-dangers",
+      "mode": "embed",
+      "order": 50
+    },
+    {
+      "id": "r-kreyser-gorizont-gux71-gear",
+      "type": "material",
+      "from": "kreyser-gorizont",
+      "to": "own/gux71",
+      "moduleId": "gux71-gear",
+      "mode": "embed",
+      "order": 10
+    },
+    {
+      "id": "r-terrane-terrane-today",
+      "type": "material",
+      "from": "terrane",
+      "to": "tt/greyspirit/y7G2E4B490h",
+      "moduleId": "terrane-today",
+      "mode": "embed",
+      "order": 30
+    },
+    {
+      "id": "r-story-pustynya-pustynya-places",
+      "type": "material",
+      "from": "story-pustynya",
+      "to": "own/pustynya",
+      "moduleId": "pustynya-places",
+      "mode": "embed",
+      "order": 10
     }
   ]
 }

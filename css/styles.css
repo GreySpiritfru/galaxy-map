@@ -3901,7 +3901,7 @@ mark.find-hit.find-cur { animation: findFlash 2.2s ease-out; }
 @media (hover: hover) { .node-recruit-btn:hover { background: rgba(255,255,255,0.13); } }
 .node-recruit-close { top: 2px; right: 2px; width: 48px; height: 48px; display: grid; place-items: center; }
 
-/* ===== v=261: новости записи в окне (node-window.js fillNews) — свёрнутый блок до описания, вид — как лента «Нод». ===== */
+/* ===== v=262: новости записи в окне (node-window.js fillNews) — свёрнутый блок до описания, вид — как лента «Нод». ===== */
 .node-news-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .node-news-item { border-left: 3px solid var(--news-c, #ffd76a); background: rgba(255,255,255,0.04); border-radius: 0 10px 10px 0; }
 .node-news-item.said { border-left-color: #ff9a9a; }

@@ -13,6 +13,18 @@
     },
     "tt/greyspirit/4tRzyNaVfEQ": {
       "url": "https://teletype.in/@greyspirit/4tRzyNaVfEQ"
+    },
+    "own/kartograf": {
+      "url": "https://greyspiritfru.github.io/galaxy-map/articles/own/kartograf"
+    },
+    "own/bezdna": {
+      "url": "https://greyspiritfru.github.io/galaxy-map/articles/own/bezdna"
+    },
+    "own/gux71": {
+      "url": "https://greyspiritfru.github.io/galaxy-map/articles/own/gux71"
+    },
+    "own/pustynya": {
+      "url": "https://greyspiritfru.github.io/galaxy-map/articles/own/pustynya"
     }
   },
   "modules": {
@@ -155,6 +167,156 @@
         "to": "khTl"
       },
       "order": 30
+    },
+    "kartograf-ad": {
+      "articleId": "own/kartograf",
+      "title": "Объявление в галанете",
+      "selector": {
+        "type": "sibling-range",
+        "from": "ad",
+        "to": "ad-4"
+      },
+      "order": 10
+    },
+    "gux71-expedition": {
+      "articleId": "own/gux71",
+      "title": "Экспедиция",
+      "selector": {
+        "type": "sibling-range",
+        "from": "expedition",
+        "to": "expedition-2"
+      },
+      "order": 20
+    },
+    "bezdna-what": {
+      "articleId": "own/bezdna",
+      "title": "Что такое Бездна",
+      "selector": {
+        "type": "sibling-range",
+        "from": "what",
+        "to": "what-3"
+      },
+      "order": 10
+    },
+    "bezdna-levels": {
+      "articleId": "own/bezdna",
+      "title": "Уровни Бездны",
+      "selector": {
+        "type": "sibling-range",
+        "from": "levels",
+        "to": "levels-5"
+      },
+      "order": 20
+    },
+    "bezdna-stations": {
+      "articleId": "own/bezdna",
+      "title": "Станции",
+      "selector": {
+        "type": "sibling-range",
+        "from": "stations",
+        "to": "stations-10"
+      },
+      "order": 30
+    },
+    "bezdna-survival": {
+      "articleId": "own/bezdna",
+      "title": "Условия выживания",
+      "selector": {
+        "type": "sibling-range",
+        "from": "survival",
+        "to": "survival-5"
+      },
+      "order": 40
+    },
+    "bezdna-mrak": {
+      "articleId": "own/bezdna",
+      "title": "Мракожоры",
+      "selector": {
+        "type": "sibling-range",
+        "from": "mrak",
+        "to": "mrak-4"
+      },
+      "order": 50
+    },
+    "gux71-about": {
+      "articleId": "own/gux71",
+      "title": "О гигаструктуре",
+      "selector": {
+        "type": "sibling-range",
+        "from": "about",
+        "to": "about-3"
+      },
+      "order": 10
+    },
+    "gux71-features": {
+      "articleId": "own/gux71",
+      "title": "Известные особенности",
+      "selector": {
+        "type": "sibling-range",
+        "from": "features",
+        "to": "features-1"
+      },
+      "order": 20
+    },
+    "gux71-labs": {
+      "articleId": "own/gux71",
+      "title": "Лаборатории",
+      "selector": {
+        "type": "sibling-range",
+        "from": "labs",
+        "to": "labs-4"
+      },
+      "order": 30
+    },
+    "gux71-platform": {
+      "articleId": "own/gux71",
+      "title": "Внешняя платформа",
+      "selector": {
+        "type": "sibling-range",
+        "from": "platform",
+        "to": "platform-1"
+      },
+      "order": 40
+    },
+    "gux71-dangers": {
+      "articleId": "own/gux71",
+      "title": "Опасности",
+      "selector": {
+        "type": "sibling-range",
+        "from": "dangers",
+        "to": "dangers-3"
+      },
+      "order": 50
+    },
+    "gux71-gear": {
+      "articleId": "own/gux71",
+      "title": "Снаряжение",
+      "selector": {
+        "type": "sibling-range",
+        "from": "gear",
+        "to": "gear-3"
+      },
+      "order": 10
+    },
+    "terrane-today": {
+      "articleId": "tt/greyspirit/y7G2E4B490h",
+      "title": "Терране",
+      "selector": {
+        "type": "sibling-range",
+        "from": "ter-today-1",
+        "to": "ter-today-3"
+      },
+      "order": 30
+    },
+    "pustynya-places": {
+      "articleId": "own/pustynya",
+      "title": "Места",
+      "selector": {
+        "type": "sibling-range",
+        "from": "places",
+        "to": "places-3"
+      },
+      "order": 10
     }
   }
 }

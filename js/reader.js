@@ -16,9 +16,9 @@
    (articles/img/<хеш>.webp).
    ============================================================ */
 
-import { fetchT } from './net.js?v=261';
-import { resolveModule } from './records.js?v=261';
-import { wireImageGallery } from './viewer.js?v=261';
+import { fetchT } from './net.js?v=262';
+import { resolveModule } from './records.js?v=262';
+import { wireImageGallery } from './viewer.js?v=262';
 
 const INDEX_URL = 'articles/index.json';
 const ANCHOR_RE = /^[A-Za-z0-9_-]{1,40}$/;
@@ -74,7 +74,8 @@ const docs = new Map();
 function loadDoc(entry) {
   // Файл копии — только из articles/ (v=202, укрепление: адрес берётся из
   // index.json, а грузить чужой адрес незачем); свои статьи — из lore/.
-  if (typeof entry.file !== 'string' || !/^(articles\/(tt|tg)\/[\w.@\/-]+|lore\/[\w-]+)\.json$/.test(entry.file) || entry.file.includes('..')) {
+  // articles/own/ — свои статьи карты (12.11.2026): тот же формат и индекс, запись с own: true, бот их не сверяет.
+  if (typeof entry.file !== 'string' || !/^(articles\/(tt|tg|own)\/[\w.@\/-]+|lore\/[\w-]+)\.json$/.test(entry.file) || entry.file.includes('..')) {
     return Promise.reject(new Error('bad file'));
   }
   const src = `${entry.file}?h=${encodeURIComponent(entry.hash || '')}`;
@@ -246,8 +247,9 @@ export async function renderMirror(url, scroller) {
   const foot = document.createElement('p');
   foot.className = 'mirror-source';
   const when = dateRu(doc.updated || entry.updated);
-  foot.textContent = when ? `Копия от ${when} · ` : 'Копия · ';
-  const src = safeHref(doc.source);
+  // Своя статья (articles/own/) — оригинал здесь же: без «Копия … · оригинал», только дата правки.
+  foot.textContent = entry.own ? (when ? `Обновлено ${when}` : '') : when ? `Копия от ${when} · ` : 'Копия · ';
+  const src = entry.own ? '' : safeHref(doc.source);
   if (src) {
     // Именно на сайт автора, а не в нашу же копию.
     const orig = linkEl(src, 'оригинал ↗');

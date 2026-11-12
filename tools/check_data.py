@@ -121,6 +121,21 @@ for mid, m in mods["modules"].items():
     if reason:
         err(f"модуль {mid}: {reason}")
 
+# Свои статьи (articles/own/, own: true): файл и картинки на месте, статья записана в sources (или в справочнике js/articles.js) —
+# иначе команда бота «убрать лишние статьи» сочтёт её копией без источника и удалит.
+source_urls = {normalize_url(s.get("url", "")) for s in mods.get("sources", {}).values()}
+source_urls |= {normalize_url(u) for u in re.findall(r"https://teletype\.in/@[\w.-]+/[\w-]+", (ROOT / "js/articles.js").read_text("utf-8"))}
+for url, entry in index.items():
+    if not entry.get("own"):
+        continue
+    if not (ROOT / entry["file"]).is_file():
+        err(f"своя статья {url}: нет файла {entry['file']}")
+    if url not in source_urls:
+        err(f"своя статья {url}: нет ни в modules.json sources, ни в js/articles.js — бот может её убрать")
+    for img in entry.get("images", []):
+        if not (ROOT / img).is_file():
+            err(f"своя статья {url}: нет картинки {img}")
+
 rel = load("relations.json")
 ids = set()
 for r in rel["items"]:

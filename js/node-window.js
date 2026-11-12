@@ -15,13 +15,13 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=261';
-import { REF_ARTICLES } from './articles.js?v=261';
-import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=261';
-import { renderSheetCard } from './sheet-card.js?v=261';
-import { wireImageGallery } from './viewer.js?v=261';
-import { frameHtml, safeHttps } from './net.js?v=261';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=261';
+import { escapeHtml } from './modal.js?v=262';
+import { REF_ARTICLES } from './articles.js?v=262';
+import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=262';
+import { renderSheetCard } from './sheet-card.js?v=262';
+import { wireImageGallery } from './viewer.js?v=262';
+import { frameHtml, safeHttps } from './net.js?v=262';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=262';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */
@@ -629,7 +629,7 @@ function descriptionHtml(view) {
   `;
 }
 
-/* Новости записи (v=261, владелец 07.11 — через сессию новостей): во всех окнах маркеров (Феном, сюжеты, места, районы
+/* Новости записи (v=262, владелец 07.11 — через сессию новостей): во всех окнах маркеров (Феном, сюжеты, места, районы
    и здания схемы) — свёрнутый блок «Новости · N» в начале окна, до описания. Связь с записью: сюжет новости (story),
    места и здания (places), персонажи (people); у места — ещё новости сюжетов, которые идут в нём (parent в world.json),
    у района — новости его зданий (zone в ship/records.json). Нет связанных — блока нет. Данные — свои fetch (браузер их

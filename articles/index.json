@@ -10,6 +10,52 @@
    "title": "Найто Афетович",
    "updated": "2026-09-30"
   },
+  "https://greyspiritfru.github.io/galaxy-map/articles/own/bezdna": {
+   "file": "articles/own/bezdna.json",
+   "hash": "90bc45807706dfc3",
+   "images": [
+    "articles/img/266793c9fba7a2e9.webp",
+    "articles/img/9a00be100abcac56.webp",
+    "articles/img/e459e2736cfef8e1.webp"
+   ],
+   "own": true,
+   "title": "Бездна",
+   "updated": "2026-11-12"
+  },
+  "https://greyspiritfru.github.io/galaxy-map/articles/own/gux71": {
+   "file": "articles/own/gux71.json",
+   "hash": "883b1b1f91693629",
+   "images": [
+    "articles/img/3000a42e5ce4daba.webp",
+    "articles/img/3523285f57ea744f.webp",
+    "articles/img/4bf5b281b2f285d8.webp",
+    "articles/img/d129f78693fe7b63.webp",
+    "articles/img/d4ab75a82066eeb3.webp"
+   ],
+   "own": true,
+   "title": "Гигаструктура G-UX71",
+   "updated": "2026-11-12"
+  },
+  "https://greyspiritfru.github.io/galaxy-map/articles/own/kartograf": {
+   "file": "articles/own/kartograf.json",
+   "hash": "6313fdf1d9298a00",
+   "images": [],
+   "own": true,
+   "title": "Корпорация «Картограф»",
+   "updated": "2026-11-12"
+  },
+  "https://greyspiritfru.github.io/galaxy-map/articles/own/pustynya": {
+   "file": "articles/own/pustynya.json",
+   "hash": "f68da52bb1df93c4",
+   "images": [
+    "articles/img/2f64325f83991516.webp",
+    "articles/img/3f843b2cc4c40ea8.webp",
+    "articles/img/9624bfe99c093a9d.webp"
+   ],
+   "own": true,
+   "title": "Пустынная планета",
+   "updated": "2026-11-12"
+  },
   "https://telegra.ph/Lira-Vetrogran-06-18": {
    "file": "articles/tg/Lira-Vetrogran-06-18.json",
    "frozen": true,
@@ -121,6 +167,7 @@
   },
   "https://teletype.in/@greyspirit/4tRzyNaVfEQ": {
    "file": "articles/tt/greyspirit/4tRzyNaVfEQ.json",
+   "frozen": true,
    "hash": "5d1d7135bc1323a4",
    "images": [
     "articles/img/01951c8c8d0e43d5.webp",
@@ -136,6 +183,7 @@
     "articles/img/e64c1a66e9c23170.webp",
     "articles/img/ecd212dd999c8d07.webp"
    ],
+   "own": true,
    "title": "Районы Фенома (ред.)",
    "updated": "2026-09-30"
   },
@@ -178,6 +226,7 @@
   },
   "https://teletype.in/@greyspirit/SEOWfJxAewY": {
    "file": "articles/tt/greyspirit/SEOWfJxAewY.json",
+   "frozen": true,
    "hash": "e26b74ff87a993db",
    "images": [
     "articles/img/19e801c23e62d500.webp",
@@ -186,6 +235,7 @@
     "articles/img/bf0c806b8b74547f.webp",
     "articles/img/eb5badd0beeffd27.webp"
    ],
+   "own": true,
    "title": "Магический лор ЦМО “Феном”",
    "updated": "2026-10-25"
   },
@@ -211,11 +261,13 @@
   },
   "https://teletype.in/@greyspirit/gf7sBYkW_di": {
    "file": "articles/tt/greyspirit/gf7sBYkW_di.json",
+   "frozen": true,
    "hash": "82c7462b390bcb37",
    "images": [
     "articles/img/1a0333424b326721.webp",
     "articles/img/26ef6a612fd965df.webp"
    ],
+   "own": true,
    "title": "Технологии и экономика вселенной Фенома",
    "updated": "2026-09-30"
   },
@@ -261,12 +313,14 @@
   },
   "https://teletype.in/@greyspirit/toTVpow7sb1": {
    "file": "articles/tt/greyspirit/toTVpow7sb1.json",
+   "frozen": true,
    "hash": "fa962926468a5346",
    "images": [
     "articles/img/38c5d97b90360306.webp",
     "articles/img/8eb50cffa8644cba.webp",
     "articles/img/a9cc3ef599644363.webp"
    ],
+   "own": true,
    "title": "Описание галактики (ред.)",
    "updated": "2026-09-30"
   },
@@ -281,10 +335,12 @@
   },
   "https://teletype.in/@greyspirit/y7G2E4B490h": {
    "file": "articles/tt/greyspirit/y7G2E4B490h.json",
-   "hash": "6f8d37c195297124",
+   "frozen": true,
+   "hash": "b7b9bfbfc7482121",
    "images": [
     "articles/img/0263297aaa5e12cf.webp",
     "articles/img/06e8e31b27fd04c8.webp",
+    "articles/img/0fe5da64fba89ae7.webp",
     "articles/img/11849e20c7a3d22b.webp",
     "articles/img/1858a41bc8888d31.webp",
     "articles/img/1d36b94f0683b082.webp",
@@ -294,11 +350,13 @@
     "articles/img/495b98b74d56c3b6.webp",
     "articles/img/4ef8ca0ec0686ace.webp",
     "articles/img/522e4bc52b7e4f2f.webp",
+    "articles/img/529537e63bddc114.webp",
     "articles/img/5b03b857b2cd6115.webp",
     "articles/img/5b3d1ecb2b37e540.webp",
     "articles/img/64fa0faba2291c1a.webp",
     "articles/img/699f4a4ed72ac4d4.webp",
     "articles/img/6bafec58a0300a2a.webp",
+    "articles/img/739d386ece14eba5.webp",
     "articles/img/73b477c69071bf07.webp",
     "articles/img/75d225b5b7392485.webp",
     "articles/img/7a8df0e3ec1adbf5.webp",
@@ -308,6 +366,7 @@
     "articles/img/bdae536ac18f89c5.webp",
     "articles/img/c040461c891f64b0.webp",
     "articles/img/c17e79374b20a331.webp",
+    "articles/img/c1d80452964cd171.webp",
     "articles/img/c23f3d99ab4eb23a.webp",
     "articles/img/c764cdfb87cbb783.webp",
     "articles/img/c81e10662b58e0b9.webp",
@@ -325,8 +384,9 @@
     "articles/img/f934a289c8036803.webp",
     "articles/img/fba7b357b6809be9.webp"
    ],
+   "own": true,
    "title": "Расовая энциклопедия",
-   "updated": "2026-09-30"
+   "updated": "2026-11-12"
   },
   "https://teletype.in/@himeserath/cpHreWFSLuc": {
    "file": "articles/tt/himeserath/cpHreWFSLuc.json",

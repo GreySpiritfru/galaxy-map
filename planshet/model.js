@@ -1,4 +1,4 @@
-import {articleText, buildAliases, mentions, buildSearchIndex} from '../js/linker.js?v=261';
+import {articleText, buildAliases, mentions, buildSearchIndex} from '../js/linker.js?v=262';
 
 export let C = null;
 let pending;
@@ -80,6 +80,8 @@ async function loadAll() {
   /* Копии статей (v=226): сразу — только нужные для показа (статьи лора, источники модулей); анкеты и прочее нужны
      лишь поиску по тексту — догружаются в фоне после показа (C.full, ниже). До v=226 планшет ждал все ~32 файла. */
   const loreIds=['4tRzyNaVfEQ','y7G2E4B490h','SEOWfJxAewY','gf7sBYkW_di','toTVpow7sb1'].map(id=>'tt/greyspirit/'+id);
+  // Свои статьи карты (articles/own/, запись индекса с own: true; 12.11.2026) — тоже статьи лора.
+  for (const [,entry] of documentEntries) if (entry?.own && entry.file) loreIds.push(docId(entry));
   const needNow=new Set([...loreIds,...Object.values(moduleRegistry.modules||{}).map(m=>m.articleId)]);
   const loadDocs = entries => Promise.all(entries.map(async ([url,entry]) => {
     try { docs[docId(entry)] = await fetchDoc(entry); }
