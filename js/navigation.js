@@ -39,14 +39,14 @@
    + записи стопки; по ней, как и раньше, — History API, фокус и ✕/↩.
    Временные слои (Flappy, обучение, статья в модале) — по-прежнему по DOM.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=262';
-import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap, getOpenSystem } from './system-view.js?v=262';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=262';
-import { closeStory, isStoryOpen } from './stories.js?v=262';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=262';
-import { closeTour, isTourOpen } from './tour.js?v=262';
-import { isViewerOpen, closeViewer } from './viewer.js?v=262';
-import { planshetDepth, planshetBack } from './planshet.js?v=262';
+import { closeModal, isArticleOpen } from './modal.js?v=263';
+import { closeSystem, isSystemOpen, isSystemLoreOpen, showSystemMap, getOpenSystem } from './system-view.js?v=263';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=263';
+import { closeStory, isStoryOpen } from './stories.js?v=263';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=263';
+import { closeTour, isTourOpen } from './tour.js?v=263';
+import { isViewerOpen, closeViewer } from './viewer.js?v=263';
+import { planshetDepth, planshetBack } from './planshet.js?v=263';
 
 /* Мини-игра (js/flappy.js, v=195) — модуль грузится только по нажатию, поэтому
    отсюда его не импортируем: смотрим на класс слоя, закрываем событием. */

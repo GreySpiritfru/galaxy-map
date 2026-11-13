@@ -12,9 +12,9 @@
    показывает анкету целиком, как раньше.
    Текст — тем же белым списком, что статьи (js/reader.js build).
    ============================================================ */
-import { parseSheet, sheetImages, sheetText, SHEET_TEMPLATE, ZW } from './sheet-parser.js?v=262';
-import { build, wireLinks } from './reader.js?v=262';
-import { viewImages } from './viewer.js?v=262';
+import { parseSheet, sheetImages, sheetText, SHEET_TEMPLATE, ZW } from './sheet-parser.js?v=263';
+import { build, wireLinks } from './reader.js?v=263';
+import { viewImages } from './viewer.js?v=263';
 
 const LONG = 700;   // знаков в пункте — дальше свёрнуто
 const hasFigure = b => b && typeof b === 'object' && ['figure', 'img'].includes(b.t);

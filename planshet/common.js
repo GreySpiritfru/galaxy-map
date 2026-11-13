@@ -1,4 +1,4 @@
-import { articleText, linkText, search } from '../js/linker.js?v=262';
+import { articleText, linkText, search } from '../js/linker.js?v=263';
 import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=41';
 import {openPicker, closePicker} from './picker.js?v=41';
 // «Назад» (BackButton Telegram, браузер) сначала закрывает открытый список — js/navigation.js closeTop.

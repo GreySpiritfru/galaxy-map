@@ -1,10 +1,10 @@
 /* ============================================================
-   Редактор карты: персонажи — игрокам, сюжеты/локации/события — владельцу.
+   Редактор карты: персонажи и СВОИ маркеры — игрокам, все точки — владельцу.
 
    Как это устроено целиком (подробно — раздел «Редактор» в CLAUDE.md):
    - игрок пишет боту @phenome2_bot в личку «редактор»; бот проверяет, что он
      в группе, и присылает кнопку клавиатуры с картой по ссылке
-     `?edit=1&mine=<id персонажей через запятую>` (владельцу — `mine=*`);
+     `?edit=1&mine=<id персонажей и своих маркеров через запятую>` (владельцу — `mine=*`);
    - внизу карты кнопка «✏️ Мои персонажи» (у владельца «✏️ Редактор») —
      список всего, что можно править; в окне персонажа — вкладка «✏️ Правка»;
    - «Сохранить» отправляет изменения боту через Telegram.WebApp.sendData
@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=262';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=263';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -54,7 +54,7 @@ const FIELD_LABELS = {
     title: 'Название', shortTitle: 'Короткое название', code: 'Номер',
     articleUrl: 'Статья', color: 'Цвет',
     beacon: 'Маяк', completed: 'Статус', wide: 'Ширина маркера', pinned: 'Закреплено',
-    location: 'Локация', recruit: 'Набор',
+    story: 'Сюжет', location: 'Локация', alliance: 'Альянс', recruit: 'Набор', draft: 'Черновик игрока',
     parent: 'Привязка', links: 'Связи', x: 'Место на карте', y: 'Место на карте',
     systemX: 'Место в системе', systemY: 'Место в системе',
   },
@@ -69,8 +69,18 @@ export function canEdit(id) {
   return EDIT_MODE && (ALL || MINE.has(id));
 }
 
+// Владелец группы: все точки и все поля.
 export function canEditNodes() {
   return EDIT_MODE && ALL;
+}
+
+/* Маркеры игроков (13.11.2026): игрок с тегом создаёт маркер у бота («создать
+   маркер <Название>») и правит его здесь. Место и связи бот сохраняет сразу;
+   описание, арт и привязка копятся у бота черновиком и попадают на карту одной
+   пачкой после «Принять» владельца. Галочки, название, набор — только владелец. */
+function ownMarkers() {
+  if (!hooks || ALL) return [];
+  return [...MINE].map(id => hooks.graph.get(id)).filter(n => n && n.kind === 'world');
 }
 
 /* Всё, что знает только map.js (граф, камера, окна локаций), приходит сюда
@@ -81,8 +91,13 @@ export function initEditor(h) {
   hooks = h;
   const fab = document.getElementById('editorFab');
   if (fab && EDIT_MODE && MINE.size) {
-    const own = [...MINE].filter(id => h.graph.has(id)).length;
-    fab.textContent = ALL ? '✏️ Редактор' : (own === 1 ? '✏️ Мой персонаж' : '✏️ Мои персонажи');
+    const mine = [...MINE].map(id => h.graph.get(id)).filter(Boolean);
+    const marks = mine.filter(n => n.kind === 'world').length;
+    const chars = mine.length - marks;
+    fab.textContent = ALL ? '✏️ Редактор'
+      : marks && chars ? '✏️ Моё на карте'
+      : marks ? (marks === 1 ? '✏️ Мой маркер' : '✏️ Мои маркеры')
+      : (chars === 1 ? '✏️ Мой персонаж' : '✏️ Мои персонажи');
     fab.hidden = false;
     fab.addEventListener('click', showEditorList);
   }
@@ -120,7 +135,9 @@ function fieldsOf(kind, d) {
     articleUrl: (d.article && d.article.url) || '',
     color: d.color || '',
     beacon: d.beacon === true, completed: d.completed === true, wide: d.wide === true,
-    pinned: d.pinned === true, location: d.location === true,
+    pinned: d.pinned === true,
+    story: d.story === true, location: d.location === true, alliance: d.alliance === true,
+    draft: d.draft === true,
     recruit: d.recruit || '',
   };
 }
@@ -438,12 +455,15 @@ export function showEditorList() {
   const nodes = [...hooks.graph.values()];
   const byTitle = (a, b) => fullTitle(a).localeCompare(fullTitle(b), 'ru');
   const chars = nodes.filter(n => n.kind === 'character' && canEdit(n.id)).sort(byTitle);
-  // Персонаж один — список из одной строки был бы лишним тапом.
-  if (chars.length === 1 && !canEditNodes()) {
-    hooks.openCharacterEditor(chars[0]);
+  const marks = ownMarkers().sort(byTitle);
+  // Править можно одно — список из одной строки был бы лишним тапом.
+  if (chars.length + marks.length === 1 && !canEditNodes()) {
+    if (chars.length) hooks.openCharacterEditor(chars[0]);
+    else showNodeEditor(marks[0]);
     return;
   }
   const sections = [['Персонажи', chars]];
+  if (marks.length) sections.push(['Мои маркеры', marks]);
   if (canEditNodes()) {
     // Мировые точки — одним списком: делить их на «сюжеты/локации/события»
     // больше незачем, это одна и та же точка с разными галочками (23.09.2026).
@@ -470,14 +490,14 @@ export function showEditorList() {
 
   openModal(`
     <div class="editor-list">
-      <div class="modal-title">${ALL ? '✏️ Редактор карты' : '✏️ Мои персонажи'}</div>
+      <div class="modal-title">${ALL ? '✏️ Редактор карты' : marks.length ? '✏️ Моё на карте' : '✏️ Мои персонажи'}</div>
       <div class="editor-hint">Выбери, что править. Сохранённое сразу видно у тебя, у остальных — через минуту-две.</div>
       ${total > 8 ? '<input class="editor-search" type="search" placeholder="Поиск по названию" autocomplete="off">' : ''}
       ${sections.filter(([, list]) => list.length).map(([label, list]) => `
         <div class="editor-list-section">
           ${sections.length > 1 ? `<div class="editor-list-title">${label}</div>` : ''}
           ${list.map(row).join('')}
-        </div>`).join('') || '<div class="editor-hint">Пока нечего править — попроси владельца группы открыть тебе правку персонажа.</div>'}
+        </div>`).join('') || '<div class="editor-hint">Пока нечего править — попроси владельца группы открыть тебе правку персонажа или создай маркер: напиши боту «создать маркер Название».</div>'}
     </div>`);
 
   const list = modalContent.querySelector('.editor-list');
@@ -733,11 +753,18 @@ function resetDelete(form) {
 }
 
 /* ============================================================
-   Мировая точка — одна форма на все точки world.json, только владелец группы
-   (mine=*). Локация, фракция, корабль и сюжет больше не разные сущности с
+   Мировая точка — одна форма на все точки world.json. Владелец группы
+   (mine=*) видит всё; игрок на СВОЁМ маркере (id в mine) — только место, связи,
+   привязку, описание и арт (13.11.2026). Локация, фракция, корабль и сюжет больше не разные сущности с
    разными формами (23.09.2026, по просьбе игрока «привести к общему
    знаменателю»): это одна точка, а разница — в том, что заполнено.
-   Галочка «маяк» отвечает ровно за одно — точка мигает на карте.
+   Галочка «маяк» отвечает ровно за одно — точка мигает на карте; «сюжет»,
+   «локация», «альянс» — независимые признаки (02.11.2026), их ставит владелец.
+
+   У игрока привязка, описание и арт не сохраняются сразу: бот копит их
+   черновиком и после «Отправить на подтверждение» показывает владельцу одной
+   карточкой. Поэтому привязку из формы игрока «отправленной правкой»
+   (applyPendingEdits) не запоминаем — на карте она появится только после решения.
 
    Описание и картинку форма НЕ отправляет сама: sendData ограничен 4096
    байтами, а описание бывает длиннее (у «Переворота» ~5 КБ в UTF-8).
@@ -745,7 +772,8 @@ function resetDelete(form) {
    заодно поля формы), и бот ждёт текст или фото следующим сообщением в личке.
    ============================================================ */
 export function showNodeEditor(node) {
-  if (!hooks || !canEditNodes() || !node || node.kind !== 'world') return;
+  if (!hooks || !node || node.kind !== 'world' || !canEdit(node.id)) return;
+  const full = canEditNodes();
   const draft = draftFor(node.kind, node.data);
   const graph = hooks.graph;
   // Описание правится у всех точек, и у Фенома со схемой (02.11.2026: довод
@@ -775,9 +803,16 @@ export function showNodeEditor(node) {
   openIframeModal('', null);
   modalContent.innerHTML = `
     <form class="editor" autocomplete="off">
-      <div class="editor-title">✏️ Точка: ${escapeHtml(node.data.title || node.id)}</div>
+      <div class="editor-title">✏️ ${full ? 'Точка' : 'Маркер'}: ${escapeHtml(node.data.title || node.id)}</div>
       ${pendingHint(node.kind, node.id)}
+      ${full && node.data.draft ? `<div class="editor-hint">Маркер игрока, ещё не подтверждён: описание и арт придут карточкой от бота.</div>
+        <label class="editor-check">
+          <input type="checkbox" name="draft"${draft.draft ? ' checked' : ''}>
+          <span>Черновик игрока <small>— снять = подтвердить вручную, без карточки</small></span>
+        </label>` : ''}
+      ${full ? '' : `<div class="editor-hint">Место и связи сохраняются сразу. Описание, арт и привязка копятся у бота черновиком и появятся на карте, когда владелец их примет${node.data.draft ? ' — до этого новый маркер создать нельзя' : ''}.</div>`}
 
+      ${!full ? '' : `
       <fieldset class="editor-section">
         <legend>Основное</legend>
         ${input('title', 'Название', TITLE_MAX)}
@@ -786,8 +821,12 @@ export function showNodeEditor(node) {
         ${input('articleUrl', 'Ссылка на статью', URL_MAX, 'type="url" placeholder="https://…"')}
         ${input('color', 'Цвет маркера (пусто — по умолчанию)', COLOR_MAX, 'placeholder="#ffd76a"')}
         <label class="editor-check">
+          <input type="checkbox" name="story"${draft.story ? ' checked' : ''}>
+          <span>Сюжет <small>— вкладка «Игра», раздел сюжетов в планшете и вики</small></span>
+        </label>
+        <label class="editor-check">
           <input type="checkbox" name="beacon"${draft.beacon ? ' checked' : ''}>
-          <span>Сюжет <small>— маркер мигает маяком и зовёт к себе</small></span>
+          <span>Маяк <small>— маркер мигает и зовёт к себе</small></span>
         </label>
         <label class="editor-check">
           <input type="checkbox" name="completed"${draft.completed ? ' checked' : ''}>
@@ -804,7 +843,11 @@ export function showNodeEditor(node) {
         </label>
         <label class="editor-check">
           <input type="checkbox" name="location"${draft.location ? ' checked' : ''}>
-          <span>Локация <small>— в нодах по разделам стоит среди локаций, а не базовых маркеров</small></span>
+          <span>Локация <small>— место, куда можно попасть</small></span>
+        </label>
+        <label class="editor-check">
+          <input type="checkbox" name="alliance"${draft.alliance ? ' checked' : ''}>
+          <span>Альянс <small>— сторона, государство, организация</small></span>
         </label>
       </fieldset>
 
@@ -814,19 +857,21 @@ export function showNodeEditor(node) {
           <textarea name="recruit" maxlength="${RECRUIT_MAX}" rows="3" placeholder="Например: 2 места на сторону администрации — дипломат, охрана">${escapeHtml(draft.recruit)}</textarea>
         </label>
         <div class="editor-hint">Плашка «Набор открыт» в окне точки над описанием. Пусто — набора нет. У завершённой не показывается.</div>
-      </fieldset>
+      </fieldset>`}
 
       <fieldset class="editor-section">
-        <legend>Описание и картинка</legend>
+        <legend>${full ? 'Описание и картинка' : 'Описание и арт'}</legend>
         <div class="editor-avatar-row">
           <div class="editor-avatar">
             ${image ? `<img src="${escapeHtml(image)}" alt="" onerror="this.remove()">` : ''}
             <span>${escapeHtml((node.data.title || '?').trim().charAt(0).toUpperCase())}</span>
           </div>
           <div>
-            <div class="editor-hint">Окно закроется, бот попросит прислать текст или фото в личку. Правки формы сохранятся заодно. Текущее описание бот пришлёт — его можно скопировать и поправить.</div>
-            <button type="button" class="editor-btn" data-act="text">📝 Изменить описание</button>
-            <button type="button" class="editor-btn" data-act="image">🖼 Сменить картинку</button>
+            <div class="editor-hint">${full
+              ? 'Окно закроется, бот попросит прислать текст или фото в личку. Правки формы сохранятся заодно. Текущее описание бот пришлёт — его можно скопировать и поправить.'
+              : 'Окно закроется, бот попросит прислать текст или фото в личку и положит их в черновик. Нужны и описание, и арт — без арта владелец маркер не примет.'}</div>
+            <button type="button" class="editor-btn" data-act="text">📝 ${full ? 'Изменить описание' : 'Описание'}</button>
+            <button type="button" class="editor-btn" data-act="image">🖼 ${full ? 'Сменить картинку' : 'Арт'}</button>
           </div>
         </div>
       </fieldset>
@@ -839,6 +884,7 @@ export function showNodeEditor(node) {
             ${groups.map(([label, list]) => list.length ? `<optgroup label="${label}">${list.map(option).join('')}</optgroup>` : '').join('')}
           </select>
         </label>
+        ${full ? '' : '<div class="editor-hint">Привязка уйдёт владельцу вместе с описанием и артом; на карте маркер переедет после его решения.</div>'}
         ${system
           ? `<div class="editor-place">
                <div>В системе «${escapeHtml(system.title)}»: <b>${draft.systemX == null ? 'место не указано' : `${draft.systemX}, ${draft.systemY}`}</b></div>
@@ -861,7 +907,12 @@ export function showNodeEditor(node) {
         </div>
         <div class="editor-hint">Серые отметки — связь записана у другой точки, снимается в её правке.</div>
       </fieldset>
-      ${dangerBox('Точка исчезнет с карты. Привязанные к ней останутся, но уже сами по себе, рядом с этим местом.')}
+      ${full ? dangerBox('Точка исчезнет с карты. Привязанные к ней останутся, но уже сами по себе, рядом с этим местом.') : `
+      <fieldset class="editor-section">
+        <legend>Подтверждение</legend>
+        <div class="editor-hint">Когда в черновике есть и описание, и арт — отправь всё владельцу одной карточкой. Правки формы сохранятся заодно.</div>
+        <button type="button" class="editor-btn" data-act="send">📨 Отправить на подтверждение</button>
+      </fieldset>`}
 
       <div class="editor-status" role="status"></div>
       <div class="editor-actions">
@@ -874,7 +925,7 @@ export function showNodeEditor(node) {
   const {say, report} = statusHelpers(form);
   wireLinks(form, draft, say, 'связей');
 
-  const CHECKS = ['beacon', 'completed', 'wide', 'pinned', 'location'];
+  const CHECKS = ['draft', 'story', 'beacon', 'completed', 'wide', 'pinned', 'location', 'alliance'];
   form.addEventListener('input', (e) => {
     const el = e.target;
     if (el.type === 'checkbox' && CHECKS.includes(el.name)) draft[el.name] = el.checked;
@@ -904,9 +955,14 @@ export function showNodeEditor(node) {
     return '';
   };
 
-  // next — 'text' / 'image': после полей бот ждёт описание или картинку.
+  // Игроку — только это; остальное бот у него не примет (PLAYER_FIELDS в player_markers.py).
+  const PLAYER_KEYS = ['parent', 'links', 'x', 'y', 'systemX', 'systemY'];
+
+  // next — 'text' / 'image': после полей бот ждёт описание или картинку;
+  // 'send' (игрок) — отправить черновик владельцу на подтверждение.
   const submit = (next) => {
     const set = changesOf(node.kind, node.data, draft);
+    if (!full) Object.keys(set).forEach(key => { if (!PLAYER_KEYS.includes(key)) delete set[key]; });
     const hasSet = Object.keys(set).length > 0;
     if (!hasSet && !next) { say('Изменений нет.'); return; }
     const problem = hasSet ? problemOf(set) : '';
@@ -914,7 +970,12 @@ export function showNodeEditor(node) {
     const payload = hasSet ? {v: 1, t: 'node', id: node.id, set} : {v: 1, t: next, id: node.id};
     if (hasSet && next) payload.next = next;
     const before = fieldsOf(node.kind, node.data);
-    report(sendToBot(payload, hasSet ? () => rememberPending(node.kind, node.id, before, set) : null));
+    // У игрока сразу сохраняются только место и связи: привязка (и место в
+    // системе, если оно пришло вместе с ней) ждёт решения владельца.
+    const now = {...set};
+    if (!full && 'parent' in now) ['parent', 'systemX', 'systemY'].forEach(key => delete now[key]);
+    const hasNow = Object.keys(now).length > 0;
+    report(sendToBot(payload, hasNow ? () => rememberPending(node.kind, node.id, before, now) : null));
   };
 
   form.addEventListener('click', (e) => {
@@ -941,8 +1002,10 @@ export function showNodeEditor(node) {
       drafts.delete(node.kind + ':' + node.id);
       syncClosingConfirmation();
       showNodeEditor(node);
-    } else if (act === 'text' || act === 'image') {
+    } else if (act === 'text' || act === 'image' || (act === 'send' && !full)) {
       submit(act);
+    } else if (!full) {
+      return;                                   // удаление — только владелец
     } else if (act === 'del') {
       armDelete(form, node.data.title || node.id);
     } else if (act === 'del-no') {

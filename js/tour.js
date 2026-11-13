@@ -18,13 +18,13 @@
    ⚠️ Тексты — черновик из инфоканала (введение, «Что такое Феном», анкета),
    игрок обещал поправить. Править прямо здесь, в INTRO_TABS и STEPS.
    ============================================================ */
-import { closeModal, isArticleOpen } from './modal.js?v=262';
-import { closeStory, isStoryOpen } from './stories.js?v=262';
-import { closePhenom, isPhenomOpen } from './phenom.js?v=262';
-import { closeCharacter, isCharacterOpen } from './characters.js?v=262';
-import { closeSystem, isSystemOpen } from './system-view.js?v=262';
-import { quoteHtml, initQuotes } from './quotes.js?v=262';
-import { JOIN_LINKS } from './node-window.js?v=262';
+import { closeModal, isArticleOpen } from './modal.js?v=263';
+import { closeStory, isStoryOpen } from './stories.js?v=263';
+import { closePhenom, isPhenomOpen } from './phenom.js?v=263';
+import { closeCharacter, isCharacterOpen } from './characters.js?v=263';
+import { closeSystem, isSystemOpen } from './system-view.js?v=263';
+import { quoteHtml, initQuotes } from './quotes.js?v=263';
+import { JOIN_LINKS } from './node-window.js?v=263';
 
 const TOUR_SEEN_KEY = 'galaxyMapTourSeen';
 const LINKS = JOIN_LINKS;
