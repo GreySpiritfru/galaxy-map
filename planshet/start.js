@@ -1,4 +1,4 @@
-import {C, el, BASE, firstImage, viewKind, newsFor, newsItem, plural, FILTER_SVG, storyFilterButton, filterName} from './common.js?v=41';
+import {C, el, BASE, firstImage, viewKind, newsFor, newsItem, plural, FILTER_SVG, storyFilterButton, filterName} from './common.js?v=42';
 
 export function artOf(r) {
   if (!r) return '';

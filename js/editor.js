@@ -18,7 +18,7 @@
    он НЕ является (адрес можно переписать руками): право на правку проверяет
    бот при получении данных, по своей таблице привязок на сервере.
    ============================================================ */
-import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=263';
+import { modalContent, escapeHtml, openIframeModal, openModal } from './modal.js?v=264';
 
 const params = new URLSearchParams(location.search);
 const EDIT_MODE = params.get('edit') === '1';
@@ -75,9 +75,9 @@ export function canEditNodes() {
 }
 
 /* Маркеры игроков (13.11.2026): игрок с тегом создаёт маркер у бота («создать
-   маркер <Название>») и правит его здесь. Место и связи бот сохраняет сразу;
-   описание, арт и привязка копятся у бота черновиком и попадают на карту одной
-   пачкой после «Принять» владельца. Галочки, название, набор — только владелец. */
+   маркер <Название>») и правит его здесь. Место, связи, цвет и ширину маркера бот
+   сохраняет сразу; название, описание, арт и привязка копятся у бота черновиком и
+   попадают на карту одной пачкой после «Принять» владельца. Галочки и набор — только владелец. */
 function ownMarkers() {
   if (!hooks || ALL) return [];
   return [...MINE].map(id => hooks.graph.get(id)).filter(n => n && n.kind === 'world');
@@ -810,7 +810,18 @@ export function showNodeEditor(node) {
           <input type="checkbox" name="draft"${draft.draft ? ' checked' : ''}>
           <span>Черновик игрока <small>— снять = подтвердить вручную, без карточки</small></span>
         </label>` : ''}
-      ${full ? '' : `<div class="editor-hint">Место и связи сохраняются сразу. Описание, арт и привязка копятся у бота черновиком и появятся на карте, когда владелец их примет${node.data.draft ? ' — до этого новый маркер создать нельзя' : ''}.</div>`}
+      ${full ? '' : `<div class="editor-hint">Место, связи, цвет и ширина сохраняются сразу. Название, описание, арт и привязка копятся у бота черновиком и появятся на карте, когда владелец их примет${node.data.draft ? ' — до этого новый маркер создать нельзя' : ''}.</div>
+
+      <fieldset class="editor-section">
+        <legend>Основное</legend>
+        ${input('title', 'Название (сменится после решения владельца)', TITLE_MAX)}
+        ${input('color', 'Цвет маркера (пусто — по умолчанию)', COLOR_MAX, 'placeholder="#ffd76a"')}
+        ${submap ? '' : `
+        <label class="editor-check">
+          <input type="checkbox" name="wide"${draft.wide ? ' checked' : ''}>
+          <span>Широкий маркер <small>— под горизонтальный арт</small></span>
+        </label>`}
+      </fieldset>`}
 
       ${!full ? '' : `
       <fieldset class="editor-section">
@@ -956,7 +967,7 @@ export function showNodeEditor(node) {
   };
 
   // Игроку — только это; остальное бот у него не примет (PLAYER_FIELDS в player_markers.py).
-  const PLAYER_KEYS = ['parent', 'links', 'x', 'y', 'systemX', 'systemY'];
+  const PLAYER_KEYS = ['title', 'color', 'wide', 'parent', 'links', 'x', 'y', 'systemX', 'systemY'];
 
   // next — 'text' / 'image': после полей бот ждёт описание или картинку;
   // 'send' (игрок) — отправить черновик владельцу на подтверждение.
@@ -970,10 +981,11 @@ export function showNodeEditor(node) {
     const payload = hasSet ? {v: 1, t: 'node', id: node.id, set} : {v: 1, t: next, id: node.id};
     if (hasSet && next) payload.next = next;
     const before = fieldsOf(node.kind, node.data);
-    // У игрока сразу сохраняются только место и связи: привязка (и место в
-    // системе, если оно пришло вместе с ней) ждёт решения владельца.
+    // У игрока сразу сохраняются место, связи, цвет и ширина: название и привязка
+    // (и место в системе, если оно пришло вместе с ней) ждут решения владельца.
     const now = {...set};
     if (!full && 'parent' in now) ['parent', 'systemX', 'systemY'].forEach(key => delete now[key]);
+    if (!full) delete now.title;
     const hasNow = Object.keys(now).length > 0;
     report(sendToBot(payload, hasNow ? () => rememberPending(node.kind, node.id, before, now) : null));
   };

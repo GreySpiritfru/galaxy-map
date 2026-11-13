@@ -1,6 +1,6 @@
-import { articleText, linkText, search } from '../js/linker.js?v=263';
-import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=41';
-import {openPicker, closePicker} from './picker.js?v=41';
+import { articleText, linkText, search } from '../js/linker.js?v=264';
+import { C, load, viewKind, pointModules, alsoIn } from './model.js?v=42';
+import {openPicker, closePicker} from './picker.js?v=42';
 // «Назад» (BackButton Telegram, браузер) сначала закрывает открытый список — js/navigation.js closeTop.
 window.__planshetClosePicker = closePicker;
 export { C, load, viewKind, pointModules, alsoIn };

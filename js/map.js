@@ -1,26 +1,26 @@
 /* ============================================================
    Загрузка и инициализация карты галактики
    ============================================================ */
-import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=263';
-import { closeModal } from './modal.js?v=263';
-import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=263';
-import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, focusSubmapChar, setSubmapRecordHandler } from './phenom.js?v=263';
-import { initEditor, canEdit, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=263';
-import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=263';
-import { openCharacter, closeCharacter } from './characters.js?v=263';
-import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=263';
-import { markerEl } from './node-window.js?v=263';
-import { registerTourHooks, startTour, tourSeen } from './tour.js?v=263';
-import { hideSplash } from './splash.js?v=263';
-import { fetchT, showLoadError } from './net.js?v=263';
-import { noteRecord, setRestorer } from './navigation.js?v=263';
-import { buildRecords, resolveAddress } from './records.js?v=263';
-import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=263';
-import { decodeAddress } from './address.js?v=263';
-import { findInRecord } from './find-in-text.js?v=263';
-import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=263';
-import { REF_ARTICLES } from './articles.js?v=263';
-import { LOCAL_ARTICLES } from './reader.js?v=263';
+import { createPanZoom, prefersReducedMotion } from './panzoom.js?v=264';
+import { closeModal } from './modal.js?v=264';
+import { openSystem, slugify, closeSystem, isSystemOpen, getOpenSystem, setSystemDecorator, setSystemTabs, setSystemPickHandler, trySystemPick, isSystemPicking } from './system-view.js?v=264';
+import { openWorldWindow, setSubmapCharacters, closePhenom, isPhenomOpen, setSubmapPickHandler, openSubmapView, focusSubmap, focusSubmapChar, setSubmapRecordHandler } from './phenom.js?v=264';
+import { initEditor, canEdit, showNodeEditor, applyPendingEdits, showPendingToast } from './editor.js?v=264';
+import { openStory, setCharacterNavigator, closeStory, isStoryOpen } from './stories.js?v=264';
+import { openCharacter, closeCharacter } from './characters.js?v=264';
+import { buildNodes, layoutNodes, layoutGraphView, siblingLinks, WIDE_ASPECT } from './graph.js?v=264';
+import { markerEl } from './node-window.js?v=264';
+import { registerTourHooks, startTour, tourSeen } from './tour.js?v=264';
+import { hideSplash } from './splash.js?v=264';
+import { fetchT, showLoadError } from './net.js?v=264';
+import { noteRecord, setRestorer } from './navigation.js?v=264';
+import { buildRecords, resolveAddress } from './records.js?v=264';
+import { setRegistry, setRecordOpener, openRecord, getRegistry } from './open-record.js?v=264';
+import { decodeAddress } from './address.js?v=264';
+import { findInRecord } from './find-in-text.js?v=264';
+import { showPlanshet, isPlanshetShown, planshetSurface, togglePlanshetMenu, openPlanshetSearch, setPlanshetData, warmPlanshet } from './planshet.js?v=264';
+import { REF_ARTICLES } from './articles.js?v=264';
+import { LOCAL_ARTICLES } from './reader.js?v=264';
 
 const SVG_PATH = 'map.svg';
 
@@ -182,7 +182,7 @@ function finishMapPick(p) {
 
   // Замер кадра на живом устройстве — только с ?fps=1 в адресе (js/fps.js).
   if (new URLSearchParams(location.search).has('fps')) {
-    import('./fps.js?v=263').then(m => m.startFpsMeter(svg)).catch(() => {});
+    import('./fps.js?v=264').then(m => m.startFpsMeter(svg)).catch(() => {});
   }
 
   /* Декоративный "космос" для маски — вместо плоской заливки одним цветом.

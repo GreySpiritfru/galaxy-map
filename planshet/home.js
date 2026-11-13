@@ -1,6 +1,6 @@
-import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,MAP_SVG,storyColor,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=41';
-import {inChip} from './filters.js?v=41';
-import {newsNow,elTile,zones,artOf,bg} from './start.js?v=41';
+import {C,el,BASE,viewKind,articles,buildings,places,stories,pickedStories,newsFor,storyState,mapLink,MAP_SVG,storyColor,truth,articleModules,plain,EPOCHS,ARCHIVE,img,shortOf,chipList,plural,rows,placeSub,cardSections} from './common.js?v=42';
+import {inChip} from './filters.js?v=42';
+import {newsNow,elTile,zones,artOf,bg} from './start.js?v=42';
 const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const EASE = 'cubic-bezier(.2,.7,.2,1)';
 // Выдвинуть/задвинуть: высота коробки плавно идёт от старого содержимого к новому.
@@ -32,7 +32,10 @@ function slide(box, kids) {
 }
 
 const factions = () => places().filter(p => p.flags.alliance);
-const otherPlaces = () => places().filter(p => !factions().includes(p));
+/* Просто маркеры (владелец 13.11.2026): точка без «локации» и без «альянса» — третья полка под локациями.
+   Сюжеты сюда не попадают (places() — только не-сюжеты); неподтверждённый маркер игрока ("draft") — тоже. */
+const plainMarks = () => places().filter(p => !p.flags.alliance && !p.flags.location && !C.raw[p.id]?.draft);
+const otherPlaces = () => places().filter(p => p.flags.location && !p.flags.alliance);
 const people = chip => C.records.filter(r => viewKind(r) === 'character' && inChip(r, chip));
 const storiesOf = chip => chip === 'all' ? stories() : pickedStories(chip);
 // «Эпохи Фенома» — история, а не справка: живут в «Событиях» (владелец, 01.11).
@@ -126,7 +129,7 @@ function modeInfo(state) {
     article: {count: lore().length, art: artOf(C.byId.get('tt/greyspirit/toTVpow7sb1'))},
     building: {count: buildings().length, art: zones()[0]?.art, items: buildings()},
     story: {count: sts.length, art: firstArt(sts.slice(1)) || firstArt(sts), items: sts},
-    place: {count: places().length + systems().length, art: firstArt(factions()), items: factions()},
+    place: {count: places().filter(p => !C.raw[p.id]?.draft).length + systems().length, art: firstArt(factions()), items: factions()},
     character: {count: ps.length, art: firstArt(ps), items: ps},
   };
 }
@@ -278,6 +281,7 @@ function issue(kind, state, open, opts = {}) {
       head('Локации'),
       withKids.map(r => fam(elTile(r, open, '', 'wide'), kidTiles(r))),
       el('div', {class: 'entries'}, otherPlaces().filter(r => !withKids.includes(r)).map(r => entry(r, open))),
+      plainMarks().length ? [head('Маркеры'), el('div', {class: 'entries'}, plainMarks().map(r => entry(r, open)))] : null,
       // Системы: где что-то есть (G-UX71 → Гигаструктура, завершён) — скобкой; остальные — списком.
       head('Системы', 'звёздные системы карты'),
       sysFull.map(r => fam(famHead(r, open, 'система'), kidTiles(r))),
@@ -371,6 +375,7 @@ function homeLibrary(state, open) {
     group('Альянсы', marks.length, rows(marks, r => sentences(descOf(r), 1).slice(0, 80), open)),
     group('Локации', locs.length + systems().length, [rows(locs, placeSub, open),
       el('div', {class: 'lib-sub'}, 'Системы'), rows(systems(), r => inside(r) ? `здесь ${inside(r)}` : r.lore?.label || '', open)]),
+    group('Маркеры', plainMarks().length, rows(plainMarks(), r => sentences(descOf(r), 1).slice(0, 80), open)),
     group('Персонажи', ps.length, rows(ps, r => [C.raw[r.id]?.race, C.raw[r.id]?.parent && shortOf(C.raw[r.id].parent)].filter(Boolean).join(', '), open)),
     group('Здания Фенома', buildings().length, rows(buildings(), r => r.zone || 'Без района', open)),
     group('Архив', arch.length, rows(arch, r => {

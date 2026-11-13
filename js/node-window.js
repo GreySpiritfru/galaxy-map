@@ -15,13 +15,13 @@
    (нижний, он же умеет тайловую карту), stories.js (средний) и characters.js
    (верхний, персонаж; с 24.09.2026 — раньше он был статьёй в модале).
    ============================================================ */
-import { escapeHtml } from './modal.js?v=263';
-import { REF_ARTICLES } from './articles.js?v=263';
-import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=263';
-import { renderSheetCard } from './sheet-card.js?v=263';
-import { wireImageGallery } from './viewer.js?v=263';
-import { frameHtml, safeHttps } from './net.js?v=263';
-import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=263';
+import { escapeHtml } from './modal.js?v=264';
+import { REF_ARTICLES } from './articles.js?v=264';
+import { renderMirror, renderModule, mirrorDoc, scrollToAnchor, anchorOf, openExternal } from './reader.js?v=264';
+import { renderSheetCard } from './sheet-card.js?v=264';
+import { wireImageGallery } from './viewer.js?v=264';
+import { frameHtml, safeHttps } from './net.js?v=264';
+import { loadRolls, rollsOf, rollRowHtml, d20Faces, average, NPC_SIDE, NPC_DEFAULT } from './rolls.js?v=264';
 
 /* Куда идти новичку: шаблон анкеты и контакты админов — посты инфоканала.
    Одни и те же в обучении (js/tour.js) и в плашке набора ниже. */

@@ -11,12 +11,12 @@
    .over-map), шторка — над прозрачной подложкой (тап мимо — закрыть), поиск — своим экраном, как в «Нодах».
    Закрыли и то и другое — поверхность снова прячется. Раздел из шторки и новость из поиска — в «Ноды».
    ============================================================ */
-import { loadMirrorDoc } from './reader.js?v=263';
+import { loadMirrorDoc } from './reader.js?v=264';
 
 const root = document.getElementById('planshet');
 const dock = document.getElementById('controls');
 // Версия модулей planshet/ — та же, что ?v= в их импортах и у planshet.css.
-const PV = 41;
+const PV = 42;
 let shell = null, loading = null;
 // nodesOn — планшет показан режимом «Ноды» (showPlanshet); over — открыт над картой шторкой или поиском.
 let nodesOn = false, over = false;
