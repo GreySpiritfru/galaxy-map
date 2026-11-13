@@ -171,15 +171,5 @@
     "links": [],
     "x": -175,
     "y": -100
-  },
-  {
-    "id": "test",
-    "title": "тест",
-    "description": "",
-    "image": "",
-    "parent": "",
-    "links": [],
-    "x": -175,
-    "y": -100
   }
 ]
