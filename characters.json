@@ -434,5 +434,19 @@
     "color": "",
     "x": -175,
     "y": -100
+  },
+  {
+    "id": "zidan-al-motang",
+    "name": "Зидан Аль Мотанг",
+    "race": "",
+    "role": "",
+    "player": "",
+    "sheetUrl": "",
+    "parent": "",
+    "links": [],
+    "image": "",
+    "color": "",
+    "x": -175,
+    "y": -100
   }
 ]
